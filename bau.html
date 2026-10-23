@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#15171b">
+  <title>Bau – Block-Kompass</title>
+  <meta name="description" content="Bauprojekt für Minecraft Java 26.2 mit 3D-Ansicht, Schritt-Player, Materialliste, Ebenen-Plan und Infos.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/atkinson-hyperlegible-next-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/ui/build-page.js"></script>
+</head>
+<body data-page="build">
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <header class="site-header" id="site-header">
+    <div class="site-header__bar container">
+      <a class="brand" href="index.html">
+        <img class="brand__logo" src="assets/logo.svg" alt="" width="40" height="40">
+        <span class="brand__text">
+          <span class="brand__name">Block<span class="brand__dash">-</span>Kompass</span>
+          <span class="brand__tag">Java Edition 26.2</span>
+        </span>
+      </a>
+      <nav class="site-nav hotbar" aria-label="Hauptnavigation">
+        <ul class="hotbar__list" role="list">
+          <li><a class="hotbar__slot" href="index.html" data-nav="home"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#home"></use></svg><span>Start</span></a></li>
+          <li><a class="hotbar__slot" href="kategorie.html" data-nav="category"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#grid"></use></svg><span>Kategorien</span></a></li>
+          <li><a class="hotbar__slot" href="erstellen.html" data-nav="create"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#hammer"></use></svg><span class="label-long">Selber erstellen</span><span class="label-short">Erstellen</span></a></li>
+        </ul>
+        <button class="hotbar__slot site-search-toggle" id="site-search-toggle" type="button" aria-expanded="false" aria-controls="site-search-form"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Suche</span></button>
+      </nav>
+      <form class="site-search" id="site-search-form" action="erstellen.html" method="get" role="search" aria-label="Bauten suchen">
+        <div class="site-search__field">
+          <label class="visually-hidden" for="site-search-input">Bauten suchen</label>
+          <input class="field__input site-search__input" id="site-search-input" type="search" name="q" maxlength="120" placeholder="Bau suchen …" autocomplete="off" enterkeyhint="search" spellcheck="false">
+          <button class="site-search__submit" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span class="visually-hidden">Suchen</span></button>
+        </div>
+      </form>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript><p class="noscript">Der Block-Kompass braucht JavaScript für Katalog, 3D-Ansicht und Anleitungen. Bitte aktiviere JavaScript für diese Seite.</p></noscript>
+
+    <div class="container status-region build-status" id="build-status" role="status" aria-live="polite"></div>
+
+    <div class="build-layout" id="build-layout">
+      <header class="build-head" id="build-head">
+        <nav class="breadcrumb" aria-label="Brotkrümelpfad">
+          <ol>
+            <li><a href="index.html">Start</a></li>
+            <li><a href="kategorie.html" id="build-crumb-category">Kategorien</a></li>
+            <li id="build-crumb-current" aria-current="page">Bau</li>
+          </ol>
+        </nav>
+        <h1 class="build-head__title" id="build-title"><span class="skeleton skeleton--title" aria-hidden="true"></span><span class="visually-hidden">Bau wird geladen</span></h1>
+        <p class="build-head__subtitle" id="build-subtitle"></p>
+        <ul class="chip-list" id="build-chips" role="list"></ul>
+      </header>
+
+      <section class="stage" id="build-stage" aria-label="3D-Ansicht">
+        <canvas class="stage__canvas" id="viewer-canvas" hidden></canvas>
+        <img class="stage__preview" id="viewer-preview" alt="" hidden>
+        <div class="stage__toolbar" id="viewer-toolbar" hidden></div>
+        <div class="stage__status" id="viewer-status"></div>
+      </section>
+
+      <section class="player" id="step-player" aria-label="Schritt-Player">
+        <div class="xp" id="step-xp" role="progressbar" aria-label="Baufortschritt" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" aria-valuetext="Noch kein Bau geladen">
+          <div class="xp__fill"></div>
+          <span class="xp__level" id="step-level" aria-hidden="true">0</span>
+        </div>
+        <div class="player__controls">
+          <button class="btn btn--icon" id="step-prev" type="button" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#prev"></use></svg><span class="visually-hidden">Vorheriger Schritt</span></button>
+          <button class="btn btn--icon btn--primary" id="step-play" type="button" aria-pressed="false" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#play"></use></svg><span class="visually-hidden">Abspielen</span></button>
+          <button class="btn btn--icon" id="step-next" type="button" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#next"></use></svg><span class="visually-hidden">Nächster Schritt</span></button>
+          <p class="player__label" id="step-label"><strong>Schritt –</strong><span>von –</span></p>
+        </div>
+        <label class="visually-hidden" for="step-slider">Schritt wählen</label>
+        <input class="slider" id="step-slider" type="range" min="0" max="0" step="1" value="0" disabled>
+      </section>
+
+      <section class="build-panels" aria-label="Anleitung, Material, Ebenen und Infos">
+        <div class="tabs" id="build-tabs">
+          <div class="tabs__list" role="tablist" aria-label="Bereiche">
+            <button class="tab" type="button" role="tab" id="tab-guide" aria-controls="panel-guide" aria-selected="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#book"></use></svg><span>Anleitung</span></button>
+            <button class="tab" type="button" role="tab" id="tab-materials" aria-controls="panel-materials" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#chest"></use></svg><span>Material</span></button>
+            <button class="tab" type="button" role="tab" id="tab-layers" aria-controls="panel-layers" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#layers"></use></svg><span>Ebenen</span></button>
+            <button class="tab" type="button" role="tab" id="tab-info" aria-controls="panel-info" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#info"></use></svg><span>Infos</span></button>
+          </div>
+          <div class="tabs__panel" role="tabpanel" id="panel-guide" aria-labelledby="tab-guide" tabindex="0"></div>
+          <div class="tabs__panel" role="tabpanel" id="panel-materials" aria-labelledby="tab-materials" tabindex="0" hidden></div>
+          <div class="tabs__panel" role="tabpanel" id="panel-layers" aria-labelledby="tab-layers" tabindex="0" hidden></div>
+          <div class="tabs__panel" role="tabpanel" id="panel-info" aria-labelledby="tab-info" tabindex="0" hidden></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+
+  <footer class="site-footer" id="site-footer">
+    <div class="container site-footer__inner">
+      <div class="site-footer__brand">
+        <img src="assets/logo.svg" alt="" width="32" height="32">
+        <p><strong>Block-Kompass</strong> ist deine private Sammlung von Bauprojekten für Minecraft Java Edition 26.2 – mit Schritt-für-Schritt-Anleitungen in 3D.</p>
+      </div>
+      <nav aria-label="Fußnavigation">
+        <p class="site-footer__title">Seiten</p>
+        <ul class="site-footer__links" role="list">
+          <li><a href="index.html">Start</a></li>
+          <li><a href="kategorie.html">Kategorien</a></li>
+          <li><a href="erstellen.html">Selber erstellen</a></li>
+        </ul>
+      </nav>
+      <div class="site-footer__notes">
+        <p class="site-footer__title">Gut zu wissen</p>
+        <p>Texturen, Modelle und Blocknamen liest der Block-Kompass nur lokal aus deiner Minecraft-Installation. Nichts davon wird hochgeladen oder weitergegeben.</p>
+        <p>Schriften: Pixelify Sans, Atkinson Hyperlegible Next und Mono (SIL Open Font License, <a href="assets/fonts/QUELLEN.md">Quellen</a>).</p>
+      </div>
+      <p class="site-footer__legal">Kein offizielles Minecraft-Produkt. Nicht von Mojang oder Microsoft genehmigt oder mit ihnen verbunden.</p>
+    </div>
+  </footer>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-relevant="additions"></div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Testseite der 3D-Ansicht: Bau-Module, Original-Strukturen, Galerie aller Blöcke und ein großes Testvolumen für Leistungsmessungen.">
+  <title>3D-Ansicht-Test · Block-Kompass</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../css/style.css">
+  <script type="module" src="viewer.js"></script>
+</head>
+<body data-page="viewer-test">
+  <main id="main" tabindex="-1">
+    <h1 class="visually-hidden">3D-Ansicht-Test</h1>
+    <div class="stage" id="stage">
+      <canvas class="stage__canvas" id="view"></canvas>
+      <div class="stage__status" id="status" role="status" aria-live="polite"></div>
+    </div>
+
+    <section class="container stack" id="controls" aria-label="Bedienleiste">
+      <div class="cluster" role="group" aria-label="Ansicht">
+        <button class="btn btn--sm" type="button" data-view="iso">Iso</button>
+        <button class="btn btn--sm" type="button" data-view="top">Oben</button>
+        <button class="btn btn--sm" type="button" data-view="front">Vorne</button>
+        <button class="btn btn--sm" type="button" data-view="side">Seite</button>
+        <button class="btn btn--sm btn--ghost" type="button" id="mode" aria-pressed="false">Laufen</button>
+        <button class="btn btn--sm btn--ghost" type="button" id="ghost" aria-pressed="false">Geist</button>
+      </div>
+
+      <div class="stack">
+        <label class="field__label" for="progress">Fortschritt <span class="mono" id="progress-label">–</span></label>
+        <div class="cluster">
+          <button class="btn btn--sm" type="button" id="prev" aria-label="Schritt zurück">‹</button>
+          <button class="btn btn--sm btn--primary" type="button" id="play" aria-pressed="false">Abspielen</button>
+          <button class="btn btn--sm" type="button" id="next" aria-label="Schritt weiter">›</button>
+        </div>
+        <input class="slider" type="range" id="progress" min="0" max="1" step="0.01" value="1">
+      </div>
+
+      <div class="stack">
+        <label class="field__label" for="clip-on"><input type="checkbox" id="clip-on"> Schnittansicht bis Ebene <span class="mono" id="clip-label">–</span></label>
+        <input class="slider" type="range" id="clip" min="0" max="1" step="1" value="1" disabled>
+      </div>
+
+      <p class="mono muted" id="hover">Fahre mit der Maus über einen Block.</p>
+      <p class="mono muted" id="stats">–</p>
+    </section>
+  </main>
+</body>
+</html>

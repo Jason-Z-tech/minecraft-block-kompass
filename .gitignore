@@ -1,0 +1,9 @@
+# Lokal aus deiner Minecraft-Installation erzeugt (Texturen, Modelle, Namen, Strukturen) – nicht weitergeben
+game-data/
+# Erzeugte Vorschaubilder (enthalten Minecraft-Texturen)
+thumbs/
+# Temporäre Dateien von Tests und Screenshots
+tmp/
+# Geheimnisse gehören nie ins Repo
+.env
+.env.*

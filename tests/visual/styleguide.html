@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#15171b">
+  <title>Styleguide – Block-Kompass</title>
+  <meta name="description" content="Testseite: alle Komponenten und Zustände des Block-Kompass-Design-Systems.">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="../../assets/fonts/atkinson-hyperlegible-next-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script type="module" src="styleguide.js"></script>
+</head>
+<body data-page="styleguide">
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <header class="site-header" id="site-header">
+    <div class="site-header__bar container">
+      <a class="brand" href="../../index.html">
+        <img class="brand__logo" src="../../assets/logo.svg" alt="" width="40" height="40">
+        <span class="brand__text">
+          <span class="brand__name">Block<span class="brand__dash">-</span>Kompass</span>
+          <span class="brand__tag">Java Edition 26.2</span>
+        </span>
+      </a>
+      <nav class="site-nav hotbar" aria-label="Hauptnavigation">
+        <ul class="hotbar__list" role="list">
+          <li><a class="hotbar__slot" href="../../index.html" data-nav="home"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#home"></use></svg><span>Start</span></a></li>
+          <li><a class="hotbar__slot" href="../../kategorie.html" data-nav="category"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#grid"></use></svg><span>Kategorien</span></a></li>
+          <li><a class="hotbar__slot" href="../../erstellen.html" data-nav="create"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#hammer"></use></svg><span class="label-long">Selber erstellen</span><span class="label-short">Erstellen</span></a></li>
+        </ul>
+        <button class="hotbar__slot site-search-toggle" id="site-search-toggle" type="button" aria-expanded="false" aria-controls="site-search-form"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#search"></use></svg><span>Suche</span></button>
+      </nav>
+      <form class="site-search" id="site-search-form" action="erstellen.html" method="get" role="search" aria-label="Bauten suchen">
+        <div class="site-search__field">
+          <label class="visually-hidden" for="site-search-input">Bauten suchen</label>
+          <input class="field__input site-search__input" id="site-search-input" type="search" name="q" maxlength="120" placeholder="Bau suchen …" autocomplete="off" enterkeyhint="search" spellcheck="false">
+          <button class="site-search__submit" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#search"></use></svg><span class="visually-hidden">Suchen</span></button>
+        </div>
+      </form>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript><p class="noscript">Der Styleguide braucht JavaScript, um alle Komponenten zu zeigen.</p></noscript>
+
+    <div class="page-head">
+      <div class="container page-head__inner">
+        <nav class="breadcrumb" aria-label="Brotkrümelpfad">
+          <ol>
+            <li><a href="../../index.html">Start</a></li>
+            <li aria-current="page">Styleguide</li>
+          </ol>
+        </nav>
+        <div class="page-head__title-row">
+          <span class="page-head__icon" aria-hidden="true"><svg class="icon icon--48" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#cube"></use></svg></span>
+          <h1 class="page-head__title">Styleguide</h1>
+        </div>
+        <p class="page-head__lead">Testseite mit allen Komponenten und Zuständen des Design-Systems. Bauten, Mengen und Texte auf dieser Seite sind Beispiele.</p>
+        <nav aria-label="Abschnitte">
+          <ul class="cluster" role="list">
+            <li><a href="#sg-farben">Farben</a></li>
+            <li><a href="#sg-kontraste">Kontraste</a></li>
+            <li><a href="#sg-schrift">Schrift</a></li>
+            <li><a href="#sg-icons">Icons</a></li>
+            <li><a href="#sg-buttons">Buttons</a></li>
+            <li><a href="#sg-chips">Chips</a></li>
+            <li><a href="#sg-kacheln">Kacheln</a></li>
+            <li><a href="#sg-karten">Bau-Karten</a></li>
+            <li><a href="#sg-tabs">Tabs</a></li>
+            <li><a href="#sg-player">Player</a></li>
+            <li><a href="#sg-inventar">Inventar</a></li>
+            <li><a href="#sg-tooltip">Tooltip</a></li>
+            <li><a href="#sg-toast">Toast</a></li>
+            <li><a href="#sg-zustaende">Zustände</a></li>
+            <li><a href="#sg-formulare">Formulare</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+    <div class="container">
+      <section class="section" id="sg-farben" aria-labelledby="sg-farben-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-farben-title">Farben</h2>
+          <p class="section__lead">Tokens aus <code>css/style.css</code>. Akzente sind die Erze aus dem Spiel; Kategorien haben eigene Farben.</p>
+        </div>
+        <ul class="grid-auto" id="sg-swatches" role="list"></ul>
+      </section>
+
+      <section class="section" id="sg-kontraste" aria-labelledby="sg-kontraste-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-kontraste-title">Kontraste nach WCAG</h2>
+          <p class="section__lead">Live aus den Tokens berechnet. Fließtext braucht mindestens 4,5 : 1 (AA), große Schrift und Grafik 3 : 1.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="sg-contrast">
+            <thead><tr><th scope="col">Probe</th><th scope="col">Text</th><th scope="col">Fläche</th><th scope="col" class="num">Kontrast</th><th scope="col">Ergebnis</th></tr></thead>
+            <tbody>
+              <tr data-fg="--c-text" data-bg="--c-bg" data-min="4.5" data-use="Fließtext auf dem Seitengrund"></tr>
+              <tr data-fg="--c-text" data-bg="--c-surface" data-min="4.5" data-use="Text auf Karten, Kacheln, Zuständen"></tr>
+              <tr data-fg="--c-text" data-bg="--c-surface-2" data-min="4.5" data-use="Aktiver Tab, Panels"></tr>
+              <tr data-fg="--c-text" data-bg="--c-surface-3" data-min="4.5" data-use="Sekundär-Button"></tr>
+              <tr data-fg="--c-text" data-bg="--c-surface-hover" data-min="4.5" data-use="Sekundär-Button beim Darüberfahren"></tr>
+              <tr data-fg="--c-text" data-bg="--c-sunken" data-min="4.5" data-use="Eingabefelder"></tr>
+              <tr data-fg="--c-text" data-bg="--c-header" data-min="4.5" data-use="Kopfzeile"></tr>
+              <tr data-fg="--c-text" data-bg="--c-head" data-min="4.5" data-use="Seitenkopf"></tr>
+              <tr data-fg="--c-text" data-bg="--c-slot-active" data-min="4.5" data-use="Aktiver Hotbar-Slot"></tr>
+              <tr data-fg="--c-text" data-bg="--c-player" data-min="4.5" data-use="Schritt-Player"></tr>
+              <tr data-fg="--c-text" data-bg="--c-toast" data-min="4.5" data-use="Toast-Text"></tr>
+              <tr data-fg="--c-text-muted" data-bg="--c-bg" data-min="4.5" data-use="Gedämpfter Text"></tr>
+              <tr data-fg="--c-text-muted" data-bg="--c-surface" data-min="4.5" data-use="Untertitel auf Karten, inaktive Tabs"></tr>
+              <tr data-fg="--c-text-muted" data-bg="--c-surface-2" data-min="4.5" data-use="Inaktive Hotbar-Slots"></tr>
+              <tr data-fg="--c-text-muted" data-bg="--c-header" data-min="4.5" data-use="Versionshinweis im Kopf"></tr>
+              <tr data-fg="--c-text-muted" data-bg="--c-head" data-min="4.5" data-use="Brotkrümel im Seitenkopf"></tr>
+              <tr data-fg="--c-text-muted" data-bg="--c-player" data-min="4.5" data-use="Schritt-Anzeige im Player"></tr>
+              <tr data-fg="--c-text-muted" data-bg="--c-footer" data-min="4.5" data-use="Fußzeile"></tr>
+              <tr data-fg="--c-placeholder" data-bg="--c-sunken" data-min="4.5" data-use="Platzhalter in Feldern"></tr>
+              <tr data-fg="--c-link" data-bg="--c-bg" data-min="4.5" data-use="Links"></tr>
+              <tr data-fg="--c-link" data-bg="--c-surface" data-min="4.5" data-use="Links in Karten"></tr>
+              <tr data-fg="--c-link" data-bg="--c-footer" data-min="4.5" data-use="Links in der Fußzeile"></tr>
+              <tr data-fg="--c-diamond" data-bg="--c-sunken" data-min="4.5" data-use="Befehle zum Kopieren"></tr>
+              <tr data-fg="--c-gold" data-bg="--c-bg" data-min="4.5" data-use="Akzent im Titel"></tr>
+              <tr data-fg="--c-gold" data-bg="--c-toast" data-min="4.5" data-use="Toast-Titel Warnung"></tr>
+              <tr data-fg="--c-grass-text" data-bg="--c-bg" data-min="4.5" data-use="Eyebrow, Bindestrich im Logo"></tr>
+              <tr data-fg="--c-grass-text" data-bg="--c-toast" data-min="4.5" data-use="Toast-Titel Erfolg"></tr>
+              <tr data-fg="--c-diamond" data-bg="--c-toast" data-min="4.5" data-use="Toast-Titel Info"></tr>
+              <tr data-fg="--c-redstone-text" data-bg="--c-toast" data-min="4.5" data-use="Toast-Titel Fehler"></tr>
+              <tr data-fg="--c-redstone-text" data-bg="--c-bg" data-min="4.5" data-use="Fehlertext unter Feldern"></tr>
+              <tr data-fg="--c-redstone-text" data-bg="--c-surface" data-min="4.5" data-use="Fehlertext in Panels"></tr>
+              <tr data-fg="--c-copper-text" data-bg="--c-surface" data-min="4.5" data-use="Kupfer als Text"></tr>
+              <tr data-fg="--c-oxidized-text" data-bg="--c-surface" data-min="4.5" data-use="Türkis als Text"></tr>
+              <tr data-fg="--c-amethyst-text" data-bg="--c-surface" data-min="4.5" data-use="Amethyst als Text"></tr>
+              <tr data-fg="--c-on-accent" data-bg="--c-grass" data-min="4.5" data-use="Primär-Button"></tr>
+              <tr data-fg="--c-on-accent" data-bg="--c-grass-hover" data-min="4.5" data-use="Primär-Button beim Darüberfahren"></tr>
+              <tr data-fg="--c-on-accent" data-bg="--c-gold" data-min="4.5" data-use="Skip-Link, Schrittnummer Warnung"></tr>
+              <tr data-fg="--c-on-accent" data-bg="--c-diamond" data-min="4.5" data-use="Schrittnummer Info"></tr>
+              <tr data-fg="#ffffff" data-bg="--c-redstone-deep" data-min="4.5" data-use="Schrittnummer Fehler"></tr>
+              <tr data-fg="#ffffff" data-bg="--c-line-strong" data-min="4.5" data-use="Schrittnummer leer"></tr>
+              <tr data-fg="#ffffff" data-bg="--c-slot" data-min="4.5" data-use="Mengen in Inventar-Slots"></tr>
+              <tr data-fg="--c-xp" data-bg="--c-player" data-min="4.5" data-use="XP-Level-Zahl"></tr>
+              <tr data-fg="--c-tooltip-text" data-bg="--c-tooltip-bg" data-min="4.5" data-use="Tooltip-Titel"></tr>
+              <tr data-fg="--c-tooltip-muted" data-bg="--c-tooltip-bg" data-min="4.5" data-use="Tooltip-ID"></tr>
+              <tr data-fg="--c-tooltip-gold" data-bg="--c-tooltip-bg" data-min="4.5" data-use="Tooltip gold"></tr>
+              <tr data-fg="--c-tooltip-blue" data-bg="--c-tooltip-bg" data-min="4.5" data-use="Tooltip blau"></tr>
+              <tr data-fg="--c-tooltip-green" data-bg="--c-tooltip-bg" data-min="4.5" data-use="Tooltip grün"></tr>
+              <tr data-fg="--c-bg" data-bg="--c-gold" data-min="4.5" data-use="Textauswahl"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-haeuser,16,--c-surface-2)" data-min="4.5" data-use="Chip Häuser"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-wahrzeichen,16,--c-surface-2)" data-min="4.5" data-use="Chip Wahrzeichen"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-fantasy,16,--c-surface-2)" data-min="4.5" data-use="Chip Fantasy"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-mittelalter,16,--c-surface-2)" data-min="4.5" data-use="Chip Mittelalter"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-klein,16,--c-surface-2)" data-min="4.5" data-use="Chip Klein &amp; Deko"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-redstone,16,--c-surface-2)" data-min="4.5" data-use="Chip Redstone"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-farmen,16,--c-surface-2)" data-min="4.5" data-use="Chip Farmen"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--cat-infrastruktur,16,--c-surface-2)" data-min="4.5" data-use="Chip Infrastruktur"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--acc-original,16,--c-surface-2)" data-min="4.5" data-use="Chip Original"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--acc-massstab,16,--c-surface-2)" data-min="4.5" data-use="Chip Echte Maße"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--acc-vorlage,16,--c-surface-2)" data-min="4.5" data-use="Chip Vorlage"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--acc-nachempfunden,16,--c-surface-2)" data-min="4.5" data-use="Chip Nachempfunden"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--acc-eigenes,16,--c-surface-2)" data-min="4.5" data-use="Chip Eigenes Design"></tr>
+              <tr data-fg="--c-text" data-bg="mix(--c-redstone,16,--c-surface-2)" data-min="4.5" data-use="Chip Nicht getestet"></tr>
+              <tr data-fg="--c-focus" data-bg="--c-bg" data-min="3" data-use="Fokusring (Grafik)"></tr>
+              <tr data-fg="--c-field-edge" data-bg="--c-bg" data-min="3" data-use="Rand von Eingabefeldern (Grafik)"></tr>
+              <tr data-fg="--c-field-edge" data-bg="--c-surface" data-min="3" data-use="Rand von Feldern in Panels (Grafik)"></tr>
+              <tr data-fg="--c-grass" data-bg="--c-surface-2" data-min="3" data-use="Markierung aktiver Tab (Grafik)"></tr>
+              <tr data-fg="--c-redstone" data-bg="--c-surface" data-min="3" data-use="Fehler-Akzent (Grafik)"></tr>
+              <tr data-fg="--cat-haeuser" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Häuser (Grafik)"></tr>
+              <tr data-fg="--cat-wahrzeichen" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Wahrzeichen (Grafik)"></tr>
+              <tr data-fg="--cat-fantasy" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Fantasy (Grafik)"></tr>
+              <tr data-fg="--cat-mittelalter" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Mittelalter (Grafik)"></tr>
+              <tr data-fg="--cat-klein" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Klein (Grafik)"></tr>
+              <tr data-fg="--cat-redstone" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Redstone (Grafik)"></tr>
+              <tr data-fg="--cat-farmen" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Farmen (Grafik)"></tr>
+              <tr data-fg="--cat-infrastruktur" data-bg="--c-slot" data-min="3" data-use="Kategorie-Icon Infrastruktur (Grafik)"></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="sg-schrift" aria-labelledby="sg-schrift-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-schrift-title">Schrift</h2>
+          <p class="section__lead">Überschriften Pixelify Sans, Text Atkinson Hyperlegible Next, Zahlen und IDs Atkinson Hyperlegible Mono.</p>
+        </div>
+        <div class="stack prose">
+          <p class="eyebrow">Eyebrow · Mono</p>
+          <h1>Überschrift 1 – Burg am Fluss</h1>
+          <h2>Überschrift 2 – Material für Ebene 3</h2>
+          <h3>Überschrift 3 – Schritt 12 von 40</h3>
+          <h4>Überschrift 4 – Tipps</h4>
+          <p class="hero__lead">Einleitung: Setze zuerst das Fundament, dann die Wände Ebene für Ebene.</p>
+          <p>Fließtext: Setze die Treppen mit der hohen Seite nach außen. Die Laterne hängt an einer Kette unter dem Vordach. <strong>Wichtig:</strong> Redstone-Staub braucht einen festen Block darunter. <em>Kursiv für Hinweise.</em> <a href="#sg-schrift">Ein Link</a> und <code>minecraft:stone_bricks</code>.</p>
+          <p class="muted">Gedämpfter Text für Nebeninfos, z. B. „Stand des Katalogs“.</p>
+          <p class="mono">Koordinaten 12 / 64 / −8 · 1.234.567 Blöcke · 2 Shulkerkisten, 5 Stacks und 12</p>
+          <p>Glyphen: ÄÖÜ äöü ß „Anführung“ ‚einfach‘ – Gedankenstrich … × · › <kbd>W</kbd> <kbd>Shift</kbd> <kbd>Strg</kbd></p>
+          <p class="hero__title">Pixel 72</p>
+        </div>
+      </section>
+
+      <section class="section" id="sg-icons" aria-labelledby="sg-icons-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-icons-title">Icons</h2>
+          <p class="section__lead">Eigene Pixel-Icons (16er Raster, <code>assets/icons.svg</code>), scharf bei 16, 32, 48 und 64 px.</p>
+        </div>
+        <ul class="grid-auto" id="sg-icons-list" role="list"></ul>
+      </section>
+
+      <section class="section" id="sg-buttons" aria-labelledby="sg-buttons-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-buttons-title">Buttons</h2>
+          <p class="section__lead">Pixel-Kanten, Anheben mit Pixel-Schatten beim Darüberfahren, deutlicher Fokusring (Tab-Taste). Die letzte Reihe zeigt die Zustände; in den Test-Screenshots werden sie erzwungen, im Browser einfach darüberfahren oder mit Tab fokussieren.</p>
+        </div>
+        <div class="stack">
+          <div class="cluster">
+            <button class="btn btn--primary" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#play"></use></svg><span>Primär</span></button>
+            <button class="btn btn--secondary" type="button">Sekundär</button>
+            <button class="btn btn--ghost" type="button">Geist</button>
+            <a class="btn btn--secondary" href="#sg-buttons"><span>Als Link</span><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#arrow-right"></use></svg></a>
+          </div>
+          <div class="cluster">
+            <button class="btn btn--primary btn--lg" type="button">Groß</button>
+            <button class="btn btn--secondary btn--sm" type="button">Klein</button>
+            <button class="btn btn--ghost btn--sm" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#copy"></use></svg><span>Kopieren</span></button>
+          </div>
+          <div class="cluster">
+            <button class="btn btn--icon" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#prev"></use></svg><span class="visually-hidden">Zurück</span></button>
+            <button class="btn btn--icon btn--primary" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#play"></use></svg><span class="visually-hidden">Abspielen</span></button>
+            <button class="btn btn--icon" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#next"></use></svg><span class="visually-hidden">Weiter</span></button>
+            <button class="btn btn--secondary is-busy" type="button" aria-busy="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#retry"></use></svg><span>Lädt …</span></button>
+            <button class="btn btn--primary" type="button" disabled>Gesperrt</button>
+            <button class="btn btn--secondary" type="button" disabled>Gesperrt</button>
+          </div>
+          <div class="cluster" id="sg-button-states">
+            <button class="btn btn--primary" type="button" data-force="hover">Hover</button>
+            <button class="btn btn--secondary" type="button" data-force="hover">Hover</button>
+            <button class="btn btn--primary" type="button" data-force="focus-visible">Fokus</button>
+            <button class="btn btn--secondary" type="button" data-force="active">Gedrückt</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sg-chips" aria-labelledby="sg-chips-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-chips-title">Chips und Badges</h2>
+          <p class="section__lead">Kategorien, Herkunft, Hinweise und Schwierigkeit.</p>
+        </div>
+        <div class="stack">
+          <ul class="chip-list" id="sg-chips-categories" role="list"></ul>
+          <ul class="chip-list" id="sg-chips-accuracy" role="list"></ul>
+          <div class="cluster" id="sg-chips-misc"></div>
+        </div>
+      </section>
+
+      <section class="section" id="sg-kacheln" aria-labelledby="sg-kacheln-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-kacheln-title">Kategorie-Kacheln</h2>
+          <p class="section__lead">Mit Beispielzahlen, im Ladezustand und ohne Anzahl.</p>
+        </div>
+        <ul class="category-grid" id="sg-tiles" role="list"></ul>
+      </section>
+
+      <section class="section" id="sg-karten" aria-labelledby="sg-karten-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-karten-title">Bau-Karten</h2>
+          <p class="section__lead">Vorschaubild 16 : 10, Grasskante in Kategoriefarbe, Kennzahlen, Herkunft und Schwierigkeit. Beispieldaten.</p>
+        </div>
+        <ul class="card-grid" id="sg-cards" role="list"></ul>
+      </section>
+
+      <section class="section" id="sg-tabs" aria-labelledby="sg-tabs-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-tabs-title">Tabs</h2>
+          <p class="section__lead">Bedienbar mit Maus, Touch und Pfeiltasten.</p>
+        </div>
+        <div class="tabs" id="sg-tabs-demo">
+          <div class="tabs__list" role="tablist" aria-label="Beispiel-Tabs">
+            <button class="tab" type="button" role="tab" id="sg-tab-1" aria-controls="sg-panel-1" aria-selected="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#book"></use></svg><span>Anleitung</span></button>
+            <button class="tab" type="button" role="tab" id="sg-tab-2" aria-controls="sg-panel-2" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#chest"></use></svg><span>Material</span></button>
+            <button class="tab" type="button" role="tab" id="sg-tab-3" aria-controls="sg-panel-3" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#layers"></use></svg><span>Ebenen</span></button>
+            <button class="tab" type="button" role="tab" id="sg-tab-4" aria-controls="sg-panel-4" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#info"></use></svg><span>Infos</span></button>
+          </div>
+          <div class="tabs__panel" role="tabpanel" id="sg-panel-1" aria-labelledby="sg-tab-1" tabindex="0"><p>Panel 1: Kapitel und Schritte der Anleitung.</p></div>
+          <div class="tabs__panel" role="tabpanel" id="sg-panel-2" aria-labelledby="sg-tab-2" tabindex="0" hidden><p>Panel 2: Materialliste.</p></div>
+          <div class="tabs__panel" role="tabpanel" id="sg-panel-3" aria-labelledby="sg-tab-3" tabindex="0" hidden><p>Panel 3: Ebenen-Plan.</p></div>
+          <div class="tabs__panel" role="tabpanel" id="sg-panel-4" aria-labelledby="sg-tab-4" tabindex="0" hidden>
+            <dl class="facts">
+              <div><dt>Größe (B × H × L)</dt><dd class="mono">24 × 18 × 30 Blöcke</dd></div>
+              <div><dt>Blöcke</dt><dd class="mono">4.812</dd></div>
+              <div><dt>Schritte</dt><dd class="mono">36</dd></div>
+              <div><dt>Herkunft</dt><dd>Eigenes Design</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sg-player" aria-labelledby="sg-player-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-player-title">Schritt-Player, Schieberegler und XP-Leiste</h2>
+          <p class="section__lead">Zum Ausprobieren: Zurück, Abspielen, Weiter oder den Regler ziehen.</p>
+        </div>
+        <div class="stack">
+          <section class="player" id="sg-step-player" aria-label="Beispiel-Player">
+            <div class="xp" id="sg-xp" role="progressbar" aria-label="Baufortschritt">
+              <div class="xp__fill"></div>
+              <span class="xp__level" aria-hidden="true">0</span>
+            </div>
+            <div class="player__controls">
+              <button class="btn btn--icon" id="sg-prev" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#prev"></use></svg><span class="visually-hidden">Vorheriger Schritt</span></button>
+              <button class="btn btn--icon btn--primary" id="sg-play" type="button" aria-pressed="false"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#play"></use></svg><span class="visually-hidden">Abspielen</span></button>
+              <button class="btn btn--icon" id="sg-next" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#next"></use></svg><span class="visually-hidden">Nächster Schritt</span></button>
+              <p class="player__label" id="sg-step-label"><strong>Schritt 1</strong><span>von 24 · Ebene 1</span></p>
+            </div>
+            <label class="visually-hidden" for="sg-slider">Schritt wählen</label>
+            <input class="slider" id="sg-slider" type="range" min="1" max="24" step="1" value="1">
+          </section>
+          <div class="grid-auto">
+            <div class="xp" id="sg-xp-0" role="progressbar" aria-label="Beispiel leer"><div class="xp__fill"></div><span class="xp__level" aria-hidden="true">0</span></div>
+            <div class="xp" id="sg-xp-35" role="progressbar" aria-label="Beispiel 35 Prozent"><div class="xp__fill"></div><span class="xp__level" aria-hidden="true">7</span></div>
+            <div class="xp" id="sg-xp-100" role="progressbar" aria-label="Beispiel voll"><div class="xp__fill"></div><span class="xp__level" aria-hidden="true">20</span></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="sg-slider-2">Schieberegler (Ebene)</label>
+            <input class="slider" id="sg-slider-2" type="range" min="0" max="64" step="1" value="40">
+          </div>
+          <div class="field">
+            <label class="field__label" for="sg-slider-3">Gesperrt</label>
+            <input class="slider" id="sg-slider-3" type="range" min="0" max="10" value="3" disabled>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sg-inventar" aria-labelledby="sg-inventar-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-inventar-title">Inventar-Slots</h2>
+          <p class="section__lead">Material als Slots mit Icon und Menge; ausgewählt, abgehakt und leer. Icons hier nur Platzhalter-Würfel (Beispiel).</p>
+        </div>
+        <ul class="inventory" id="sg-inventory" role="list"></ul>
+      </section>
+
+      <section class="section" id="sg-tooltip" aria-labelledby="sg-tooltip-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-tooltip-title">Tooltip im Spiel-Stil</h2>
+          <p class="section__lead">Dunkel mit violettem Rand – für Blöcke in der 3D-Ansicht und Inventar-Slots.</p>
+        </div>
+        <div class="cluster">
+          <div class="tooltip">
+            <span class="tooltip__title">Steinziegel</span>
+            <span class="tooltip__meta">minecraft:stone_bricks</span>
+          </div>
+          <div class="tooltip">
+            <span class="tooltip__title">Eichenholztreppe</span>
+            <span class="tooltip__line--gold">hohe Seite nach Norden, unten</span>
+            <span class="tooltip__meta">minecraft:oak_stairs[facing=north,half=bottom]</span>
+          </div>
+          <div class="tooltip">
+            <span class="tooltip__title">Redstone-Verstärker</span>
+            <span class="tooltip__line--blue">Signal läuft nach Norden, 2 Ticks</span>
+            <span class="tooltip__line--green">Schritt 14 · Ebene 2</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sg-toast" aria-labelledby="sg-toast-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-toast-title">Toast</h2>
+          <p class="section__lead">Kurze Meldungen wie die Fortschritts-Anzeige im Spiel. Die Knöpfe zeigen echte Toasts unten rechts.</p>
+        </div>
+        <div class="stack">
+          <div class="toast-region toast-region--static" id="sg-toasts-static"></div>
+          <div class="cluster" id="sg-toast-buttons">
+            <button class="btn btn--secondary btn--sm" type="button" data-toast="success">Erfolg zeigen</button>
+            <button class="btn btn--secondary btn--sm" type="button" data-toast="info">Info zeigen</button>
+            <button class="btn btn--secondary btn--sm" type="button" data-toast="warning">Warnung zeigen</button>
+            <button class="btn btn--secondary btn--sm" type="button" data-toast="error">Fehler zeigen</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sg-zustaende" aria-labelledby="sg-zustaende-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-zustaende-title">Lade-, Leer- und Fehlerzustände</h2>
+          <p class="section__lead">Laden, leer, Info, Warnung und der echte Fehlerzustand für fehlende Spieldaten (aus <code>data.js</code>).</p>
+        </div>
+        <div class="stack" id="sg-states"></div>
+        <ul class="card-grid" id="sg-skeletons" role="list"></ul>
+      </section>
+
+      <section class="section" id="sg-formulare" aria-labelledby="sg-formulare-title">
+        <div class="section__head">
+          <h2 class="section__title" id="sg-formulare-title">Formularfelder</h2>
+          <p class="section__lead">Eingabefeld, Suche, Textfeld, Auswahl, Kästchen und Optionen, mit Hinweis- und Fehlerzustand.</p>
+        </div>
+        <form class="panel stack" id="sg-form" action="#sg-formulare" method="get">
+          <div class="grid-auto">
+            <div class="field">
+              <label class="field__label" for="sg-input">Name des Baus</label>
+              <input class="field__input" id="sg-input" type="text" placeholder="z. B. Turm am See" aria-describedby="sg-input-hint">
+              <p class="field__hint" id="sg-input-hint">Hinweistext unter dem Feld.</p>
+            </div>
+            <div class="field">
+              <label class="field__label" for="sg-search">Suche</label>
+              <input class="field__input" id="sg-search" type="search" placeholder="Bau suchen …">
+            </div>
+            <div class="field">
+              <label class="field__label" for="sg-select">Sortierung</label>
+              <span class="select">
+                <select class="field__input" id="sg-select">
+                  <option>Nach Name</option>
+                  <option>Nach Größe</option>
+                  <option>Nach Schwierigkeit</option>
+                </select>
+              </span>
+            </div>
+            <div class="field">
+              <label class="field__label" for="sg-invalid">Höhe in Blöcken</label>
+              <input class="field__input" id="sg-invalid" type="text" value="abc" aria-invalid="true" aria-describedby="sg-invalid-error">
+              <p class="field__error" id="sg-invalid-error"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#warning"></use></svg>Bitte eine Zahl von 1 bis 384 eingeben.</p>
+            </div>
+            <div class="field">
+              <label class="field__label" for="sg-disabled">Gesperrt</label>
+              <input class="field__input" id="sg-disabled" type="text" value="nicht änderbar" disabled>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="sg-textarea">Beschreibung</label>
+            <textarea class="field__input" id="sg-textarea" placeholder="Beschreibe deine Idee …"></textarea>
+          </div>
+          <fieldset class="cluster">
+            <legend class="field__label">Optionen</legend>
+            <label class="choice"><input type="checkbox" checked> Geist-Blöcke zeigen</label>
+            <label class="choice"><input type="checkbox"> Nur aktuelle Ebene</label>
+            <label class="choice"><input type="radio" name="sg-view" checked> Iso</label>
+            <label class="choice"><input type="radio" name="sg-view"> Von oben</label>
+            <label class="choice"><input type="checkbox" disabled> Gesperrt</label>
+          </fieldset>
+          <nav class="breadcrumb" aria-label="Beispiel-Brotkrümel">
+            <ol>
+              <li><a href="#sg-formulare">Start</a></li>
+              <li><a href="#sg-formulare">Mittelalter &amp; Burgen</a></li>
+              <li aria-current="page">Beispielbau</li>
+            </ol>
+          </nav>
+        </form>
+      </section>
+    </div>
+  </main>
+
+
+  <footer class="site-footer" id="site-footer">
+    <div class="container site-footer__inner">
+      <div class="site-footer__brand">
+        <img src="../../assets/logo.svg" alt="" width="32" height="32">
+        <p><strong>Block-Kompass</strong> ist deine private Sammlung von Bauprojekten für Minecraft Java Edition 26.2 – mit Schritt-für-Schritt-Anleitungen in 3D.</p>
+      </div>
+      <nav aria-label="Fußnavigation">
+        <p class="site-footer__title">Seiten</p>
+        <ul class="site-footer__links" role="list">
+          <li><a href="../../index.html">Start</a></li>
+          <li><a href="../../kategorie.html">Kategorien</a></li>
+          <li><a href="../../erstellen.html">Selber erstellen</a></li>
+        </ul>
+      </nav>
+      <div class="site-footer__notes">
+        <p class="site-footer__title">Gut zu wissen</p>
+        <p>Texturen, Modelle und Blocknamen liest der Block-Kompass nur lokal aus deiner Minecraft-Installation. Nichts davon wird hochgeladen oder weitergegeben.</p>
+        <p>Schriften: Pixelify Sans, Atkinson Hyperlegible Next und Mono (SIL Open Font License, <a href="../../assets/fonts/QUELLEN.md">Quellen</a>).</p>
+      </div>
+      <p class="site-footer__legal">Kein offizielles Minecraft-Produkt. Nicht von Mojang oder Microsoft genehmigt oder mit ihnen verbunden.</p>
+    </div>
+  </footer>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-relevant="additions"></div>
+</body>
+</html>

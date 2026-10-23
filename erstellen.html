@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#15171b">
+  <title>Selber erstellen – Block-Kompass</title>
+  <meta name="description" content="Beschreibe in eigenen Worten, was du in Minecraft bauen möchtest, oder suche nach einem Bau im Katalog.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/atkinson-hyperlegible-next-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/ui/create-page.js"></script>
+</head>
+<body data-page="create">
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <header class="site-header" id="site-header">
+    <div class="site-header__bar container">
+      <a class="brand" href="index.html">
+        <img class="brand__logo" src="assets/logo.svg" alt="" width="40" height="40">
+        <span class="brand__text">
+          <span class="brand__name">Block<span class="brand__dash">-</span>Kompass</span>
+          <span class="brand__tag">Java Edition 26.2</span>
+        </span>
+      </a>
+      <nav class="site-nav hotbar" aria-label="Hauptnavigation">
+        <ul class="hotbar__list" role="list">
+          <li><a class="hotbar__slot" href="index.html" data-nav="home"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#home"></use></svg><span>Start</span></a></li>
+          <li><a class="hotbar__slot" href="kategorie.html" data-nav="category"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#grid"></use></svg><span>Kategorien</span></a></li>
+          <li><a class="hotbar__slot" href="erstellen.html" data-nav="create"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#hammer"></use></svg><span class="label-long">Selber erstellen</span><span class="label-short">Erstellen</span></a></li>
+        </ul>
+        <button class="hotbar__slot site-search-toggle" id="site-search-toggle" type="button" aria-expanded="false" aria-controls="site-search-form"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Suche</span></button>
+      </nav>
+      <form class="site-search" id="site-search-form" action="erstellen.html" method="get" role="search" aria-label="Bauten suchen">
+        <div class="site-search__field">
+          <label class="visually-hidden" for="site-search-input">Bauten suchen</label>
+          <input class="field__input site-search__input" id="site-search-input" type="search" name="q" maxlength="120" placeholder="Bau suchen …" autocomplete="off" enterkeyhint="search" spellcheck="false">
+          <button class="site-search__submit" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span class="visually-hidden">Suchen</span></button>
+        </div>
+      </form>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript><p class="noscript">Der Block-Kompass braucht JavaScript für Katalog, 3D-Ansicht und Anleitungen. Bitte aktiviere JavaScript für diese Seite.</p></noscript>
+
+    <div class="page-head" id="create-head">
+      <div class="container page-head__inner">
+        <nav class="breadcrumb" aria-label="Brotkrümelpfad">
+          <ol>
+            <li><a href="index.html">Start</a></li>
+            <li aria-current="page">Selber erstellen</li>
+          </ol>
+        </nav>
+        <div class="page-head__title-row">
+          <span class="page-head__icon" aria-hidden="true"><svg class="icon icon--48" aria-hidden="true" focusable="false"><use href="assets/icons.svg#hammer"></use></svg></span>
+          <h1 class="page-head__title" id="create-title">Selber erstellen</h1>
+        </div>
+        <p class="page-head__lead">Beschreibe in eigenen Worten, was du bauen möchtest – ein Bauwerk, ein Thema oder eine Form mit Maßen.</p>
+      </div>
+    </div>
+
+    <div class="container section create-layout">
+      <form class="panel create-form" id="create-form" action="erstellen.html" method="get" role="search" aria-labelledby="create-form-title">
+        <h2 class="section__title" id="create-form-title">Deine Idee</h2>
+        <div class="create-form__row">
+          <div class="field">
+            <label class="field__label" for="create-query">Was möchtest du bauen?</label>
+            <input class="field__input field__input--lg" id="create-query" type="search" name="q" maxlength="120" autocomplete="off" enterkeyhint="search" spellcheck="true" aria-describedby="create-query-hint">
+          </div>
+          <button class="btn btn--primary btn--lg" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Suchen</span></button>
+        </div>
+        <p class="field__hint" id="create-query-hint">Höchstens 120 Zeichen.</p>
+      </form>
+
+      <div class="status-region" id="create-status" role="status" aria-live="polite"></div>
+
+      <section class="create-results" id="create-results" aria-labelledby="create-results-title" hidden>
+        <div class="section__head">
+          <h2 class="section__title" id="create-results-title">Ergebnisse</h2>
+        </div>
+        <div id="create-results-body"></div>
+      </section>
+
+      <section class="panel" id="shape-generator" aria-labelledby="shape-generator-title" hidden>
+        <h2 class="section__title" id="shape-generator-title">Formen-Generator</h2>
+        <div id="shape-generator-body"></div>
+      </section>
+    </div>
+  </main>
+
+
+  <footer class="site-footer" id="site-footer">
+    <div class="container site-footer__inner">
+      <div class="site-footer__brand">
+        <img src="assets/logo.svg" alt="" width="32" height="32">
+        <p><strong>Block-Kompass</strong> ist deine private Sammlung von Bauprojekten für Minecraft Java Edition 26.2 – mit Schritt-für-Schritt-Anleitungen in 3D.</p>
+      </div>
+      <nav aria-label="Fußnavigation">
+        <p class="site-footer__title">Seiten</p>
+        <ul class="site-footer__links" role="list">
+          <li><a href="index.html">Start</a></li>
+          <li><a href="kategorie.html">Kategorien</a></li>
+          <li><a href="erstellen.html">Selber erstellen</a></li>
+        </ul>
+      </nav>
+      <div class="site-footer__notes">
+        <p class="site-footer__title">Gut zu wissen</p>
+        <p>Texturen, Modelle und Blocknamen liest der Block-Kompass nur lokal aus deiner Minecraft-Installation. Nichts davon wird hochgeladen oder weitergegeben.</p>
+        <p>Schriften: Pixelify Sans, Atkinson Hyperlegible Next und Mono (SIL Open Font License, <a href="assets/fonts/QUELLEN.md">Quellen</a>).</p>
+      </div>
+      <p class="site-footer__legal">Kein offizielles Minecraft-Produkt. Nicht von Mojang oder Microsoft genehmigt oder mit ihnen verbunden.</p>
+    </div>
+  </footer>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-relevant="additions"></div>
+</body>
+</html>

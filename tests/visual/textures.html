@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="robots" content="noindex">
+  <title>Texturen-Test · Block-Kompass</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../css/style.css">
+  <script type="module" src="textures.js"></script>
+</head>
+<body>
+  <main class="container section stack" id="main">
+    <header class="section__head">
+      <h1 class="section__title">Texturen-Test</h1>
+      <p class="section__lead">Alle Texturen aus <code>game-data/</code>, gezeichnet aus dem WebGL2-Textur-Array (Ebenen 32×32, Mipmaps wie in Minecraft 26.2). Fahre mit der Maus über ein Feld, um den Namen zu sehen.</p>
+    </header>
+
+    <div class="panel stack" id="settings">
+      <div class="field">
+        <label class="field__label" for="mip-level">Mip-Stufe</label>
+        <select class="field__input" id="mip-level">
+          <option value="0" selected>0 · 32×32</option>
+          <option value="1">1 · 16×16</option>
+          <option value="2">2 · 8×8</option>
+          <option value="3">3 · 4×4</option>
+          <option value="4">4 · 2×2</option>
+          <option value="5">5 · 1×1</option>
+        </select>
+      </div>
+      <label class="field__label" for="animate"><input type="checkbox" id="animate"> Animationen abspielen</label>
+    </div>
+
+    <p id="status" role="status" aria-live="polite">Lade Texturen …</p>
+
+    <section class="panel stack" aria-labelledby="checks-title">
+      <h2 id="checks-title">Prüfungen</h2>
+      <ul id="checks"></ul>
+    </section>
+
+    <section class="panel stack" aria-labelledby="icons-title">
+      <h2 id="icons-title">Icons</h2>
+      <p class="muted">Item-Textur flach, sonst isometrischer Block (oben 1,0 · Nordseite rechts 0,8 · Ostseite links 0,6).</p>
+      <div id="icon-list"></div>
+    </section>
+
+    <div id="groups" class="stack"></div>
+  </main>
+</body>
+</html>

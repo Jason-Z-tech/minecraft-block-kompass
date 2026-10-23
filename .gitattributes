@@ -1,0 +1,9 @@
+# Einheitlich LF unter Windows und Linux (Cloud): gleiche Dateien, gleiche Hashes, gleiche Tests
+* text=auto eol=lf
+*.woff2 binary
+*.png binary
+*.webp binary
+*.avif binary
+*.nbt binary
+*.schem binary
+*.litematic binary

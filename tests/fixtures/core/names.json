@@ -1,0 +1,109 @@
+{
+ "block": {
+  "stone": {
+   "de": "Stein",
+   "en": "Stone"
+  },
+  "cobblestone": {
+   "de": "Bruchstein",
+   "en": "Cobblestone"
+  },
+  "oak_planks": {
+   "de": "Eichenholzbretter",
+   "en": "Oak Planks"
+  },
+  "oak_log": {
+   "de": "Eichenstamm",
+   "en": "Oak Log"
+  },
+  "stone_bricks": {
+   "de": "Steinziegel",
+   "en": "Stone Bricks"
+  },
+  "glass": {
+   "de": "Glas",
+   "en": "Glass"
+  },
+  "glass_pane": {
+   "de": "Glasscheibe",
+   "en": "Glass Pane"
+  },
+  "oak_stairs": {
+   "de": "Eichenholztreppe",
+   "en": "Oak Stairs"
+  },
+  "oak_slab": {
+   "de": "Eichenholzstufe",
+   "en": "Oak Slab"
+  },
+  "oak_fence": {
+   "de": "Eichenholzzaun",
+   "en": "Oak Fence"
+  },
+  "oak_door": {
+   "de": "Eichenholztür",
+   "en": "Oak Door"
+  },
+  "red_bed": {
+   "de": "Rotes Bett",
+   "en": "Red Bed"
+  },
+  "chest": {
+   "de": "Truhe",
+   "en": "Chest"
+  },
+  "torch": {
+   "de": "Fackel",
+   "en": "Torch"
+  },
+  "wall_torch": {
+   "de": "Wandfackel",
+   "en": "Wall Torch"
+  },
+  "redstone_wire": {
+   "de": "Redstone-Leitung",
+   "en": "Redstone Wire"
+  },
+  "repeater": {
+   "de": "Redstone-Verstärker",
+   "en": "Redstone Repeater"
+  },
+  "comparator": {
+   "de": "Redstone-Komparator",
+   "en": "Redstone Comparator"
+  },
+  "observer": {
+   "de": "Beobachter",
+   "en": "Observer"
+  },
+  "lantern": {
+   "de": "Laterne",
+   "en": "Lantern"
+  },
+  "cobblestone_wall": {
+   "de": "Bruchsteinmauer",
+   "en": "Cobblestone Wall"
+  },
+  "spruce_planks": {
+   "en": "Spruce Planks"
+  }
+ },
+ "item": {
+  "redstone": {
+   "de": "Redstone-Staub",
+   "en": "Redstone Dust"
+  },
+  "wheat_seeds": {
+   "de": "Weizenkörner",
+   "en": "Wheat Seeds"
+  },
+  "water_bucket": {
+   "de": "Wassereimer",
+   "en": "Water Bucket"
+  },
+  "torch": {
+   "de": "Fackel",
+   "en": "Torch"
+  }
+ }
+}
