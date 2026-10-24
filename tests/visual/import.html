@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Testseite für den Datei-Import: Schematics, Litematica- und Strukturdateien mit der echten 3D-Ansicht laden.">
+  <title>Import-Test · Block-Kompass</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../css/style.css">
+  <script type="module" src="import.js"></script>
+</head>
+<body data-page="import-test">
+  <main id="main" tabindex="-1">
+    <h1 class="visually-hidden">Datei-Import-Test</h1>
+    <div class="stage" id="stage">
+      <canvas class="stage__canvas" id="view"></canvas>
+      <div class="stage__status" id="status" role="status" aria-live="polite"></div>
+    </div>
+
+    <section class="container stack" id="controls" aria-label="Datei wählen">
+      <div class="field">
+        <label class="field__label" for="file">Datei (.schem, .litematic, .nbt, .vox, .stl, .obj, .glb, .gltf)</label>
+        <input type="file" id="file">
+      </div>
+      <div class="cluster" role="group" aria-label="Ansicht">
+        <button class="btn btn--sm" type="button" data-view="iso">Iso</button>
+        <button class="btn btn--sm" type="button" data-view="top">Oben</button>
+        <button class="btn btn--sm" type="button" data-view="front">Vorne</button>
+        <button class="btn btn--sm" type="button" data-view="side">Seite</button>
+      </div>
+      <p class="mono muted" id="info">Noch keine Datei geladen.</p>
+      <ul class="stack" id="warnings" aria-label="Hinweise zur Datei"></ul>
+    </section>
+  </main>
+</body>
+</html>

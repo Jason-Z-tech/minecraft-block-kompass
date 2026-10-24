@@ -5,17 +5,60 @@
 
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const CHROME_PATHS = [
-  process.env.CHROME_PATH,
+const WINDOWS_CHROME_PATHS = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
-].filter(Boolean);
+];
+const LINUX_CHROME_PATHS = [
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/opt/google/chrome/chrome',
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+  '/snap/bin/chromium',
+];
+
+// Playwright legt Browser unter <cache>/chromium-<rev>/chrome-linux*/chrome ab; neueste Revision zuerst.
+function playwrightChromes(cacheDir, list = readdirSync) {
+  let entries;
+  try {
+    entries = list(cacheDir);
+  } catch {
+    return [];
+  }
+  const revision = (name) => Number(/-(\d+)$/.exec(name)?.[1] ?? -1);
+  const browsers = entries.filter((name) => /^chromium(?:-tip-of-tree)?-\d+$/.test(name)).sort((a, b) => revision(b) - revision(a));
+  const found = [];
+  for (const browser of browsers) {
+    let inner;
+    try {
+      inner = list(path.join(cacheDir, browser));
+    } catch {
+      continue;
+    }
+    for (const dir of inner.filter((name) => name.startsWith('chrome-linux')).sort().reverse()) found.push(path.posix.join(cacheDir, browser, dir, 'chrome'));
+  }
+  return found;
+}
+
+// Kandidaten in fester Reihenfolge: CHROME_PATH, dann die üblichen Orte des Betriebssystems.
+export function chromeCandidates({ platform = process.platform, env = process.env, home = os.homedir(), list = readdirSync } = {}) {
+  if (platform !== 'linux') return [env.CHROME_PATH, ...WINDOWS_CHROME_PATHS].filter(Boolean);
+  const caches = [env.PLAYWRIGHT_BROWSERS_PATH, path.posix.join(home, '.cache', 'ms-playwright')].filter(Boolean);
+  return [env.CHROME_PATH, ...LINUX_CHROME_PATHS, ...caches.flatMap((dir) => playwrightChromes(dir, list))].filter(Boolean);
+}
+
+// Zusatz-Schalter unter Linux: als root startet Chrome nur ohne Sandbox; in Containern ist /dev/shm oft zu klein.
+export function platformChromeFlags({ platform = process.platform, uid = process.getuid?.() } = {}) {
+  if (platform !== 'linux') return [];
+  return [...(uid === 0 ? ['--no-sandbox'] : []), '--disable-dev-shm-usage'];
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -52,15 +95,20 @@ export async function launchBrowser({
   width = 1280, height = 900, mobile = false, timezone = null,
   reducedMotion = true, gpu = 'swiftshader', deviceScaleFactor = 1,
 } = {}) {
-  const chrome = CHROME_PATHS.find((p) => existsSync(p));
-  if (!chrome) throw new Error('Kein Chrome oder Edge gefunden. Pfad per CHROME_PATH angeben.');
+  const candidates = chromeCandidates();
+  const chrome = candidates.find((p) => existsSync(p));
+  if (!chrome) {
+    throw new Error(process.platform === 'linux'
+      ? `Kein Chrome oder Chromium gefunden (gesucht: ${candidates.join(', ') || 'nichts'}). Pfad per CHROME_PATH angeben.`
+      : 'Kein Chrome oder Edge gefunden. Pfad per CHROME_PATH angeben.');
+  }
   const profile = await mkdtemp(path.join(os.tmpdir(), 'block-kompass-test-'));
   const gpuFlags = gpu === 'hardware'
     ? ['--ignore-gpu-blocklist', '--enable-gpu-rasterization']
     : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
   const proc = spawn(chrome, [
     '--headless=new', '--no-first-run', '--no-default-browser-check', '--hide-scrollbars',
-    '--mute-audio', ...gpuFlags,
+    '--mute-audio', ...gpuFlags, ...platformChromeFlags(),
     '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank',
   ], { stdio: 'ignore' });
 

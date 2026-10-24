@@ -143,6 +143,40 @@ function scanSource(source) {
   return errors;
 }
 
+const RELATIVE_IMPORT = /\b(?:import|export)\s+(?:[^'";]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/g;
+
+// Modul plus alle Dateien unter js/builds/, die es (auch über Umwege) relativ importiert – z. B. die Hilfsbibliothek
+// js/builds/lib/. Kern und 3D-Ansicht außerhalb von js/builds/ werden nicht durchsucht.
+// within: Ordner, dessen Dateien mitgeprüft werden (Standard js/builds/, für Tests änderbar).
+export async function collectBuildSources(entry, { within = path.join(ROOT, 'js', 'builds') } = {}) {
+  const buildsDir = path.resolve(within) + path.sep;
+  const seen = new Set();
+  const queue = [path.resolve(entry)];
+  const files = [];
+  while (queue.length > 0) {
+    const file = queue.shift();
+    if (seen.has(file)) continue;
+    seen.add(file);
+    const source = await readFile(file, 'utf8');
+    files.push({ file, source });
+    for (const match of source.matchAll(RELATIVE_IMPORT)) {
+      const target = path.resolve(path.dirname(file), match[1]);
+      if (target.startsWith(buildsDir) && !seen.has(target)) queue.push(target);
+    }
+  }
+  return files;
+}
+
+export async function scanBuildSources(absolute, options) {
+  const errors = [];
+  for (const [i, { file, source }] of (await collectBuildSources(absolute, options)).entries()) {
+    const found = scanSource(source);
+    if (i === 0) errors.push(...found);
+    else errors.push(...found.map((e) => `${path.relative(ROOT, file).split(path.sep).join('/')} (importiert): ${e.replace(/^Das Modul/, 'Die Datei')}`));
+  }
+  return errors;
+}
+
 function fingerprint(result) {
   let h = 2166136261;
   const mix = (n) => {
@@ -209,7 +243,7 @@ export async function checkBuild(modulePath, { scale = null, dataDir = path.join
   report.errors.push(...meta.errors);
   report.warnings.push(...meta.warnings);
   Object.assign(report, { id: mod.meta?.id ?? null, title: mod.meta?.title ?? null, category: mod.meta?.category ?? null });
-  report.errors.push(...scanSource(await readFile(absolute, 'utf8')));
+  report.errors.push(...await scanBuildSources(absolute));
   if (typeof mod.default !== 'function') {
     report.errors.push('Das Modul exportiert keine build-Funktion (export default function build(b, { scale })).');
     return finish(report, started);

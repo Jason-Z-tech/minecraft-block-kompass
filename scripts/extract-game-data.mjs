@@ -1,7 +1,9 @@
 // Spieldaten aus der installierten Minecraft Java 26.2 nach game-data/ (gitignored) extrahieren.
 // Liest nur: die Client-Jar, den Asset-Index mit de_de.json und einmalig den Blockbericht von
 // misode/mcmeta (Cache in game-data/.cache/). Schreibt nie in .minecraft/curseforge, startet nichts.
-// Aufruf: node scripts/extract-game-data.mjs [--jar <pfad>] [--assets <ordner>] [--offline]
+// Aufruf: node scripts/extract-game-data.mjs [--jar <pfad>] [--assets <ordner>] [--offline] [--out <ordner>]
+// Ohne Installation (Cloud): node scripts/extract-game-data.mjs --remote – gleiche Daten aus öffentlichen Quellen
+// (scripts/lib/remote-source.mjs).
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -11,6 +13,9 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { openZip } from './lib/zip.mjs';
 import { readNbt } from './lib/nbt.mjs';
+import { buildBlockColors, OUTPUT_FILE as BLOCK_COLORS_FILE } from './build-block-colors.mjs';
+import { spawnSync } from 'node:child_process';
+import { RemoteSourceError, blockedDomainMessage, createDownloader, loadRemoteSources, proxyRelaunchPlan, REMOTE_DOMAINS } from './lib/remote-source.mjs';
 
 export const MC_VERSION = '26.2';
 const DEFAULT_ASSET_INDEX = '32';
@@ -85,10 +90,15 @@ const DERIVED_DEFAULT_PREFERENCES = new Map([
 ]);
 
 const USAGE = [
-  'Aufruf: node scripts/extract-game-data.mjs [--jar <pfad>] [--assets <ordner>] [--offline]',
+  'Aufruf: node scripts/extract-game-data.mjs [--jar <pfad>] [--assets <ordner>] [--offline] [--out <ordner>]',
+  '        node scripts/extract-game-data.mjs --remote [--offline] [--out <ordner>]',
   `  --jar <pfad>       Minecraft-Jar (Standard: %APPDATA%\\.minecraft\\versions\\${MC_VERSION}\\${MC_VERSION}.jar)`,
   '  --assets <ordner>  Assets-Ordner mit indexes\\ und objects\\ (Standard: CurseForge, sonst .minecraft)',
-  '  --offline          nichts herunterladen (Blockbericht nur aus game-data\\.cache, sonst abgeleitet)',
+  '  --offline          nichts herunterladen (Blockbericht nur aus game-data\\.cache, sonst abgeleitet;',
+  '                     mit --remote alles nur aus dem Cache)',
+  '  --remote           ohne Minecraft-Installation: Dateien von misode/mcmeta (GitHub) und Mojang laden',
+  `                     (Domains: ${REMOTE_DOMAINS.map((domain) => domain.host).join(', ')})`,
+  '  --out <ordner>     Zielordner statt game-data (Cache dann in <ordner>/.cache)',
 ].join('\n');
 
 // Erwartete Probleme (fehlende Dateien, falsche Version …): Meldung ohne Stacktrace.
@@ -187,6 +197,8 @@ export function parseCliArgs(argv) {
         jar: { type: 'string' },
         assets: { type: 'string' },
         offline: { type: 'boolean', default: false },
+        remote: { type: 'boolean', default: false },
+        out: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
       },
       strict: true,
@@ -197,10 +209,17 @@ export function parseCliArgs(argv) {
     const token = /'([^']+)'/.exec(error.message)?.[1];
     throw new UserError(`${reason}${token ? ` „${token}“` : ''}.\n${USAGE}`);
   }
-  for (const key of ['jar', 'assets']) {
+  for (const key of ['jar', 'assets', 'out']) {
     if (values[key] !== undefined && values[key].trim() === '') throw new UserError(`--${key} braucht einen Pfad.\n${USAGE}`);
   }
-  return { jar: values.jar, assets: values.assets, offline: values.offline, help: values.help };
+  if (values.remote && (values.jar !== undefined || values.assets !== undefined)) {
+    throw new UserError(`--remote lädt alles aus dem Netz und verträgt sich nicht mit --jar oder --assets.\n${USAGE}`);
+  }
+  const options = { jar: values.jar, assets: values.assets, offline: values.offline, help: values.help };
+  // remote/out nur, wenn gesetzt: so bleibt das Ergebnis ohne diese Optionen genau wie bisher.
+  if (values.remote) options.remote = true;
+  if (values.out !== undefined) options.out = values.out;
+  return options;
 }
 
 export function defaultSourcePaths(env = process.env, home = os.homedir()) {
@@ -230,7 +249,7 @@ function resolveSources(options, warnings) {
   const defaults = defaultSourcePaths();
   const jarPath = path.resolve(options.jar ?? defaults.jar);
   if (!isFile(jarPath)) {
-    throw new UserError(`Minecraft-Jar nicht gefunden: ${jarPath}\n→ Installiere Minecraft Java ${MC_VERSION} im Launcher oder gib den Pfad an: --jar <pfad>`);
+    throw new UserError(`Minecraft-Jar nicht gefunden: ${jarPath}\n→ Installiere Minecraft Java ${MC_VERSION} im Launcher oder gib den Pfad an: --jar <pfad>\n→ Ohne Minecraft-Installation (z. B. in der Cloud): node scripts/extract-game-data.mjs --remote`);
   }
   const assetIndex = readAssetIndexId(jarPath, warnings);
   const assetDirs = options.assets ? [path.resolve(options.assets)] : defaults.assetDirs;
@@ -297,9 +316,10 @@ export function buildNames(en, de) {
   return names;
 }
 
-function extractNames(assets, sources, warnings) {
+// readGerman: liefert de_de.json (aus dem Asset-Ordner oder, mit --remote, aus dem Download).
+function extractNames(assets, readGerman, warnings) {
   const en = assets.readJson(LANG_EN_ENTRY);
-  const de = readGermanLang(sources.assetsDir, sources.assetIndex);
+  const de = readGerman();
   const names = buildNames(en, de);
   const missingGerman = [...Object.values(names.block), ...Object.values(names.item)].filter((entry) => entry.de === null).length;
   if (missingGerman > 0) warnings.add(`${missingGerman} Namen ohne deutsche Übersetzung (dort steht nur „en“).`);
@@ -1342,28 +1362,28 @@ function isProcessRunning(pid) {
 }
 
 // Reste abgebrochener Läufe entfernen (nur, wenn der Prozess dazu nicht mehr läuft).
-function removeStaleStaging() {
-  if (!fs.existsSync(OUTPUT_DIR)) return;
-  for (const name of fs.readdirSync(OUTPUT_DIR)) {
+function removeStaleStaging(outputDir) {
+  if (!fs.existsSync(outputDir)) return;
+  for (const name of fs.readdirSync(outputDir)) {
     const pid = Number(/^\.staging-(\d+)$/.exec(name)?.[1]);
-    if (pid && pid !== process.pid && !isProcessRunning(pid)) fs.rmSync(path.join(OUTPUT_DIR, name), { recursive: true, force: true });
+    if (pid && pid !== process.pid && !isProcessRunning(pid)) fs.rmSync(path.join(outputDir, name), { recursive: true, force: true });
   }
 }
 
 // Schreibt erst in einen versteckten Zwischenordner und tauscht dann aus. Andere Dateien in game-data/
 // (z. B. catalog.json, .cache/) bleiben unberührt; structures/ gehört ganz diesem Skript.
-function writeOutputs(files, structureFiles) {
-  removeStaleStaging();
-  const staging = path.join(OUTPUT_DIR, `.staging-${process.pid}`);
+function writeOutputs(files, structureFiles, outputDir = OUTPUT_DIR) {
+  removeStaleStaging(outputDir);
+  const staging = path.join(outputDir, `.staging-${process.pid}`);
   fs.rmSync(staging, { recursive: true, force: true });
   fs.mkdirSync(path.join(staging, 'structures'), { recursive: true });
   for (const { name, data } of files) fs.writeFileSync(path.join(staging, name), data);
   for (const { file, text } of structureFiles) fs.writeFileSync(path.join(staging, 'structures', file), text);
 
-  const targetStructures = path.join(OUTPUT_DIR, 'structures');
+  const targetStructures = path.join(outputDir, 'structures');
   fs.rmSync(targetStructures, { recursive: true, force: true, maxRetries: 3 });
   fs.renameSync(path.join(staging, 'structures'), targetStructures);
-  for (const { name } of files) fs.renameSync(path.join(staging, name), path.join(OUTPUT_DIR, name));
+  for (const { name } of files) fs.renameSync(path.join(staging, name), path.join(outputDir, name));
   fs.rmSync(staging, { recursive: true, force: true });
 }
 
@@ -1394,24 +1414,78 @@ function summarizeFeatures(stats, blocksWithoutGeometry) {
   };
 }
 
+// --remote: Archive von misode/mcmeta und de_de.json statt Jar und Asset-Ordner (scripts/lib/remote-source.mjs).
+async function openRemoteSources({ offline, cacheDir }, warnings, log) {
+  log(`Block-Kompass · Spieldaten für Minecraft Java ${MC_VERSION} aus öffentlichen Quellen (--remote${offline ? ', nur Cache' : ''})`);
+  log(`  Cache:  ${cacheDir}`);
+  try {
+    return await timed((r) => `Quellen bereit: ${r.refs.assets} + ${r.refs.data}, de_de.json von ${r.refs.lang}`,
+      () => loadRemoteSources({ version: MC_VERSION, cacheDir, offline, download: createDownloader({ log }), warnings, log }), log);
+  } catch (error) {
+    if (error instanceof RemoteSourceError) throw new UserError(error.message);
+    throw error;
+  }
+}
+
+// Ohne Blockbericht wären die Daten deutlich schlechter als mit der Jar – im Remote-Modus darum ein Fehler.
+function requireMcmetaReport(blocks, warnings, offline) {
+  if (blocks.data.source === 'mcmeta') return;
+  const problem = warnings.list.find((message) => message.startsWith('Blockbericht von misode/mcmeta nicht verfügbar')) ?? 'unbekannter Grund';
+  if (offline) throw new UserError(`Der Blockbericht fehlt im Cache und --offline ist gesetzt.\n→ Einmal ohne --offline laufen lassen.\n(${problem})`);
+  const reason = /nicht verfügbar \((.*)\) – Eigenschaften/.exec(problem)?.[1] ?? problem;
+  throw new UserError(`Der Blockbericht (Eigenschaften und Standardwerte) ließ sich nicht laden.\n${blockedDomainMessage('raw.githubusercontent.com', reason)}`);
+}
+
+// Blockfarben für den Voxel-Import (scripts/build-block-colors.mjs, ARCHITEKTUR §5 block-colors.json). Scheitern sie
+// (z. B. unlesbare Texturen), bleiben die übrigen Spieldaten gültig: Warnung in meta.json, nur der Modell-Import fehlt.
+function extractBlockColors({ models, blocks, textures, warnings, log }) {
+  try {
+    return timed((c) => `Blockfarben: ${formatNumber(c.count)} volle Blöcke für den Modell-Import`,
+      () => buildBlockColors({ modelsJson: models.data, blocksJson: blocks.data, texturesJson: textures.data, texturesBin: textures.bin }), log);
+  } catch (error) {
+    const message = `Blockfarben für den Modell-Import (.stl, .obj, .glb, .vox) nicht erzeugt: ${error.message} – später: node scripts/build-block-colors.mjs`;
+    warnings.add(message);
+    log(`⚠ ${message}`);
+    return null;
+  }
+}
+
 export async function extractGameData(options, log = console.log) {
   const started = performance.now();
   const warnings = createWarnings();
-  const sources = resolveSources(options, warnings);
-  log(`Block-Kompass · Spieldaten aus Minecraft Java ${MC_VERSION}`);
-  log(`  Jar:    ${sources.jarPath}`);
-  log(`  Assets: ${sources.assetsDir} (Index ${sources.assetIndex})`);
+  const outputDir = path.resolve(options.out ?? OUTPUT_DIR);
+  const cacheDir = path.join(outputDir, '.cache');
+  const outputLabel = path.relative(ROOT, outputDir).split(path.sep).join('/') || '.';
+  let assets;
+  let version;
+  let readGerman;
+  let assetIndex;
+  let remoteRefs = null;
+  if (options.remote) {
+    const remote = await openRemoteSources({ offline: options.offline, cacheDir }, warnings, log);
+    ({ assets, version, assetIndex } = remote);
+    readGerman = () => remote.germanLang;
+    remoteRefs = remote.refs;
+  } else {
+    const sources = resolveSources(options, warnings);
+    log(`Block-Kompass · Spieldaten aus Minecraft Java ${MC_VERSION}`);
+    log(`  Jar:    ${sources.jarPath}`);
+    log(`  Assets: ${sources.assetsDir} (Index ${sources.assetIndex})`);
 
-  const zip = timed((z) => `Jar gelesen: ${formatNumber(z.entries.size)} Einträge`, () => openJar(sources.jarPath), log);
-  const assets = createJarAssets(zip);
-  const version = readJarVersion(assets);
+    const zip = timed((z) => `Jar gelesen: ${formatNumber(z.entries.size)} Einträge`, () => openJar(sources.jarPath), log);
+    assets = createJarAssets(zip);
+    version = readJarVersion(assets);
+    readGerman = () => readGermanLang(sources.assetsDir, sources.assetIndex);
+    assetIndex = sources.assetIndex;
+  }
 
   const names = timed((n) => `Namen: ${formatNumber(Object.keys(n.block).length)} Blöcke, ${formatNumber(Object.keys(n.item).length)} Items (de + en)`,
-    () => extractNames(assets, sources, warnings), log);
+    () => extractNames(assets, readGerman, warnings), log);
   const blockstates = loadBlockstates(assets, warnings);
   const blocks = await timed(
     (b) => `Blockeigenschaften: ${formatNumber(Object.keys(b.data.blocks).length)} Blöcke, Quelle ${b.data.source}${b.data.ref ? ` (${b.data.ref}${b.cached ? ', Cache' : ', heruntergeladen'})` : ''}`,
-    () => extractBlocks({ blockstates, worldVersion: version.worldVersion, offline: options.offline, warnings, log }), log);
+    () => extractBlocks({ blockstates, worldVersion: version.worldVersion, offline: options.offline, warnings, log, cacheDir }), log);
+  if (options.remote) requireMcmetaReport(blocks, warnings, options.offline);
   const models = timed((m) => `Modelle: ${formatNumber(m.data.models.length)} Modelle für ${formatNumber(Object.keys(m.data.blocks).length)} Blockstates, ${formatNumber(m.data.textures.length)} Texturen genutzt`,
     () => buildModels({ assets, blockstates, blocks: blocks.data.blocks, warnings }), log);
   const textures = timed((t) => `Texturen: ${formatNumber(Object.keys(t.data.entries).length)} Bilder (${t.animated} animiert), ${formatBytes(t.bin.length)}`,
@@ -1420,13 +1494,14 @@ export async function extractGameData(options, log = console.log) {
     () => buildStructures({ assets, normalizeState: createStateNormalizer(blocks.data, warnings), warnings }), log);
 
   const blocksWithoutGeometry = findBlocksWithoutGeometry(models.data);
+  const blockColors = extractBlockColors({ models, blocks, textures, warnings, log });
   const meta = {
     version: MC_VERSION,
     worldVersion: version.worldVersion,
     resourcePack: version.resourcePack,
     dataPack: version.dataPack,
     extractedAt: new Date().toISOString(),
-    sources: { blocks: blocks.data.source, blocksRef: blocks.data.ref ?? null, assetIndex: sources.assetIndex },
+    sources: { blocks: blocks.data.source, blocksRef: blocks.data.ref ?? null, assetIndex, ...(remoteRefs ? { remote: remoteRefs } : {}) },
     counts: {
       blocks: Object.keys(blocks.data.blocks).length,
       blockstates: blockstates.size,
@@ -1447,16 +1522,17 @@ export async function extractGameData(options, log = console.log) {
     { name: 'textures.json', data: JSON.stringify(textures.data) },
     { name: 'textures.bin', data: textures.bin },
     { name: 'meta.json', data: JSON.stringify(meta, null, 2) },
+    ...(blockColors ? [{ name: BLOCK_COLORS_FILE, data: JSON.stringify(blockColors) }] : []),
   ];
   const structureFiles = [{ file: 'index.json', text: JSON.stringify(structures.index) }, ...structures.files];
-  writeOutputs(files, structureFiles);
+  writeOutputs(files, structureFiles, outputDir);
 
-  log('Ausgabe in game-data/:');
+  log(`Ausgabe in ${outputLabel}/:`);
   for (const { name, data } of files) log(`  ${name.padEnd(16)} ${formatBytes(Buffer.byteLength(data)).padStart(9)}`);
   const structureBytes = structureFiles.reduce((sum, { text }) => sum + Buffer.byteLength(text), 0);
   log(`  ${'structures/'.padEnd(16)} ${formatBytes(structureBytes).padStart(9)}  (${formatNumber(structureFiles.length)} Dateien inkl. index.json)`);
   if (warnings.list.length > 0) {
-    log(`Warnungen: ${warnings.list.length} (vollständig in game-data/meta.json)`);
+    log(`Warnungen: ${warnings.list.length} (vollständig in ${outputLabel}/meta.json)`);
     for (const message of warnings.list.slice(0, 15)) log(`  - ${message}`);
     if (warnings.list.length > 15) log(`  … und ${warnings.list.length - 15} weitere`);
   } else {
@@ -1466,12 +1542,25 @@ export async function extractGameData(options, log = console.log) {
   return meta;
 }
 
+// Node-fetch ignoriert HTTPS_PROXY ohne --use-env-proxy (z. B. in Cloud-Containern): dann einmal damit neu starten.
+// → true, wenn der Kindprozess die Arbeit gemacht hat (Exit-Code übernommen).
+function relaunchWithEnvProxy() {
+  const plan = proxyRelaunchPlan();
+  if (plan.warn) console.warn(`Hinweis: ${plan.reason}. Downloads können am Proxy scheitern.`);
+  if (!plan.relaunch) return false;
+  console.log(`${plan.reason} – starte mit --use-env-proxy neu, damit die Downloads über den Proxy laufen.`);
+  const result = spawnSync(process.execPath, ['--use-env-proxy', ...process.execArgv, ...process.argv.slice(1)], { stdio: 'inherit' });
+  if (result.error) throw result.error;
+  process.exitCode = result.status ?? 1;
+  return true;
+}
+
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (isMainModule) {
   try {
     const options = parseCliArgs(process.argv.slice(2));
     if (options.help) console.log(USAGE);
-    else await extractGameData(options);
+    else if (!(options.remote && relaunchWithEnvProxy())) await extractGameData(options);
   } catch (error) {
     if (error instanceof UserError) console.error(`Fehler: ${error.message}`);
     else console.error('Unerwarteter Fehler bei der Extraktion:', error);

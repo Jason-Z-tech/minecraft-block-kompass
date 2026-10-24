@@ -1,0 +1,689 @@
+/* Block-Kompass – Startseite und Kategorie-Seite (Abschnitte, Filter, Sortierung, Nachladen).
+   Baut auf den Tokens und Komponenten aus style.css auf; wird nach style.css geladen. */
+
+/* ---------------------------------------------------------------- Vorschau ohne Bild */
+/* Fehlt das Vorschaubild, zeigt die Karte das Kategorie-Icon auf einem Feld in Kategoriefarbe */
+.build-card__media:has(> .build-card__fallback) {
+  background:
+    linear-gradient(rgb(255 255 255 / 0.035) 2px, transparent 2px) 0 0 / 16px 16px,
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 2px, transparent 2px) 0 0 / 16px 16px,
+    radial-gradient(90% 85% at 50% 42%, color-mix(in srgb, var(--cat) 30%, #191c22), #0f1114 78%);
+}
+
+.build-card__fallback {
+  position: relative;
+  grid-template-rows: 1fr auto;
+  gap: 10px;
+  padding-block: 30px 22px;
+}
+
+.build-card__fallback .icon {
+  align-self: end;
+  transition: transform var(--dur) var(--ease-spring);
+}
+
+/* Pixel-Schatten unter dem Icon */
+.build-card__fallback::after {
+  content: '';
+  width: 56px;
+  height: 8px;
+  background: rgb(0 0 0 / 0.42);
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 2px, 100% 2px, 100% 6px, calc(100% - 6px) 6px, calc(100% - 6px) 100%, 6px 100%, 6px 6px, 0 6px, 0 2px, 6px 2px);
+  transition: transform var(--dur) var(--ease-spring);
+}
+
+.build-card:hover .build-card__fallback .icon,
+.build-card:focus-within .build-card__fallback .icon {
+  transform: translateY(-6px);
+}
+
+.build-card:hover .build-card__fallback::after,
+.build-card:focus-within .build-card__fallback::after {
+  transform: scaleX(0.8);
+}
+
+/* ---------------------------------------------------------------- Startseite: Zahlen unter der Suche */
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.hero-stats__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.hero-stats__value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+/* ---------------------------------------------------------------- Startseite: Abschnitte */
+.shelves:empty {
+  display: none;
+}
+
+.shelf {
+  padding-block: var(--space-6);
+}
+
+.shelf:nth-child(even) {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.018), rgb(255 255 255 / 0.018));
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.03), inset 0 -2px 0 rgb(0 0 0 / 0.25);
+}
+
+.shelf__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.shelf__heading {
+  display: grid;
+  flex: 1 1 320px;
+  gap: var(--space-2);
+}
+
+.shelf__heading .skeleton--title {
+  --w: 14rem;
+  max-width: 70%;
+}
+
+.shelf__heading .skeleton--text {
+  --w: 26rem;
+  max-width: 90%;
+}
+
+.shelf__count {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.shelf__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-5);
+  font-size: var(--fs-sm);
+}
+
+.shelf__more-label {
+  color: var(--c-text-muted);
+}
+
+/* Link „N Bauten in …“ mit Pixel-Markierung in Kategoriefarbe */
+.shelf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 44px;
+  padding: 0.35rem 0.75rem;
+  font-weight: 700;
+  color: var(--c-text);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--cat) 12%, var(--c-surface));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cat) 75%, var(--c-line));
+  transition: background-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+}
+
+.shelf-link::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--cat);
+  box-shadow: inset -2px -2px 0 rgb(0 0 0 / 0.35);
+}
+
+.shelf-link .icon {
+  color: var(--cat);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.shelf-link:hover {
+  color: var(--c-text);
+  background: color-mix(in srgb, var(--cat) 20%, var(--c-surface));
+  box-shadow: inset 0 0 0 2px var(--cat);
+}
+
+.shelf-link:hover .icon {
+  transform: translateX(3px);
+}
+
+/* Handy: Karten eines Abschnitts als waagrechtes Regal zum Wischen */
+@media (max-width: 719px) {
+  .shelf__list {
+    grid-auto-columns: min(82%, 300px);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    gap: var(--space-4);
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 6px var(--gutter) 14px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: var(--gutter);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .shelf__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shelf__list > li {
+    scroll-snap-align: start;
+  }
+}
+
+/* ---------------------------------------------------------------- Startseite: So funktioniert’s */
+.how {
+  padding-top: var(--space-6);
+}
+
+.how__steps {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.how__step {
+  display: flex;
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-4);
+  background: var(--c-surface);
+  box-shadow: inset 0 0 0 2px var(--c-line), inset 0 -4px 0 rgb(0 0 0 / 0.3);
+}
+
+/* Schrittnummer als Inventar-Feld */
+.how__number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-gold);
+  background: var(--c-slot);
+  box-shadow: inset 3px 3px 0 #0b0c0e, inset -3px -3px 0 #383d46;
+}
+
+.how__text {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.how__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-md);
+}
+
+.how__title .icon {
+  color: var(--c-grass-text);
+}
+
+.how__text p {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+@media (min-width: 800px) {
+  .how__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------------------------------------------------------------- Kategorie: Suche, Sortierung, Filter */
+.browse__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+  margin-bottom: var(--space-5);
+}
+
+.browse__search {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 6px;
+}
+
+.browse__search-field {
+  position: relative;
+}
+
+.browse__search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  color: var(--c-text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.browse__search-input {
+  padding-left: 2.6rem;
+}
+
+.browse__sort {
+  min-width: 0;
+}
+
+.browse__toggle {
+  align-self: end;
+}
+
+/* Anzahl aktiver Filter als kleines Pixel-Feld im Knopf */
+.browse__toggle-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding-inline: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--c-on-accent);
+  background: var(--c-gold);
+  box-shadow: inset -2px -2px 0 #a7802a;
+}
+
+.browse__toggle-count[hidden] {
+  display: none;
+}
+
+.browse__toggle-icon {
+  transition: transform var(--dur) var(--ease-out);
+}
+
+/* Aufgeklappt: Knopf bleibt „gedrückt“ */
+.browse__toggle[aria-expanded='true'] {
+  --btn-bg: var(--c-surface-hover);
+  transform: translateY(1px);
+}
+
+.browse__toggle[aria-expanded='true']::after {
+  transform: none;
+}
+
+.browse__toggle[aria-expanded='true'] .browse__toggle-icon {
+  transform: rotate(180deg);
+}
+
+.browse__layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.browse__filters {
+  display: none;
+  padding: var(--space-4);
+  background: var(--c-surface);
+  box-shadow: inset 0 0 0 2px var(--c-line), inset 0 -4px 0 rgb(0 0 0 / 0.3);
+}
+
+.browse.is-filters-open .browse__filters {
+  display: grid;
+  gap: var(--space-4);
+  animation: drop-in var(--dur) var(--ease-out);
+}
+
+.browse__filters-title {
+  font-size: var(--fs-md);
+}
+
+.browse__groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.browse__groups:empty::after {
+  content: 'In dieser Kategorie gibt es nichts zu filtern.';
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.browse__done {
+  width: 100%;
+}
+
+.filter-group {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.filter-group + .filter-group {
+  padding-top: var(--space-4);
+  border-top: 2px solid #2a2e35;
+}
+
+.filter-group__title {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-base);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.filter-group__list {
+  display: grid;
+  gap: 2px;
+  padding: 0;
+  list-style: none;
+}
+
+/* Eine Option: Kästchen, Name (mit Bereich) und Anzahl rechtsbündig */
+.filter-option {
+  display: flex;
+  min-height: 44px;
+  padding: 4px var(--space-2);
+  margin-inline: calc(-1 * var(--space-2));
+  width: calc(100% + 2 * var(--space-2));
+  transition: background-color var(--dur-fast) var(--ease-out), opacity var(--dur) var(--ease-out);
+}
+
+.filter-option:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+
+.filter-option__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.filter-option__label {
+  font-size: var(--fs-sm);
+  font-weight: 650;
+}
+
+.filter-option__hint {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+.filter-option__count {
+  flex: none;
+  min-width: 3ch;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  text-align: right;
+}
+
+/* Option ohne Treffer bei der übrigen Auswahl: bleibt wählbar, tritt aber zurück (Farben bleiben AA-lesbar) */
+.filter-option.is-empty .filter-option__label {
+  font-weight: 400;
+  color: var(--c-text-muted);
+}
+
+.filter-option input:checked ~ .filter-option__text .filter-option__label {
+  color: var(--c-grass-text);
+}
+
+/* Breite Bildschirme: Filter als Seitenleiste, immer sichtbar */
+@media (min-width: 640px) {
+  .browse__bar {
+    grid-template-columns: minmax(0, 1fr) minmax(13rem, auto) auto;
+  }
+
+  .browse__search {
+    grid-column: auto;
+  }
+}
+
+@media (min-width: 960px) {
+  .browse__bar {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, auto);
+  }
+
+  .browse__toggle,
+  .browse__done {
+    display: none;
+  }
+
+  .browse__layout {
+    grid-template-columns: 248px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-6);
+  }
+
+  .browse__filters,
+  .browse.is-filters-open .browse__filters {
+    position: sticky;
+    top: var(--space-4);
+    display: grid;
+    gap: var(--space-4);
+    max-height: calc(100vh - 2 * var(--space-4));
+    overflow-y: auto;
+    animation: none;
+  }
+}
+
+/* Während des Ladens nur die Platzhalter-Karten zeigen */
+.browse.is-loading .browse__bar,
+.browse.is-loading .browse__filters,
+.browse.is-loading .browse__summary {
+  display: none;
+}
+
+.browse.is-loading .browse__layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ---------------------------------------------------------------- Kategorie: Ergebnisse */
+.browse__results {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.browse__summary {
+  display: grid;
+  gap: var(--space-3);
+  scroll-margin-top: var(--space-4);
+}
+
+.browse__count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.browse__count:empty {
+  display: none;
+}
+
+.browse__active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.browse__active[hidden] {
+  display: none;
+}
+
+/* Aktiver Filter: Klick entfernt ihn */
+.active-chip {
+  --notch: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 36px;
+  padding: 0.3rem 0.6rem 0.35rem 0.7rem;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 650;
+  color: var(--c-text);
+  background: color-mix(in srgb, var(--c-grass) 18%, var(--c-surface-2));
+  border: 0;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c-grass) 55%, var(--c-line));
+  cursor: pointer;
+  clip-path: polygon(
+    0 var(--notch), var(--notch) var(--notch), var(--notch) 0,
+    calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch),
+    100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%,
+    var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch))
+  );
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.active-chip .icon {
+  color: var(--c-text-muted);
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur) var(--ease-spring);
+}
+
+.active-chip:hover {
+  background: color-mix(in srgb, var(--c-redstone) 22%, var(--c-surface-2));
+  box-shadow: inset 0 0 0 2px var(--c-redstone);
+}
+
+.active-chip:hover .icon {
+  color: var(--c-text);
+  transform: rotate(90deg);
+}
+
+/* Fokusring liegt sonst unter clip-path verborgen: deshalb nach innen */
+.active-chip:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: -5px;
+}
+
+.browse__empty:empty {
+  display: none;
+}
+
+.browse__list[hidden] {
+  display: none;
+}
+
+.browse__list > li {
+  animation: fade-in var(--dur-slow) var(--ease-out);
+}
+
+/* Handy: Karten der Liste kompakt nebeneinander (Bild links im 16:10-Rahmen, Text rechts) */
+@media (max-width: 559px) {
+  .browse__list {
+    gap: var(--space-3);
+  }
+
+  .browse__list .build-card {
+    display: grid;
+    grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
+    align-items: start;
+  }
+
+  .browse__list .build-card:hover,
+  .browse__list .build-card:focus-within {
+    transform: translateY(-2px);
+  }
+
+  .browse__list .build-card:hover::after,
+  .browse__list .build-card:focus-within::after {
+    transform: translate(2px, 4px);
+  }
+
+  .browse__list .build-card__media {
+    margin: 8px 0 8px 8px;
+  }
+
+  .browse__list .build-card__media::after {
+    height: 8px;
+    mask-size: 48px 8px;
+    -webkit-mask-size: 48px 8px;
+  }
+
+  .browse__list .build-card__fallback {
+    gap: 4px;
+    padding-block: 10px 8px;
+  }
+
+  .browse__list .build-card__fallback .icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .browse__list .build-card__fallback::after {
+    width: 32px;
+    height: 4px;
+  }
+
+  .browse__list .build-card__body {
+    gap: 6px;
+    padding: 8px 10px 10px;
+  }
+
+  .browse__list .build-card__title {
+    font-size: var(--fs-base);
+  }
+
+  .browse__list .build-card__subtitle {
+    font-size: var(--fs-xs);
+  }
+
+  .browse__list .stats {
+    gap: 2px var(--space-3);
+    font-size: var(--fs-xs);
+  }
+
+  .browse__list .build-card__foot {
+    padding-top: 6px;
+    gap: 6px;
+  }
+
+  .browse__list .build-card__foot .chip {
+    min-height: 24px;
+  }
+}
+
+.browse__more {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-4) var(--space-2);
+}
+
+.browse__more[hidden] {
+  display: none;
+}
+
+.browse__more-status {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+/* Kategorie-Übersicht unter einer Kategorie mit Abstand */
+.browse:not([hidden]) ~ .category-overview:not([hidden]) {
+  margin-top: var(--space-7);
+}

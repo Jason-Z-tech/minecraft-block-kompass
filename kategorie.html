@@ -15,6 +15,7 @@
   <link rel="preload" href="assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/browse.css">
   <script type="module" src="js/ui/category.js"></script>
 </head>
 <body data-page="category">
@@ -70,8 +71,42 @@
 
     <div class="container section">
       <div class="status-region" id="category-status" role="status" aria-live="polite"></div>
-      <div id="category-filters" hidden></div>
-      <ul class="card-grid" id="category-list" role="list" hidden></ul>
+      <div class="browse" id="category-browse" hidden>
+        <div class="browse__bar">
+          <form class="browse__search" id="category-query-form" role="search" aria-label="In dieser Kategorie suchen">
+            <label class="field__label" for="category-query">In dieser Kategorie suchen</label>
+            <div class="browse__search-field">
+              <svg class="icon browse__search-icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg>
+              <input class="field__input browse__search-input" id="category-query" type="search" name="q" maxlength="120" placeholder="Name, Stichwort …" autocomplete="off" enterkeyhint="search" spellcheck="false">
+            </div>
+          </form>
+          <div class="field browse__sort">
+            <label class="field__label" for="category-sort">Sortieren nach</label>
+            <span class="select"><select class="field__input" id="category-sort"></select></span>
+          </div>
+          <button class="btn btn--secondary browse__toggle" id="category-filter-toggle" type="button" aria-expanded="false" aria-controls="category-filters"><span>Filter</span><span class="browse__toggle-count" hidden></span><svg class="icon browse__toggle-icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#chevron-down"></use></svg></button>
+        </div>
+        <div class="browse__layout">
+          <div class="browse__filters" id="category-filters" role="group" aria-labelledby="category-filters-title">
+            <h2 class="browse__filters-title" id="category-filters-title">Filter</h2>
+            <div class="browse__groups" id="category-filters-groups"></div>
+            <button class="btn btn--primary browse__done" id="category-filters-done" type="button"><span>Bauten anzeigen</span></button>
+          </div>
+          <div class="browse__results">
+            <h2 class="visually-hidden">Bauten</h2>
+            <div class="browse__summary">
+              <p class="browse__count" id="category-result-count" role="status" aria-live="polite"></p>
+              <ul class="browse__active" id="category-active" role="list" aria-label="Aktive Suche und Filter" hidden></ul>
+            </div>
+            <div class="browse__empty" id="category-empty"></div>
+            <ul class="card-grid browse__list" id="category-list" role="list"></ul>
+            <div class="browse__more" id="category-more" hidden>
+              <p class="browse__more-status" id="category-more-status"></p>
+              <button class="btn btn--secondary" id="category-more-button" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#chevron-down"></use></svg><span>Weitere Bauten laden</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
       <section class="category-overview" id="category-overview" aria-labelledby="category-overview-title" hidden>
         <div class="section__head">
           <h2 class="section__title" id="category-overview-title">Alle Kategorien</h2>

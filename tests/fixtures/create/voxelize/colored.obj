@@ -1,0 +1,32 @@
+# zwei Quader, rot und blau
+mtllib colored.mtl
+v 0 0 0
+v 4 0 0
+v 0 4 0
+v 4 4 0
+v 0 0 4
+v 4 0 4
+v 0 4 4
+v 4 4 4
+usemtl Rot
+f -8 -6 -5 -7
+f -4 -3 -1 -2
+f -8 -7 -3 -4
+f -6 -2 -1 -5
+f -8 -4 -2 -6
+f -7 -5 -1 -3
+v 4 0 0
+v 8 0 0
+v 4 4 0
+v 8 4 0
+v 4 0 4
+v 8 0 4
+v 4 4 4
+v 8 4 4
+usemtl Blau
+f -8 -6 -5 -7
+f -4 -3 -1 -2
+f -8 -7 -3 -4
+f -6 -2 -1 -5
+f -8 -4 -2 -6
+f -7 -5 -1 -3

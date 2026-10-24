@@ -1,7 +1,7 @@
 // Laden der Spieldaten (game-data/*.json) mit verständlichen Fehlern und Prüfung des Katalogs (§9).
 // Fehlermeldungen sind für Menschen geschrieben; technische Details hängen am Fehlerobjekt (cause, status).
-import { SITE_ROOT, isSafeSitePath } from './dom.js';
-import { CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN } from './shared.js';
+import { SITE_ROOT, isSafeSitePath, isSafeUrl } from './dom.js';
+import { CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN, SIZE_CLASS_KEYS } from './shared.js';
 
 export const CATALOG_PATH = 'game-data/catalog.json';
 export const NAMES_PATH = 'game-data/names.json';
@@ -123,6 +123,54 @@ function cleanPath(value, pattern) {
   return typeof value === 'string' && pattern.test(value) && isSafeSitePath(value) ? value : null;
 }
 
+function cleanHttpsUrl(value) {
+  return typeof value === 'string' && /^https:\/\//i.test(value.trim()) && isSafeUrl(value.trim()) ? value.trim() : null;
+}
+
+function cleanScale(value) {
+  return typeof value === 'number' && value > 0 && value <= 4 ? value : null;
+}
+
+function cleanSources(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((source) => isPlainObject(source) && cleanText(source.title, 200) && cleanHttpsUrl(source.url))
+    .slice(0, 20)
+    .map((source) => ({ title: cleanText(source.title, 200), url: cleanHttpsUrl(source.url) }));
+}
+
+function cleanCredits(value) {
+  if (!isPlainObject(value)) return null;
+  const author = cleanText(value.author, 120);
+  return author ? { author, url: cleanHttpsUrl(value.url), license: cleanText(value.license, 120) || null } : null;
+}
+
+/** variants: { "<maßstab>": { size, blocks, steps } } – nur gültige Maßstäbe als Schlüssel */
+function cleanVariants(value) {
+  if (!isPlainObject(value)) return null;
+  const entries = Object.entries(value)
+    .filter(([key, variant]) => /^\d{1,2}(?:\.\d{1,4})?$/.test(key) && cleanScale(Number(key)) !== null && isPlainObject(variant))
+    .slice(0, 12)
+    .map(([key, variant]) => [key, { size: cleanSize(variant.size), blocks: cleanInteger(variant.blocks, 0, 3_000_000), steps: cleanInteger(variant.steps, 0, 65534) }]);
+  return entries.length ? Object.fromEntries(entries) : null;
+}
+
+// Felder des Katalogs ab Runde 2; sie erscheinen im Ergebnis nur, wenn der Eintrag sie hat (ältere Kataloge bleiben gleich)
+const EXTENDED_FIELDS = {
+  description: (value) => cleanText(value, 2000),
+  facts: (value) => cleanTextList(value, 30, 300),
+  sources: cleanSources,
+  credits: cleanCredits,
+  defaultScale: cleanScale,
+  variants: cleanVariants,
+  phases: (value) => cleanInteger(value, 0, 65534),
+  sizeClass: (value) => (SIZE_CLASS_KEYS.includes(value) ? value : null),
+};
+
+function extendedFields(entry) {
+  return Object.fromEntries(Object.entries(EXTENDED_FIELDS).filter(([key]) => Object.hasOwn(entry, key)).map(([key, clean]) => [key, clean(entry[key])]));
+}
+
 /**
  * Prüft einen Katalog-Eintrag. Ohne gültige ID, Titel und Kategorie wird er verworfen;
  * andere ungültige Felder werden auf einen leeren Wert gesetzt.
@@ -153,6 +201,7 @@ export function normalizeBuild(entry) {
       scales: Array.isArray(entry.scales) ? entry.scales.filter((s) => typeof s === 'number' && s > 0 && s <= 4) : [],
       tested: entry.tested === true || entry.tested === false ? entry.tested : null,
       thumb: cleanPath(entry.thumb, /^thumbs\/[a-z0-9-]{2,80}\.(?:webp|png|avif|jpg)$/),
+      ...extendedFields(entry),
     },
   };
 }

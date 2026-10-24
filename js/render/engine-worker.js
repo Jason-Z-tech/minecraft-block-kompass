@@ -23,13 +23,16 @@ export class EngineError extends Error {
 
 // ------------------------------------------------------------------ Quellen prüfen
 
-export const SOURCE_KINDS = Object.freeze(['module', 'structure', 'shape', 'gallery', 'synthetic']);
+export const SOURCE_KINDS = Object.freeze(['module', 'structure', 'shape', 'gallery', 'synthetic', 'upload']);
 const MODULE_PATTERN = /^[a-z0-9\-/]+\.js$/;
 const MODULE_ROOTS = ['js/builds/', 'tests/fixtures/'];
 const STRUCTURE_PATTERN = /^[a-z0-9_]+\.json$/;
 const SHAPE_PATTERN = /^[a-z0-9-]{1,40}$/;
 const PARAM_KEY = /^[a-zA-Z][a-zA-Z0-9]{0,31}$/;
 export const SYNTHETIC_MAX = 2_000_000;
+// Datei-Import (§12.2): erlaubte Formate und Größe; die genaue Prüfung macht js/create/import/index.js.
+export const UPLOAD_FORMATS = Object.freeze(['schem', 'litematic', 'nbt', 'vox', 'stl', 'obj', 'glb', 'gltf']);
+export const UPLOAD_MAX_BYTES = 64 * 1024 * 1024;
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
@@ -77,6 +80,22 @@ export function checkParams(params, label = 'Bau-Parameter') {
   return clean;
 }
 
+// Upload-Quelle { kind:'upload', format, name, data: ArrayBuffer, params } → bereinigte Kopie (data bleibt dasselbe ArrayBuffer).
+export function checkUploadSource(source) {
+  if (!UPLOAD_FORMATS.includes(source.format)) {
+    throw new EngineError(`Unbekanntes Dateiformat – erlaubt: ${UPLOAD_FORMATS.map((f) => `.${f}`).join(', ')}.`, { code: 'source' });
+  }
+  const data = source.data;
+  if (!(data instanceof ArrayBuffer)) throw new EngineError('Die Datei fehlt (data muss ein ArrayBuffer sein).', { code: 'source' });
+  if (data.byteLength === 0) throw new EngineError('Die Datei ist leer.', { code: 'upload' });
+  if (data.byteLength > UPLOAD_MAX_BYTES) {
+    throw new EngineError(`Die Datei ist zu groß (${(data.byteLength / 1024 / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 })} MB) – erlaubt sind höchstens 64 MB.`, { code: 'upload' });
+  }
+  const rawName = typeof source.name === 'string' ? source.name.split(/[\\/]/).pop() : '';
+  const name = rawName.replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim().slice(0, 120) || 'Datei';
+  return { kind: 'upload', format: source.format, name, data, params: checkParams(source.params, 'Upload-Parameter') };
+}
+
 /** Prüft eine Quelle aus §7.4 (plus Testquellen) und gibt eine bereinigte Kopie zurück; wirft EngineError. */
 export function checkSource(source) {
   if (!isPlainObject(source) || !SOURCE_KINDS.includes(source.kind)) {
@@ -85,6 +104,7 @@ export function checkSource(source) {
   switch (source.kind) {
     case 'module': return { kind: 'module', path: checkModulePath(source.path) };
     case 'structure': return { kind: 'structure', file: checkStructureFile(source.file) };
+    case 'upload': return checkUploadSource(source);
     case 'shape': {
       if (typeof source.shape !== 'string' || !SHAPE_PATTERN.test(source.shape)) {
         throw new EngineError(`Ungültiger Formname „${String(source.shape).slice(0, 40)}“ (a–z, 0–9, -).`, { code: 'source' });
@@ -198,6 +218,29 @@ export function buildShapeResult(generators, shape, params) {
     return result;
   } catch (error) {
     throw wrapBuildError(`Die Form „${shape}“`, error);
+  }
+}
+
+/**
+ * Hochgeladene Datei → BuildResult über js/create/import/index.js (Vertrag: importFile(options) → ImportResult,
+ * importToBuildResult(imported) → BuildResult). hooks: { progress(message), loadBlockColors(), importVoxelizer() }.
+ * ImportError (deutsche Meldung) wird zu EngineError code 'upload'.
+ */
+export async function buildUploadResult(uploader, source, hooks = {}) {
+  if (!uploader || typeof uploader.importFile !== 'function' || typeof uploader.importToBuildResult !== 'function') {
+    throw new EngineError('Der Datei-Import ist noch nicht verfügbar (js/create/import/index.js fehlt).', { code: 'source' });
+  }
+  const onProgress = typeof hooks.progress === 'function' ? (message) => hooks.progress(message) : null;
+  try {
+    const imported = await uploader.importFile({
+      format: source.format, name: source.name, data: source.data, params: source.params, onProgress,
+      loadBlockColors: hooks.loadBlockColors ?? null, importVoxelizer: hooks.importVoxelizer ?? null,
+    });
+    return uploader.importToBuildResult(imported, { onProgress });
+  } catch (error) {
+    if (error instanceof EngineError) throw error;
+    if (error?.name === 'ImportError') throw new EngineError(error.message, { code: 'upload', detail: error.detail ?? `${error.code}` });
+    throw wrapBuildError(`Die Datei „${source.name}“`, error);
   }
 }
 
@@ -811,7 +854,8 @@ export class Engine {
 
   /**
    * Baut eine Quelle (geprüft mit checkSource). loaders: { importModule(path) → Namensraum,
-   * loadStructure(file) → JSON, importShapes() → Namensraum von js/create/shape-generators.js }.
+   * loadStructure(file) → JSON, importShapes() → Namensraum von js/create/shape-generators.js,
+   * importUploader() → Namensraum von js/create/import/index.js, progress(message), loadBlockColors(), importVoxelizer() }.
    * Verändert die Engine nicht – das Ergebnis erst mit use(result) übernehmen.
    */
   async build(source, params, loaders) {
@@ -823,12 +867,15 @@ export class Engine {
       result = buildModule(await loaders.importModule(clean.path), checkParams(params), clean.path);
     } else if (clean.kind === 'shape') {
       result = buildShapeResult(await loaders.importShapes(), clean.shape, clean.params);
+    } else if (clean.kind === 'upload') {
+      result = await buildUploadResult(await loaders.importUploader(), clean, loaders);
     } else if (clean.kind === 'gallery') {
       result = buildGallery(clean.group, clean.page);
     } else {
       result = buildSynthetic(clean.count);
     }
-    result.source = clean;
+    // Upload: die Datei nicht mit dem Ergebnis zurückschicken
+    result.source = clean.kind === 'upload' ? { kind: 'upload', format: clean.format, name: clean.name, bytes: clean.data.byteLength, params: clean.params } : clean;
     return result;
   }
 
@@ -899,6 +946,7 @@ function startWorker(scope) {
   let currentJob = 0;
   let meshRun = 0;
   let boundGate = null;
+  let blockColorsPromise = null;
 
   const post = (message, transfer = []) => scope.postMessage(message, transfer);
   const status = (job, phase, message, progress = null) => post({ type: 'status', job, phase, message, progress });
@@ -954,6 +1002,29 @@ function startWorker(scope) {
         throw new EngineError('Der Formen-Generator ist noch nicht verfügbar.', { code: 'source', detail: error?.message ?? String(error) });
       }
     },
+    async importUploader() {
+      try {
+        return await import(new URL('js/create/import/index.js', rootUrl).href);
+      } catch (error) {
+        throw new EngineError('Der Datei-Import ist noch nicht verfügbar.', { code: 'source', detail: error?.stack ?? String(error) });
+      }
+    },
+    async importVoxelizer() {
+      try {
+        return await import(new URL('js/create/voxelize/index.js', rootUrl).href);
+      } catch (error) {
+        throw new EngineError('Der Import von 3D-Modellen (.vox, .stl, .obj, .glb, .gltf) ist noch nicht verfügbar.', { code: 'upload', detail: error?.stack ?? String(error) });
+      }
+    },
+    // Blockfarben für den Modell-Import: einmal laden, danach aus dem Speicher
+    loadBlockColors() {
+      if (!blockColorsPromise) {
+        blockColorsPromise = fetchJson(new URL('block-colors.json', dataUrl),
+          'Die Blockfarben für den Modell-Import fehlen (game-data/block-colors.json). Erzeuge sie mit: node scripts/build-block-colors.mjs');
+        blockColorsPromise.catch(() => { blockColorsPromise = null; });
+      }
+      return blockColorsPromise;
+    },
   };
 
   function deferred() {
@@ -971,7 +1042,11 @@ function startWorker(scope) {
     if (job !== currentJob) return;
     status(job, 'build', 'Baue …');
     const started = performance.now();
-    const result = await loaded.build(source, params, loaders);
+    // Fortschrittsmeldungen (Datei-Import) nur für den laufenden Auftrag
+    const progress = (message) => {
+      if (job === currentJob) status(job, 'build', String(message).slice(0, 200));
+    };
+    const result = await loaded.build(source, params, { ...loaders, progress });
     if (job !== currentJob) return;
     engine = loaded;
     engine.use(result);

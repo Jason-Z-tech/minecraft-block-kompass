@@ -68,6 +68,7 @@ minecraft-block-kompass/
   js/ui/             Seitenlogik
   js/create/         Freitext-Erkennung, Formen-Generatoren
   js/builds/<kategorie>/<id>.js   Bau-Module (Inhalte)
+  js/builds/lib/     Hilfsbibliothek für Bau-Module (§9.1): index.js (alles), palettes.js, bauteile.js, innen.js, natur.js
   js/builds/game-structures.js    Auswahl der Original-Strukturen aus dem Spiel
   scripts/           Node-Skripte (serve, extract-game-data, build-catalog, check-build, shot)
   scripts/lib/       zip.mjs, nbt.mjs
@@ -162,6 +163,22 @@ des Spielers ohne +180° (Banner und Schilder mit +180°), der Kopf schaut also 
   (`id` = 26.2, `data_version` = 4903). Cache: `game-data/.cache/mcmeta-26.2-summary-{version,blocks}.json`;
   mit `--offline` wird nichts geladen. Asset-Index-ID aus `versions/26.2/26.2.json` (`assetIndex.id`,
   sonst 32); `de_de.json` wird per SHA-1 gegen den Index geprüft.
+- Änderung (cloud:spieldaten): **ohne Installation** `--remote` (`scripts/lib/remote-source.mjs`), für Claude Code im Web.
+  Statt Jar: ZIP-Archive der Tags `26.2-assets-tiny` (Assets ohne Sounds/fremde Sprachen) und `26.2-data` von misode/mcmeta
+  über `https://codeload.github.com/misode/mcmeta/zip/refs/tags/<tag>` (Hauptordner `mcmeta-<tag>/` wird abgeschnitten,
+  beide Archive zu einer Quelle zusammengelegt; `version.json` im mcmeta-Format: `data_version` = worldVersion,
+  `resource_pack_version`, `data_pack_version`). Geprüft 2026-10-23: alle Blockstates, Modelle, Texturen, `en_us.json` und
+  Struktur-NBTs sind Byte für Byte gleich wie in der 26.2-Jar (Git-Blob-SHA). `de_de.json`: Mojang-Versionsliste
+  (`piston-meta.mojang.com/mc/game/version_manifest_v2.json`) → Versionsdatei → Asset-Index → `resources.download.minecraft.net`,
+  jede Stufe per SHA-1 geprüft; Rückfall `raw.githubusercontent.com/misode/mcmeta/26.2-assets/assets/minecraft/lang/de_de.json`
+  (Stand der Veröffentlichung, ohne Prüfsumme: Mojang ergänzt die Datei im Asset-Index später um Namen neuerer Versionen;
+  Namen aller 26.2-Blöcke sind gleich, Warnung in `meta.json`). Blockbericht wie oben; fehlt er, bricht `--remote` ab
+  (kein „derived“). Cache: `<out>/.cache/` (`mcmeta-<tag>.zip`, `mojang-26.2.json`, `mojang-assets-<id>.json`,
+  `mojang-de_de.json`); `--remote --offline` nur aus dem Cache. Gesperrte Domain → deutsche Meldung mit der Domain, der
+  Liste aller vier Domains und dem Hinweis auf README „In der Cloud“. Gesetzter `HTTPS_PROXY`/`HTTP_PROXY` ohne aktive
+  Proxy-Unterstützung → das Skript startet sich einmal mit `node --use-env-proxy` neu. Ergebnis identisch mit dem Jar-Weg
+  (Hash-Vergleich aller Dateien), nur `meta.json` hat zusätzlich `sources.remote = { assets, data, lang }` und eine andere
+  `extractedAt`. Nie ein Jar herunterladen oder ausführen.
 
 **Ausgaben:**
 
@@ -287,6 +304,30 @@ Optional `"mip"` = `texture.mipmap_strategy` aus der .mcmeta (`dark_cutout` Laub
   schematisch – das echte `plains_small_house_1` ist 7×7×7 mit 153 Blöcken und 22 Paletteneinträgen.
 
 `catalog.json` – erzeugt von `scripts/build-catalog.mjs` (siehe §9).
+
+Änderung (create:voxelize): `block-colors.json` – mittlere Blockfarben für den Modell-Import (§12.3), erzeugt von
+`node scripts/build-block-colors.mjs [--data <ordner>]` (≈ 0,3 s) und automatisch von `extract-game-data.mjs` (scheitert es
+dort, z. B. an unlesbaren Texturen, bleibt der restliche Extrakt gültig: Warnung in `meta.json`, nur der Modell-Import fehlt).
+```json
+{ "format": 1, "version": "26.2", "generatedAt": "ISO-Zeit", "count": 384,
+  "blocks": { "red_concrete": { "state": "red_concrete", "group": "beton",
+      "top":    { "rgb": [142,33,33], "lab": [31.75,45.26,28.36], "pattern": 0.39 },
+      "side": { … }, "bottom": { … }, "all": { … },
+      "animated": false, "light": 0, "emissive": false, "tinted": false, "falls": false, "changes": false, "special": false } } }
+```
+- Aufgenommen wird jeder Block (Standardzustand aus blocks.json), dessen Modell `BlockModels.isOpaqueFullCube` erfüllt
+  (Logik aus `js/render/block-models.js`, nicht nachgebaut); Sondermodelle (`specialKind`) fehlen. 26.2: 384 Blöcke.
+- Farbe je Seite: die Flächen auf der Blockgrenze werden auf einem n×n-Raster (n = Texturbreite, 16 … 64) abgetastet wie gezeichnet
+  (deckend vor cutout, cutout mit Alpha-Test 0,5, also z. B. Gras-Overlay), feste Tönung aus §7.1 in sRGB multipliziert wie im
+  Shader, Animations-Frames nach Dauer gewichtet; gemittelt in **linearem RGB**. `top` = up, `bottom` = down, `side` = die vier
+  Seiten zusammen, `all` = alle sechs. `rgb` sRGB 0 … 255, `lab` CIELAB (D65), `pattern` = mittlerer Lab-Abstand der Abtastpunkte
+  zum Mittel (Musterstärke; Beton ≈ 0,4, Bücherregal ≈ 20).
+- `group`: `beton`, `betonpulver`, `wolle`, `terrakotta`, `glasierte-terrakotta`, `holz`, `stein`, `erz`, `mineral` (Erzblöcke,
+  Amethyst …), `kupfer`, `natur`, `licht`, `technik` (Redstone-Bauteile, TNT …), `arbeitsblock`, `sonder` (Befehls-, Struktur-,
+  Test-, Spawner-, Tresorblöcke, Grundgestein, Barriere, Leuchtfeuer, Licht, befallene Blöcke …). Merkmale: `animated`,
+  `light`/`emissive` (Lichtwert wie im Spiel > 0), `tinted` (feste Tönung), `falls` (Sand, roter Sand, Kies, verdächtige Blöcke,
+  Betonpulver), `changes` (verändert sich von selbst: Gras/Myzel/Nezel, Korallenblöcke, unversiegeltes Kupfer außer „oxidized“),
+  `special` (= Gruppe `sonder`).
 
 ## 6. Kern (`js/core/`)
 
@@ -888,6 +929,46 @@ initTabs(root) · initSlider(input) / syncSlider(input) · setXpProgress(node, {
 attachTooltip(ziel, () => tooltipContent(name, { lines, meta })) · contrastRatio(a, b) / mixHex(a, b, anteil)
 ```
 
+Änderung (ui:browse, Start- und Kategorie-Seite): Zustand der Kategorie-Seite in der Adresse
+`kategorie.html?k=<slug>[&q=<text>][&groesse=klein|mittel|gross|riesig…][&schwierigkeit=1…5…][&herkunft=<accuracy>…][&test=getestet|ungetestet|ohne…][&sort=<schlüssel>]`
+– Mehrfachwerte als wiederholte Parameter (Komma-Listen werden auch gelesen), alles gegen Whitelists geprüft, Unbekanntes fällt weg
+(Konsolen-Warnung), Standardwerte stehen nicht in der Adresse. `test`: true → getestet, false → ungetestet, null → ohne.
+Sortierungen: `relevanz` (nur mit Suche, dann Standard), `name` (Standard ohne Suche), `groesse-auf|-ab` (Rauminhalt w·h·l),
+`bloecke-auf|-ab`, `schwierigkeit-auf|-ab`; fehlende Werte immer am Ende, Gleichstand nach Name. Filter: „oder“ in einer Gruppe,
+„und“ zwischen Gruppen; eine Gruppe erscheint nur, wenn in der Kategorie ≥ 2 Werte vorkommen oder etwas gewählt ist. Filter und
+Sortierung legen einen Verlaufseintrag an (Zurück-Taste), Tippen nur beim ersten Zeichen; `history.state = { mark: 'bk-browse',
+shown, scrollY }` stellt nach Zurück die Zahl der Karten und die Stelle wieder her. Karten in Schritten zu 24 (IntersectionObserver
++ Knopf). Textsuche = `searchCatalog` aus `js/create/search.js`. Reine Module (Node-testbar) in `js/ui/browse/`: `model.js`
+(Größenklassen, Test-Zustand, Rauminhalt), `filters.js`, `sort.js`, `url-state.js` (`parseBrowseState`, `browseSearch`, `browseHref`),
+`view.js` (`createBrowseIndex`, `computeView(index, state, { search, category })`, `initialShown`, `nextShown`), `home-sections.js`
+(`selectHomeSections(builds)`, `catalogTotals(builds)`). Startseite: Abschnitte nach festen Regeln ohne Zufall – Riesenbauten (gross +
+riesig, meiste Blöcke), Schnell gebaut (klein, Schwierigkeit ≤ 2), Original aus dem Spiel, Nach echten Maßen, Redstone und Technik;
+je 4 Karten, kein Bau doppelt, dazu Links „N Bauten in <Kategorie>“ auf genau diese Auswahl der Kategorie-Seite. Styles in
+`css/browse.css` (nach `style.css` eingebunden). `data.js` übernimmt zusätzlich die Katalogfelder von Runde 2 (`description`, `facts`,
+`sources`, `credits`, `defaultScale`, `variants`, `phases`, `sizeClass`; nur wenn vorhanden), `shared.js` exportiert `SIZE_CLASS_KEYS`.
+
+Änderung (ui:build, Bau-Seite): Die Bau-Ansicht ist eine Komponente in `js/ui/build-view.js`, die `bau.html` (Container
+`#build-view` in `#build-layout`) und „Selber erstellen“ einbetten:
+```js
+mountBuildView(container, { source, params, entry, progressKey, onReady, onError, onScaleChange })
+  // → Promise<{ viewer, result, context, dispose() }>; lehnt bei Ladefehlern ab (Fehlerzustand und onError vorher)
+  // source/params wie viewer.load · entry: Katalog-Eintrag oder gleich aufgebautes Objekt (viewEntry prüft jedes Feld)
+  // progressKey: 'bk:progress:<id>' | 'bk:progress:<id>@<maßstab>' | 'bk:progress:form-<form>-<hash>' | null (nichts speichern)
+  // Der Container muss im Dokument hängen; er bekommt die Klasse .build-view (Raster stage/player/panels, in .build-layout display: contents)
+```
+Fortschritt `{ v: 1, step, checked: [item…], updatedAt }` (Schritt als Kommazahl wie `setProgress`, gespeichert erst nach einer
+Eingabe, gebündelt nach 400 ms, beim Verlassen `pagehide` sofort). Maßstab-Wechsel lädt in derselben Ansicht neu (eigener Schlüssel je
+Maßstab), `onScaleChange` passt in `bau.html` die Adresse per `history.replaceState` an. `bau.html?form=…` lädt `parseShapeQuery` und
+`SHAPES` aus `js/create/shape-generators.js` dynamisch (fehlt die Datei: Hinweis mit Link). Teile in `js/ui/build/` (ohne DOM beim Laden):
+`entry.js` (Katalogfelder, Maßstab, Quelle, Schlüssel), `progress.js` (ProgressStore), `step-model.js`, `material-data.js`, `plan-model.js`
+(reine Logik) sowie `stage.js`, `step-player.js`, `guide.js`, `materials.js`, `layer-plan.js`, `info.js`, `kit.js` (DOM) und `appearance.js`
+(Icons und Draufsicht-Kacheln aus `models.json` + `textures.bin` im Hauptthread: Flächen einer Blickrichtung werden orthografisch
+gerastert, Icons isometrisch über `renderBlockIcon`, `item/<id>` des Spiels hat Vorrang, dünne Formen wie Fackeln flach). Styles in
+`css/build-view.css` (nach `style.css`). Hervorhebung in 3D: der Schritt unter dem Zeiger in der Anleitung, sonst der gerade gebaute
+Schritt für 3 s bzw. während des Abspielens (danach aus, damit der Viewer nicht dauernd zeichnet). Notizen (`b.note`) erscheinen als
+Markierungen über der 3D-Ansicht (eigene Projektion mit der Kamera aus `viewer.controls`, verdeckt → blass). `window.__buildView` hält
+in `bau.html` die geladene Ansicht (für Klick-Tests). Prüfung: `node tests/visual/build-page-check.mjs` (Screenshots, Abläufe, FPS).
+
 ## 9. Bau-Module (Inhalte)
 
 Datei `js/builds/<kategorie>/<id>.js`:
@@ -915,15 +996,344 @@ und Schritttexte auf Deutsch in du-Form, konkret („Setze die Treppen mit der h
 außen“); echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nichts erfinden.
 
 `scripts/build-catalog.mjs` liest alle Module und `game-structures.js`, prüft sie und schreibt
-`game-data/catalog.json`:
+`game-data/catalog.json`.
+Änderung (catalog, verbindlich ab Runde 2 – ersetzt das kürzere Format):
 ```json
-{ "generatedAt": "ISO", "version": "26.2", "builds": [
-  { "id", "title", "category", "subtitle", "tags", "aliases", "accuracy", "difficulty",
-    "size": [w,h,l], "blocks": n, "steps": n, "topMaterials": [["stone_bricks", 1234]],
-    "module": "js/builds/wahrzeichen/tokyo-skytree.js" | null,
-    "structure": "village__plains__houses__plains_small_house_1.json" | null,
-    "scales": [1, 0.5], "tested": null, "thumb": "thumbs/tokyo-skytree.webp" | null } ] }
+{ "generatedAt": "ISO-Zeit", "version": "26.2",
+  "counts": { "total": n, "byCategory": { "<slug>": n } }, "warnings": [],
+  "builds": [ {
+    "id", "title", "category", "subtitle", "tags": [], "aliases": [], "accuracy", "difficulty",
+    "description", "facts": [], "sources": [{ "title", "url" }], "credits": { "author", "url", "license" } | null,
+    "tested": true | false | null,
+    "module": "js/builds/<kategorie>/<id>.js" | null,
+    "structure": "<datei>.json" | null,                (Original-Struktur aus game-data/structures/)
+    "scales": [1, 0.5] | null, "defaultScale": 1 | null,
+    "size": [w, h, l], "blocks": n, "steps": n, "phases": n,   (beim defaultScale bzw. ohne Maßstab)
+    "variants": { "1": { "size", "blocks", "steps" }, "0.5": { … } } | null,   (nur bei scales)
+    "topMaterials": [["stone_bricks", 1234], …],      (höchstens 8, Item-IDs, absteigend)
+    "sizeClass": "klein" | "mittel" | "gross" | "riesig",   (Blöcke: klein < 1 000 ≤ mittel < 10 000 ≤ gross < 100 000 ≤ riesig)
+    "thumb": "thumbs/<id>.webp" | null } ] }
 ```
+- Original-Strukturen: `id` mit Vorsilbe `spiel-` (für Module verboten), `accuracy` `original`, `module` null, `structure` gesetzt,
+  `phases` 1, `steps` = belegte Ebenen, `size` = Begrenzung der Blöcke (Luftränder der Vorlage zählen nicht), `facts` enthält
+  „Vorlage im Spiel: minecraft:<pfad>“. `defaultScale` = 1, wenn erlaubt, sonst der erste Maßstab (wie check-build).
+- `counts.byCategory` nennt immer alle 8 Kategorien (auch 0). `builds` sortiert nach Kategorie (Reihenfolge §8), dann Titel.
+  `warnings`: Warnungen der Module (höchstens 20 je Eintrag), doppelte Titel, Einträge, die wegen Fehlern fehlen.
+- Die Datei hat einen Eintrag je Zeile (kompakt, gültiges JSON) und wird atomar geschrieben (Zwischendatei + Umbenennen).
+- Bau-Seite: `bau.html?id=<id>[&scale=<zahl>]`; Formen: `bau.html?form=<shape>&<param>=<wert>…`
+
+`js/builds/game-structures.js` (Agent catalog) exportiert `GAME_STRUCTURE_DEFAULTS` (`accuracy`, `sources`, `credits`,
+`tested`), `difficultyForBlocks(blocks)` (Schwierigkeit nach Größe: < 150 → 1, < 400 → 2, < 1 500 → 3, < 6 000 → 4, sonst 5)
+und `GAME_STRUCTURES` (eingefroren): `{ id, structure: '<spielpfad>', title, subtitle, category, difficulty, tags, aliases,
+description, facts? }`; `structure` ist der Pfad unter `data/minecraft/structure/` (z. B. `village/plains/houses/plains_library_1`),
+der Dateiname folgt daraus (`/` → `__`, `.json`). Auswahl: vollständige, nachbaubare Stücke – keine Zombie-, Verfalls- oder
+Kohle-Varianten, keine Straßen, Lampen, Deko-Kleinteile, Halb-Wracks oder Leerräume.
+
+### 9.1 Hilfsbibliothek (`js/builds/lib/`)
+
+Wiederverwendbare Bauteile für Bau-Module, damit alle Bauten einheitlich gut aussehen und keine Logik doppelt
+entsteht. Gemeinsame Regeln:
+- Reine Funktionen auf dem Builder: `fn(b, { x, y, z, facing = 'south', …optionen })`. Alles setzt über `b`, also wirken
+  `b.transform`, Kapitel und Schritte (ein Aufruf im laufenden `b.phase`/`b.step` landet dort).
+- Deterministisch, ohne DOM/Netz/Zeit; nur Blöcke aus 26.2 (`b.set` prüft jeden Zustand). Unbekannte Optionen → `Error`.
+- Ursprung, vorne und Ausdehnung sind je Funktion dokumentiert. `facing` = Richtung, in die die Vorderseite zeigt;
+  lokal ist vorne Süden (+z), `facing` dreht im Uhrzeigersinn wie `b.transform` (`west` = 90°, `north` = 180°, `east` = 270°).
+- Schaukästen: `tests/fixtures/lib/showcase-<thema>.js` (gültige Module, mit `check-build` und `scripts/shot.mjs` prüfbar).
+- Ein Import für alles: `import { WOOD, STONE, window, doorway, bedroom, lightRoom, tree, … } from '../lib/index.js'`
+  (`index.js` = `export *` aus `palettes.js`, `bauteile.js`, `innen.js`, `natur.js`; ein Test prüft, dass kein Name doppelt ist).
+- `check-build` durchsucht auch alle Dateien unter `js/builds/`, die ein Modul (auch über Umwege) relativ importiert, auf
+  `Math.random`, Zeit, Netz und DOM (Meldung „`js/builds/lib/x.js (importiert): Die Datei …`“). Kern und 3D-Ansicht nicht.
+  Änderung (lib:bauteile): `collectBuildSources(pfad, { within })` und `scanBuildSources(pfad, { within })` exportiert.
+
+#### Paletten (`palettes.js`, Agent lib:bauteile)
+
+Rolle → echte Block-ID aus 26.2 (reine ID ohne `[…]`, direkt für `b.set`/`b.fill`/`b.stairs`/`b.slab`/`b.door` oder als
+`` `${p.log}[axis=x]` ``). Alle Paletten sind eingefroren und haben alle Rollen ihrer Art; gibt es eine Variante im Spiel nicht,
+ist die Rolle `null` (ein Test prüft jede ID gegen `game-data/blocks.json` und das Namensmuster der Rolle).
+```js
+import { WOOD, STONE, COPPER, COLOR, COLOR_IDS, GLASS, FLOWERS, WARM_FLOWERS, COOL_FLOWERS, POTTED,
+  WOOD_ROLES, STONE_ROLES, COPPER_ROLES, COLOR_ROLES, allPalettes } from '../lib/palettes.js';
+```
+- `WOOD.<holz>`: `eiche`, `fichte`, `birke`, `dschungel`, `akazie`, `schwarzeiche`, `mangrove`, `kirsche`, `bambus`, `blasseiche`,
+  `karmesin`, `wirr`. Rollen: `planks, log, strippedLog, wood, strippedWood, stairs, slab, fence, fenceGate, door, trapdoor,
+  button, pressurePlate, sign, wallSign, hangingSign, wallHangingSign, shelf, leaves, sapling, pottedSapling, mosaic,
+  mosaicStairs, mosaicSlab`. Besonderheiten: Nether-Hölzer → `log` = Stängel, `wood` = Hyphen, `leaves` = Warzenblock,
+  `sapling` = Pilz; Bambus → `log` = Bambusblock, `wood`/`leaves` = `null`, `mosaic*` nur hier; Mangrove → `sapling` = Keimling.
+- `STONE.<familie>`: `stein`, `bruchstein`, `steinziegel`, `tiefenschiefer`, `schwarzstein`, `sandstein`, `roter-sandstein`, `quarz`,
+  `ziegel`, `schlammziegel`, `tuffstein`, `prismarin`, `endstein`, `netherziegel`, `purpur`, `harz`, `andesit`, `diorit`, `granit` und
+  die 8 Kupfer-Paletten. Hauptset `block, stairs, slab, wall` (das „typische“ Baumaterial der Familie, z. B. `tiefenschiefer.block` =
+  Tiefenschieferziegel), dazu je nach Familie `bricks…`, `polished…`, `tiles…`, `smooth…`, `cut…`, `rough…` (Bruch-/Rohform, z. B.
+  Bruchstein, Bruchtiefenschiefer, Schwarzstein), `mossy…`, `chiseled`, `chiseledBricks`, `cracked`, `crackedTiles`, `pillar`,
+  `natural` (Naturstein der Familie), `dark…` (Prismarin), `red…` (rote Netherziegel), `gilded`, `fence`, `button`, `pressurePlate`.
+- `COPPER` (auch in `STONE`): `kupfer`, `kupfer-angelaufen`, `kupfer-verwittert`, `kupfer-oxidiert`, jeweils auch `…-gewachst`.
+  Zusätzlich `grate, bulb, door, trapdoor, bars, chain, lantern, chest, lightningRod, torch, wallTorch`.
+- `COLOR.<farbe>` (16, `COLOR_IDS`: `weiss` → `white` …): `wool, carpet, concrete, concretePowder, terracotta, glazedTerracotta,
+  stainedGlass, stainedGlassPane, bed, candle, banner, wallBanner, shulkerBox`.
+- `GLASS = { block, pane, tinted }`, `FLOWERS` (12 kleine Blumen), `WARM_FLOWERS`, `COOL_FLOWERS`, `POTTED` (Topfpflanzen).
+
+#### Bauteile (`bauteile.js`, Agent lib:bauteile)
+
+Jede Funktion gibt die **dokumentierte Ausdehnung** als Box `{ min: [x, y, z], max: [x, y, z] }` in Aufrufer-Koordinaten zurück
+(alle gesetzten Blöcke liegen darin – Test in allen 4 Ausrichtungen). Lokaler Rahmen: Vorderseite = Süden (+z), lokal **+x =
+rechts** für jemanden, der vor dem Bauteil steht und es ansieht (bei `facing: 'south'` also Osten). **Wandbauteile** liegen in
+der Wandebene `lz = 0`, `lz > 0` ist außen (vorne), `lz < 0` innen; `facing` = Außenseite der Wand. Setze sie **nach** der Wand –
+sie ersetzen Wandblöcke (Öffnungen werden mit Luft freigeräumt). Breiten werden zentriert: `lx = lo … hi` mit
+`lo = −floor((w − 1) / 2)`; bei gerader Breite liegt das zusätzliche Feld rechts (`centeredSpan(w)`). „Stamm-Blöcke“ bekommen ihre
+Achse automatisch (`withAxis`), andere Blöcke bleiben, wie sie sind (z. B. Bretter als Rahmen gehen auch).
+```js
+import { window, doorway, chimney, column, arch, archProfile, battlements, arrowSlit, balcony, straightStairs, timberWall,
+  brace, supportPost, dormer, hangingLantern, wallLantern, lampPost, floorPattern, gardenFence,
+  partOptions, placeOriented, orientedBox, centeredSpan, withAxis, slabFor, checkInt, checkChoice, checkId, LIB_FACINGS } from '../lib/bauteile.js';
+```
+- **`window(b, { x, y, z, facing, width = 1, height = 2, style = 'pane', glass = 'glass_pane', frame, stairs = 'spruce_stairs',
+  slab, sill, shutters = null, flowerBox = null })`** – Fenster. Ursprung = unterste Zelle der Öffnung (Mitte) in der Wandebene.
+  `style`: `pane` (nur Glas), `framed` (Rahmen, Standard `stripped_spruce_log`, + Fensterbank), `arched` (Rundbogen oben aus
+  oberen Treppen/Stufen `stairs`/`slab`, width ≥ 2), `round` (Rundfenster `width` 3 oder 5, quadratisch, Ecken aus Treppen).
+  Zusätze für jeden Stil: `frame` (Block-ID → Ring um die Öffnung, `lx lo−1 … hi+1`, `ly −1 … height`), `sill` (Treppen-ID →
+  obere Treppe unter der Öffnung bei `lz 1`, hohe Seite zur Wand; bei `framed` Standard = `stairs`), `shutters` (Falltür-ID →
+  offene Falltüren flach an der Wand links/rechts, `lz 1`), `flowerBox` (`true` | `{ trapdoor = 'spruce_trapdoor', soil =
+  'rooted_dirt', flowers = FLOWERS }` → Erdreihe bei `ly −1, lz 1`, ringsum Falltüren bis `lz 2`, Blumen darauf bei `ly 0`;
+  ersetzt `sill`). Beim Bogenfenster ohne `frame` bleiben die Wandblöcke in den Ecken stehen.
+  Ausdehnung: `lx lo … hi` (mit Rahmen/Läden/Kasten ±1), `ly 0 … height − 1` (`−1` mit Rahmen/Bank/Kasten, `height` mit Rahmen),
+  `lz 0` (bis 1 mit Bank/Läden, bis 2 mit Kasten). Beispiel:
+  `window(b, { x: 2, y: 2, z: 8, facing: 'south', shutters: WOOD.fichte.trapdoor, flowerBox: true })`.
+- **`doorway(b, { x, y, z, facing, door = 'spruce_door', width = 1, frame = 'stripped_spruce_log', canopy = null, step = null,
+  open = false })`** – Tür (1 oder 2 breit) mit Rahmen und Vordach. Ursprung = untere Türhälfte (bei width 2 die linke Tür) in
+  der Wandebene; `facing` = außen. Die Tür hat `facing` = innen (öffnet nach innen), Doppeltüren mit Scharnier links/rechts.
+  `frame`: Ständer links/rechts (`ly 0 … 1`) und Sturz (`ly 2`). `canopy`: Treppen-ID (Tiefe 1: Treppenreihe bei `ly 3, lz 1`,
+  obere Treppen als Konsolen bei `ly 2`) oder `{ stairs, depth: 1 | 2, posts = 'spruce_fence' }` (Tiefe 2: zweite Reihe bei
+  `ly 2, lz 2` auf Zaunpfosten). `step`: Treppen-ID → Stufe vor der Tür bei `ly −1, lz 1` (für einen Fußboden eine Ebene über
+  dem Gelände). Ausdehnung: `lx −1 … width` (ohne Rahmen/Dach `0 … width − 1`), `ly (−1) 0 … 3`, `lz 0 … depth`.
+- **`chimney(b, { x, y, z, facing, height = 4, block = 'bricks', width = 1, smoke = 'normal', rim = null, fire = 'campfire' })`** –
+  Schornstein. Ursprung = Mitte der untersten Ebene; Schaft `width` 1 oder 3 (quadratisch) von `ly 0 … height − 1`.
+  `smoke`: `normal` (Lagerfeuer), `tall` (Heuballen direkt darunter → Signalfeuer, Rauch steigt viel höher), `none`. Bei width 1
+  sitzt das Feuer auf dem Schaft (`ly height`, der Heuballen ist die oberste Schaftzelle), bei width 3 vertieft in der Mitte
+  (`ly height − 1`, Heuballen verdeckt darunter). `rim`: Treppen-ID → Kranz aus oberen Treppen um die oberste Ebene (±1).
+  `facing` dreht nur das Lagerfeuer. Ausdehnung: `±(width − 1) / 2` (+1 mit Kranz), `ly 0 … height − 1` (+1 bei width 1 mit Feuer).
+- **`column(b, { x, y, z, facing, height = 5, shaft = 'quartz_pillar', base = 'smooth_quartz', capital = 'chiseled_quartz_block',
+  trim = 'smooth_quartz_stairs' })`** – Säule. Ursprung = Basis. `ly 0` Basis, Schaft, `ly height − 1` Kapitell (height ≥ 3);
+  `trim` = 3 × 3-Kranz aus Treppen an Basis (unten) und Kapitell (oben), hohe Seite zur Säule, Ecken als Außenecken; `null` = schlank.
+  Ausdehnung `±1` (ohne trim 0), `ly 0 … height − 1`.
+- **`arch(b, { x, y, z, facing, width = 3, height = 4, style = 'round', block = 'stone_bricks', stairs = 'stone_brick_stairs',
+  slab, depth = 1, pillars = true })`** – Bogen/Tor. Ursprung = unterste Zelle der Öffnung (Mitte) in der Wandebene. `height` =
+  lichte Höhe in der Mitte; `style` `round` (Halbkreis, braucht `height ≥ width / 2`) oder `pointed` (Spitzbogen aus zwei Kreisbögen
+  mit Radius 1,5 · halbe Breite, braucht `height ≥ 0,71 · width`); Rundung aus oberen Treppen (hohe Seite außen) und oberen Stufen.
+  Öffnung = Luft, Pfeiler `lx lo − 1` und `hi + 1`, Scheitelreihe `ly height`. `depth` wiederholt nach hinten (`lz 0 … −(depth − 1)`).
+  `archProfile(width, height, style)` → `{ lo, hi, center, get(lx, ly) }` mit `'open' | 'stairs' | 'slab' | 'solid'` (für eigene
+  Bögen, z. B. Gewölbe). Ausdehnung `lx lo − 1 … hi + 1`, `ly 0 … height`, `lz −(depth − 1) … 0`.
+- **`battlements(b, { x, y, z, facing, length = 5, block = 'stone_bricks', parapet = 1, height = 1, merlon = 1, gap = 1, cap = null,
+  corbels = null })`** – Zinnenkranz. Ursprung = linkes Ende (von außen gesehen) auf Höhe der Brüstung, Reihe `lx 0 … length − 1`
+  in der Wandebene (äußere Mauerreihe), `facing` = Feldseite. `parapet` Ebenen Brüstung, darüber Zinnen (`merlon` breit, `height`
+  hoch) und Lücken (`gap`); die letzte Zelle ist immer eine Zinne. `cap`: Stufen-ID auf den Zinnen. `corbels`: Treppen-ID →
+  die Reihe springt um 1 nach außen (`lz 1`) und sitzt auf Konsolen (obere Treppen bei `ly −1`). Ecken: zwei Aufrufe, die sich in
+  der Eckzelle treffen. Ausdehnung `lx 0 … length − 1`, `ly (−1) 0 … parapet + height − 1 (+1 cap)`, `lz 0` (1 mit corbels).
+- **`arrowSlit(b, { x, y, z, facing, height = 3, style = 'slit', depth = 1, fill = 'air' })`** – Schießscharte. Ursprung = unterste
+  Zelle in der Wandebene. `slit` = 1 breit, `cross` = Querarm (±1) in der oberen Mitte (height ≥ 3); `depth` = Wanddicke nach hinten;
+  `fill` z. B. `iron_bars`. Ausdehnung `lx 0` (±1 bei cross), `ly 0 … height − 1`, `lz −(depth − 1) … 0`.
+- **`balcony(b, { x, y, z, facing, width = 3, depth = 2, floor = 'spruce_planks', railing = 'spruce_fence', supports =
+  'spruce_stairs' })`** – Balkon. Ursprung = Wandzelle (Mitte) auf Höhe des Balkonbodens; Boden `lz 1 … depth`, Geländer eine Ebene
+  höher am Rand, Konsolen (obere Treppen) unter den Seiten an der Wand (`ly −1`, bei depth ≥ 3 zwei übereinander). Die Tür setzt
+  du mit `doorway`. Ausdehnung `lx lo … hi`, `ly −1 (−2) … 1`, `lz 1 … depth`.
+- **`straightStairs(b, { x, y, z, facing, width = 1, height = 4, stairs = 'spruce_stairs', support = 'spruce_planks', railing = null
+  })`** – gerade Treppe, steigt in `facing`-Richtung. Ursprung = unterste Stufe (Mitte); Stufe k bei `(·, k, k)`, Treppen-facing =
+  `facing`. `support` füllt unter den Stufen bis `ly 0`; `railing` (braucht support): Wangen links/rechts mit Pfosten darauf.
+  Ausdehnung `lx lo (−1) … hi (+1)`, `ly 0 … height − 1 (+1)`, `lz 0 … height − 1`.
+- **`timberWall(b, { x, y, z, facing, length = 9, height = 4, frame = 'stripped_dark_oak_log', fill = 'white_terracotta', brace,
+  pattern = 'diagonal', spacing = 4 })`** – Fachwerkwand. Ursprung = **linke untere Ecke** (von außen gesehen), Wand `lx 0 …
+  length − 1`, `ly 0 … height − 1`, `lz 0`. Schwelle/Rähm aus `frame` (liegend), Ständer alle `spacing` und am Ende; `pattern`:
+  `diagonal` (Streben im Wechsel / \), `cross` (Andreaskreuze), `grid` (Riegel in der Mitte, ab height 5), `plain`. Für ein Haus
+  vier Aufrufe: Süd `(x0, y, z1)`, Nord `(x1, y, z0)`, West `(x0, y, z0)`, Ost `(x1, y, z1)` mit passendem facing.
+- **`brace(b, { x, y, z, facing, length = 1, stairs = 'dark_oak_stairs', beam = null })`** – Kopfband unter einem Vorsprung.
+  Ursprung = Wandzelle direkt unter dem Balken; Zelle i bei `(0, −(length − 1 − i), 1 + i)`, obere Treppen mit der hohen Seite zur
+  Wand; `beam` = Balken bei `ly 1, lz 1 … length`. Ausdehnung `lx 0`, `ly −(length − 1) … 0 (1)`, `lz 1 … length`.
+- **`supportPost(b, { x, y, z, facing, height = 3, log = 'dark_oak_log', braces = 'dark_oak_stairs', sides = 2 })`** – Pfosten mit
+  Kopfbändern (obere Treppen, hohe Seite außen) an der obersten Ebene: `sides 2` links/rechts (lokal x), `4` rundum. Ursprung = Fuß.
+- **`dormer(b, { x, y, z, facing, width = 3, wallHeight = 2, depth, wall = 'spruce_planks', corner = 'spruce_log', stairs =
+  'dark_oak_stairs', slab, glass = 'glass_pane' })`** – Dachgaube mit eigenem Satteldach (First quer zum Hauptdach). Ursprung =
+  unterste Zelle der Vorderwand (Mitte), `facing` = Talseite. Körper `lx −r … r` (`r = (width − 1) / 2`, width ungerade ≥ 3),
+  `lz −(depth − 1) … 0`, innen frei, Fenster über die ganze Wandhöhe. Ohne `depth`: `wallHeight + r + 1` (passt zu 45°-Dächern
+  von `b.roof`). Setze sie nach dem Hauptdach, die Vorderwand auf die Wandkrone. Ausdehnung `±(r + 1)`, `ly 0 … wallHeight + r`,
+  `lz −(depth − 1) … 1`. Beispiel: `dormer(b, { x: 6, y: 6, z: 8, facing: 'south', stairs: WOOD.schwarzeiche.stairs })`.
+- **Laternen.** `hangingLantern(b, { x, y, z, facing, chain = 1, lantern = 'lantern', chainBlock = 'iron_chain' })`: Ursprung = Zelle
+  unter der Decke, `chain` Kettenglieder, darunter die hängende Laterne (`ly −chain … 0`). `wallLantern(b, { x, y, z, facing, style =
+  'bracket', lantern, arm = 'spruce_fence', shelf = 'spruce_stairs' })`: Ursprung = Wandblock auf Laternenhöhe; `bracket` = Zaun-Arm
+  bei `ly 1, lz 1`, Laterne hängt bei `ly 0, lz 1`; `shelf` = obere Treppe bei `ly −1`, Laterne steht darauf. `lampPost(b, { x, y, z,
+  facing, height = 3, post = 'spruce_fence', base = null, lantern, style = 'top' })`: Ursprung = Fuß; `top` (Laterne obenauf,
+  `ly height`), `arm` (Arm nach vorne bei `ly height − 1, lz 1`, Laterne hängt darunter), `double` (vorne und hinten); `base` =
+  Sockelblock als unterste Ebene.
+- **`floorPattern(b, { x, y, z, facing, width = 5, depth = 5, pattern = 'checker', blocks, border = null })`** – Bodenmuster auf
+  Ebene `y`. Ursprung = Ecke; `lx 0 … width − 1` (rechts), `lz 0 … depth − 1` (vorne). `pattern`: `checker`, `stripes`, `border`
+  (blocks[0] innen, [1] Rand), `rings`, `diamond`, `herringbone` (Fischgrät; mit Stämmen schön: Achsen wechseln, blocks[1] optional),
+  `random` (Einträge auch `[id, gewicht]`, Mischung über `hashPosition` lokal). `border`: Randblock für jedes Muster.
+- **`gardenFence(b, { x, y, z, facing, width = 7, depth = 5, fence = 'spruce_fence', gate = 'spruce_fence_gate', gateWidth = 1,
+  posts = null, lanterns = false, sides = ['front', 'back', 'left', 'right'] })`** – Zaun ums Rechteck `lx 0 … width − 1`,
+  `lz 0 … depth − 1`; Tor mittig vorne (`lz depth − 1`, `lx floor((width − 1) / 2)`); `posts` = Block für Ecken und Torpfosten
+  (z. B. geschälter Stamm, Mauer), `lanterns` = Laternen auf den Torpfosten (braucht posts). Ausdehnung `ly 0` (1 mit lanterns).
+- Helfer für eigene Bauteile (auch für `innen.js`): `partOptions(name, b, options, defaults)` (prüft b, unbekannte Optionen,
+  x/y/z, facing; Standard facing `south`), `placeOriented(b, o, draw)` (= `b.transform` um den Ursprung), `orientedBox(o, min, max)`,
+  `centeredSpan(width)`, `withAxis(id, axis)`, `slabFor(stairsId)`, `checkInt/checkChoice/checkId`.
+
+#### Einrichtung und Licht (`innen.js`, Agent lib:bauteile)
+
+Räume: **Ursprung = hintere linke Ecke auf Bodenhöhe** (erste Luftebene über dem Fußboden), von der Tür aus gesehen; die
+Rückwand liegt hinter `lz = −1`, die Möbel stehen an ihr und schauen nach vorne (`facing`, Richtung Tür); der Raum reicht
+`width` nach rechts (lokal +x) und `depth` nach vorne. Bei `facing: 'south'` ist der Ursprung also die Nordwest-Ecke. `wood` =
+Holzname (`'fichte'`) oder eine Holz-Palette; Farben als Namen aus `COLOR` (`'rot'`). Rückgabe wie bei den Bauteilen.
+```js
+import { bedroom, kitchen, diningTable, bookWall, storage, enchantingSetup, ENCHANTING_SHELVES, workshop, fireplace,
+  lightRoom, findDarkSpots, LIGHT_MAX } from '../lib/innen.js';
+```
+- **`bedroom(b, { x, y, z, facing, width = 5, depth = 5, wood = 'fichte', color = 'rot', rug = 'weiss', double = false })`** – Bett(en)
+  mittig an der Rückwand (Kopfteil hinten), Nachttische (Fass) mit Laterne/Kerzen, Truhe am Fußende, Teppich (ab depth 4, `rug:
+  null` ohne), Bücherregal mit Topfpflanze in einer freien Ecke, ab 6 × 5 ein Schrank vorne an der Seitenwand. width ≥ 3 (double ≥ 4),
+  depth ≥ 3. Ausdehnung = Raum `lx 0 … width − 1`, `ly 0 … 1`, `lz 0 … depth − 1`.
+- **`kitchen(b, { x, y, z, facing, width = 5, wood = 'fichte', cabinets = true })`** – Arbeitszeile an der Rückwand (`lz 0`):
+  Räucherofen (mit Trichter als Abzug bei `ly 2`), Wasserkessel (Spüle), Fass, Ofen, Werkbank, Fass, Komposter, dann Arbeitsplatte
+  (Bretter) und am Ende ein Fass; Hängeschränke (obere Treppen) bei `ly 2`, etwas Deko. width ≥ 4, Raumhöhe ≥ 3.
+- **`diningTable(b, { x, y, z, facing, length = 3, width = 1, wood, top = 'slab', cloth = 'weiss', headChairs = true, decor = true })`**
+  – Tisch `lx 0 … length − 1`, `lz 0 … width − 1` (Ursprung = linke hintere Tischecke), Stühle (Treppen, Lehne außen) bei `lz −1` und
+  `lz width`, Kopfstühle bei `lx −1`/`length`. `top`: `slab` (obere Stufen, Kerzen/Blumen darauf) oder `carpet` (Zaunbeine + Teppich).
+- **`bookWall(b, { x, y, z, facing, width = 5, height = 3, wood = 'schwarzeiche', chiseled = true, crown = true, ladder = false })`** –
+  Bücherregale vor der Rückwand (`lz 0`), dazwischen gefüllte Regale (`chiseled_bookshelf`), Stämme an den Enden (ab width 3, bei
+  langen Wänden alle 4), Kranz aus oberen Treppen bei `ly height`, Leiter mittig bei `lz 1`.
+- **`storage(b, { x, y, z, facing, width = 5, height = 2, chest = 'chest', barrel = true })`** – Lagerwand (`lz 0`): Doppeltruhen
+  (2 breit, `type` ausdrücklich gesetzt, Partner wie im Spiel) und Fässer im Wechsel, 1 … 3 Ebenen. `chest`: `chest`,
+  `trapped_chest` oder eine Kupfertruhe.
+- **`enchantingSetup(b, { x, y, z, facing, lights = true })`** – Zaubertisch mit genau 15 Bücherregalen (Stufe 30, Regel wie
+  `EnchantingTableBlock`: 2 Felder entfernt, Tischhöhe oder eine höher, Feld dazwischen frei). Ursprung = Tisch, `facing` = offene
+  Seite. Regale: hintere Reihe `lz −2` (oben ohne Mitte), Seiten `lx ±2` bei `lz −1` (2 hoch) und `lz 0` (unten); die 3 × 3 Felder um
+  den Tisch werden freigeräumt. `ENCHANTING_SHELVES` = die 15 lokalen Positionen. `lights`: Laterne oben in der Mitte, Kerzen.
+  Ausdehnung `±2`, `ly 0 … 2`, `lz −2 … 1`.
+- **`workshop(b, { x, y, z, facing, width = 6, wood = 'fichte', shelves = true })`** – Werkbank-Zeile (`lz 0`): Werkbank,
+  Schmiedetisch, Amboss, Schleifstein, Steinsäge, Bognertisch, Kartentisch, Webstuhl, Fass, Schmelzofen (so viele wie width), Regale
+  (`*_shelf`) bei `ly 2`.
+- **`fireplace(b, { x, y, z, facing, height = 4, block = 'bricks', mantel = 'dark_oak_stairs', fire = 'campfire', decor = true })`** –
+  Kamin an der Rückwand. Ursprung = Mitte vorne auf Bodenhöhe; Körper `lx −1 … 1` bei `lz 0` (hinten, Lagerfeuer vertieft) und
+  `lz 1` (Wangen, Sturz); Sims (obere Treppen) bei `ly 2`, `lx −2 … 2`; Deko darauf; Schlot bis `ly height − 1` (= Raumhöhe, ≥ 4).
+- **`lightRoom(b, box, { lantern = 'lantern', mode = 'auto', chain = 'auto' })`** → `{ placed: [[x, y, z], …], walkable }` –
+  Licht gegen Monster. `box = { x1, y1, z1, x2, y2, z2 }` = Luftraum innen (inklusive, Aufrufer-Koordinaten, ≤ 2 Mio. Felder).
+  Setzt Laternen, bis jedes **begehbare Feld** (Luft mit einem Block darunter) Blocklicht > 0 hat – in 26.2 spawnen Monster nur bei
+  Blocklicht 0. Rechnung: Lichtquellen in der Box (Werte wie im Spiel, `blockLightEmission`; Laterne 15, Seelenlaterne 10, Fackel
+  14 …) breiten sich mit −1 je Block aus, nur durch Luft und kleine Blöcke (Laternen, Ketten, Teppiche, Zäune, Kerzen, Scheiben …);
+  im Zweifel blockiert ein Block (vorsichtig). Gierig: das erste dunkle Feld wird erreicht, unter den Plätzen in Reichweite gewinnt
+  der, der die meisten dunklen Felder hell macht. `mode`: `auto` = hängend an der Decke (Raum ≥ 3 hoch; an `chain` Kettengliedern,
+  Standard `höhe − 4`, also etwa 3 Ebenen über dem Boden), sonst stehend am Boden an einer Wand; `ceiling`; `floor`. Aufrufen,
+  **nachdem** der Raum eingerichtet ist (Möbel werfen Schatten). `findDarkSpots(b, box)` → dunkle begehbare Felder (gleiche Rechnung,
+  z. B. für eigene Lichtplanung). Beispiel: `lightRoom(b, { x1: 1, y1: 1, z1: 1, x2: 7, y2: 4, z2: 6 })`.
+
+#### Natur und Gelände (`natur.js`, Agent lib:natur)
+
+Zufall: aus Position, Optionen und `seed` (Zahl oder Text, Standard 0) über `createRandom`/`hashPosition` – nicht aus
+`b.rng()`. Ein Baum sieht also gleich aus, egal was davor gebaut wurde; anderer `seed` = andere Form. Jede Funktion gibt
+die belegte Box `{ min: [x, y, z], max: [x, y, z] }` in Aufrufer-Koordinaten zurück, `null`, wenn nichts gesetzt wurde.
+**Reihenfolge:** erst Boden/Gelände, dann Bäume, Felsen, Bewuchs – Bodendeko (Blütenblätter, Laubstreu, Bewuchs) landet
+nur auf vorhandener Erde/Gras, Laub nur in Luft. Wege möglichst nach den Bauten setzen (oder danach `fixDirtPaths`).
+
+```js
+import { tree, treeExtent, bush, bushExtent, flowerBed, vegetation, terrain, hill, pond, rock, rockExtent,
+  path, pathAlong, fixDirtPaths, groundLevel, isPlantId } from '../lib/natur.js';
+
+tree(b, { x, y, z, facing, species = 'eiche', size = 'mittel', seed, roots = true, ground = true, vines = true })
+```
+- **Bäume.** `species`: `eiche`, `birke`, `fichte`, `schwarzeiche`, `kirsche`, `akazie`, `dschungel`, `mangrove`
+  (`TREE_SPECIES`); `size`: `klein`, `mittel`, `gross`, `riesig` (`TREE_SIZES`). Ursprung = unterster Stammblock auf
+  Höhe `y` (der Boden liegt bei `y − 1`). 2×2-Stamm (Schwarzeiche immer, Dschungel ab gross, Eiche/Fichte/Mangrove riesig)
+  belegt `x … x+1, z … z+1` in jeder Ausrichtung. `facing` dreht Äste und Krone (Eiche: erster Ast zeigt nach vorne,
+  Akazie neigt sich nach vorne). Stamm = Stämme (`axis=y`), Äste = Holz-Blöcke (`*_wood`, Rinde rundum) mit `axis` in
+  Wuchsrichtung, Wurzelansatz aus Holz-Blöcken am Fuß (ab mittel, Schwarzeiche immer; `roots: false` schaltet ab). Krone aus mehreren
+  überlappenden Ellipsoiden mit ausgefranstem Rand, Laub `persistent=true`. Art-Details: Kirsche mit hängenden Blütenzweigen und
+  `pink_petals` am Boden; Mangrove auf Stelzwurzeln (`mangrove_roots`) mit hängenden Keimlingen; Dschungel mit Ranken
+  und Kakao (`vines: false` ohne); Eiche/Schwarzeiche mit Laubstreu; Fichte gross/riesig macht Gras unter sich teils zu
+  Podsol/Grober Erde (`y − 1`). `ground: false` = keine Bodendeko.
+  `treeExtent(species, size)` → `{ radius, height, trunk, below }`: alles liegt in `x − radius … x + radius (+1 bei
+  trunk 2)`, `y − below … y + height − 1`, z wie x. Werte (radius/height):
+
+  | Art | klein | mittel | gross | riesig |
+  |---|---|---|---|---|
+  | eiche | 3/8 | 5/10 | 7/13 | 11/16 |
+  | birke | 2/11 | 3/13 | 3/16 | 4/20 |
+  | fichte | 3/11 | 4/14 | 5/19 | 8/27 |
+  | schwarzeiche | 4/7 | 6/9 | 7/11 | 10/14 |
+  | kirsche | 4/7 | 5/9 | 7/10 | 9/12 |
+  | akazie | 4/6 | 6/10 | 8/11 | 10/14 |
+  | dschungel | 3/10 | 5/15 | 7/22 | 10/30 |
+  | mangrove | 3/9 | 4/12 | 6/14 | 8/18 |
+
+  Beispiel: `tree(b, { x: 5, y: 1, z: 5, species: 'kirsche', size: 'gross', seed: 2 })`.
+```js
+bush(b, { x, y, z, facing, size = 'mittel', leaves = 'eiche', seed, stem = true })
+```
+- **Busch.** Ursprung = Mitte der untersten Ebene (`y`). `size`: `klein`/`mittel`/`gross` (`bushExtent(size)` →
+  radius/height 2/2, 3/3, 4/4: `x ± radius`, `y … y + height − 1`). `leaves`: Holzname mit Laub (`eiche`, `birke`, `fichte`,
+  `schwarzeiche`, `kirsche`, `akazie`, `dschungel`, `mangrove`, `blasseiche`) oder `azalee` (Azaleen- und blühendes
+  Azaleenlaub gemischt). `stem`: Stamm-Block in der Mitte (ab mittel). `facing` dreht die Form.
+```js
+flowerBed(b, { x, y, z, width, depth, facing, palette = 'bunt', soil = 'gras', border = null, wood = 'eiche',
+               density = 0.8, tall = true, seed })
+```
+- **Blumenbeet.** Fläche `x … x+width−1`, `z … z+depth−1` (immer weltachsig), Boden auf Höhe `y`, Pflanzen auf `y+1`
+  (doppelte bis `y+2`). `facing` = Vorderseite: vorne kleine Blumen in Gruppen derselben Sorte, hinten (ab 3 Reihen)
+  doppelte Pflanzen über `b.tall`. `palette`: `bunt`, `warm`, `kuehl`, `rosa`, `weiss`, `wiese`; `soil`: `gras`, `erde`,
+  `moos`, `podsol`; `border`: `null`, `stein` (Bruchstein/bemoost), `holz` (Stämme entlang der Kante, Ecken Holz aus `wood`).
+  Beispiel: `flowerBed(b, { x: 0, y: 0, z: 8, width: 9, depth: 3, palette: 'warm', facing: 'south' })`.
+```js
+vegetation(b, { x, y, z, width, depth, facing, mix = 'wiese', density = 0.35, shape = 'rund', scan = 24, seed })
+```
+- **Bewuchs (Gras, Farne, Blumen).** Fläche wie beim Beet; `y` = obere Suchgrenze: je Säule wird der oberste Block
+  zwischen `y` und `y − scan` gesucht (Pflanzen zählen nicht), Pflanzen kommen darauf – nur auf Erde/Gras/Moos
+  (`trocken` auch auf Sand). Funktioniert also auf Hügeln. `mix`: `wiese`, `blumen`, `farn`, `wald` (mit Laubstreu und
+  Pilzen), `trocken` (Trockengras, toter Busch). `shape`: `rund` (Ellipse mit ausgefranstem Rand) oder `eckig`. Fleckig
+  verteilt (Rauschen). `facing` hat hier keine Wirkung.
+```js
+terrain(b, { x, y, z, width, depth, facing, height = 0, heightAt = null, shape = 'eckig', edge = 0, surface = 'gras',
+             rocky = false, seed })   // → { min, max, top(x, z) }
+hill(b, { x, y, z, width, depth, facing, height = 6, surface = 'gras', rocky = true, seed })   // → { min, max, top(x, z) }
+```
+- **Gelände.** Fläche wie beim Beet; jede Säule reicht von `y` bis `y + h`: oben `surface` (`gras`, `podsol`, `moos`,
+  `erde` = grobe Erde/Erde/Wurzelerde, `sand` mit Sandstein darunter), darunter 2–3 Erde, unten Stein mit Andesit-, Kies-
+  und Tuffnestern (die Seiten zeigen die Schichten). `h = heightAt(dx, dz)` (dx/dz ab der Nordwestecke, Kommazahlen werden
+  gerundet, negativ = Loch) oder fest `height`. `edge` > 0 lässt die Höhe zum Rand weich auslaufen; `shape: 'rund'` =
+  Ellipse mit ausgefranstem Rand. `rocky`: steile Stellen (≥ 2 Stufen) bekommen Stein/Andesit/bemoosten Bruchstein.
+  `top(x, z)` liefert den obersten Geländeblock (Aufrufer-Koordinaten) oder `null`. `facing` hat bei `terrain` keine Wirkung.
+  **Hügel** = runde Kuppe bis `y + height`, Höhenlinien verzerrt (keine Ringe); `facing` = Seite mit dem langen, flachen Hang
+  (Gipfel nach hinten versetzt, gut für Wege hinauf). Beispiel: `const h = hill(b, { x: 0, y: 0, z: 0, width: 30, depth: 24,
+  height: 8 }); tree(b, { x: 12, y: h.top(12, 10) + 1, z: 10, species: 'fichte' })`.
+```js
+pond(b, { x, y, z, width, depth, facing, waterDepth = 2, shore = 'sand', lilyPads = true, reeds = true, seagrass = true, seed })
+```
+- **Teich.** Fläche wie beim Beet (5 … 64), `y` = Wasserspiegel = Oberkante des umgebenden Bodens. Wasser nur als Quellen
+  (`water[level=0]`), in der Mitte `waterDepth` tief, am Rand 1; Grund und Seiten unter dem Spiegel aus Sediment
+  (Sand/Ton/Kies/Schlamm), damit nichts ausläuft; Ufer-Ring auf `y` (`shore`: `sand`, `ton`, `kies`, `gemischt`), auf der
+  `facing`-Seite ein breiterer Sandstrand. Seerosen nur auf Wasserquellen, Schilf = Zuckerrohr (1–3 hoch) nur auf
+  Sand/Erde/Gras direkt neben Wasser, Seegras ab 2 Tiefe. Pflanzen über der Fläche werden entfernt. Ausdehnung:
+  `y − waterDepth … y + 3`.
+```js
+rock(b, { x, y, z, facing, size = 'mittel', material = 'stein', moss = true, sink = 1, rubble = true, seed })
+```
+- **Felsen.** Ursprung = Mitte auf Bodenhöhe `y` (unterste Felsreihe auf `y − sink`, also eingesunken). `size`: `klein`,
+  `mittel`, `gross`, `riesig`; `material`: `stein`, `andesit`, `tuff`, `granit`, `diorit`, `schiefer`, `sandstein`
+  (Gemisch in Flecken). `moss`: Moos/bemooster Bruchstein auf freien Oberseiten, teils Moosteppich. `rubble`: Geröll
+  (Stufen/Blöcke) rundherum, nur auf vorhandenem Boden. Lange Seite zeigt nach `facing`.
+  `rockExtent(size, { sink, rubble })` → `{ radius, height, below }`: `x ± radius`, `y − below … y + height − 1`
+  (radius ohne Geröll 2/3/4/6, Geröll +2; height 3/4/5/7).
+```js
+path(b, { x, y, z, facing, length, width = 3, mix = 'erde', wiggle = 1, follow = false, seed })
+pathAlong(b, { y, points: [[x, z], …], width = 3, mix = 'erde', wiggle = 0, follow = false, seed })
+fixDirtPaths(b, { x1, y1, z1, x2, y2, z2 })   // → Anzahl umgewandelter Blöcke
+groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanzen-Blocks oder null
+```
+- **Wege.** Ersetzen die Bodenschicht auf Höhe `y` (dort, wo das Gras liegt). `path`: Ursprung = Mitte der Anfangskante,
+  läuft `length` Blöcke in `facing`-Richtung; quer `±(width/2 + wiggle)` (gerade Breite: eine Spalte mehr auf einer Seite).
+  `pathAlong` folgt einer Linie aus Punkten (Ecken gerundet; Abweichung von der Signatur: `points` statt x/z/facing).
+  `mix`: `erde` (vor allem Erdpfad, dazu grobe Erde, Kies, Wurzelerde), `kies`, `gemischt`; Ränder ausgefranst und gröber.
+  **Erdpfad nie unter einem Block:** steht über einer Stelle etwas (außer Pflanzen, die entfernt werden), wird grobe Erde
+  gesetzt. `wiggle` = seitliches Schlängeln (an Anfang und Ende 0). `follow: true` = `y` ist die obere Suchgrenze, der Weg
+  liegt auf dem jeweils obersten Boden (Hügel). Ohne `follow` wird unter dem Weg bei Luft Erde ergänzt (`y − 1`).
+  `fixDirtPaths` wandelt nachträglich jeden Erdpfad mit etwas darüber in grobe Erde um.
+- Konstanten zum Auswählen: `TREE_SPECIES`, `TREE_SIZES`, `BUSH_SIZES`, `BUSH_LEAVES`, `ROCK_SIZES`, `ROCK_MATERIALS`,
+  `FLOWER_BED_PALETTES`, `VEGETATION_MIXES`, `PATH_MIXES`, `POND_SHORES`, `TERRAIN_SURFACES`; `isPlantId(id)`.
+- Bekannte Grenzen: Laub wird nicht über `distance` berechnet (immer `persistent=true`). Bodendeko und Geröll prüfen nur
+  den Block direkt darunter. Teiche erwarten flachen Boden – höheres Gelände über dem Spiegel bleibt stehen.
 
 ## 10. Skripte und Tests
 
@@ -932,6 +1342,16 @@ außen“); echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nic
   (sonst 403, Schutz vor DNS-Rebinding); `isAllowedHost(host, port)` ist exportiert.
 - `node scripts/extract-game-data.mjs [--jar …] [--assets …] [--offline]` – Spieldaten erzeugen
   (Änderung: `--offline` = Blockbericht nur aus dem Cache, sonst „derived“; Laufzeit ≈ 1–2 s).
+  Änderung (cloud:spieldaten): `--remote [--offline]` lädt aus öffentlichen Quellen statt Jar (§5; verträgt sich nicht mit
+  `--jar`/`--assets`), `--out <ordner>` schreibt statt nach `game-data/` dorthin (Cache `<ordner>/.cache/`). Fehlt das Jar,
+  nennt die Meldung `--remote`. `parseCliArgs` liefert `remote`/`out` nur, wenn gesetzt. Als Bibliothek:
+  `extractGameData({ remote: true, out, offline }, log)`.
+- `node scripts/check-imports.mjs [--root <ordner>]` (cloud:spieldaten) – prüft alle statisch erkennbaren lokalen Verweise auf
+  exakte Groß-/Kleinschreibung (unter Linux entscheidend): JS/MJS in `js/`, `scripts/`, `tests/` (`import … from`,
+  `export … from`, `import('…')`, `new URL('…', import.meta.url)` und daraus gebildete Basis-Variablen, `new Worker('…')`,
+  `fetch('…')` – die beiden letzten relativ zur Seite: für `js/` die Projektwurzel), HTML (Wurzel und `tests/`: `src`/`href`)
+  und CSS (`url()`, `@import`). Erzeugte Ordner (`game-data/`, `thumbs/`, `tmp/`) zählen nicht. Ausgabe `datei:zeile: art
+  „verweis“ – grund`, Exit-Code 1 bei Funden. Als Bibliothek: `checkImports({ root })` → `{ files, references, errors }`.
 - `node scripts/check-build.mjs <modulpfad>` – Modul bauen, prüfen (Blöcke/Zustände gültig,
   Grenzen, Texte vorhanden), Kennzahlen ausgeben; Exit-Code 1 bei Fehlern.
   Änderung: Optionen `--scale <zahl>`, `--json` (Bericht als JSON: `ok, module, id, title, category, scale,
@@ -955,6 +1375,30 @@ außen“); echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nic
   Infos und Kennzahlen. Fertig-Signal: `window.__viewerTest.ready` (oder `.error`), dazu `result`, `stats`, `status`, `hover`,
   `picks`, `bench`; `window.__viewer` ist die Viewer-Instanz.
 - `node scripts/build-catalog.mjs` – Katalog erzeugen.
+  Änderung (catalog): findet `js/builds/<kategorie>/<id>.js` (nur Kategorie-Ordner aus §8; `lib/` still, andere Ordner mit
+  Hinweis übersprungen), prüft jedes Modul mit `checkBuild` für jeden Maßstab und die Original-Strukturen (Datei vorhanden, Größe
+  und Blockzahl wie `structures/index.json`, keine Vorlage doppelt); doppelte IDs sind ein Fehler (alle Einträge der ID fallen weg).
+  Fehlerhafte Einträge fehlen im Katalog, alle Fehler stehen am Ende, Exit-Code 1 (2 bei falschen Optionen); der Katalog wird
+  trotzdem geschrieben. Ausgabe: Tabelle je Kategorie, Bilder-Zahl, Warnungen, Laufzeit. Optionen `--thumbs [--force]`
+  (danach `make-thumbs`, thumb-Felder neu), `--modules-dir <ordner>`, `--structures <datei>` | `--no-structures`, `--data <ordner>`,
+  `--out <datei>`, `--thumbs-dir <ordner>`. Als Bibliothek: `buildCatalog({ modulesDir, structuresFile, dataDir, thumbsDir })` →
+  `{ catalog, errors, notes, stats }`, `catalogModule`, `catalogStructures`, `analyzeStructure`, `sizeClass`, `serializeCatalog`,
+  `writeCatalog`, `writeFileAtomic`.
+- `node scripts/make-thumbs.mjs [--force] [--only <id>]… [--catalog <datei>] [--out thumbs] [--data <ordner>]
+  [--gpu hardware|swiftshader] [--prune]` (catalog) – Vorschaubilder: ein Chrome (Grafikkarte, sonst swiftshader) lädt
+  `tests/visual/thumb.html` und rendert jeden Eintrag mit dem echten Viewer in doppelter Auflösung, verkleinert auf **WebP
+  640×400** (`thumbs/<id>.webp`). Kamera: Iso (yaw 35°, pitch 28°), lange Bauten (Seitenverhältnis ≥ 2,2) von der Längsseite
+  (yaw 22° bzw. 68°, ab 4 : 1 yaw 10° bzw. 80° und pitch 22°), hohe (Höhe ≥ 1,5 × längere Seite) mit pitch 12°, flache
+  (Höhe ≤ 0,2 × längere Seite) mit 42°; die Box füllt das Bild mit 7 % Rand. Von welcher Ecke aus, entscheidet `sideScores`:
+  je Seite die zuerst sichtbaren Blöcke, gezählt die vom häufigsten Block abweichenden; eine andere Ecke (gespiegelte Winkel) gewinnt
+  erst ab 15 % mehr Abwechslung.
+  Neu gerendert wird nur bei geändertem Hash (Eintrag ohne `thumb`, Modul-Quelltext samt relativ importierter Dateien,
+  Strukturdatei, Spieldaten-Stand `version|worldVersion|resourcePack`, `THUMB_STYLE`) – gespeichert in `thumbs/index.json`
+  (`{ version: 1, style, size, entries: { <id>: { hash, bytes, renderedAt } } }`). Danach trägt es die thumb-Felder in den
+  Katalog ein. `--prune` löscht Bilder ohne Katalog-Eintrag (sonst nur Hinweis). Schlägt ein Bild fehl, lädt es die Seite neu und
+  versucht es einmal. Als Bibliothek: `makeThumbs({ catalog, outDir, dataDir, force, only, gpu, prune, log })` →
+  `{ rendered, skipped, retried, errors, orphans, durationMs }`. Render-Seite: `window.__thumb.render({ source, scale })` →
+  `{ ok, data (Base64-WebP), bytes, blocks, ms }`; die Kamera-Helfer `thumbAngles`/`thumbOrbit` in `tests/visual/thumb.js` sind rein.
 - `node --test "tests/unit/**/*.test.mjs"` – Unit-Tests (Ordnername allein geht nicht).
   `node tests/e2e.mjs` – Klick-Test.
 - `tests/browser.mjs` – Chrome über DevTools-Protokoll, freier Debug-Port (parallele Läufe gehen).
@@ -964,6 +1408,10 @@ außen“); echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nic
   Anfragen, deren URL `match` enthält, mit Testdaten (vor `goto` aufrufen; gilt nur für die Hauptseite, nicht im
   Worker); `page.unroute(match?)` hebt das auf (ohne Argument alle). `page.setInputFiles(selector, [pfade])` wählt
   Dateien in einem `<input type="file">` und löst `input`/`change` wie eine echte Auswahl aus.
+  Änderung (cloud:spieldaten): unter Linux sucht `chromeCandidates()` nach `CHROME_PATH`, `/usr/bin/google-chrome(-stable)`,
+  `/opt/google/chrome/chrome`, `/usr/bin/chromium(-browser)`, `/snap/bin/chromium` und Playwright-Browsern
+  (`$PLAYWRIGHT_BROWSERS_PATH` bzw. `~/.cache/ms-playwright/chromium-<rev>/chrome-linux*/chrome`, neueste zuerst);
+  `platformChromeFlags()` ergänzt unter Linux `--disable-dev-shm-usage` und als root `--no-sandbox`. Windows unverändert.
 
 ## 11. Design
 
@@ -988,3 +1436,219 @@ außen“); echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nic
 - Details: Fortschritt als segmentierte „XP-Leiste“, Tooltips im Spiel-Stil (dunkel mit
   violettem Rand), Material als Inventar-Slots mit Block-Icons, Hover-Anhebung mit Pixel-Schatten,
   sanfte Übergänge, Plopp-Animation der Blöcke; alles respektiert `prefers-reduced-motion`.
+
+## 12. Selber erstellen (`js/create/`)
+
+### 12.1 Freitext und Formen (`search.js`, `text-parser.js`, `block-lookup.js`, `shape-generators.js`)
+
+Keine KI: Katalogsuche, Formen-Generator und ein ehrliches „nicht gefunden“. Alles rein (kein DOM), läuft in Browser, Worker
+und Node. Katalog = `game-data/catalog.json` (Format §9, Runde 2), Namen = `names.json`, Blöcke = `blocks.json` (§5).
+
+```js
+// search.js – auch für die Textfilter der Seiten
+normalize(text)          // klein, ä→ae ö→oe ü→ue ß→ss, Akzente/Satzzeichen weg, Leerraum zusammengefasst
+tokenize(text)           // Wörter ohne Füllwörter (STOPWORDS), ohne Doppelte, höchstens 12; nur Füllwörter → bleiben
+searchCatalog(catalog, query, { limit = 20, category, threshold = MATCH_THRESHOLD, relative = 0 })
+  // → [{ entry, score (0 … 1), matched: [{ token, field, kind: exact|synonym|stem|prefix|part|typo, text }] }], beste zuerst
+  // leere Suche → alle Einträge mit score 0; relative > 0: nur Treffer ≥ relative · bester, gibt es einen genauen Titel/Alias → nur diese
+MATCH_THRESHOLD = 0.45 · SUGGEST_THRESHOLD = 0.2 · SYNONYM_GROUPS · damerauLevenshtein(a, b, max) · allowedTypos(len) · scoreEntry · catalogEntries
+```
+- Bewertung je Suchwort: bestes Feld (Gewicht title 10, aliases 9, id 8, tags 8, subtitle 5, Kategorie 4) × Güte (genau 1,
+  Synonym 0,9, Wortstamm 0,9, Wortanfang 0,75/0,85, Teil eines Worts 0,6, Tippfehler 0,75/0,6); Summe / (Wörter · 10). Ganze
+  Wortgruppe am Stück = Titel/Alias/ID („tokyo sky tree“) → 1. Tippfehler erst ab 5 Buchstaben (1), ab 8 (2), gleicher Anfangsbuchstabe.
+
+```js
+// block-lookup.js
+findBlocks(query, { names, blocks, limit = 8, fullOnly = false }) // → [{ id, name, nameEn, score, full }]
+blockForText(text, { names, blocks, fullOnly })                   // → ID oder null (Schwelle 0,6)
+stairsFor(id, { blocks })  // stone_bricks → stone_brick_stairs, oak_planks → oak_stairs … oder null
+blockDisplayName / blockDisplayLabel(id, names) („Steinziegel · minecraft:stone_bricks“) · isShapeFriendly(id) · isPlaceableAlone(id, blocks) · blockExists
+```
+- Deutsche und englische Namen und IDs; beide Seiten mit gleichem Wortstamm (Endungen ern/em/en/er/es/e/n/s wiederholt ab),
+  „Buntglas“ mit Farbe → „… Glas“; Stoffwörter ohne eigenen Block (`MATERIAL_DEFAULTS`: Holz → oak_planks, Beton → white_concrete,
+  Eisen → iron_block …) knapp unter einem genau gleichen Namen. Nur Blöcke aus `blocks` (Objekt aus blocks.json, Liste oder Menge;
+  ohne → geladene Kerndaten, sonst die Schlüssel aus names.json); nicht setzbare (Luft, Feuer …) fallen weg.
+- Änderung: „voller Block“ für Formen = `isSturdyFull` (statt `isFullSolid`), damit Glas, Buntglas und Eis ohne Warnung gehen.
+
+```js
+// shape-generators.js
+SHAPES = { sphere, dome, cylinder, cone, pyramid, cube, cuboid, ellipsoid, torus, circle, arch, 'spiral-stairs' }
+  // je { id, title, description, params: [{ key, label, type: 'int'|'block'|'bool'|'enum', default, min?, max?, step?, unit?,
+  //      options?: [{ value, label }], optional? (block: '' = keiner), emptyLabel?, kind?: 'stairs', dependsOn?, hint? }],
+  //      estimate(p), size(p) → [w, h, l], check?(p) → [Fehler], build(b, p) }
+SHAPE_IDS · MAX_SHAPE_BLOCKS = 2_000_000 · defaultShapeParams(id) · shapeSize(id, params)
+validateShapeParams(id, raw, { blocks }) // → { ok, params (vollständig), errors, warnings, estimate }
+buildShape(b, id, params)                // Worker-Vertrag §7.4: prüft, baut in den Builder, wirft Error mit deutschen Meldungen
+parseShapeQuery(URLSearchParams | text, { blocks }) // → { ok, shape, params, errors, warnings } – nur bekannte Parameter
+shapeQueryString(id, params)             // „form=sphere&diameter=31&block=glass&hollow=1&thickness=1“ (ohne „?“, bool = 1/0)
+```
+- Parameter (Schlüssel passen zu `checkParams` im Worker): sphere/dome/circle `diameter, block, hollow, thickness`; cylinder
+  `diameter, height, block, hollow, thickness, floor, battlements, roof (none|flat|cone|dome), roofBlock`; cone `diameter, height,
+  block, hollow, thickness`; pyramid `width, block, hollow, thickness`; cube `size, block, hollow`; cuboid/ellipsoid `width, height,
+  length, block, hollow (+ thickness)`; torus `radius, tube, block, hollow`; arch `width, height, depth, thickness, block`;
+  spiral-stairs `height, radius, stairs, core, wall, clockwise`. Grenzen stehen in `params` (z. B. Durchmesser 3–301, Höhe bis 512).
+- Unbekannte Parameter, falsche Typen und Werte außerhalb der Grenzen → Fehler. Blöcke: muss es geben (blocks/Kerndaten), einzeln
+  setzbar (keine Türen, Betten, hohen Pflanzen, Luft, Wasser …), bei `kind: 'stairs'` eine Treppe; kein voller Block → Warnung.
+  Vorab-Schätzung (Obergrenze) > 2 Mio. → Fehler „… höchstens 2 Mio. Mach sie kleiner oder hohl.“
+- Alle Formen beginnen auf y = 0, Mittelpunkte/Radien wie §6.2 (gerader Durchmesser exakt). Kapitel ohne `b.step()` (eine Ebene
+  je Schritt) mit erklärendem Text; ab 11 Ebenen und 800 Blöcken 2 Kapitel (Hälften), ab 25 Ebenen Drittel, ab 121 Viertel, Titel
+  mit Ebenen („Kugel: Unteres Drittel (Ebene 1–20)“). Turm: „Boden“, „Mauer …“, „Flachdach“, „Zinnen“, „Kegeldach“/„Kuppeldach“
+  (mit Zinnen steht das Kegel-/Kuppeldach einen Block eingerückt zwischen ihnen); Bogen: „Pfeiler“, „Bogen“; Wendeltreppe mit Markierung
+  am Start. Hohle Kugeln, Ellipsoide und Ringe sind dicht; Pyramide, Kegel, Kuppel und Turm unten offen.
+
+```js
+// text-parser.js
+parseRequest(text, { catalog, names, blocks }) // genau eines von:
+  { kind: 'build', query, matches: [{ entry, score, scale }], scale, scaleText, notes: [], alternative: null | { kind: 'shape',
+    shape, params, queryString }, truncated }
+  { kind: 'shape', query, shape, title, params, understood: [], defaults: [], warnings: [], errors: [], ok, estimate, queryString, truncated }
+  { kind: 'none', query, suggestions: [{ entry, score }], reason, hints: NONE_HINTS, truncated }
+extractScale(folded) · formatScale(0.5) → „1:2“ · cleanRequest(raw) → { text, truncated } · MAX_REQUEST_LENGTH = 200
+```
+- Eingabe: Text, Steuer-/unsichtbare Zeichen raus, höchstens 200 Zeichen (nach Codepunkten).
+- Maßstab: „1:1“, „1 zu 1“, „Originalgröße/-grösse/Original-Größe/originalgroß“, „1 Block = 1 m“, „echte Größe“, „in echt“ → 1;
+  „halbe Größe“, „1:2“, „50 %“ → 0,5; „Viertel“, „Maßstab 1:4“ → 0,25; „Drittel“. Nur Maßstäbe aus `entry.scales`, sonst der
+  nächste (Hinweis in `notes`); ohne Angabe `defaultScale`; Bau ohne Maßstäbe → `scale: null` und Hinweis, falls einer angegeben war.
+- Form erkannt über Schlüsselwörter (Kugel, Kuppel/Halbkugel, Turm/Säule/Zylinder/Röhre, Kegel, Pyramide, Würfel, Quader, Ellipsoid,
+  Torus/Donut/Ring, Kreis/Scheibe, (Tor-)Bogen, Wendeltreppe) auch zusammengesetzt mit Material („Glaskugel“, „Steinturm“). Maße:
+  „Radius 15“ (→ Durchmesser 31), „Durchmesser 9“, „40 hoch“, „31 breit“, „3 tief“, „2 dick“, „10x5x20“ (Breite × Höhe × Länge),
+  Zahlwörter bis hundert, Zahlen ohne Wort der Reihe nach auf die Hauptmaße; „hohl“/„voll“, „mit Boden/Zinnen/Dach/Flachdach“,
+  „gegen den Uhrzeigersinn“, „mit Wand“; Material „aus …“ (auch „Dach aus …“, „Wand aus …“; Wendeltreppe → passende Treppe).
+  Zu große/kleine Zahlen werden auf die Grenze gesetzt (Warnung); Ungenutztes wird in `warnings` genannt.
+- Mehrdeutige Wörter (Turm, Tower, Pyramide, Bogen, Ring): ohne Maße/Material und mit Katalog-Treffern → `kind: 'build'` mit
+  mehreren Treffern und der Form als `alternative`. Passt ein weiteres Wort zu einem Katalog-Eintrag („Tokyo Tower“) → Bau.
+- `none`: Vorschläge nur aus echten Katalog-Einträgen (SUGGEST_THRESHOLD); `reason` z. B. „Für „Burj Khalifa“ gibt es noch keinen
+  geprüften Bauplan.“; `hints` verweisen auf Formen-Generator und Datei-Import. Texte immer per `textContent` ausgeben.
+
+### 12.2 Datei-Import (`js/create/import/`)
+
+Fertige Bauten aus dem Netz laden → 3D-Ansicht + Anleitung (Kapitel „Aufbau“ in Ebenen; Litematica: je Region ein Kapitel
+„Region „Name““). Dateien: `index.js` (Dispatcher), `nbt.js` (reiner NBT-Leser), `schem.js`, `litematic.js`,
+`structure-nbt.js`, `rename.js` (Zustände auf 26.2), `common.js` (ImportError, Grenzen, Block-Sammler).
+
+```js
+// Viewer (Hauptthread) – die Datei geht als ArrayBuffer an den Worker
+await viewer.load({ kind: 'upload', format, name, data: arrayBuffer, params })
+//   format: 'schem' | 'litematic' | 'nbt' | 'vox' | 'stl' | 'obj' | 'glb' | 'gltf' (aus der Endung, formatFromName)
+//   → BuildResult wie bei Strukturen, zusätzlich result.upload (Kennzahlen, s. u.);
+//     result.source = { kind:'upload', format, name, bytes, params } (ohne die Datei)
+// js/create/import/index.js (Browser, Worker, Node)
+importFile({ format, name, data, params, onProgress, loadBlockColors, importVoxelizer, limits }) // → Promise<ImportResult>
+importToBuildResult(imported, { onProgress })   // → BuildResult (Builder, raw: keine Auto-Verbindungen)
+formatFromName(name) / cleanFileName(name) / sniffContent(bytes)
+UPLOAD_FORMATS · NBT_FORMATS · MODEL_FORMATS · UPLOAD_ACCEPT (für accept=) · FORMAT_LABELS · IMPORT_LIMITS · ImportError · WORLD_VERSION (4903)
+// js/create/import/nbt.js (auch von scripts/lib/nbt.mjs genutzt, der dort nur zlib dazunimmt)
+parseNbt(bytes, { maxDepth, maxNodes }) · readNbtAsync(bytes, { maxBytes }) · inflate(bytes, 'gzip'|'zlib', { maxBytes })
+detectCompression(bytes) · longArrayWords(bigInt64Array) · decodeModifiedUtf8 · TAG · NbtError (code corrupt|limit|unpacked-too-large|unsupported)
+```
+- **Formaterkennung am Inhalt:** gzip/zlib-Kennung → NBT; danach entscheidet der NBT-Aufbau: `Regions` → Litematica,
+  `Schematic { Version }` bzw. Wurzel mit `Version` + `BlockData`/`Palette` → Sponge v1–v3, `size` + `blocks` + `palette(s)` →
+  Strukturdatei, `Blocks` + `Data`/`Materials` → alte MCEdit-Schematic (Fehler `legacy-schematic`). `VOX ` → vox, `glTF` → glb,
+  JSON → gltf, sonst gilt die Endung. Weicht der Inhalt von der Endung ab, wird er trotzdem geladen (Warnung). Ungepacktes NBT
+  zählt nur bei Minecraft-Endungen.
+- **Achsen:** Sponge `index = x + z·W + y·W·L` (Width/Height/Length als Short, vorzeichenlos; Varint-Daten, v3 unter
+  `Blocks { Palette, Data }`); Litematica `index = (y·|sz| + z)·|sx| + x` relativ zur kleinsten Ecke der Region
+  (negative Size: Region von `Position + Size + 1` bis `Position`), Bits je Eintrag `max(2, Bitlänge(Palette − 1))`, lückenlos über
+  Long-Grenzen; Strukturdatei: `pos` je Block, `jigsaw` → `final_state`, `structure_block` fällt weg, erste Palette.
+  Nach dem Lesen liegt die kleinste Ecke aller Blöcke bei (0, 0, 0).
+- **Zustände:** Namensraum weg, Kleinschreibung; `BLOCK_RENAMES` (`sign`→`oak_sign`, `wall_sign`→`oak_wall_sign`,
+  `grass_path`→`dirt_path`, `grass`→`short_grass`, `chain`→`iron_chain`; Test prüft jede Zeile gegen `game-data/blocks.json`);
+  Mauer-Seiten `true/false` (bis 1.15) → `low/none`. Fremder Namensraum, unbekannter Block, unlesbarer Text → weg; unbekannte
+  Eigenschaft → ignoriert; unbekannter Wert → Standardwert; fehlende Eigenschaften = Standardwerte (wie `completeState`).
+  `air`, `cave_air`, `void_air`, `structure_void` fallen weg. Block-Entities (Truhen-Inhalte, Schildtexte) werden ignoriert und
+  nur gezählt, Entities gezählt und als Warnung gemeldet. Die Palette enthält nur genutzte Zustände.
+- **Grenzen (`IMPORT_LIMITS`):** Datei ≤ 64 MB, entpackt ≤ 256 MB (Abbruch beim Entpacken über `DecompressionStream`),
+  ≤ 3 000 000 Blöcke, jede Kante (gesetzte Blöcke) ≤ 4064, NBT-Tiefe ≤ 512, ≤ 40 Mio. NBT-Werte; `__proto__` bleibt normaler
+  Schlüssel. Der Worker prüft zusätzlich Format, `ArrayBuffer` und 64 MB (`checkUploadSource`).
+- **Fehler** (`ImportError.code` → Meldung, im Viewer als `ViewerError` mit derselben Meldung, Worker-Code `upload`):
+  `empty-file` „Die Datei ist leer.“ · `file-too-large` „Die Datei ist zu groß (X MB) – erlaubt sind höchstens 64 MB.“ ·
+  `unpacked-too-large` „Die Datei ist entpackt größer als 256 MB und wird nicht geladen.“ · `corrupt` „Die Datei ist beschädigt oder
+  unvollständig (…).“ · `unknown-format` „Die Datei ist keine Minecraft-Datei …“ bzw. „Unbekanntes Dateiformat …“ ·
+  `legacy-schematic` · `unsupported` (Sponge-Version > 3, fehlender DecompressionStream) · `no-blocks` „Die Datei enthält keine
+  Blöcke, die es in Minecraft 26.2 gibt …“ · `too-many-blocks` „Der Bau hat mehr als 3.000.000 Blöcke …“ · `too-big` „Der Bau ist
+  W × H × L Blöcke groß – jede Kante darf höchstens 4.064 Blöcke lang sein.“ · `module-missing` (Modell-Import fehlt) ·
+  `data-missing` (Blockdaten/Blockfarben fehlen) · `model` „Das Modell konnte nicht umgewandelt werden: …“.
+- **Warnungen** (`result.warnings`, deutsch, meiste Blöcke zuerst, höchstens 40 + Sammelzeile): Umbenennungen, weggelassene
+  Blöcke je ID mit Anzahl, ignorierte Eigenschaften, ersetzte Werte, Objekte (Entities), neuere/ältere Datenversion, mehrere
+  Paletten, Inhalt ≠ Endung.
+- **`result.upload`:** `{ format, declaredFormat, name, formatLabel („Sponge-Schematic v2“, „Litematica v6“, …), size, blockCount,
+  chapters, version, dataVersion, sourceSize, regions, regionList [{ name, min, size, blocks, entities, blockEntities }] | null,
+  entities, blockEntities, title, author (aus den Metadaten, bereinigt), compression, unpackedBytes, fileBytes, paletteSize,
+  renamed [[alt, n]], dropped [[id, n]], fixedValues, ignoredProps, model (stats des Modell-Imports) }`.
+- **Modelle** (vox/stl/obj/glb/gltf): `import { modelToVolume } from '../voxelize/index.js'` (create:voxelize);
+  `await modelToVolume(format, arrayBuffer, params, { blockColors, onProgress })` → `{ size, palette (palette[0] = 'air'), data:
+  Uint16Array ((y·l + z)·w + x), warnings, stats }`. Der Worker lädt `game-data/block-colors.json` einmal und reicht es als
+  `blockColors` durch; `params` gehen unverändert weiter (geprüft mit `checkParams`), NBT-Formate ignorieren sie.
+- Änderung (§7.4): neue Quelle `{ kind:'upload', … }` im Worker (`checkUploadSource`, `buildUploadResult(uploader, source, hooks)`,
+  Lader `importUploader`, `importVoxelizer`, `loadBlockColors`, Fortschritt als `status`-Meldungen „Entpacke Datei …“, „Lese Blöcke …
+  40 %“, „Baue N Blöcke …“). Der Renderer schickt `data` derzeit ohne Transfer-Liste (wird kopiert, funktioniert).
+- Änderung (§2/§10): `scripts/lib/nbt.mjs` nutzt den Kern aus `js/create/import/nbt.js` (gleiches Ergebnis für alle 1212
+  Strukturen des Jars geprüft). Testdateien erzeugt `node tests/fixtures/create/import/make-fixtures.mjs`; Testseite
+  `tests/visual/import.html` (Datei-Feld `#file`, `?view=`, `?ui=0`; Fertig-Signal `window.__importTest.loads`/`.ready`/`.error`).
+  Der lokale Server liefert `.schem/.litematic/.nbt` nicht aus – Dateien kommen immer über das Datei-Feld.
+
+### 12.3 Modell-Import (`js/create/voxelize/`)
+
+3D-Modelle (STL, OBJ + MTL, GLB/glTF) und MagicaVoxel (`.vox`) → Blöcke, Farben gegen die echten 26.2-Texturen
+(`game-data/block-colors.json`, §5). Rein (kein DOM), läuft im Worker und in Node. Dateien: `index.js` (Einstieg), `stl.js`,
+`obj.js`, `gltf.js`, `vox.js`, `voxelize.js` (Dreiecke → Raster), `colors.js` (Farbabgleich), `mesh.js` (gemeinsam: `LIMITS`,
+`ModelError`, `MeshBuilder`); Werkzeuge `scripts/build-block-colors.mjs`, `scripts/lib/png.mjs` (`decodePng`, `encodePng`,
+`readPngInfo`; Farbtypen 0/2/3/4/6, 1–16 Bit, Filter 0–4, Palette + tRNS, Adam7, Prüfsummen).
+
+```js
+// index.js
+modelToVolume(format, arrayBuffer, params, { blockColors, onProgress, mtl, decodeImage }) // → Promise<VoxelVolume>
+  // VoxelVolume = { size: [w, h, l], palette: ['air', zustand …] (nach Häufigkeit), data: Uint16Array ((y·l + z)·w + x),
+  //                 warnings: [deutsch], stats: { triangles, voxels, ms } }
+  // blockColors: Inhalt von block-colors.json (Pflicht) · onProgress(meldung, null) optional · mtl: .mtl als ArrayBuffer (nur OBJ)
+  // decodeImage(bytes, mimeType) → { width, height, data RGBA } (Standard: createImageBitmap + OffscreenCanvas, Node: png.mjs)
+parseModel(format, bytes, { mtl, decodeImage }) → { kind: 'mesh', mesh } | { kind: 'voxels', voxels }   // nur lesen
+volumeFromModel(model, params, { blockColors, consume, onProgress }) → VoxelVolume                    // synchron, mehrfach nutzbar
+normalizeParams(format, params) · formatFromFileName(name) · MODEL_FORMATS · UP_AXES · DEFAULT_MESH_HEIGHT (64) · LIMITS · ModelError
+// colors.js
+nearestBlock(rgb, { set, face: 'top'|'side'|'bottom'|'all', blockColors, block }) → { id, state, deltaE, score }
+createColorMatcher({ blockColors, set, block }) → { candidates, match(r, g, b, faceIndex 0 oben|1 seitlich|2 unten|3 alle) → index }
+blocksInSet(blockColors, set, block) · prepareBlockColors(json) · deltaE2000(lab1, lab2, kL, kC, kH) · matchDistance · srgbToLab
+PALETTE_SETS · MATCH_WEIGHTS · PATTERN_WEIGHT (0,1)
+```
+- **params** (unbekannte Schlüssel, falsche Typen, Werte außerhalb → `ModelError` code `params`, deutsche Meldung):
+  `height` ganze Zahl 1 … 1024 (Mesh-Standard 64; `.vox` ohne Angabe = Originalgröße, sonst nächster Nachbar auf diese Höhe) –
+  Höhe in Blöcken, Seitenverhältnis bleibt; flache Modelle (ohne Höhe): die größte Seite = `height` (Warnung). `solid` (false)
+  füllt das Innere. `palette` `'alle'` (Standard) | `'beton'` | `'wolle'` | `'terrakotta'` (17 inkl. ungefärbter) | `'einfarbig'`.
+  `block` nur bei `einfarbig` (Pflicht; ID oder Zustand, muss in block-colors.json stehen, also ein voller deckender Block).
+  `upAxis` `'auto'` | `'y'` | `'z'`: auto = übliche Achse des Formats – STL und `.vox` z oben (CAD/3D-Druck, MagicaVoxel),
+  OBJ und glTF y oben (Blender-Export, glTF-Standard). z oben wird rechtshändig zu Minecraft (x, z, −y); vox-z = Minecraft-y.
+- **Set „alle“** = alle Einträge ohne `falls`, `emissive`, `changes`, `special` und ohne die Gruppen `erz`, `sonder`, `technik`,
+  `arbeitsblock` (26.2: 262 Blöcke). Die anderen Sets = genau ihre Gruppe.
+- **Farbabgleich:** CIELAB (D65) mit ΔE2000, Seite des Voxels (Oberfläche: Normale des nächsten Dreiecks – oben, seitlich, unten;
+  `.vox`: erste freie Nachbarseite oben → seitlich → unten) gegen die Seitenfarbe des Blocks, + 0,1 · Musterstärke. Änderung:
+  Auswahl mit parametrischen Faktoren `MATCH_WEIGHTS` – kL = 1 + 3 · max(0, C* − 30) / 100 (C* = Chroma der Modellfarbe), kC 0,85,
+  kH 0,75: Modellfarben sind oft viel kräftiger als jeder Block, dann zählt der Farbton mehr als die Helligkeit (#FF0000 → roter
+  Beton statt dem helleren orangen, #0000FF → blauer statt violetter Beton); ruhige Farben (C* ≤ 30: Haut, Holz, Stein) vergleicht
+  es mit kL = 1. Grenzfall: reines #FFFF00 landet bei Beton knapp bei Lime (gelber Beton ist goldgelb). `deltaE` im Ergebnis ist
+  das echte ΔE2000. Vorauswahl der 32 besten über eine Näherung, Cache je Blockfarben-Objekt, Set und auf 6 Bit gerundeter Farbe.
+- **Oberfläche ohne Löcher:** jede Zelle, deren Würfel ein Dreieck berührt (Trennachsen-Test nach Akenine-Möller, je Dreieck nur die
+  Spalten unter seiner Ebene). Farbe = nächster Punkt der berührenden Dreiecke (Material × Eckfarbe × Textur, in linearem RGB).
+  **Inneres** (`solid`): Strahlen durch die Zellmitten entlang x, y, z zählen Schnittpunkte; Strahlen mit ungerader Zahl (undichtes
+  Netz) enthalten sich, innen = Mehrheit der gültigen Stimmen; gefüllt mit dem Block des nächsten Oberflächen-Voxels der x-Reihe.
+  `.vox` füllt per Flutfüllung von außen (6er-Nachbarschaft).
+- **Formate:** STL binär und ASCII (Erkennung über Größe 84 + 50·n und Inhalt, nicht nur „solid“; Farben nach VisCAM und Magics).
+  OBJ `v` (optional Eckfarbe), `vt`, `f` mit Polygonen (Fächer), negative Indizes, `usemtl`, Fortsetzungszeilen; `.mtl` mit `newmtl`
+  + `Kd` (fehlt sie: Grundfarbe sRGB 200 und Warnung; `map_Kd` wird nicht geladen). glTF 2.0: `.glb` und `.gltf` mit eingebetteten
+  `data:`-URIs, Primitive TRIANGLES (auch Streifen/Fächer), Indizes, Knoten-Matrizen/TRS samt Hierarchie, `baseColorFactor`,
+  `baseColorTexture` über `TEXCOORD_n` mit Sampler-Wiederholung, normierte Ganzzahl-Attribute, dünn besetzte Accessoren,
+  `EXT_texture_webp`; externe Dateien
+  → „… bitte als .glb exportieren (alles in einer Datei)“, Draco/Meshopt → Meldung, `KHR_texture_transform` ignoriert (Warnung).
+  `.vox`: SIZE/XYZI, RGBA (fehlt: Standardpalette), Szene aus nTRN/nGRP/nSHP mit Drehung `_r` und Verschiebung `_t`
+  (ausgeblendete Knoten/Ebenen fallen weg), ohne Szene mehrere Modelle nebeneinander.
+- **Grenzen (`LIMITS`):** Datei ≤ 64 MB, ≤ 2 000 000 Dreiecke, ≤ 3 000 000 Blöcke (auch schon die Oberfläche), Kante ≤ 4064,
+  dichtes Raster ≤ 64 Mio. Zellen (Meldung mit größter möglicher Höhe), Höhe ≤ 1024, ≤ 4096 Materialien, Textur ≤ 8192 Pixel je
+  Seite (größere werden im Browser auf 16 Mio. Pixel verkleinert), ≤ 1024 `.vox`-Modelle. Fehler: `ModelError` (code `params`,
+  `format`, `limit`, `model`, `argument`), im Import als `ImportError` `model` „Das Modell konnte nicht umgewandelt werden: …“.
+- **Laufzeit** (Node 24, i7-13700K, mit paralleler Last anderer Agenten gemessen): 100 000 Dreiecke auf Höhe 128 hohl ≈ 150 ms (77 000 Blöcke), gefüllt ≈ 165 ms
+  (1,14 Mio. Blöcke); Kugel mit 4 000 Dreiecken auf Höhe 40 gefüllt ≈ 20–40 ms; Blockfarben erzeugen ≈ 0,3 s.
+- Tests: `tests/unit/create-voxelize-*.test.mjs`; Testmodelle erzeugt `node tests/fixtures/create/voxelize/make-fixtures.mjs`
+  (selbst gebaut). Testseite `tests/visual/voxelize.html`: Datei-Feld `#file` (mehrere Dateien, `.mtl` dazu), Einstellungen,
+  Umwandlung auf der Seite (Kennzahlen, Draufsicht, Blockliste) und dieselbe Datei über `{ kind:'upload' }` im echten Viewer;
+  `?view=`, `?ui=0`; Fertig-Signal `window.__voxelTest.loads`/`.ready`/`.error`, dazu `.page` und `.viewer`. Die Upload-Quelle
+  trägt nur eine Datei – eine `.mtl` wirkt dort noch nicht (Warnung „… die .mtl-Datei fehlt …“).

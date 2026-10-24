@@ -15,6 +15,7 @@
   <link rel="preload" href="assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/build-view.css">
   <script type="module" src="js/ui/build-page.js"></script>
 </head>
 <body data-page="build">
@@ -66,42 +67,13 @@
         <ul class="chip-list" id="build-chips" role="list"></ul>
       </header>
 
-      <section class="stage" id="build-stage" aria-label="3D-Ansicht">
-        <canvas class="stage__canvas" id="viewer-canvas" hidden></canvas>
-        <img class="stage__preview" id="viewer-preview" alt="" hidden>
-        <div class="stage__toolbar" id="viewer-toolbar" hidden></div>
-        <div class="stage__status" id="viewer-status"></div>
-      </section>
-
-      <section class="player" id="step-player" aria-label="Schritt-Player">
-        <div class="xp" id="step-xp" role="progressbar" aria-label="Baufortschritt" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" aria-valuetext="Noch kein Bau geladen">
-          <div class="xp__fill"></div>
-          <span class="xp__level" id="step-level" aria-hidden="true">0</span>
-        </div>
-        <div class="player__controls">
-          <button class="btn btn--icon" id="step-prev" type="button" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#prev"></use></svg><span class="visually-hidden">Vorheriger Schritt</span></button>
-          <button class="btn btn--icon btn--primary" id="step-play" type="button" aria-pressed="false" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#play"></use></svg><span class="visually-hidden">Abspielen</span></button>
-          <button class="btn btn--icon" id="step-next" type="button" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#next"></use></svg><span class="visually-hidden">Nächster Schritt</span></button>
-          <p class="player__label" id="step-label"><strong>Schritt –</strong><span>von –</span></p>
-        </div>
-        <label class="visually-hidden" for="step-slider">Schritt wählen</label>
-        <input class="slider" id="step-slider" type="range" min="0" max="0" step="1" value="0" disabled>
-      </section>
-
-      <section class="build-panels" aria-label="Anleitung, Material, Ebenen und Infos">
-        <div class="tabs" id="build-tabs">
-          <div class="tabs__list" role="tablist" aria-label="Bereiche">
-            <button class="tab" type="button" role="tab" id="tab-guide" aria-controls="panel-guide" aria-selected="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#book"></use></svg><span>Anleitung</span></button>
-            <button class="tab" type="button" role="tab" id="tab-materials" aria-controls="panel-materials" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#chest"></use></svg><span>Material</span></button>
-            <button class="tab" type="button" role="tab" id="tab-layers" aria-controls="panel-layers" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#layers"></use></svg><span>Ebenen</span></button>
-            <button class="tab" type="button" role="tab" id="tab-info" aria-controls="panel-info" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#info"></use></svg><span>Infos</span></button>
+      <div class="build-view" id="build-view">
+        <section class="stage bv-stage" aria-label="3D-Ansicht">
+          <div class="stage__status">
+            <div class="state state--loading state--compact state--centered"><div class="state__icon" aria-hidden="true"><span class="spinner"></span></div><p class="state__title">Bau wird geladen …</p></div>
           </div>
-          <div class="tabs__panel" role="tabpanel" id="panel-guide" aria-labelledby="tab-guide" tabindex="0"></div>
-          <div class="tabs__panel" role="tabpanel" id="panel-materials" aria-labelledby="tab-materials" tabindex="0" hidden></div>
-          <div class="tabs__panel" role="tabpanel" id="panel-layers" aria-labelledby="tab-layers" tabindex="0" hidden></div>
-          <div class="tabs__panel" role="tabpanel" id="panel-info" aria-labelledby="tab-info" tabindex="0" hidden></div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   </main>
 

@@ -1,0 +1,455 @@
+{
+  "generatedAt": "2026-10-23T08:00:00.000Z",
+  "version": "26.2",
+  "counts": {
+    "total": 5,
+    "byCategory": {
+      "haeuser": 2,
+      "wahrzeichen": 1,
+      "redstone": 1,
+      "mittelalter": 1
+    }
+  },
+  "warnings": [],
+  "builds": [
+    {
+      "id": "example-house",
+      "title": "Beispielhaus",
+      "category": "haeuser",
+      "subtitle": "Kleines Holzhaus mit Satteldach und Vorgarten",
+      "tags": [
+        "Holz",
+        "Starterhaus",
+        "Klein"
+      ],
+      "aliases": [
+        "beispielhaus",
+        "starterhaus",
+        "kleines haus"
+      ],
+      "accuracy": "eigenes",
+      "difficulty": 1,
+      "description": "Ein kleines Haus aus Eichenholz mit Fichtenholz-Satteldach. Drinnen stehen ein Bett, eine Doppeltruhe und eine Fackel, vor dem Haus liegt ein umzäunter Vorgarten.",
+      "facts": [
+        "Grundfläche 9 × 7 Blöcke",
+        "Satteldach mit einem Block Überstand"
+      ],
+      "sources": [],
+      "credits": null,
+      "tested": null,
+      "module": "tests/fixtures/core/example-house.js",
+      "structure": null,
+      "scales": null,
+      "defaultScale": null,
+      "size": [
+        11,
+        9,
+        11
+      ],
+      "blocks": 348,
+      "steps": 18,
+      "phases": 6,
+      "variants": null,
+      "topMaterials": [
+        {
+          "item": "oak_planks",
+          "name": "Eichenholzbretter",
+          "count": 88,
+          "amount": "1 Stack und 24"
+        },
+        {
+          "item": "spruce_stairs",
+          "name": "Fichtenholztreppe",
+          "count": 88,
+          "amount": "1 Stack und 24"
+        },
+        {
+          "item": "cobblestone",
+          "name": "Bruchstein",
+          "count": 63,
+          "amount": "63"
+        },
+        {
+          "item": "grass_block",
+          "name": "Grasblock",
+          "count": 33,
+          "amount": "33"
+        },
+        {
+          "item": "spruce_planks",
+          "name": "Fichtenholzbretter",
+          "count": 18,
+          "amount": "18"
+        },
+        {
+          "item": "oak_log",
+          "name": "Eichenstamm",
+          "count": 16,
+          "amount": "16"
+        },
+        {
+          "item": "oak_fence",
+          "name": "Eichenholzzaun",
+          "count": 14,
+          "amount": "14"
+        },
+        {
+          "item": "spruce_slab",
+          "name": "Fichtenholzstufe",
+          "count": 11,
+          "amount": "11"
+        }
+      ],
+      "sizeClass": "klein",
+      "thumb": null
+    },
+    {
+      "id": "big-plaza",
+      "title": "Großer Testplatz",
+      "category": "wahrzeichen",
+      "subtitle": "Testbau mit 150 × 150 Feldern",
+      "tags": [
+        "Test",
+        "Groß"
+      ],
+      "aliases": [
+        "testplatz"
+      ],
+      "accuracy": "massstab",
+      "difficulty": 3,
+      "description": "Ein großer Platz mit Türmen, Kuppel, Teich und Garten – nur für Tests der Bau-Seite.",
+      "facts": [
+        "150 × 150 Felder bei 1:1"
+      ],
+      "sources": [
+        {
+          "title": "Minecraft Wiki: Steinziegel",
+          "url": "https://minecraft.wiki/w/Stone_Bricks"
+        }
+      ],
+      "credits": null,
+      "tested": null,
+      "module": "tests/fixtures/ui/big-plaza.js",
+      "structure": null,
+      "scales": [
+        1,
+        0.5
+      ],
+      "defaultScale": 1,
+      "size": [
+        150,
+        43,
+        150
+      ],
+      "blocks": 85804,
+      "steps": 79,
+      "phases": 5,
+      "variants": {
+        "1": {
+          "size": [
+            150,
+            43,
+            150
+          ],
+          "blocks": 85804,
+          "steps": 79
+        },
+        "0.5": {
+          "size": [
+            75,
+            23,
+            75
+          ],
+          "blocks": 21561,
+          "steps": 44
+        }
+      },
+      "topMaterials": [
+        {
+          "item": "stone_bricks",
+          "name": "Steinziegel",
+          "count": 26467,
+          "amount": "15 Shulkerkisten, 8 Stacks und 35"
+        },
+        {
+          "item": "dirt",
+          "name": "Erde",
+          "count": 22500,
+          "amount": "13 Shulkerkisten und 36"
+        },
+        {
+          "item": "stone",
+          "name": "Stein",
+          "count": 22500,
+          "amount": "13 Shulkerkisten und 36"
+        },
+        {
+          "item": "cobblestone",
+          "name": "Bruchstein",
+          "count": 5760,
+          "amount": "3 Shulkerkisten und 9 Stacks"
+        },
+        {
+          "item": "dark_oak_planks",
+          "name": "Schwarzeichenholzbretter",
+          "count": 3352,
+          "amount": "1 Shulkerkiste, 25 Stacks und 24"
+        },
+        {
+          "item": "light_blue_stained_glass",
+          "name": "Hellblaues Glas",
+          "count": 2617,
+          "amount": "1 Shulkerkiste, 13 Stacks und 57"
+        },
+        {
+          "item": "oak_leaves",
+          "name": "Eichenlaub",
+          "count": 1074,
+          "amount": "16 Stacks und 50"
+        },
+        {
+          "item": "polished_andesite",
+          "name": "Polierter Andesit",
+          "count": 596,
+          "amount": "9 Stacks und 20"
+        }
+      ],
+      "sizeClass": "gross",
+      "thumb": null
+    },
+    {
+      "id": "beispiel-ungetestet",
+      "title": "Beispiel ungetestet",
+      "category": "redstone",
+      "subtitle": "Testeintrag mit tested: false und Credits",
+      "tags": [
+        "Holz",
+        "Starterhaus",
+        "Klein"
+      ],
+      "aliases": [
+        "beispielhaus",
+        "starterhaus",
+        "kleines haus"
+      ],
+      "accuracy": "vorlage",
+      "difficulty": 1,
+      "description": "Ein kleines Haus aus Eichenholz mit Fichtenholz-Satteldach. Drinnen stehen ein Bett, eine Doppeltruhe und eine Fackel, vor dem Haus liegt ein umzäunter Vorgarten.",
+      "facts": [
+        "Grundfläche 9 × 7 Blöcke",
+        "Satteldach mit einem Block Überstand"
+      ],
+      "sources": [
+        {
+          "title": "Minecraft Wiki: Redstone-Schaltkreise",
+          "url": "https://minecraft.wiki/w/Redstone_circuits"
+        }
+      ],
+      "credits": {
+        "author": "Testautor",
+        "url": "https://minecraft.wiki/",
+        "license": "CC BY-NC-SA 3.0"
+      },
+      "tested": false,
+      "module": "tests/fixtures/core/example-house.js",
+      "structure": null,
+      "scales": null,
+      "defaultScale": null,
+      "size": [
+        11,
+        9,
+        11
+      ],
+      "blocks": 348,
+      "steps": 18,
+      "phases": 6,
+      "variants": null,
+      "topMaterials": [
+        {
+          "item": "oak_planks",
+          "name": "Eichenholzbretter",
+          "count": 88,
+          "amount": "1 Stack und 24"
+        },
+        {
+          "item": "spruce_stairs",
+          "name": "Fichtenholztreppe",
+          "count": 88,
+          "amount": "1 Stack und 24"
+        },
+        {
+          "item": "cobblestone",
+          "name": "Bruchstein",
+          "count": 63,
+          "amount": "63"
+        },
+        {
+          "item": "grass_block",
+          "name": "Grasblock",
+          "count": 33,
+          "amount": "33"
+        },
+        {
+          "item": "spruce_planks",
+          "name": "Fichtenholzbretter",
+          "count": 18,
+          "amount": "18"
+        },
+        {
+          "item": "oak_log",
+          "name": "Eichenstamm",
+          "count": 16,
+          "amount": "16"
+        },
+        {
+          "item": "oak_fence",
+          "name": "Eichenholzzaun",
+          "count": 14,
+          "amount": "14"
+        },
+        {
+          "item": "spruce_slab",
+          "name": "Fichtenholzstufe",
+          "count": 11,
+          "amount": "11"
+        }
+      ],
+      "sizeClass": "klein",
+      "thumb": null
+    },
+    {
+      "category": "haeuser",
+      "subtitle": "Original-Struktur aus einem Ebenen-Dorf",
+      "tags": [
+        "Original"
+      ],
+      "aliases": [
+        "dorfhaus"
+      ],
+      "accuracy": "original",
+      "difficulty": 2,
+      "description": "Ein kleines Haus aus einem Ebenen-Dorf, so wie es das Spiel erzeugt.",
+      "facts": [],
+      "sources": [],
+      "credits": null,
+      "tested": null,
+      "module": null,
+      "structure": "village__plains__houses__plains_small_house_1.json",
+      "scales": null,
+      "defaultScale": null,
+      "size": [
+        7,
+        7,
+        7
+      ],
+      "blocks": 153,
+      "steps": 7,
+      "phases": 1,
+      "variants": null,
+      "topMaterials": [
+        [
+          "oak_stairs",
+          50
+        ],
+        [
+          "cobblestone",
+          43
+        ],
+        [
+          "oak_planks",
+          34
+        ],
+        [
+          "stripped_oak_log",
+          16
+        ],
+        [
+          "glass_pane",
+          3
+        ],
+        [
+          "wall_torch",
+          3
+        ],
+        [
+          "oak_door",
+          2
+        ],
+        [
+          "white_bed",
+          2
+        ]
+      ],
+      "sizeClass": "klein",
+      "thumb": null,
+      "id": "spiel-plains-small-house-1",
+      "title": "Kleines Ebenen-Dorfhaus 1"
+    },
+    {
+      "category": "mittelalter",
+      "subtitle": "Original-Struktur aus einer Bastionsruine",
+      "tags": [
+        "Original"
+      ],
+      "aliases": [],
+      "accuracy": "original",
+      "difficulty": 4,
+      "description": "Der Eingangsteil der Brücken-Bastion aus dem Nether.",
+      "facts": [],
+      "sources": [],
+      "credits": null,
+      "tested": null,
+      "module": null,
+      "structure": "bastion__bridge__starting_pieces__entrance_base.json",
+      "scales": null,
+      "defaultScale": null,
+      "size": [
+        16,
+        32,
+        32
+      ],
+      "blocks": 14342,
+      "steps": 32,
+      "phases": 1,
+      "variants": null,
+      "topMaterials": [
+        [
+          "blackstone",
+          10685
+        ],
+        [
+          "polished_blackstone_bricks",
+          2953
+        ],
+        [
+          "cracked_polished_blackstone_bricks",
+          396
+        ],
+        [
+          "lava",
+          285
+        ],
+        [
+          "basalt",
+          10
+        ],
+        [
+          "chiseled_polished_blackstone",
+          7
+        ],
+        [
+          "gold_block",
+          2
+        ],
+        [
+          "lantern",
+          2
+        ]
+      ],
+      "sizeClass": "gross",
+      "thumb": null,
+      "id": "spiel-bastion-bridge-entrance-base",
+      "title": "Bastionsbrücke: Eingang"
+    }
+  ]
+}

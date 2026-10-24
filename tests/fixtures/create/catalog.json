@@ -1,0 +1,1513 @@
+{
+ "generatedAt": "2026-10-23T08:00:00.000Z",
+ "version": "26.2",
+ "counts": {
+  "total": 28,
+  "byCategory": {
+   "wahrzeichen": 6,
+   "fantasy": 3,
+   "infrastruktur": 4,
+   "haeuser": 5,
+   "mittelalter": 5,
+   "klein": 2,
+   "redstone": 1,
+   "farmen": 2
+  }
+ },
+ "warnings": [],
+ "builds": [
+  {
+   "id": "tokyo-skytree",
+   "title": "Tokyo Skytree",
+   "category": "wahrzeichen",
+   "subtitle": "Fernseh- und Aussichtsturm in Tokio",
+   "tags": [
+    "Japan",
+    "Turm",
+    "Riesig"
+   ],
+   "aliases": [
+    "skytree",
+    "sky tree",
+    "tokyo sky tree",
+    "tokio skytree"
+   ],
+   "accuracy": "massstab",
+   "difficulty": 5,
+   "description": "Fernseh- und Aussichtsturm in Tokio.",
+   "facts": [
+    "634 m hoch"
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia: Tokyo Skytree",
+     "url": "https://de.wikipedia.org/wiki/Tokyo_Skytree"
+    }
+   ],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/wahrzeichen/tokyo-skytree.js",
+   "structure": null,
+   "scales": [
+    1,
+    0.5,
+    0.25
+   ],
+   "defaultScale": 0.5,
+   "size": [
+    68,
+    634,
+    68
+   ],
+   "blocks": 412000,
+   "steps": 640,
+   "phases": 9,
+   "variants": {
+    "1": {
+     "size": [
+      68,
+      634,
+      68
+     ],
+     "blocks": 412000,
+     "steps": 640
+    },
+    "0.5": {
+     "size": [
+      34,
+      317,
+      34
+     ],
+     "blocks": 103000,
+     "steps": 320
+    },
+    "0.25": {
+     "size": [
+      17,
+      159,
+      17
+     ],
+     "blocks": 25750,
+     "steps": 160
+    }
+   },
+   "topMaterials": [
+    [
+     "stone_bricks",
+     247200
+    ],
+    [
+     "oak_planks",
+     82400
+    ]
+   ],
+   "sizeClass": "riesig",
+   "thumb": null
+  },
+  {
+   "id": "tokyo-tower",
+   "title": "Tokyo Tower",
+   "category": "wahrzeichen",
+   "subtitle": "Rot-weißer Fernsehturm in Tokio",
+   "tags": [
+    "Japan",
+    "Turm"
+   ],
+   "aliases": [
+    "tokio tower",
+    "tokyo tawa"
+   ],
+   "accuracy": "massstab",
+   "difficulty": 4,
+   "description": "Rot-weißer Fernsehturm in Tokio.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/wahrzeichen/tokyo-tower.js",
+   "structure": null,
+   "scales": [
+    1,
+    0.5
+   ],
+   "defaultScale": 1,
+   "size": [
+    95,
+    333,
+    95
+   ],
+   "blocks": 88000,
+   "steps": 20,
+   "phases": 3,
+   "variants": {
+    "1": {
+     "size": [
+      95,
+      333,
+      95
+     ],
+     "blocks": 88000,
+     "steps": 20
+    },
+    "0.5": {
+     "size": [
+      48,
+      167,
+      48
+     ],
+     "blocks": 22000,
+     "steps": 10
+    }
+   },
+   "topMaterials": [
+    [
+     "stone_bricks",
+     52800
+    ],
+    [
+     "oak_planks",
+     17600
+    ]
+   ],
+   "sizeClass": "gross",
+   "thumb": null
+  },
+  {
+   "id": "infinity-castle",
+   "title": "Infinity Castle",
+   "category": "fantasy",
+   "subtitle": "Die endlose Festung aus Demon Slayer",
+   "tags": [
+    "Anime",
+    "Demon Slayer",
+    "Kimetsu no Yaiba",
+    "Riesig"
+   ],
+   "aliases": [
+    "mugen-jo",
+    "mugenjo",
+    "unendlichkeitsburg",
+    "infinity fortress"
+   ],
+   "accuracy": "nachempfunden",
+   "difficulty": 5,
+   "description": "Die endlose Festung aus Demon Slayer.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/fantasy/infinity-castle.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    151,
+    180,
+    151
+   ],
+   "blocks": 320000,
+   "steps": 420,
+   "phases": 8,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     192000
+    ],
+    [
+     "oak_planks",
+     64000
+    ]
+   ],
+   "sizeClass": "riesig",
+   "thumb": null
+  },
+  {
+   "id": "eiffelturm",
+   "title": "Eiffelturm",
+   "category": "wahrzeichen",
+   "subtitle": "Das Wahrzeichen von Paris aus Schmiedeeisen",
+   "tags": [
+    "Frankreich",
+    "Paris",
+    "Turm"
+   ],
+   "aliases": [
+    "eiffel tower",
+    "tour eiffel"
+   ],
+   "accuracy": "massstab",
+   "difficulty": 5,
+   "description": "Das Wahrzeichen von Paris aus Schmiedeeisen.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/wahrzeichen/eiffelturm.js",
+   "structure": null,
+   "scales": [
+    1,
+    0.5,
+    0.25
+   ],
+   "defaultScale": 0.5,
+   "size": [
+    125,
+    330,
+    125
+   ],
+   "blocks": 150000,
+   "steps": 20,
+   "phases": 3,
+   "variants": {
+    "1": {
+     "size": [
+      125,
+      330,
+      125
+     ],
+     "blocks": 150000,
+     "steps": 20
+    },
+    "0.5": {
+     "size": [
+      63,
+      165,
+      63
+     ],
+     "blocks": 37500,
+     "steps": 10
+    },
+    "0.25": {
+     "size": [
+      31,
+      83,
+      31
+     ],
+     "blocks": 9375,
+     "steps": 5
+    }
+   },
+   "topMaterials": [
+    [
+     "stone_bricks",
+     90000
+    ],
+    [
+     "oak_planks",
+     30000
+    ]
+   ],
+   "sizeClass": "riesig",
+   "thumb": null
+  },
+  {
+   "id": "big-ben",
+   "title": "Big Ben",
+   "category": "wahrzeichen",
+   "subtitle": "Uhrturm am Palace of Westminster in London",
+   "tags": [
+    "England",
+    "London",
+    "Turm",
+    "Uhr"
+   ],
+   "aliases": [
+    "elizabeth tower",
+    "westminster uhrturm"
+   ],
+   "accuracy": "massstab",
+   "difficulty": 4,
+   "description": "Uhrturm am Palace of Westminster in London.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/wahrzeichen/big-ben.js",
+   "structure": null,
+   "scales": [
+    1,
+    0.5
+   ],
+   "defaultScale": 1,
+   "size": [
+    15,
+    96,
+    15
+   ],
+   "blocks": 14000,
+   "steps": 20,
+   "phases": 3,
+   "variants": {
+    "1": {
+     "size": [
+      15,
+      96,
+      15
+     ],
+     "blocks": 14000,
+     "steps": 20
+    },
+    "0.5": {
+     "size": [
+      8,
+      48,
+      8
+     ],
+     "blocks": 3500,
+     "steps": 10
+    }
+   },
+   "topMaterials": [
+    [
+     "stone_bricks",
+     8400
+    ],
+    [
+     "oak_planks",
+     2800
+    ]
+   ],
+   "sizeClass": "gross",
+   "thumb": null
+  },
+  {
+   "id": "kolosseum",
+   "title": "Kolosseum",
+   "category": "wahrzeichen",
+   "subtitle": "Antikes Amphitheater in Rom",
+   "tags": [
+    "Italien",
+    "Rom",
+    "Antike"
+   ],
+   "aliases": [
+    "colosseum",
+    "colosseo"
+   ],
+   "accuracy": "massstab",
+   "difficulty": 4,
+   "description": "Antikes Amphitheater in Rom.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/wahrzeichen/kolosseum.js",
+   "structure": null,
+   "scales": [
+    1,
+    0.5
+   ],
+   "defaultScale": 1,
+   "size": [
+    188,
+    48,
+    156
+   ],
+   "blocks": 96000,
+   "steps": 20,
+   "phases": 3,
+   "variants": {
+    "1": {
+     "size": [
+      188,
+      48,
+      156
+     ],
+     "blocks": 96000,
+     "steps": 20
+    },
+    "0.5": {
+     "size": [
+      94,
+      24,
+      78
+     ],
+     "blocks": 24000,
+     "steps": 10
+    }
+   },
+   "topMaterials": [
+    [
+     "stone_bricks",
+     57600
+    ],
+    [
+     "oak_planks",
+     19200
+    ]
+   ],
+   "sizeClass": "gross",
+   "thumb": null
+  },
+  {
+   "id": "cheops-pyramide",
+   "title": "Cheops-Pyramide",
+   "category": "wahrzeichen",
+   "subtitle": "Die größte Pyramide von Gizeh",
+   "tags": [
+    "Ägypten",
+    "Pyramide",
+    "Antike"
+   ],
+   "aliases": [
+    "pyramide von gizeh",
+    "great pyramid",
+    "grosse pyramide"
+   ],
+   "accuracy": "massstab",
+   "difficulty": 3,
+   "description": "Die größte Pyramide von Gizeh.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/wahrzeichen/cheops-pyramide.js",
+   "structure": null,
+   "scales": [
+    1,
+    0.5,
+    0.25
+   ],
+   "defaultScale": 0.25,
+   "size": [
+    230,
+    139,
+    230
+   ],
+   "blocks": 2400000,
+   "steps": 20,
+   "phases": 3,
+   "variants": {
+    "1": {
+     "size": [
+      230,
+      139,
+      230
+     ],
+     "blocks": 2400000,
+     "steps": 20
+    },
+    "0.5": {
+     "size": [
+      115,
+      70,
+      115
+     ],
+     "blocks": 600000,
+     "steps": 10
+    },
+    "0.25": {
+     "size": [
+      58,
+      35,
+      58
+     ],
+     "blocks": 150000,
+     "steps": 5
+    }
+   },
+   "topMaterials": [
+    [
+     "stone_bricks",
+     1440000
+    ],
+    [
+     "oak_planks",
+     480000
+    ]
+   ],
+   "sizeClass": "riesig",
+   "thumb": null
+  },
+  {
+   "id": "golden-gate-bridge",
+   "title": "Golden Gate Bridge",
+   "category": "infrastruktur",
+   "subtitle": "Hängebrücke in San Francisco",
+   "tags": [
+    "USA",
+    "Brücke"
+   ],
+   "aliases": [
+    "golden gate bruecke",
+    "golden gate"
+   ],
+   "accuracy": "massstab",
+   "difficulty": 5,
+   "description": "Hängebrücke in San Francisco.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/infrastruktur/golden-gate-bridge.js",
+   "structure": null,
+   "scales": [
+    0.5,
+    0.25
+   ],
+   "defaultScale": 0.5,
+   "size": [
+    1400,
+    113,
+    27
+   ],
+   "blocks": 210000,
+   "steps": 20,
+   "phases": 3,
+   "variants": {
+    "0.5": {
+     "size": [
+      700,
+      57,
+      14
+     ],
+     "blocks": 52500,
+     "steps": 10
+    },
+    "0.25": {
+     "size": [
+      350,
+      28,
+      7
+     ],
+     "blocks": 13125,
+     "steps": 5
+    }
+   },
+   "topMaterials": [
+    [
+     "stone_bricks",
+     126000
+    ],
+    [
+     "oak_planks",
+     42000
+    ]
+   ],
+   "sizeClass": "riesig",
+   "thumb": null
+  },
+  {
+   "id": "steinbruecke",
+   "title": "Steinbrücke",
+   "category": "infrastruktur",
+   "subtitle": "Gewölbte Brücke aus Steinziegeln über einen Fluss",
+   "tags": [
+    "Brücke",
+    "Stein"
+   ],
+   "aliases": [
+    "bogenbruecke"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Gewölbte Brücke aus Steinziegeln über einen Fluss.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/infrastruktur/steinbruecke.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    25,
+    9,
+    7
+   ],
+   "blocks": 640,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     384
+    ],
+    [
+     "oak_planks",
+     128
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "bahnhof",
+   "title": "Kleiner Bahnhof",
+   "category": "infrastruktur",
+   "subtitle": "Bahnhof mit Bahnsteig und Lorenschiene",
+   "tags": [
+    "Bahnhof",
+    "Loren"
+   ],
+   "aliases": [
+    "station",
+    "lorenbahnhof"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Bahnhof mit Bahnsteig und Lorenschiene.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/infrastruktur/bahnhof.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    30,
+    10,
+    14
+   ],
+   "blocks": 2100,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     1260
+    ],
+    [
+     "oak_planks",
+     420
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  },
+  {
+   "id": "leuchtturm",
+   "title": "Leuchtturm",
+   "category": "infrastruktur",
+   "subtitle": "Rot-weißer Leuchtturm an der Küste",
+   "tags": [
+    "Turm",
+    "Küste",
+    "Meer"
+   ],
+   "aliases": [
+    "lighthouse"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Rot-weißer Leuchtturm an der Küste.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/infrastruktur/leuchtturm.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    11,
+    34,
+    11
+   ],
+   "blocks": 1900,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     1140
+    ],
+    [
+     "oak_planks",
+     380
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  },
+  {
+   "id": "kleines-holzhaus",
+   "title": "Kleines Holzhaus",
+   "category": "haeuser",
+   "subtitle": "Gemütliche Starterhütte aus Eiche mit Kamin",
+   "tags": [
+    "Holz",
+    "Starter",
+    "Hütte"
+   ],
+   "aliases": [
+    "starterhaus",
+    "erstes haus"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 1,
+   "description": "Gemütliche Starterhütte aus Eiche mit Kamin.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/haeuser/kleines-holzhaus.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    9,
+    8,
+    7
+   ],
+   "blocks": 312,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     187
+    ],
+    [
+     "oak_planks",
+     62
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "moderne-villa",
+   "title": "Moderne Villa",
+   "category": "haeuser",
+   "subtitle": "Weiße Villa mit Pool und großen Fenstern",
+   "tags": [
+    "Modern",
+    "Beton",
+    "Pool"
+   ],
+   "aliases": [
+    "modernes haus"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 3,
+   "description": "Weiße Villa mit Pool und großen Fenstern.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/haeuser/moderne-villa.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 5200,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     3120
+    ],
+    [
+     "oak_planks",
+     1040
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  },
+  {
+   "id": "japanisches-teehaus",
+   "title": "Japanisches Teehaus",
+   "category": "haeuser",
+   "subtitle": "Kleines Teehaus mit Schiebetüren und Kirschbaum",
+   "tags": [
+    "Japan",
+    "Holz"
+   ],
+   "aliases": [
+    "teehaus",
+    "chashitsu"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Kleines Teehaus mit Schiebetüren und Kirschbaum.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/haeuser/japanisches-teehaus.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 900,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     540
+    ],
+    [
+     "oak_planks",
+     180
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "mittelalterliche-burg",
+   "title": "Mittelalterliche Burg",
+   "category": "mittelalter",
+   "subtitle": "Burg mit Bergfried, Ringmauer und Torhaus",
+   "tags": [
+    "Burg",
+    "Mauer",
+    "Groß"
+   ],
+   "aliases": [
+    "ritterburg"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 4,
+   "description": "Burg mit Bergfried, Ringmauer und Torhaus.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/mittelalter/mittelalterliche-burg.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 38000,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     22800
+    ],
+    [
+     "oak_planks",
+     7600
+    ]
+   ],
+   "sizeClass": "gross",
+   "thumb": null
+  },
+  {
+   "id": "wachturm",
+   "title": "Wachturm",
+   "category": "mittelalter",
+   "subtitle": "Hölzerner Wachturm mit Aussichtsplattform",
+   "tags": [
+    "Turm",
+    "Holz"
+   ],
+   "aliases": [
+    "aussichtsturm"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Hölzerner Wachturm mit Aussichtsplattform.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/mittelalter/wachturm.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 420,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     252
+    ],
+    [
+     "oak_planks",
+     84
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "windmuehle",
+   "title": "Windmühle",
+   "category": "mittelalter",
+   "subtitle": "Holländische Windmühle mit Flügeln aus Wolle",
+   "tags": [
+    "Mühle",
+    "Holz"
+   ],
+   "aliases": [
+    "windmill"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Holländische Windmühle mit Flügeln aus Wolle.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/mittelalter/windmuehle.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 1300,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     780
+    ],
+    [
+     "oak_planks",
+     260
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  },
+  {
+   "id": "neuschwanstein",
+   "title": "Schloss Neuschwanstein",
+   "category": "mittelalter",
+   "subtitle": "Märchenschloss in den bayerischen Alpen",
+   "tags": [
+    "Deutschland",
+    "Schloss",
+    "Burg"
+   ],
+   "aliases": [
+    "neuschwanstein",
+    "maerchenschloss"
+   ],
+   "accuracy": "nachempfunden",
+   "difficulty": 5,
+   "description": "Märchenschloss in den bayerischen Alpen.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/mittelalter/neuschwanstein.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 120000,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     72000
+    ],
+    [
+     "oak_planks",
+     24000
+    ]
+   ],
+   "sizeClass": "riesig",
+   "thumb": null
+  },
+  {
+   "id": "hobbit-hoehle",
+   "title": "Hobbit-Höhle",
+   "category": "fantasy",
+   "subtitle": "Runde Tür im grünen Hügel wie im Auenland",
+   "tags": [
+    "Herr der Ringe",
+    "Hügel"
+   ],
+   "aliases": [
+    "hobbit hoehle",
+    "beutelsend",
+    "hobbit hole"
+   ],
+   "accuracy": "nachempfunden",
+   "difficulty": 2,
+   "description": "Runde Tür im grünen Hügel wie im Auenland.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/fantasy/hobbit-hoehle.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 1500,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     900
+    ],
+    [
+     "oak_planks",
+     300
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  },
+  {
+   "id": "zaubererturm",
+   "title": "Zaubererturm",
+   "category": "fantasy",
+   "subtitle": "Schiefer Magierturm mit Kristallspitze",
+   "tags": [
+    "Turm",
+    "Magie"
+   ],
+   "aliases": [
+    "magierturm",
+    "wizard tower"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Schiefer Magierturm mit Kristallspitze.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/fantasy/zaubererturm.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 3100,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     1860
+    ],
+    [
+     "oak_planks",
+     620
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  },
+  {
+   "id": "kirschbluetenbaum",
+   "title": "Kirschblütenbaum",
+   "category": "klein",
+   "subtitle": "Großer Baum aus Kirschlaub",
+   "tags": [
+    "Baum",
+    "Japan",
+    "Natur"
+   ],
+   "aliases": [
+    "sakura",
+    "sakura baum"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Großer Baum aus Kirschlaub.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/klein/kirschbluetenbaum.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 700,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     420
+    ],
+    [
+     "oak_planks",
+     140
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "steinbrunnen",
+   "title": "Steinbrunnen",
+   "category": "klein",
+   "subtitle": "Dorfbrunnen mit Dach und Eimer",
+   "tags": [
+    "Brunnen",
+    "Deko"
+   ],
+   "aliases": [
+    "brunnen"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 1,
+   "description": "Dorfbrunnen mit Dach und Eimer.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": "js/builds/klein/steinbrunnen.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 80,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     48
+    ],
+    [
+     "oak_planks",
+     16
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "kolbentuer-2x2",
+   "title": "2×2-Kolbentür",
+   "category": "redstone",
+   "subtitle": "Versteckte Tür aus klebrigen Kolben",
+   "tags": [
+    "Redstone",
+    "Tür",
+    "Kolben"
+   ],
+   "aliases": [
+    "piston door",
+    "kolbentuer"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 3,
+   "description": "Versteckte Tür aus klebrigen Kolben.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": false,
+   "module": "js/builds/redstone/kolbentuer-2x2.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 120,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     72
+    ],
+    [
+     "oak_planks",
+     24
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "eisenfarm",
+   "title": "Eisenfarm",
+   "category": "farmen",
+   "subtitle": "Eisengolem-Farm mit Dorfbewohnern und Zombie",
+   "tags": [
+    "Farm",
+    "Eisen",
+    "Golem"
+   ],
+   "aliases": [
+    "iron farm",
+    "golemfarm"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 4,
+   "description": "Eisengolem-Farm mit Dorfbewohnern und Zombie.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": false,
+   "module": "js/builds/farmen/eisenfarm.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 2600,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     1560
+    ],
+    [
+     "oak_planks",
+     520
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  },
+  {
+   "id": "weizenfarm-automatisch",
+   "title": "Automatische Weizenfarm",
+   "category": "farmen",
+   "subtitle": "Weizen ernten per Wasser und Beobachter",
+   "tags": [
+    "Farm",
+    "Weizen",
+    "Redstone"
+   ],
+   "aliases": [
+    "wheat farm"
+   ],
+   "accuracy": "eigenes",
+   "difficulty": 2,
+   "description": "Weizen ernten per Wasser und Beobachter.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": false,
+   "module": "js/builds/farmen/weizenfarm-automatisch.js",
+   "structure": null,
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    12,
+    10,
+    12
+   ],
+   "blocks": 900,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     540
+    ],
+    [
+     "oak_planks",
+     180
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "spiel-plains-small-house-1",
+   "title": "Kleines Ebenen-Dorfhaus",
+   "category": "haeuser",
+   "subtitle": "Original aus einem Ebenen-Dorf",
+   "tags": [
+    "Dorf",
+    "Original"
+   ],
+   "aliases": [
+    "dorfhaus",
+    "plains house"
+   ],
+   "accuracy": "original",
+   "difficulty": 1,
+   "description": "Original aus einem Ebenen-Dorf.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": null,
+   "structure": "village__plains__houses__plains_small_house_1.json",
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    7,
+    7,
+    7
+   ],
+   "blocks": 153,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     92
+    ],
+    [
+     "oak_planks",
+     31
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "spiel-igloo-top",
+   "title": "Iglu",
+   "category": "haeuser",
+   "subtitle": "Original-Iglu aus der Schneetundra",
+   "tags": [
+    "Schnee",
+    "Original"
+   ],
+   "aliases": [
+    "igloo"
+   ],
+   "accuracy": "original",
+   "difficulty": 1,
+   "description": "Original-Iglu aus der Schneetundra.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": null,
+   "structure": "igloo__top.json",
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    7,
+    5,
+    8
+   ],
+   "blocks": 180,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     108
+    ],
+    [
+     "oak_planks",
+     36
+    ]
+   ],
+   "sizeClass": "klein",
+   "thumb": null
+  },
+  {
+   "id": "spiel-pillager-outpost-watchtower",
+   "title": "Plünderer-Außenposten",
+   "category": "mittelalter",
+   "subtitle": "Original-Wachturm der Plünderer",
+   "tags": [
+    "Turm",
+    "Original",
+    "Plünderer"
+   ],
+   "aliases": [
+    "pillager outpost"
+   ],
+   "accuracy": "original",
+   "difficulty": 2,
+   "description": "Original-Wachturm der Plünderer.",
+   "facts": [],
+   "sources": [],
+   "credits": null,
+   "tested": null,
+   "module": null,
+   "structure": "pillager_outpost__watchtower.json",
+   "scales": null,
+   "defaultScale": null,
+   "size": [
+    15,
+    23,
+    15
+   ],
+   "blocks": 1100,
+   "steps": 20,
+   "phases": 3,
+   "variants": null,
+   "topMaterials": [
+    [
+     "stone_bricks",
+     660
+    ],
+    [
+     "oak_planks",
+     220
+    ]
+   ],
+   "sizeClass": "mittel",
+   "thumb": null
+  }
+ ]
+}

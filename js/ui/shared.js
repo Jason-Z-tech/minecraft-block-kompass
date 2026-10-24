@@ -32,6 +32,9 @@ export const ACCURACY_KEYS = Object.freeze(Object.keys(ACCURACY_LABELS));
 
 export const DIFFICULTY_LABELS = Object.freeze(['Sehr leicht', 'Leicht', 'Mittel', 'Schwer', 'Sehr schwer']);
 
+/** Größenklassen nach Blöcken (Katalog ab Runde 2): klein < 1 000 ≤ mittel < 10 000 ≤ gross < 100 000 ≤ riesig */
+export const SIZE_CLASS_KEYS = Object.freeze(['klein', 'mittel', 'gross', 'riesig']);
+
 /** Alle Icons in assets/icons.svg (wird per Test gegen die Datei geprüft). */
 export const ICON_NAMES = Object.freeze([
   'search', 'home', 'grid', 'hammer', 'prev', 'next', 'play', 'pause', 'check', 'close', 'info', 'warning',

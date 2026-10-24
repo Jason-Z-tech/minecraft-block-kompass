@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Testseite des Voxel-Imports: 3D-Modell wählen, in Minecraft-Blöcke umwandeln und in der echten 3D-Ansicht ansehen.">
+  <title>Voxel-Import-Test · Block-Kompass</title>
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../css/style.css">
+  <script type="module" src="voxelize.js"></script>
+</head>
+<body data-page="voxelize-test">
+  <main id="main" tabindex="-1">
+    <h1 class="visually-hidden">Voxel-Import-Test</h1>
+    <div class="stage" id="stage">
+      <canvas class="stage__canvas" id="view"></canvas>
+      <div class="stage__status" id="status" role="status" aria-live="polite"></div>
+    </div>
+
+    <section class="container stack" id="controls" aria-label="Modell wählen">
+      <div class="field">
+        <label class="field__label" for="file">Modell (.stl, .obj mit optionaler .mtl, .glb, .gltf, .vox)</label>
+        <input type="file" id="file" multiple accept=".stl,.obj,.mtl,.glb,.gltf,.vox">
+      </div>
+      <div class="cluster">
+        <div class="field">
+          <label class="field__label" for="height">Höhe in Blöcken</label>
+          <input class="field__input mono" type="number" id="height" min="1" max="1024" step="1" value="48">
+        </div>
+        <div class="field">
+          <label class="field__label" for="palette">Palette</label>
+          <select class="select" id="palette">
+            <option value="alle">Alle passenden Blöcke</option>
+            <option value="beton">Beton</option>
+            <option value="wolle">Wolle</option>
+            <option value="terrakotta">Terrakotta</option>
+            <option value="einfarbig">Ein Block</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="block">Block (nur „Ein Block“)</label>
+          <input class="field__input mono" type="text" id="block" value="white_concrete" maxlength="64" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label class="field__label" for="up">Hochachse</label>
+          <select class="select" id="up">
+            <option value="auto">automatisch</option>
+            <option value="y">y</option>
+            <option value="z">z</option>
+          </select>
+        </div>
+        <label class="field__label" for="solid"><input type="checkbox" id="solid"> Innen füllen</label>
+        <label class="field__label" for="native"><input type="checkbox" id="native" checked> .vox in Originalgröße</label>
+      </div>
+      <div class="cluster" role="group" aria-label="Ansicht">
+        <button class="btn btn--sm btn--primary" type="button" id="convert" disabled>Umwandeln</button>
+        <button class="btn btn--sm" type="button" data-view="iso">Iso</button>
+        <button class="btn btn--sm" type="button" data-view="top">Oben</button>
+        <button class="btn btn--sm" type="button" data-view="front">Vorne</button>
+        <button class="btn btn--sm" type="button" data-view="side">Seite</button>
+      </div>
+      <p class="mono muted" id="info">Noch kein Modell gewählt.</p>
+      <canvas id="top-view" width="1" height="1" aria-label="Draufsicht: oberster Block je Spalte"></canvas>
+      <ul class="stack" id="materials" aria-label="Blöcke nach Anzahl"></ul>
+      <ul class="stack" id="warnings" aria-label="Hinweise zum Modell"></ul>
+    </section>
+  </main>
+</body>
+</html>

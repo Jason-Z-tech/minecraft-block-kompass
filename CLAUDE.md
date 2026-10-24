@@ -29,7 +29,7 @@ Verbindliche Spezifikation: `docs/ARCHITEKTUR.md` (Ordner, Schnittstellen, Daten
 
 ## Spieldaten (`game-data/`, nicht im Repo)
 - Lokal einmal erzeugen: `node scripts/extract-game-data.mjs`. Liest das 26.2-Jar und die Assets der Installation, holt den Blockbericht von misode/mcmeta. Optionen: `--jar`, `--assets`, `--offline`.
-- In der Cloud (claude.ai/code) gibt es kein Jar und darum zuerst kein `game-data/`. Code für Seiten, Kern und Bauten lässt sich dort bearbeiten; 3D-Ansicht, `check-build` und Screenshots brauchen die Spieldaten. Ein Download-Modus für die Cloud ist in Runde 2 eingeplant.
+- In der Cloud (claude.ai/code) gibt es kein Jar und darum zuerst kein `game-data/`. Dort `node scripts/extract-game-data.mjs --remote` ausführen (lädt die Daten von misode/mcmeta und Mojang, siehe README „In der Cloud“).
 
 ## Starten und testen
 - Server: `node scripts/serve.mjs` → http://127.0.0.1:8080 (anderer Port mit `--port`).
@@ -37,8 +37,9 @@ Verbindliche Spezifikation: `docs/ARCHITEKTUR.md` (Ordner, Schnittstellen, Daten
 - Bau prüfen: `node scripts/check-build.mjs <modulpfad> [--scale <zahl>] [--json]`
 - Screenshots: `node scripts/shot.mjs --module <pfad>` (Chrome headless über `tests/browser.mjs`, Pfad notfalls per `CHROME_PATH`).
 
-## Stand (2026-10-22, 21:30)
+## Stand (2026-10-24, 11:15)
 - Runde 1 fertig und geprüft (alle Unit-Tests grün): Spieldaten-Extraktion, Kern (Builder-API, Auto-Verbindungen, Schritte, Materialien), 3D-Ansicht mit Spieltexturen und Lauf-Modus, Seitenhülle und Design, Recherche Tokyo Skytree und Infinity Castle.
 - Offen aus der Prüfung von Runde 1 (für Runde 3): durchsichtige Flächen innerhalb eines Chunks unsortiert (Buntglas mischt sich je nach Blickwinkel), Schritt-Meshes bei sehr grossen Ebenen-Schritten speicherhungrig, `fill` mit replace/keep ohne Blockgrenze, Wasserhöhe 14/16 statt 8/9, Komposter-Seiten nicht stabil, Text „linke Hälfte“ bei Doppeltruhen missverständlich, Geist-Durchgänge auch bei fertigem Bau.
-- Runde 2 läuft seit 2026-10-22 21:30 lokal als Workflow: Bau-Seite mit Schritt-Player, Startseite und Kategorien, Katalog mit Vorschaubildern und Original-Strukturen aus dem Spiel, „Selber erstellen“ (Freitext, Formen, Upload), Spieldaten-Download für die Cloud (`--remote`), Testrunde mit Skytree 1:1, Infinity Castle und rund 80 Bauten in allen Kategorien, strenge Prüfung je Paket, Klick-Test, Start-Befehl. Was davon im Repo fehlt, ist noch nicht fertig.
+- Runde 2 läuft lokal als Workflow (Zwischenstand committet, 793/793 Unit-Tests grün). Fertig und im Repo: Hilfsbibliothek (`js/builds/lib/`), Katalog mit Original-Strukturen aus dem Spiel, Startseite/Kategorien (`js/ui/browse/`), Bau-Seite mit Schritt-Player (`js/ui/build/`), „Selber erstellen“-Logik (Freitext, Formen, Upload/Voxelisierung in `js/create/`), Spieldaten-Download für die Cloud (`--remote`), Tokyo Skytree 1:1 und Infinity Castle (beide geprüft), Wahrzeichen, Kleinbauten, Mittelalter und ein Teil der Infrastruktur.
+- Noch in Arbeit (lokal, darum nicht im Repo): Oberfläche von „Selber erstellen“ (`js/ui/create/`), Bauten für Häuser, Fantasy, Farmen, Redstone und den Rest der Infrastruktur, Prüfung einiger Pakete, Zusammenführung und Klick-Test. Diese Teile in der Cloud nicht neu anfangen, sie kommen mit dem nächsten Commit.
 - Danach Runde 3 (Gesamt-Review, End-to-End-Test, README), dann prüft der User die Qualität. Erst danach auf 100+ Bauten pro Kategorie skalieren.
