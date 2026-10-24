@@ -968,6 +968,24 @@ gerastert, Icons isometrisch über `renderBlockIcon`, `item/<id>` des Spiels hat
 Schritt für 3 s bzw. während des Abspielens (danach aus, damit der Viewer nicht dauernd zeichnet). Notizen (`b.note`) erscheinen als
 Markierungen über der 3D-Ansicht (eigene Projektion mit der Kamera aus `viewer.controls`, verdeckt → blass). `window.__buildView` hält
 in `bau.html` die geladene Ansicht (für Klick-Tests). Prüfung: `node tests/visual/build-page-check.mjs` (Screenshots, Abläufe, FPS).
+Änderung (ui:create): `onError(error, handle)` bekommt als zweites Argument den Griff der Ansicht (`null`, wenn schon der Viewer nicht
+starten konnte), weil das Promise bei Ladefehlern keinen liefert – Einbettungen räumen damit Viewer und Worker nach Fehlern ab.
+
+Änderung (ui:create, „Selber erstellen“): `erstellen.html[?q=<text>][#formen|#import]` mit drei Reitern (Idee, Formen, Import;
+`initTabs`, der Anker merkt den Reiter per `history.replaceState`). Freitext bis 200 Zeichen (`cleanRequest`), Ergebnis aus
+`parseRequest` ohne Neuladen (Adresse per `replaceState`); `build` → Karten mit Link `bau.html?id=…[&scale=…]` (eindeutig: große Karte
+„Anleitung öffnen“), `shape` → „So verstanden“ und vorbefüllter Generator, `none` → Begründung, echte Vorschläge, Knöpfe zu Formen und
+Import. Formen-Generator aus `SHAPES` (Zahl + Regler, Block-Auswahl als Combobox über `findBlocks` mit Icons aus `Appearance`,
+hohl/voll als Umschalter, `dependsOn` blendet Felder aus), Prüfung live mit `validateShapeParams`, Meldungen am Feld (Präfix „Label: “),
+Vorschau mit `mountBuildView` (`formProgressKey`), kleine Formen (≤ 200 000 Blöcke) bauen sich nach 0,9 s Pause neu, letzte Form in
+`bk:create:shape`. Import: Datei-Feld/Drag & Drop (`accept` = `UPLOAD_ACCEPT` + `.mtl`), Vorprüfung im Hauptthread, bei Modellen
+Einstellungen (Höhe, hohl/voll, Palette, Block nur aus `block-colors.json`, Hochachse), Laden mit `progressKey: null`; jede Last baut eine
+frische Ansicht (`ViewSlot`), Fehler → Ansicht weg, Meldung bei der Auswahl. Teile in `js/ui/create/`: `model.js` (rein, Node-testbar),
+`view-slot.js`, `fields.js`, `block-picker.js`, `block-icons.js`, `shape-glyphs.js`, `shape-form.js`, `idea.js`, `importer.js`; Styles
+`css/create.css` (nach `style.css` und `build-view.css`). Klick-Tests: `window.__createPage` (`ready`, `request`, `shape`, `imports`,
+`lastImport`, `views.shape|import`); Prüfung `node tests/visual/create-page-check.mjs [--only idee|formen|import|handy|zustaende]`.
+Grenze: Die Farben einer `.mtl` reicht die Upload-Quelle des Workers (`checkUploadSource`) noch nicht an `modelToVolume` weiter – die
+Seite nimmt die `.mtl` an und sagt das ehrlich.
 
 ## 9. Bau-Module (Inhalte)
 

@@ -5,7 +5,7 @@
 import {
   STONE, WOOD, COLOR, arch, arrowSlit, battlements, doorway, window, straightStairs, timberWall, hangingLantern, wallLantern,
   lampPost, bedroom, storage, workshop, diningTable, lightRoom, floorPattern, terrain, pathAlong, tree, bush, rock,
-  flowerBed, vegetation,
+  flowerBed, vegetation, isPlantId,
 } from '../lib/index.js';
 
 export const meta = {
@@ -59,15 +59,22 @@ function wallStone(b, y) {
   return b.pickWeighted([[stone.block, 12], [stone.mossy, 2], [stone.cracked, 2]]);
 }
 
-// Ein Teil der Steinziegel wird bemoost oder rissig.
-function weather(b, x1, y1, z1, x2, y2, z2, share) {
-  for (let y = y1; y <= y2; y++) {
-    for (let z = z1; z <= z2; z++) {
-      for (let x = x1; x <= x2; x++) {
-        if (b.get(x, y, z) === stone.block && b.chance(share)) b.set(x, y, z, b.chance(0.6) ? stone.mossy : stone.cracked);
-      }
+function forBox([x1, y1, z1, x2, y2, z2], fn) {
+  for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) for (let x = x1; x <= x2; x++) fn(x, y, z);
+}
+
+// Ein Teil der Steinziegel, die draw() neu setzt, wird bemoost oder rissig. Ältere Blöcke bleiben unberührt und
+// behalten so ihr Kapitel – sonst fehlten sie in der Anleitung bis zu diesem Schritt.
+function weatherNew(b, box, share, draw) {
+  const before = new Map();
+  forBox(box, (x, y, z) => before.set(`${x},${y},${z}`, b.get(x, y, z)));
+  draw();
+  forBox(box, (x, y, z) => {
+    const state = b.get(x, y, z);
+    if (state === stone.block && state !== before.get(`${x},${y},${z}`) && b.chance(share)) {
+      b.set(x, y, z, b.chance(0.6) ? stone.mossy : stone.cracked);
     }
-  }
+  });
 }
 
 // Zellen einer runden Scheibe: Rand (shell) und Inneres.
@@ -211,13 +218,17 @@ function gatehouse(b) {
 
 function portcullis(b) {
   const { z1, roomFloor, portcullis: pz } = GATE;
-  b.step('Fallgitter und Torflügel', 'Das Fallgitter aus Eisengittern hängt in der vorletzten Reihe zum Feld hin: halb hochgezogen, '
+  b.phase('Fallgitter und Torflügel', 'Das Fallgitter aus Eisengittern hängt in der vorletzten Reihe zum Feld hin: halb hochgezogen, '
     + 'unten 2 Blöcke frei, oben durch einen Schlitz in der Decke bis in die Wachstube, wo es an einem liegenden Stamm (der '
     + 'Winde) endet. Am Hofende stehen die offenen Torflügel aus Falltüren an den Wänden.');
+  b.step('Fallgitter', 'Setz die Eisengitter von oben nach unten: in der Wachstube beginnend durch den Schlitz bis 2 Blöcke über '
+    + 'dem Boden der Durchfahrt. Oben drauf liegt die Winde, ein geschälter Fichtenstamm quer zur Durchfahrt.');
   for (let y = 3; y <= roomFloor + 2; y++) {
     for (let x = -2; x <= 2; x++) if (b.get(x, y, pz) === 'air' || y >= 7) b.set(x, y, pz, 'iron_bars');
   }
   for (let x = -2; x <= 2; x++) b.set(x, roomFloor + 3, pz, `${spruce.strippedLog}[axis=x]`);
+  b.step('Torflügel und Laternen', 'Die offenen Torflügel sind Schwarzeichenfalltüren, je zwei breit und vier hoch flach an den '
+    + 'Wänden am Hofende. Zum Schluss hängst du zwei Laternen unter den Bogen.');
   for (let y = 1; y <= 4; y++) {
     for (const z of [z1 + 1, z1 + 2]) {
       b.set(-2, y, z, `${darkOak.trapdoor}[facing=east,half=bottom,open=true]`);
@@ -237,21 +248,22 @@ function walkways(b) {
     + 'Konsolen, die Türme runde Zinnenkränze und Fahnen.', {
     tips: ['Zähl die Zinnen von einer Turmseite aus: Zinne, Lücke, Zinne … – die Reihe endet an jedem Turm auf einer Zinne.'],
   });
-  eachSide(b, (rotate) => {
-    const parts = rotate === 0 ? [[-SPAN, -GATE.x - 1], [GATE.x + 1, SPAN]] : [[-SPAN, SPAN]];
-    for (const [x1, x2] of parts) {
-      battlements(b, { x: x1, y: TOP + 1, z: OUT, facing: 'south', length: x2 - x1 + 1, block: stone.block, corbels: stone.stairs, cap: stone.slab });
-      for (let x = x1; x <= x2; x++) {
-        const [wx, wz] = toWorld(rotate, x, IN);
-        if (isStairExit(wx, wz)) continue;
-        b.set(x, TOP + 1, IN, stone.wall);
-        if ((x - x1) % 8 === 4) b.set(x, TOP + 2, IN, 'lantern[hanging=false]');
+  weatherNew(b, [-OUT - 6, TOP, -OUT - 6, OUT + 6, TOWER.top + 4, OUT + 6], 0.2, () => {
+    eachSide(b, (rotate) => {
+      const parts = rotate === 0 ? [[-SPAN, -GATE.x - 1], [GATE.x + 1, SPAN]] : [[-SPAN, SPAN]];
+      for (const [x1, x2] of parts) {
+        battlements(b, { x: x1, y: TOP + 1, z: OUT, facing: 'south', length: x2 - x1 + 1, block: stone.block, corbels: stone.stairs, cap: stone.slab });
+        for (let x = x1; x <= x2; x++) {
+          const [wx, wz] = toWorld(rotate, x, IN);
+          if (isStairExit(wx, wz)) continue;
+          b.set(x, TOP + 1, IN, stone.wall);
+          if ((x - x1) % 8 === 4) b.set(x, TOP + 2, IN, 'lantern[hanging=false]');
+        }
       }
-    }
-    roundBattlements(b, 'blau');
+      roundBattlements(b, 'blau');
+    });
+    gateBattlements(b);
   });
-  gateBattlements(b);
-  weather(b, -OUT - 6, TOP, -OUT - 6, OUT + 6, TOWER.top + 4, OUT + 6, 0.2);
 }
 
 // Austritte der beiden Mauertreppen auf den Wehrgang (Welt-Koordinaten der Brüstungslücke).
@@ -301,8 +313,11 @@ function gateBattlements(b) {
 }
 
 function wallStairs(b) {
-  b.step('Treppen zum Wehrgang', 'Zwei Steintreppen führen vom Hof auf den Wehrgang: eine an der Nordmauer (steigt nach Osten) und '
-    + 'eine an der Ostmauer (steigt nach Norden), je 9 Stufen, darunter voll gemauert. Oben bleibt die Hofbrüstung offen.');
+  b.phase('Treppen zum Wehrgang', 'Zwei Steintreppen führen vom Hof auf den Wehrgang: eine an der Nordmauer (steigt nach Osten) und '
+    + 'eine an der Ostmauer (steigt nach Norden), je 9 Stufen, darunter voll gemauert. Oben bleibt die Hofbrüstung offen.', {
+    tips: ['Setz zuerst die unterste Stufe mit Blick in Laufrichtung, dann jede weitere einen Block weiter und eine Ebene höher.'],
+  });
+  b.step('Treppen zum Wehrgang', 'Beide Treppen sind 1 Block breit; unter jeder Stufe mauerst du bis zum Boden voll.');
   for (const s of WALL_STAIRS) straightStairs(b, { x: s.x, y: 1, z: s.z, facing: s.facing, width: 1, height: TOP, stairs: stone.stairs, support: stone.block });
 }
 
@@ -335,6 +350,8 @@ function keepShell(b) {
 
 function keepTop(b) {
   const { x1, x2, z1, z2, top } = KEEP;
+  b.phase('Bergfried: Zinnen, Dachhaus und Hocheingang', 'Der Bergfried bekommt oben seinen Abschluss und unten den Zugang '
+    + 'über eine Holztreppe.');
   b.step('Zinnen und Dachhaus des Bergfrieds', 'Oben bekommt der Bergfried einen Zinnenkranz auf Konsolen (11 × 11). Auf der '
     + 'Plattform steht ein kleines Dachhaus: vier Steinziegelpfeiler und ein Zeltdach aus Tiefenschieferziegeln, darauf der '
     + 'Fahnenmast mit rotem Banner. Die Falltür über der Leiter liegt daneben.');
@@ -462,7 +479,8 @@ function interiors(b) {
     lightRoom(b, { x1: rx1, y1: roomFloor + 1, z1: z1 + 1, x2: rx2, y2: top - 1, z2: tz - 1 });
   }
   diningTable(b, { x: -1, y: roomFloor + 1, z: 24, facing: 'south', length: 3, width: 1, wood: 'fichte' });
-  storage(b, { x: -2, y: roomFloor + 1, z: z2 - 2, facing: 'north', width: 2, height: 1, barrel: false });
+  // facing north: die Truhen reihen sich vom Ursprung nach Westen (x = −1, −2), die Turmwand bei x = −3 bleibt ganz.
+  storage(b, { x: -1, y: roomFloor + 1, z: z2 - 2, facing: 'north', width: 2, height: 1, barrel: false });
   hangingLantern(b, { x: 0, y: roomTop - 1, z: 23, chain: 0 });
   lightRoom(b, { x1: -2, y1: roomFloor + 1, z1: z1 + 1, x2: 2, y2: roomTop - 1, z2: GATE.portcullis - 1 });
   lightRoom(b, { x1: -2, y1: 1, z1, x2: 2, y2: 6, z2 });
@@ -477,10 +495,14 @@ function keepInterior(b) {
   const iz1 = z1 + 2;
   const iz2 = z2 - 2;
   b.step('Bergfried', 'Im Bergfried führt eine Leiter in der Nordostecke vom Eingangsgeschoss bis unter die Falltür. Unten liegt '
-    + 'das Verlies – nur durch eine Eisenfalltür im Boden erreichbar, mit Ketten an der Wand und einer Seelenlaterne. Im '
+    + 'das Verlies – nur durch eine Eisenfalltür im Boden erreichbar, mit Ketten an der Wand und einer Seelenlaterne. Eine '
+    + 'Eisenfalltür lässt sich nicht von Hand öffnen: Der Hebel auf dem Boden direkt östlich daneben klappt sie auf. Im '
     + 'Eingangsgeschoss ist die Wachstube, darüber die Kammer des Burgherrn, ganz oben die Rüstkammer.');
   for (let y = floors[0] + 1; y < top; y++) b.set(ix2, y, iz1, 'ladder[facing=west]');
-  b.set(-11, floors[0], -15, 'iron_trapdoor[facing=south,half=top,open=false]');
+  // Luke abseits von Tisch und Stühlen; der Hebel steht auf dem Nachbarbrett und schaltet die Falltür über diesen Block.
+  b.set(ix2 - 1, floors[0], iz2 - 1, 'iron_trapdoor[facing=south,half=top,open=false]');
+  b.set(ix2, floors[0] + 1, iz2 - 1, 'lever[face=floor,facing=west,powered=false]');
+  b.note(ix2 - 1, floors[0], iz2 - 1, 'Luke ins Verlies (Hebel daneben)');
   for (const [x, z] of [[ix1, iz1], [ix1, iz2], [ix2, iz2]]) b.fill(x, floors[0] - 2, z, x, floors[0] - 1, z, 'iron_chain[axis=y]');
   b.set(ix1 + 1, 1, iz1, 'skeleton_skull[rotation=4]');
   b.set(ix2, 1, iz2 - 1, 'cobweb');
@@ -488,8 +510,9 @@ function keepInterior(b) {
   lightRoom(b, { x1: ix1, y1: 1, z1: iz1, x2: ix2, y2: floors[0] - 1, z2: iz2 }, { lantern: 'soul_lantern' });
 
   diningTable(b, { x: ix1 + 1, y: floors[0] + 1, z: iz1 + 1, facing: 'south', length: 2, width: 1, wood: 'schwarzeiche', headChairs: false });
-  storage(b, { x: ix1, y: floors[0] + 1, z: iz2, facing: 'north', width: 2, height: 1, barrel: false });
-  b.set(ix2, floors[0] + 1, iz2, 'barrel[facing=up]');
+  // facing north reiht nach Westen: Ursprung an der Ostwand, damit nichts in der Mauer landet. Der Eingang (x = −11) bleibt frei.
+  storage(b, { x: ix2, y: floors[0] + 1, z: iz2, facing: 'north', width: 2, height: 1, barrel: false });
+  b.set(ix1, floors[0] + 1, iz2, 'barrel[facing=up]');
   hangingLantern(b, { x: -11, y: floors[1] - 1, z: -15, chain: 0 });
   lightRoom(b, { x1: ix1, y1: floors[0] + 1, z1: iz1, x2: ix2, y2: floors[1] - 1, z2: iz2 });
 
@@ -498,7 +521,7 @@ function keepInterior(b) {
   lightRoom(b, { x1: ix1, y1: floors[1] + 1, z1: iz1, x2: ix2, y2: floors[2] - 1, z2: iz2 });
 
   workshop(b, { x: ix1, y: floors[2] + 1, z: iz1, facing: 'south', width: 4, wood: 'schwarzeiche', shelves: true });
-  storage(b, { x: ix1, y: floors[2] + 1, z: iz2, facing: 'north', width: 3, height: 2, barrel: true });
+  storage(b, { x: ix2, y: floors[2] + 1, z: iz2, facing: 'north', width: 3, height: 2, barrel: true });
   hangingLantern(b, { x: -11, y: top - 1, z: -15, chain: 1 });
   lightRoom(b, { x1: ix1, y1: floors[2] + 1, z1: iz1, x2: ix2, y2: top - 1, z2: iz2 });
 }
@@ -665,6 +688,16 @@ function courtyard(b) {
   rock(b, { x: -34, y: 1, z: -20, size: 'gross', material: 'andesit', seed: 28 });
   rock(b, { x: 35, y: 1, z: 12, size: 'klein', material: 'stein', seed: 29 });
   vegetation(b, { x: -38, y: 3, z: -38, width: 77, depth: 81, mix: 'wiese', density: 0.25, shape: 'eckig', seed: 'burg' });
+  clearPlants(b, STABLE);
+}
+
+// Der Stallboden aus grober Erde zählt für den Bewuchs als Wiese – unter dem Dach soll aber nichts wachsen.
+function clearPlants(b, { x1, x2, z1, z2 }) {
+  for (let x = x1; x <= x2; x++) {
+    for (let z = z1; z <= z2; z++) {
+      for (const y of [2, 1]) if (isPlantId(b.get(x, y, z).replace(/\[.*$/, ''))) b.remove(x, y, z);
+    }
+  }
 }
 
 export default function build(b) {

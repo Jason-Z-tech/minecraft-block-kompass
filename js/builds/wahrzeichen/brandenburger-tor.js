@@ -455,8 +455,8 @@ function buildHalf(b) {
   b.fill(-6, 0, -1, 14, 0, 1, 'stone_bricks');
 
   const piers = [-8, -5, -2];
-  b.phase('Säulen und Querwände', 'Die zwölf Säulen sind hier je ein Knochenblock dick (Ebenen 2–7), mit Kapitell aus geschnittenem '
-    + 'Sandstein. Dazwischen stehen die drei Blöcke tiefen Querwände aus glattem Sandstein.', {
+  b.phase('Säulen und Querwände', 'Die zwölf Säulen sind hier je ein Knochenblock dick: Platte aus poliertem Andesit '
+    + '(Ebene 2), Schaft (Ebenen 3–7) und Kapitell aus geschnittenem Sandstein (Ebene 8). Dazwischen stehen die drei Blöcke tiefen Querwände aus glattem Sandstein.', {
     tips: ['Jede Querwand ist 3 Blöcke tief; je eine Säule steht direkt vor und hinter ihr – zusammen 5 Blöcke.'],
   });
   bothHalves(b, () => {
@@ -495,12 +495,16 @@ function buildHalf(b) {
     b.set(2, 9, 0, SAND_RELIEF);
   }, { even: false });
 
-  b.phase('Quadriga (vereinfacht)', 'Die Quadriga wird hier zur kleinen Skulptur: vier Pferdekörper aus oxidiertem Kupfer mit '
-    + 'Köpfen nach Osten, dahinter Victoria mit dem Siegeszeichen.', { tips: ['Alle Köpfe zeigen nach Osten.'] });
+  b.phase('Quadriga (vereinfacht)', 'Die Quadriga wird hier zur kleinen Skulptur: vier Pferde aus gewachstem oxidiertem Kupfer, '
+    + 'je mit zwei Beinen aus Blitzableitern, einem Körper aus zwei Blöcken und einem erhobenen Kopf, dessen Maul (umgedrehte Treppe, '
+    + 'hohe Seite nach Westen) nach Osten zeigt. Dahinter steht Victoria mit dem Siegeszeichen.', { tips: ['Alle Köpfe zeigen nach Osten.'] });
+  // Je Pferd: zwei Beine, Körper aus zwei Blöcken, erhobener Kopf mit Maul (umgedrehte Treppe) nach Osten.
   for (const z of [-2, -1, 1, 2]) {
-    b.set(0, 11, z, `${PATINA_ROD}[facing=up]`);
+    for (const x of [0, 1]) b.set(x, 11, z, `${PATINA_ROD}[facing=up]`);
     b.set(0, 12, z, PATINA);
-    b.stairs(1, 12, z, PATINA_STAIRS, { facing: 'west', half: 'top' });
+    b.set(1, 12, z, PATINA_CUT);
+    b.set(1, 13, z, PATINA_CUT);
+    b.stairs(2, 13, z, PATINA_STAIRS, { facing: 'west', half: 'top' });
   }
   b.set(-1, 11, 0, PATINA_CUT);
   b.set(-1, 12, 0, PATINA);

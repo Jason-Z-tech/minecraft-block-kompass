@@ -50,6 +50,7 @@ const HEARTH_Z = 10; // Kamin an der Ostwand
 const BASE = -2;
 const lvl = (y) => y - BASE + 1;
 const roofY = (x) => WALL_TOP + (W + 1 - Math.abs(x)); // Höhe der Dachtreppe über Spalte x (mit Überstand 1)
+const HALL_BOX = [-W - 2, FLOOR, -L - 1, W + 2, roofY(0), L + 1]; // Mauern, Pfeiler und Giebel (für die Alterung)
 
 function wallStone(b, y) {
   if (y <= 2) return b.pickWeighted([[stone.block, 4], [stone.mossy, 2], [stone.rough, 1]]);
@@ -79,6 +80,10 @@ function walls(b) {
     + 'Absätze mit Steinziegeltreppen abgedeckt. Fenster und Portal schlägst du später heraus.', {
     tips: ['Setz zuerst die Strebepfeiler – sie markieren gleich die Lage der Dachbinder innen.'],
   });
+  weatherNew(b, HALL_BOX, 0.12, () => drawWalls(b));
+}
+
+function drawWalls(b) {
   for (let y = FLOOR; y <= WALL_TOP; y++) {
     for (let x = -W; x <= W; x++) for (const z of [-L, L]) b.set(x, y, z, wallStone(b, y));
     for (let z = -L + 1; z < L; z++) for (const x of [-W, W]) b.set(x, y, z, wallStone(b, y));
@@ -137,7 +142,9 @@ function roof(b) {
       'Setz das Dach Reihe für Reihe von beiden Traufen her – die Reihen treffen sich am First.',
     ],
   });
-  b.roof({ x1: -W, z1: -L, x2: W, z2: L, y: WALL_TOP, type: 'gable', axis: 'z', stairs: slate.tileStairs, slab: slate.tileSlab, full: stone.block, overhang: 1 });
+  weatherNew(b, HALL_BOX, 0.12, () => {
+    b.roof({ x1: -W, z1: -L, x2: W, z2: L, y: WALL_TOP, type: 'gable', axis: 'z', stairs: slate.tileStairs, slab: slate.tileSlab, full: stone.block, overhang: 1 });
+  });
   for (let z = -L + 1; z < L; z++) {
     const wood = TRUSSES.includes(z) ? darkOak : spruce;
     for (let a = 1; a <= W - 1; a++) {
@@ -146,18 +153,23 @@ function roof(b) {
       b.stairs(a, y, z, wood.stairs, { facing: 'east', half: 'top' });
     }
   }
-  weather(b, -W - 2, FLOOR, -L - 1, W + 2, roofY(0), L + 1, 0.12);
 }
 
-// Ein Teil der Steinziegel wird bemoost oder rissig.
-function weather(b, x1, y1, z1, x2, y2, z2, share) {
-  for (let y = y1; y <= y2; y++) {
-    for (let z = z1; z <= z2; z++) {
-      for (let x = x1; x <= x2; x++) {
-        if (b.get(x, y, z) === stone.block && b.chance(share)) b.set(x, y, z, b.chance(0.6) ? stone.mossy : stone.cracked);
-      }
+// Ein Teil der Steinziegel, die draw() neu setzt, wird bemoost oder rissig. Ältere Blöcke bleiben unberührt und
+// behalten so ihr Kapitel – sonst fehlten sie in der Anleitung bis zu diesem Schritt.
+function weatherNew(b, [x1, y1, z1, x2, y2, z2], share, draw) {
+  const before = new Map();
+  const each = (fn) => {
+    for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) for (let x = x1; x <= x2; x++) fn(x, y, z);
+  };
+  each((x, y, z) => before.set(`${x},${y},${z}`, b.get(x, y, z)));
+  draw();
+  each((x, y, z) => {
+    const state = b.get(x, y, z);
+    if (state === stone.block && state !== before.get(`${x},${y},${z}`) && b.chance(share)) {
+      b.set(x, y, z, b.chance(0.6) ? stone.mossy : stone.cracked);
     }
-  }
+  });
 }
 
 function openings(b) {
@@ -236,6 +248,8 @@ function dais(b) {
     b.stairs(-5, 2, z, darkOak.stairs, { facing: 'east' });
     b.stairs(5, 2, z, darkOak.stairs, { facing: 'west' });
   }
+  // Vordere Ecken: die Treppen werden automatisch zu Außenecken und schließen die Stufe rundum.
+  for (const x of [-5, 5]) b.stairs(x, 2, zBack + 4, darkOak.stairs, { facing: 'north' });
   for (let x = -3; x <= 3; x++) for (let z = zBack; z <= zBack + 3; z++) b.set(x, 3, z, COLOR.rot.carpet);
   for (const x of [-2, 2]) {
     b.stairs(x, 3, zBack + 1, darkOak.stairs, { facing: 'north' });

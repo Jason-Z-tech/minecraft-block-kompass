@@ -12,7 +12,7 @@ export const meta = {
   tags: ['Schweiz', 'Luzern', 'Brücke', 'Holzbrücke', 'Gedeckte Brücke', 'Turm', 'Mittelalter', 'Wahrzeichen', 'Maßstab 1:1', 'Fluss'],
   aliases: [
     'kapellbrücke', 'kapellbruecke', 'kapelbrücke', 'kapellbrucke', 'kapell brücke', 'kappelbrücke', 'kapellbrücke luzern',
-    'chapel bridge', 'chapel bridge lucerne', 'kapellbrücke lucerne', 'wasserturm', 'wasserturm luzern', 'water tower lucerne',
+    'chapel bridge', 'chapel bridge lucerne', 'kapellbrücke lucerne', 'wasserturm luzern', 'water tower lucerne',
     'luzern brücke', 'lucerne bridge', 'holzbrücke luzern', 'gedeckte holzbrücke', 'pont de la chapelle',
   ],
   accuracy: 'massstab',
@@ -413,6 +413,13 @@ function buildRoof(b, spec, ctx) {
     },
     skip: (x, yy, z) => ctx.cells.get(key(x, z))?.tower === true,
   });
+  // Am schrägen Südende bleiben sonst einzelne Treppen ohne Nachbarn in der Luft hängen.
+  const FACES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  for (const cell of heights.values()) {
+    if (b.get(cell.x, cell.h, cell.z) === 'air') continue;
+    const lonely = FACES.every(([dx, dy, dz]) => b.get(cell.x + dx, cell.h + dy, cell.z + dz) === 'air');
+    if (lonely) b.remove(cell.x, cell.h, cell.z);
+  }
   // Giebel an beiden Enden schließen
   for (const c of eachCell(ctx, (c) => c.ad < spec.wall && !c.tower && ((c.s >= 0 && c.s < 1) || (c.s > ctx.L - 1 && c.s <= ctx.L)))) {
     const top = heights.get(key(c.x, c.z));
@@ -490,21 +497,36 @@ function isDoorCell(spec, x, y, z) {
 function buildTowerRoof(b, spec, ctx) {
   const t = spec.tower;
   b.phase('Wasserturm: Zeltdach',
-    `Das achteckige Zeltdach ist ${t.apex - t.roofBase + 1} Blöcke hoch und steht rundum ${Math.round(t.roofA - t.a)} Block über die Mauer hinaus. Es ist sehr steil: Setz Ring für Ring die Ziegeltreppen mit der hohen Seite zur Turmmitte und füll darunter mit Ziegelblöcken, damit keine Löcher bleiben.`,
-    { tips: ['Bau das Dach von innen aus: Stell dich auf den Dachboden und arbeite dich mit Gerüstblöcken hoch.'] });
+    `Das achteckige Zeltdach ist ${t.apex - t.roofBase + 1} Blöcke hoch und steht rundum ${Math.round(t.roofA - t.a)} Block über die Mauer hinaus. Leg zuerst die Traufe: einen Ring Ziegeltreppen auf Ebene ${t.roofBase + 1} außen um die Mauerkrone, hohe Seite zur Turmmitte. Mauere dann direkt auf der Mauerkrone mit Ziegelblöcken bis unter die Dachtreppen hoch, damit zwischen Mauer und Dach keine Lücke bleibt. Danach setzt du Ring für Ring die Ziegeltreppen nach oben und füllst darunter mit Ziegelblöcken, wo sonst ein Loch bliebe.`,
+    { tips: [
+      'Bau das Dach von innen aus: Stell dich auf den Dachboden und arbeite dich mit Gerüstblöcken hoch.',
+      'Die Traufe hängt frei über der Mauer: Setz die erste Treppe gegen einen Hilfsblock und reih die übrigen daran an.',
+    ] });
   const heights = new Map();
   const rMax = t.roofA - 0.5;
   for (const c of eachCell(ctx, (c) => c.towerRoof)) {
-    const u = Math.abs(c.x - t.cx);
-    const w = Math.abs(c.z - t.cz);
-    const r = Math.max(u, w, (u + w) / Math.SQRT2);
+    const u = c.x - t.cx;
+    const w = c.z - t.cz;
+    // Traufe: alles außerhalb der Mauer liegt auf einer Höhe, sonst wird der Dachrand zackig.
+    if (!inOctagon(u, w, t.a)) {
+      heights.set(key(c.x, c.z), { x: c.x, z: c.z, h: t.roofBase });
+      continue;
+    }
+    const r = Math.max(Math.abs(u), Math.abs(w), (Math.abs(u) + Math.abs(w)) / Math.SQRT2);
     const h = t.roofBase + Math.round(((rMax - r) / (rMax - 0.7)) * (t.apex - t.roofBase));
-    heights.set(key(c.x, c.z), { x: c.x, z: c.z, h: Math.min(t.apex, h) });
+    heights.set(key(c.x, c.z), { x: c.x, z: c.z, h: Math.min(t.apex, Math.max(t.roofBase + 1, h)) });
   }
   placeStepRoof(b, heights, TOWER_ROOF, {
     preferAxis: (x, z) => axisOf(x - t.cx, z - t.cz),
     skip: (x, yy) => yy <= t.wallTop,
   });
+  // Auf der Mauerkrone bis unter die Dachtreppen aufmauern: sonst bleibt rundum ein Spalt zwischen Mauer und Dach.
+  for (const cell of heights.values()) {
+    if (!towerWallCell(t, cell.x, t.wallTop, cell.z)) continue;
+    for (let yy = t.wallTop + 1; yy < cell.h; yy++) {
+      if (b.get(cell.x, yy, cell.z) === 'air') b.set(cell.x, yy, cell.z, TOWER_ROOF.full);
+    }
+  }
 }
 
 function buildTowerInterior(b, spec, ctx) {

@@ -18,11 +18,11 @@ export const meta = {
   ],
   accuracy: 'eigenes',
   difficulty: 2,
-  description: 'Ein Gartenteich aus zwei Becken, die sich in der Mitte zu einer schmalen Stelle verengen. Dort führt eine kleine Bogenbrücke aus Fichtenholz mit Schwarzeichen-Geländer hinüber, auf ihren Endpfosten stehen Laternen. Am Ufer liegen bemooste Steine, im Wasser schwimmen Seerosen, an den Enden wächst Schilf aus Zuckerrohr, und am Grund wiegt sich Seegras. Kieswege, eine Birke und Wiesenblumen machen den Garten fertig.',
+  description: 'Ein Gartenteich aus zwei Becken, die sich in der Mitte zu einer schmalen Stelle verengen. Dort führt eine kleine Bogenbrücke aus Fichtenholz mit Schwarzeichen-Geländer hinüber, auf ihren Endpfosten stehen Laternen. Am Ufer liegen bemooste Steine, im Wasser schwimmen Seerosenblätter, an den Enden wächst Schilf aus Zuckerrohr, und am Grund wiegt sich Seegras. Kieswege, eine Birke und Wiesenblumen machen den Garten fertig.',
   facts: [
     'Das Wasser besteht nur aus Quellblöcken: in der Mitte der Becken 2 tief, am Rand und unter der Brücke 1 tief – nichts fließt.',
     'Zuckerrohr wächst nur auf Gras, Erde oder Sand direkt neben Wasser; deshalb steht es genau an der Uferkante.',
-    'Seerosen liegen auf Wasserquellen, Seegras steht nur dort, wo zwei Blöcke Wasser übereinander sind.',
+    'Seerosenblätter liegen auf Wasserquellen, Seegras steht nur dort, wo zwei Blöcke Wasser übereinander sind.',
     'Die Brücke ist 9 Blöcke lang und 3 breit; ihr Laufsteg steigt über Treppen und Bretter um eine Ebene an, darunter bleibt ein Bogen frei.',
   ],
   sources: [],
@@ -91,6 +91,13 @@ function planPond() {
   return cells;
 }
 
+// Kies in der untersten Geländeschicht hätte Luft unter sich und würde fallen: dort Stein setzen.
+function anchorGravel(b, { x1, x2, z1, z2, y }) {
+  for (let z = z1; z <= z2; z++) {
+    for (let x = x1; x <= x2; x++) if (b.get(x, y, z) === 'gravel' && b.get(x, y - 1, z) === 'air') b.set(x, y, z, 'stone');
+  }
+}
+
 function isBridgeZone(x, z) {
   return Math.abs(x) <= 2 && Math.abs(z) <= 5;
 }
@@ -107,7 +114,7 @@ export default function build(b) {
       shore.push([x, z]);
     }
   }
-  const reedSpots = [[-12, 0], [-10, -3], [10, 1], [8, 3], [-6, 4]];
+  const reedSpots = [[-12, 0], [-10, -3], [12, 1], [8, 3], [-6, 4]];
   const isReedShore = (x, z) => reedSpots.some(([rx, rz]) => Math.hypot(x - rx, z - rz) <= 1.6);
   const stones = shore.filter(([x, z]) => !isBridgeZone(x, z) && !isReedShore(x, z) && rand01(x, 0, z, 11) <= 0.55);
 
@@ -119,6 +126,7 @@ export default function build(b) {
     ],
   });
   terrain(b, { x: W.x1, y: 0, z: W.z1, width: W.x2 - W.x1 + 1, depth: W.z2 - W.z1 + 1, height: WATER_Y, shape: 'rund', seed: 8 });
+  anchorGravel(b, { x1: W.x1, x2: W.x2, z1: W.z1, z2: W.z2, y: 0 });
   for (const { x, z, deep } of pond.values()) {
     for (let y = deep ? WATER_Y - 2 : WATER_Y - 1; y <= WATER_Y; y++) b.remove(x, y, z);
   }
@@ -169,7 +177,7 @@ export default function build(b) {
   const ST = 'spruce_stairs';
   const POST = 'stripped_dark_oak_log[axis=y]';
   const FENCE = 'dark_oak_fence';
-  b.step('Brückenköpfe und Endpfosten', 'An beiden Ufern liegen direkt an der Wasserkante je drei Fichtenholzbretter quer (Ebene 5), außen davor stehen Pfosten aus geschältem Schwarzeichenstamm, zwei Blöcke hoch. In der Mitte der äußersten Reihe ist die Antrittsstufe: eine Fichtenholztreppe, hohe Seite zur Brücke.');
+  b.step('Brückenköpfe und Endpfosten', 'An beiden Ufern liegen direkt an der Wasserkante je drei Fichtenholzbretter quer (Ebene 5), außen davor stehen Pfosten aus entrindetem Schwarzeichenstamm, zwei Blöcke hoch. In der Mitte der äußersten Reihe ist die Antrittsstufe: eine Fichtenholztreppe, hohe Seite zur Brücke.');
   for (const sz of [-1, 1]) {
     for (const x of [-1, 0, 1]) b.set(x, 4, 3 * sz, P);
     for (const x of [-1, 1]) {
@@ -187,7 +195,7 @@ export default function build(b) {
       else b.set(x, 5, z, P);
     }
   }
-  b.step('Geländer und Laternen', 'Setze auf die Seitenbretter Schwarzeichenzäune: auf Ebene 6 über den Brückenköpfen, auf Ebene 7 über dem Scheitel; an den Brückenköpfen zwei übereinander, damit das Geländer durchläuft. Auf zwei schräg gegenüberliegende Endpfosten stellst du je eine Laterne.');
+  b.step('Geländer und Laternen', 'Setze auf die Seitenbretter Schwarzeichenholzzäune: auf Ebene 6 über den Brückenköpfen, auf Ebene 7 über dem Scheitel; an den Brückenköpfen zwei übereinander, damit das Geländer durchläuft. Auf zwei schräg gegenüberliegende Endpfosten stellst du je eine Laterne.');
   for (const x of [-1, 1]) {
     for (let z = -3; z <= 3; z++) {
       if (Math.abs(z) === 3) {
@@ -201,10 +209,10 @@ export default function build(b) {
   b.note(0, 5, 0, 'Scheitel der Brücke: Laufsteg auf Ebene 6');
 
   // --- Pflanzen und Wege ---
-  b.phase('Seerosen, Schilf und Garten', 'Zum Schluss kommen die Pflanzen: Seerosen auf das Wasser, Zuckerrohr als Schilf an die Ufer, eine Birke, ein Busch, ein bemooster Felsen und Wiesenblumen.', {
+  b.phase('Seerosen, Schilf und Garten', 'Zum Schluss kommen die Pflanzen: Seerosenblätter auf das Wasser, Zuckerrohr als Schilf an die Ufer, eine Birke, ein Busch, ein bemooster Felsen und Wiesenblumen.', {
     tips: ['Zuckerrohr wächst nur, wenn der Block darunter direkt an Wasser grenzt – setze es genau an die Uferkante.'],
   });
-  b.step('Seerosen', 'Lege Seerosen in kleinen Gruppen auf das Wasser, nicht unter die Brücke und nicht direkt ans Ufer.');
+  b.step('Seerosen', 'Lege Seerosenblätter in kleinen Gruppen auf das Wasser, nicht unter die Brücke und nicht direkt ans Ufer.');
   let lilies = 0;
   for (const { x, z } of pond.values()) {
     if (Math.abs(x) <= 2 || !DIRS4.every(([dx, dz]) => isWater(x + dx, z + dz))) continue;

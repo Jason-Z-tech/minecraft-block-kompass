@@ -481,7 +481,7 @@ export default function build(b, { scale = 1 } = {}) {
   // 1. Fundament
   b.phase(
     'Fundament',
-    `Lege zuerst eine runde Fundamentplatte aus Poliertem Andesit mit rund ${Math.round(2 * P.rFoundation)} Blöcken Durchmesser eine Ebene unter dem späteren Rasen. Sie bildet um den Turm herum den gepflasterten Rand. Der Turm selbst steht in der Mitte; die Turmachse liegt im Fuß genau über der Mitte der Platte.`,
+    `Lege zuerst eine runde Fundamentplatte aus Poliertem Andesit mit ${Math.floor(P.cx + P.rFoundation) - Math.ceil(P.cx - P.rFoundation) + 1} Blöcken Durchmesser auf der Höhe des späteren Rasens. Sie bildet um den Turm herum den gepflasterten Rand. Der Turm selbst steht in der Mitte; die Turmachse liegt im Fuß genau über der Mitte der Platte.`,
     { tips: ['Markiere die Mitte mit einem Block in auffälliger Farbe – alle Kreise des Turms gehen von dieser Achse aus.', 'Der Turm kippt später nach Süden. Lass dort auf dem Bauplatz mehr Platz als im Norden.'] },
   );
   const span = Math.ceil(P.rFoundation);
@@ -499,8 +499,8 @@ export default function build(b, { scale = 1 } = {}) {
     if (st.kind === 'ground') {
       b.phase(
         'Erdgeschoss mit Blendarkaden',
-        `Das Erdgeschoss ist ein Ring mit ${P.diameter} Blöcken Außendurchmesser und ${st.h} Ebenen Höhe. Unten liegt ein Sockel aus Poliertem Diorit mit einer umlaufenden Stufe aus Dioritstufen. Darüber stehen ${P.interior ? '15' : g.groundColumns.size} Halbsäulen aus Quarzsäulen direkt in der Außenwand; dazwischen bleibt die äußerste Blockreihe offen, sodass flache Blendbögen entstehen. Oben schließen umgedrehte Quarztreppen die Bögen ab, darüber folgen eine Ebene Kalzit und ein Gesims aus umgedrehten Quarztreppen, deren hohe Seite zur Turmmitte zeigt.${P.interior ? ` Innen bleibt ein runder Schacht mit ${P.shaftDiameter} Blöcken Durchmesser frei; an seiner Wand windet sich die Treppe nach oben. Auf der Westseite führt ein zwei Blöcke hoher Gang mit einer Schwarzeichentür in den Schacht.` : ' Im Maßstab 1:2 ist der Turm innen massiv.'}`,
-        { tips: ['Setze erst die Halbsäulen rundherum, dann die Wand dazwischen – so stimmen die Abstände der Bögen.', 'Die Gesims-Treppen setzt du am einfachsten von oben: Schau beim Setzen zur Turmmitte und klicke an die Unterkante des Nachbarblocks, dann landet die Treppe umgedreht.'] },
+        `Das Erdgeschoss ist ein Ring mit ${P.diameter} Blöcken Außendurchmesser und ${st.h} Ebenen Höhe. Unten liegt ein Sockel aus Poliertem Diorit mit einer umlaufenden Stufe aus Polierten Dioritstufen. Darüber stehen ${P.interior ? '15' : g.groundColumns.size} Halbsäulen aus Quarzsäulen direkt in der Außenwand; dazwischen bleibt die äußerste Blockreihe offen, sodass flache Blendbögen entstehen. Oben schließen umgedrehte Quarztreppen die Bögen ab, darüber folgen eine Ebene Kalzit und ein Gesims aus umgedrehten Glatten Quarztreppen, deren hohe Seite zur Turmmitte zeigt.${P.interior ? ` Innen bleibt ein runder Schacht mit ${P.shaftDiameter} Blöcken Durchmesser frei; an seiner Wand windet sich die Treppe nach oben. Auf der Westseite führt ein zwei Blöcke hoher Gang mit einer Schwarzeichentür in den Schacht.` : ' Im Maßstab 1:2 ist der Turm innen massiv.'}`,
+        { tips: ['Setze erst die Halbsäulen rundherum, dann die Wand dazwischen – so stimmen die Abstände der Bögen.', 'Umgedrehte Treppen für Bögen und Gesims: Klicke an die obere Hälfte einer Blockseite oder an die Unterseite eines Blocks. Beim Gesims schaust du dabei zur Turmmitte (hohe Seite innen), bei den Bögen zur nächsten Halbsäule (hohe Seite an der Säule).'] },
       );
     } else if (st.kind === 'loggia') {
       b.phase(

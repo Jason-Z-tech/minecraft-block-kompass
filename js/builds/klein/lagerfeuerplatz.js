@@ -150,17 +150,17 @@ export default function build(b) {
   }
   b.step('Dach des Unterstands', 'Lege auf Pfosten und Stämme zehn untere Fichtenholzstufen, 2 breit und 5 lang.');
   for (const x of [5, 6]) for (let z = -2; z <= 2; z++) b.slab(x, y + 2, z, 'spruce_slab', { type: 'bottom' });
-  b.step('Hackklotz', 'Vor den Stapel kommt ein Hackklotz: ein senkrechter geschälter Eichenstamm.');
+  b.step('Hackklotz', 'Vor den Stapel kommt ein Hackklotz: ein senkrechter entrindeter Eichenstamm.');
   b.set(4, y, 3, 'stripped_oak_log[axis=y]');
   b.step('Laterne', 'Links vor dem Zelt steht ein Pfosten aus zwei Fichtenholzzäunen, obendrauf eine Laterne.');
   lampPost(b, { x: -3, y, z: -3, height: 2, post: 'spruce_fence' });
 
   // --- Umgebung ---
   b.phase('Waldrand', 'Eine kleine Fichte, ein Busch und Süßbeeren rahmen den Platz, auf der Wiese wachsen Farn und Gras.', {
-    tips: ['Süßbeerensträucher pieksen – setze sie an den Rand, nicht neben die Sitzplätze.'],
+    tips: ['Süßbeersträucher pieksen – setze sie an den Rand, nicht neben die Sitzplätze.'],
   });
-  b.step('Fichte, Busch und Beeren', 'Pflanze im Südwesten eine kleine Fichte, im Südosten einen Busch aus Fichtenlaub und zwei Süßbeerensträucher an den Rand.');
-  tree(b, { x: -5, y, z: 4, species: 'fichte', size: 'klein', seed: 3 });
+  b.step('Fichte, Busch und Beeren', 'Pflanze im Südwesten eine kleine Fichte, im Südosten einen Busch aus Fichtenlaub und zwei Süßbeersträucher an den Rand.');
+  tree(b, { x: -5, y, z: 4, species: 'fichte', size: 'klein', seed: 5 });
   bush(b, { x: 6, y, z: 4, size: 'klein', leaves: 'fichte', seed: 2 });
   for (const [x, z] of [[-6, -2], [3, 6]]) {
     if (ground.top(x, z) !== GROUND_Y || b.get(x, y, z) !== 'air') throw new Error(`Lagerfeuerplatz: kein Platz für Süßbeeren bei ${x}, ${z}.`);

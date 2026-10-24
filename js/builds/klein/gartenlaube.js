@@ -14,11 +14,11 @@ export const meta = {
     'gartenhaus offen', 'achteck pavillon', 'octagon gazebo', 'pergola', 'musikpavillon', 'gartenlaub', 'pavilon',
   ],
   accuracy: 'eigenes',
-  difficulty: 1,
+  difficulty: 2,
   description: 'Ein offener, achteckiger Pavillon für den Garten: acht Pfosten aus Schwarzeiche auf einem Steinsockel, dazwischen ein Fichtengeländer, innen eine Sitzbank rundum und ein kleiner Tisch. Das achteckige Zeltdach aus Schwarzeichentreppen trägt eine Spitze, in der Mitte hängt eine Laterne. Ranken an den Pfosten, Blumenbeete und eine Birke machen die Laube gemütlich.',
   facts: [
     'Der Grundriss ist ein Achteck mit 9 Blöcken Durchmesser; das Dach steht ringsum einen Block über.',
-    'An den schrägen Dachkanten liegen Treppen als Außenecken – so wird das Achteck auch oben rund.',
+    'Die schrägen Dachkanten sind aus versetzten Treppen gestuft; die beiden obersten Ringe sind Quadrate mit echten Außenecken.',
     'Ranken halten nur an vollen Blockseiten: darum wachsen sie an den Stämmen, nicht am Zaun.',
   ],
   sources: [],
@@ -49,23 +49,39 @@ function octagonOutline(r, s) {
   return cells;
 }
 
-// Treppe einer Dachzelle: gerade Kanten mit der hohen Seite zur Mitte, Ecken und schräge Kanten als
-// Außenecke (Windrad wie bei b.roof, hohe Ecke zur Mitte).
-function roofStair(x, z, r) {
-  if (Math.abs(x) === Math.abs(z) || Math.max(Math.abs(x), Math.abs(z)) < r) {
-    const facing = x < 0 ? (z < 0 ? 'east' : 'north') : (z < 0 ? 'south' : 'west');
-    return { state: `${dark.stairs}[facing=${facing},half=bottom,shape=outer_right]`, raw: true };
-  }
-  const facing = Math.abs(z) === r ? (z < 0 ? 'south' : 'north') : (x < 0 ? 'east' : 'west');
-  return { state: `${dark.stairs}[facing=${facing},half=bottom]`, raw: false };
+// Richtung (hohe Seite zur Mitte) einer Dachtreppe. Die Form (gerade/Außenecke) berechnet finalize() wie das
+// Spiel aus den Nachbarn: Ecken der Quadrat-Ringe werden Außenecken, die versetzten Treppen der schrägen
+// Kanten bleiben gerade (im Spiel lässt sich dort keine Außenecke erzwingen).
+function roofStairFacing(x, z) {
+  const ax = Math.abs(x);
+  const az = Math.abs(z);
+  // Genau auf der Diagonale: Windrad wie bei b.roof (Richtung der Seite rechts davon, von außen gesehen).
+  if (ax === az) return x < 0 ? (z < 0 ? 'east' : 'north') : (z < 0 ? 'south' : 'west');
+  if (az > ax) return z < 0 ? 'south' : 'north';
+  return x < 0 ? 'east' : 'west';
+}
+
+// Hochbeete links und rechts vom Weg, Nordwestecke (x0, z0), außen 5 × 5.
+const BEDS = [{ x0: -6, z0: R + 1, palette: 'rosa', seed: 1 }, { x0: 2, z0: R + 1, palette: 'kuehl', seed: 2 }];
+
+// Hochbeet außen 5 × 5 ab der Nordwestecke (x0, z0) auf der Wiese (y = 0): Stammrahmen auf y = 1, innen Beet.
+// Die Erde darunter legt schon ground() (unter vollen Blöcken wird Gras im Spiel zu Erde).
+function raisedBed(b, { x0, z0, palette, seed }) {
+  const x1 = x0 + 4;
+  const z1 = z0 + 4;
+  for (let x = x0 + 1; x < x1; x++) for (const z of [z0, z1]) b.set(x, 1, z, `${spruce.strippedLog}[axis=x]`);
+  for (let z = z0 + 1; z < z1; z++) for (const x of [x0, x1]) b.set(x, 1, z, `${spruce.strippedLog}[axis=z]`);
+  for (const x of [x0, x1]) for (const z of [z0, z1]) b.set(x, 1, z, spruce.wood);
+  flowerBed(b, { x: x0 + 1, y: 1, z: z0 + 1, width: 3, depth: 3, facing: 'south', palette, density: 1, seed });
 }
 
 function ground(b) {
   b.phase('Fundament', 'Die Laube steht auf einem achteckigen Sockel, eine Ebene über der Wiese. Das Achteck ist 9 Blöcke breit: die Reihen haben von Norden nach Süden 5, 7, 9, 9, 9, 7 und 5 Blöcke.', {
     tips: ['Leg zuerst die Mittelreihe mit 9 Blöcken und die Mittelspalte mit 9 Blöcken als Kreuz – daran kannst du alle anderen Reihen abzählen.'],
   });
-  b.step('Wiese', 'Such dir eine flache Wiese mit etwa 23 Blöcken Durchmesser.');
+  b.step('Wiese', 'Such dir eine flache Wiese mit etwa 23 Blöcken Durchmesser. Vorne links und rechts vom späteren Eingang ersetzt du je ein Feld von 5 × 5 Blöcken durch Erde: Dort kommen am Schluss die Hochbeete hin, und unter ihnen würde das Gras ohnehin zu Erde werden.');
   terrain(b, { x: -11, y: -1, z: -11, width: 23, depth: 23, height: 1, shape: 'rund', seed: 'laube' });
+  for (const { x0, z0 } of BEDS) b.fill(x0, 0, z0, x0 + 4, 0, z0 + 4, 'dirt');
 
   b.step('Steinkranz und Boden', 'Setze den Rand des Achtecks aus Steinziegeln mit ein paar bemoosten Steinziegeln und fülle die Fläche innen mit Fichtenbrettern.');
   for (let z = -R; z <= R; z++) {
@@ -99,11 +115,12 @@ function roof(b) {
   b.phase('Zeltdach', 'Das Dach besteht aus fünf achteckigen Treppenringen, jeder eine Ebene höher und einen Block weiter innen. Der unterste Ring steht einen Block über den Balkenkranz über.', {
     tips: [
       'Gerade Kanten: Treppen mit der hohen Seite zur Mitte – schau beim Setzen zur Mitte der Laube.',
-      'Schräge Kanten und Ecken: Hier liegen Treppen als Außenecken. Setze erst die zwei geraden Nachbarn, dann bildet sich die Ecke; an den schrägen Stücken drehst du die Treppe so, dass die hohe Ecke zur Mitte zeigt.',
+      'Schräge Kanten: Die Treppen sitzen dort versetzt. Jede gehört zur geraden Seite, der sie näher liegt, und schaut wie diese zur Mitte. Liegt eine genau auf der Diagonale, nimm die Richtung der Seite rechts davon (von außen gesehen). Sie bleiben gerade Treppen – Außenecken bildet das Spiel nur, wenn direkt vor einer Treppe eine quer stehende liegt.',
+      'Die beiden obersten Ringe sind Quadrate: Setz erst die geraden Seiten, dann die Ecktreppen – sie werden von selbst zu Außenecken.',
     ],
   });
   const ringTexts = [
-    'Der unterste Ring liegt außen neben dem Balkenkranz und bildet den Überstand: an den geraden Seiten 5 Treppen, an jeder schrägen Ecke 2 Außenecken.',
+    'Der unterste Ring liegt außen neben dem Balkenkranz und bildet den Überstand: an den geraden Seiten 5 Treppen, an jeder schrägen Kante 2 versetzte Treppen.',
     'Der zweite Ring liegt direkt auf dem Balkenkranz.',
     'Ab hier liegt jeder Ring auf einer Lage Schwarzeichenbretter unter sich – sie schließen das Dach innen und sind von unten als Holzdecke zu sehen.',
     'Der vierte Ring ist ein Quadrat mit 5 × 5 Blöcken; die vier Ecken sind Außenecken.',
@@ -116,10 +133,7 @@ function roof(b) {
     b.step(`Dachring ${k + 1} (Ebene ${y + 2})`, ringTexts[k]);
     // Unter den Ringen ab dem dritten eine Lage Bretter, damit an den schrägen Ecken keine Lücke bleibt.
     if (k >= 2) for (const [x, z] of octagonOutline(r, s)) b.set(x, y - 1, z, dark.planks);
-    for (const [x, z] of octagonOutline(r, s)) {
-      const { state, raw } = roofStair(x, z, r);
-      b.set(x, y, z, state, { raw });
-    }
+    for (const [x, z] of octagonOutline(r, s)) b.stairs(x, y, z, dark.stairs, { facing: roofStairFacing(x, z) });
   }
   b.set(0, 10, 0, dark.planks);
 
@@ -162,13 +176,14 @@ function garden(b) {
     for (let i = 0; i < count; i++) b.set(x + dx, 5 - i, z + dz, `vine[${attach}=true]`);
   }
 
-  b.step('Weg und Beete', 'Lege einen Kiesweg vom Eingang nach Süden und links und rechts davon zwei Blumenbeete.');
-  path(b, { x: 0, y: 0, z: R + 2, facing: 'south', length: 5, width: 3, mix: 'kies', wiggle: 0.5, seed: 3 });
-  flowerBed(b, { x: -7, y: 0, z: 5, width: 4, depth: 3, facing: 'south', palette: 'rosa', seed: 1 });
-  flowerBed(b, { x: 4, y: 0, z: 5, width: 4, depth: 3, facing: 'south', palette: 'kuehl', seed: 2 });
+  b.step('Weg', 'Lege einen 3 Blöcke breiten Kiesweg vom Eingang 4 Blöcke nach Süden.');
+  path(b, { x: 0, y: 0, z: R + 2, facing: 'south', length: 4, width: 3, mix: 'kies', wiggle: 0, seed: 3 });
+
+  b.step('Hochbeete', 'Links und rechts vom Weg steht je ein Hochbeet, außen 5 × 5 Blöcke: ein Rahmen aus liegenden, geschälten Fichtenstämmen auf der Wiese (Ecken aus Fichtenholz), innen 3 × 3 Grasblöcke auf Höhe des Rahmens. Links kommen rosa Blumen hinein, rechts blaue und weiße – die hohen Blumen nach hinten.');
+  for (const bed of BEDS) raisedBed(b, bed);
 
   b.step('Büsche und Birke', 'Pflanze hinten links eine Birke, an die Seiten Azaleen- und Kirschbüsche und streue Gras und Blumen auf die Wiese.');
-  tree(b, { x: -7, y: 1, z: -6, species: 'birke', size: 'klein', seed: 4 });
+  tree(b, { x: -7, y: 1, z: -6, species: 'birke', size: 'mittel', seed: 4 });
   bush(b, { x: 7, y: 1, z: -5, size: 'mittel', leaves: 'azalee', seed: 5 });
   bush(b, { x: -8, y: 1, z: 1, size: 'klein', leaves: 'kirsche', seed: 6 });
   bush(b, { x: 8, y: 1, z: 2, size: 'klein', leaves: 'eiche', seed: 7 });

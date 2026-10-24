@@ -132,10 +132,14 @@ function cap(b) {
     tips: [
       'Die Ecken der Ringe formen sich von selbst zu Innen- und Außenecken, wenn du die Treppen der Reihe nach setzt.',
       'Auf die Spitze kommt eine Schwarzeichenstufe und darauf ein Blitzableiter.',
+      'Vier Ecktreppen im dritten Ring und die Spitzenstufe berühren nur Kanten. Setz innen darunter je ein Schwarzeichenbrett als Stütze (diagonal 2 Felder von der Mitte und unter der Spitze) – von außen sieht man die Bretter nicht.',
     ],
   });
   for (const [x, z] of innerCells(LOW_R)) b.set(x, CAP_Y, z, dark.planks);
   b.set(0, CAP_Y, -3, 'air');
+  // Stützen innen: ohne sie hätten diese Kegelblöcke keine Fläche, an die man sie im Spiel setzen kann.
+  for (const [x, z] of [[2, 2], [-2, 2], [2, -2], [-2, -2]]) b.set(x, CAP_Y + 1, z, dark.planks);
+  b.set(0, CAP_Y + 4, 0, dark.planks);
   // Jeder Ring deckt genau die Fläche bis zum nächst engeren Ring ab – so bleibt keine Lücke im Kegel.
   for (let k = 0; k < 5; k++) {
     const next = new Set(discCells(LOW_R - k - 1).map(([x, z]) => key(x, z)));
@@ -187,7 +191,7 @@ function sails(b) {
   b.phase('Flügelwelle und Flügel', 'Die Flügelwelle ragt aus der Südseite der Kappe. An ihrem Ende sitzt die Nabe, daran vier Flügel im Kreuz. Jeder Flügel hat einen 9 Blöcke langen Balken aus geschälter Schwarzeiche und daneben ein Segel: 3 breit, ab dem dritten Block bis zur Spitze, mit einem Rahmen aus Schwarzeichenzaun und weißer Wolle innen.', {
     tips: [
       'Die Segel sitzen bei jedem Flügel auf der Seite, die im Uhrzeigersinn folgt (von vorne gesehen): oben rechts, rechts unten, unten links, links oben – so sieht das Kreuz aus, als würde es sich drehen.',
-      'Bau den unteren Flügel von der Nabe nach unten – du brauchst dafür kein Gerüst, wenn du auf der Galerie stehst und von dort setzt.',
+      'Die Nabe liegt 10 Blöcke über der Galerie – für Welle, Nabe und die oberen drei Flügel brauchst du ein Gerüst (z. B. Gerüstblöcke vor der Südseite), das du danach wieder abbaust. Nur das untere Ende des unteren Flügels erreichst du von der Galerie aus.',
     ],
   });
   b.step('Flügelwelle und Nabe', 'Leg die Welle (geschälte Schwarzeiche, liegend Nord–Süd) mittig durch die Kappe: hinten auf einem Lagerbock, vorne durch die Kappenwand bis 3 Blöcke vor den Turm. Das Ende ist die Nabe aus Schwarzeichenholz.');

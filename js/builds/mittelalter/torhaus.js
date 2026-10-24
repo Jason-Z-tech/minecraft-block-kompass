@@ -120,6 +120,23 @@ function weather(b, x1, y1, z1, x2, y2, z2, share) {
   }
 }
 
+// Wie weather, aber nur für Blöcke, die draw() neu setzt: ältere Blöcke behalten ihr Kapitel und fehlen in der
+// Anleitung nicht bis zu diesem Schritt.
+function weatherNew(b, [x1, y1, z1, x2, y2, z2], share, draw) {
+  const before = new Map();
+  const each = (fn) => {
+    for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) for (let x = x1; x <= x2; x++) fn(x, y, z);
+  };
+  each((x, y, z) => before.set(`${x},${y},${z}`, b.get(x, y, z)));
+  draw();
+  each((x, y, z) => {
+    const state = b.get(x, y, z);
+    if (state === stone.block && state !== before.get(`${x},${y},${z}`) && b.chance(share)) {
+      b.set(x, y, z, b.chance(0.6) ? stone.mossy : stone.cracked);
+    }
+  });
+}
+
 function gateBlock(b) {
   const { x1, x2, z1, z2 } = GATE;
   b.phase('Mittelbau und Durchfahrt', `Der Mittelbau zwischen den Türmen ist 7 Blöcke breit und 10 tief. In der Mitte bleibt `
@@ -224,7 +241,7 @@ function passage(b) {
 }
 
 function drawbridge(b) {
-  b.phase('Zugbrücke', 'Über den Graben legst du die heruntergelassene Zugbrücke: 5 breit auf Ebene 1, in der Mitte '
+  b.phase('Zugbrücke', `Über den Graben legst du die heruntergelassene Zugbrücke: 5 breit auf Ebene ${lvl(0)} (Höhe der Wiese), in der Mitte `
     + 'Fichtenbretter, außen je ein geschälter Schwarzeichenstamm als Längsbalken. Am Tor sitzt der Drehbalken quer davor, an '
     + 'der Brückenspitze stehen zwei Zaunpfosten für die Zugketten. Die Brücke ist Deko – hochziehen lässt sie sich nicht.');
   const { z1, z2 } = MOAT;
@@ -246,11 +263,12 @@ function upperParts(b) {
   b.fill(-1, ROOM_FLOOR + 2, z2 + 1, 1, ROOM_FLOOR + 3, z2 + 1, stone.block);
   for (const x of [-1, 0, 1]) b.slab(x, ROOM_FLOOR + 4, z2 + 1, stone.slab, { type: 'bottom' });
   arrowSlit(b, { x: 0, y: ROOM_FLOOR + 2, z: z2 + 1, facing: 'south', height: 2, fill: 'iron_bars' });
-  battlements(b, { x: x1, y: ROOF + 1, z: z2, facing: 'south', length: x2 - x1 + 1, corbels: stone.stairs, cap: stone.slab });
-  battlements(b, { x: x2, y: ROOF + 1, z: z1, facing: 'north', length: x2 - x1 + 1, corbels: stone.stairs, cap: stone.slab });
-  roundBattlements(b);
-  b.transform({ mirror: 'x' }, () => roundBattlements(b));
-  weather(b, -12, ROOF, z1 - 1, 12, TOWER.top + 4, 8, 0.25);
+  weatherNew(b, [-12, ROOF, z1 - 1, 12, TOWER.top + 4, 8], 0.25, () => {
+    battlements(b, { x: x1, y: ROOF + 1, z: z2, facing: 'south', length: x2 - x1 + 1, corbels: stone.stairs, cap: stone.slab });
+    battlements(b, { x: x2, y: ROOF + 1, z: z1, facing: 'north', length: x2 - x1 + 1, corbels: stone.stairs, cap: stone.slab });
+    roundBattlements(b);
+    b.transform({ mirror: 'x' }, () => roundBattlements(b));
+  });
 }
 
 // Runder Zinnenkranz auf Konsolen um einen Turm (eigene Funktion: die Bibliothek hat nur gerade Zinnen).

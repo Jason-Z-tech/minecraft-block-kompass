@@ -305,7 +305,6 @@ function buildPier(b, cfg, zc, { fender }) {
 }
 
 function buildTowerBelowDeck(b, cfg, zc) {
-  const { s } = cfg;
   const base = cfg.sectionY[0];
   const strutBottom = cfg.yOf(H_DECK_STRUT);
   const legTop = cfg.trussBottom - 1;
@@ -322,7 +321,6 @@ function buildTowerBelowDeck(b, cfg, zc) {
       b.line(xi, base + t, z, -xi, strutBottom - 1 - (thick - 1) + t, z, M.steel);
     }
   }
-  void s;
 }
 
 function buildTowerSection(b, cfg, zc, i) {
@@ -497,7 +495,6 @@ function buildSouthViaduct(b, cfg) {
   symmetricX((sign) => b.fill(sign * cfg.halfDeck, girderBottom, trussEnd + 1, sign * cfg.halfDeck, cfg.roadY - 1, zb, M.steel));
   floorBeams(b, cfg, nodesBetween(trussEnd + 1, zb, za, PANEL * s), cfg.roadY - 1);
   supports.forEach((z, i) => steelSupport(b, cfg, z, 0, (i <= 2 ? trussBottom : girderBottom) - 1));
-  void s;
 }
 
 function buildAbutments(b, cfg) {

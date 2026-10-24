@@ -259,6 +259,16 @@ function legCells(g, from, to, w) {
   return cells;
 }
 
+// Stützen (geschätzt): Beine oben 2,5 m neben der Kugelachse, unten 7 m zur Seite und 3 m nach außen.
+const LEG_TOP_M = 2.5;
+const LEG_SPREAD_M = 7;
+const LEG_OUT_M = 3;
+
+// Waagrechter Abstand eines Stützenfußes von der Achse.
+function footDistance(g, scale) {
+  return Math.round(Math.hypot(g.rh + LEG_OUT_M * scale, LEG_SPREAD_M * scale));
+}
+
 function supportLegs(g, sp, P) {
   const s = P.scale;
   const a = (sp.deg * Math.PI) / 180;
@@ -267,8 +277,10 @@ function supportLegs(g, sp, P) {
   const topY = sp.c[1] - g.R + 1;
   const legs = [];
   for (const side of [-1, 1]) {
-    const top = [sp.c[0] + side * 2.5 * s * tangent[0], topY, sp.c[2] + side * 2.5 * s * tangent[1]];
-    const foot = [sp.c[0] + side * 7 * s * tangent[0] + 3 * s * radial[0], 1, sp.c[2] + side * 7 * s * tangent[1] + 3 * s * radial[1]];
+    const spread = side * LEG_SPREAD_M * s;
+    const out = LEG_OUT_M * s;
+    const top = [sp.c[0] + side * LEG_TOP_M * s * tangent[0], topY, sp.c[2] + side * LEG_TOP_M * s * tangent[1]];
+    const foot = [sp.c[0] + spread * tangent[0] + out * radial[0], 1, sp.c[2] + spread * tangent[1] + out * radial[1]];
     legs.push({ top, foot });
   }
   return legs;
@@ -338,7 +350,7 @@ export default function build(b, { scale = 1 } = {}) {
   b.phase(
     'Fundament und Pavillonboden',
     `Lege zuerst den runden Boden des Eingangspavillons aus Glattem Stein: ${g.pavilionD} Blöcke Durchmesser, die Mitte ist die senkrechte Achse des ganzen Atomiums. Alle neun Kugeln richten sich nach dieser Achse aus. Dazu kommen sechs Fundamentplatten aus Hellgrauem Beton für die Beine der drei Stützen.`,
-    { tips: ['Markiere die Achse mit einem farbigen Block. Die drei Stützen stehen später rund 40 Blöcke von ihr entfernt (bei 1:2 rund 20).'] },
+    { tips: [`Markiere die Achse mit einem farbigen Block. Die Fußpunkte der drei Stützen liegen rund ${footDistance(g, scale)} Blöcke von ihr entfernt.`] },
   );
   for (const c of pav) b.set(c.x, 0, c.z, PAVING);
   for (const sp of [S.L1, S.L2, S.L3]) {
@@ -385,8 +397,8 @@ export default function build(b, { scale = 1 } = {}) {
   // 3. Stützen
   b.phase(
     'Drei Doppelstützen',
-    `Unter den drei unteren Außenkugeln (Süd, Nordwest, Nordost) steht je eine Doppelstütze aus Hellgrauem Beton: zwei schräge Beine, die unten ${Math.round(14 * scale)} Blöcke auseinander stehen und oben direkt unter der Kugel zusammenlaufen. Baue sie Ebene für Ebene von unten nach oben – jede Ebene rückt ein Stück zur Kugel hin.`,
-    { tips: ['Die Fußpunkte liegen rund 41 Blöcke (1:2: rund 21) von der Achse entfernt, jeweils in Richtung der Kugel darüber.', 'Ein Gerüst (Gerüstblöcke) neben den Beinen erleichtert die oberen Ebenen.'] },
+    `Unter den drei unteren Außenkugeln (Süd, Nordwest, Nordost) steht je eine Doppelstütze aus Hellgrauem Beton: zwei schräge Beine, die unten ${Math.round(2 * LEG_SPREAD_M * scale)} Blöcke auseinander stehen und oben direkt unter der Kugel zusammenlaufen. Baue sie Ebene für Ebene von unten nach oben – jede Ebene rückt ein Stück zur Kugel hin.`,
+    { tips: [`Die Fußpunkte liegen rund ${footDistance(g, scale)} Blöcke von der Achse entfernt, jeweils in Richtung der Kugel darüber.`,'Ein Gerüst (Gerüstblöcke) neben den Beinen erleichtert die oberen Ebenen.'] },
   );
   for (const sp of [S.L1, S.L2, S.L3]) {
     for (const leg of supportLegs(g, sp, P)) for (const [x, y, z] of legCells(g, leg.foot, leg.top, P.legW)) b.set(x, y, z, SUPPORT);

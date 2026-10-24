@@ -1,5 +1,5 @@
-// Heuwagen – Leiterwagen aus Fichtenholz auf einem Feldweg: große Hinterräder (2 × 2 Falltüren), kleine Vorderräder,
-// Ladefläche mit Bordwänden, Heuballen-Ladung, Kutschbock mit Fass und Deichsel. Der Wagen steht längs der x-Achse,
+// Heuwagen – Leiterwagen aus Fichtenholz auf einem Feldweg: große Hinterräder (2 × 2 Treppen, rund), kleine Vorderräder,
+// Ladefläche mit Bordwänden, Strohballen-Ladung, Kutschbock mit Fass und Deichsel. Der Wagen steht längs der x-Achse,
 // vorne (Deichsel) ist Osten; die Ladefläche liegt auf y = 3.
 
 import { terrain, vegetation, path, bush, isPlantId } from '../lib/natur.js';
@@ -9,21 +9,22 @@ export const meta = {
   id: 'heuwagen',
   title: 'Heuwagen',
   category: 'klein',
-  subtitle: 'Holzwagen mit Heuladung, Falltür-Rädern und Deichsel',
-  tags: ['Wagen', 'Heu', 'Bauernhof', 'Dorf', 'Deko', 'Mittelalter', 'Holz', 'Schnell gebaut', 'Feldweg'],
+  subtitle: 'Holzwagen mit Heuladung, runden Holzrädern und Deichsel',
+  tags: ['Wagen', 'Heu', 'Stroh', 'Bauernhof', 'Dorf', 'Deko', 'Mittelalter', 'Holz', 'Schnell gebaut', 'Feldweg'],
   aliases: [
     'heuwagen', 'heu wagen', 'heuwägen', 'leiterwagen', 'holzwagen', 'bauernwagen', 'karren', 'handkarren', 'ochsenkarren',
-    'pferdewagen', 'wagen', 'erntewagen', 'heukarren', 'fuhrwerk',
+    'pferdewagen', 'wagen', 'erntewagen', 'heukarren', 'fuhrwerk', 'strohwagen', 'stroh wagen', 'wagen mit strohballen',
     'hay wagon', 'hay cart', 'haywagon', 'cart', 'wagon', 'farm cart', 'wooden cart', 'medieval cart',
   ],
   accuracy: 'eigenes',
   difficulty: 1,
-  description: 'Ein Leiterwagen voller Heu, wie er auf jedem Bauernhof stehen könnte. Die großen Hinterräder bestehen aus je vier offenen Schwarzeichenholzfalltüren, die kleinen Vorderräder aus einer; darüber liegt die Ladefläche aus Fichtenholz mit Bordwänden aus Fichtenholzfalltüren. Hinten türmen sich die Heuballen, vorne sitzt der Kutschbock mit einem Fass, und die Deichsel liegt auf dem Feldweg.',
+  description: 'Ein Leiterwagen voller Heu, wie er auf jedem Bauernhof stehen könnte. Die großen Hinterräder sind runde Scheiben aus je vier Schwarzeichenholztreppen, die kleinen Vorderräder je eine offene Falltür; darüber liegt die Ladefläche aus Fichtenholz mit Bordwänden aus Fichtenholzfalltüren. Hinten türmen sich die Strohballen, vorne sitzt der Kutschbock mit einem Fass, und die Deichsel liegt auf dem Feldweg.',
   facts: [
-    'Eine offene Falltür liegt flach an der Seite ihres Blocks – genau so entstehen die Räder und die Bordwände.',
+    'Vier Treppen, deren hohe Seiten zur Mitte zeigen, ergeben eine 2 × 2 große Scheibe mit abgeschrägten Ecken – von der Seite ein rundes Rad.',
+    'Eine offene Falltür liegt flach an der Seite ihres Blocks – so entstehen die Vorderräder und die Bordwände.',
     'Die Hinterräder sind 2 × 2 Blöcke groß, die Vorderräder nur 1 × 1: wie bei echten Leiterwagen, damit die Vorderachse unter dem Wagen einlenken kann.',
-    'Heuballen sind wie Stämme ausrichtbar; gemischt liegend und quer wirkt die Ladung lockerer.',
-    'Ein Heuballen dämpft den Fall: wer darauf springt, nimmt nur ein Fünftel des Fallschadens.',
+    'Strohballen sind wie Stämme ausrichtbar; gemischt liegend und quer wirkt die Ladung lockerer.',
+    'Ein Strohballen dämpft den Fall: wer darauf springt, nimmt nur ein Fünftel des Fallschadens.',
   ],
   sources: [],
   credits: null,
@@ -34,6 +35,7 @@ const GROUND_Y = 1;
 const BED_Y = 3;
 const BED = { x1: -3, x2: 2, z1: -1, z2: 1 };
 const WHEEL = 'dark_oak_trapdoor';
+const WHEEL_STAIRS = 'dark_oak_stairs';
 const BOARD = 'spruce_trapdoor';
 const AXLE = 'stripped_spruce_log[axis=z]';
 const AXLES = [-3, -2, 1];
@@ -46,7 +48,7 @@ function plate(b, x, y, z, id, facing) {
   b.set(x, y, z, `${id}[facing=${facing},half=bottom,open=true]`);
 }
 
-// Heuballen der Ladung: [x, y, z, axis].
+// Strohballen der Ladung: [x, y, z, axis].
 function hayLoad() {
   const hay = [];
   for (let x = BED.x1; x <= 1; x++) for (let z = -1; z <= 1; z++) hay.push([x, BED_Y + 1, z, 'x']);
@@ -77,34 +79,37 @@ function clearPlantsOffGrass(b, { x1, z1, x2, z2, y }) {
 
 export default function build(b) {
   // --- Bauplatz ---
-  b.phase('Bauplatz', 'Der Wagen steht auf einem Feldweg aus Erdpfad, grober Erde und Kies, der von West nach Ost über eine kleine Wiese führt (17 × 13 Blöcke).', {
-    tips: ['Einen Erdpfad machst du mit einer Schaufel aus Gras. Unter Blöcken wird er im Spiel zu Erde – deshalb liegt unter den Rädern grobe Erde.'],
+  b.phase('Bauplatz', 'Der Wagen steht auf einem Feldweg aus Trampelpfad, grober Erde und Kies, der von West nach Ost über eine kleine Wiese führt (17 × 13 Blöcke).', {
+    tips: ['Einen Trampelpfad machst du mit einer Schaufel aus Gras. Unter Blöcken wird er im Spiel zu Erde – deshalb liegt unter den Rädern grobe Erde.'],
   });
   terrain(b, { x: -8, y: 0, z: -6, width: 17, depth: 13, height: GROUND_Y, shape: 'rund', seed: 9 });
   path(b, { x: -8, y: GROUND_Y, z: 0, facing: 'east', length: 17, width: 5, mix: 'erde', wiggle: 0.8, seed: 4 });
-  // Unter allem, was später auf dem Weg steht, liegt grobe Erde statt Erdpfad.
+  // Unter allem, was später auf dem Weg steht, liegt grobe Erde statt Trampelpfad.
   const footprint = [...DRAWBAR, ...GROUND_HAY, GROUND_BARREL];
   for (const x of AXLES) for (let z = BED.z1 - 1; z <= BED.z2 + 1; z++) footprint.push([x, z]);
   for (const [x, z] of footprint) if (b.get(x, GROUND_Y, z) === 'dirt_path') b.set(x, GROUND_Y, z, 'coarse_dirt');
 
   // --- Fahrgestell ---
-  b.phase('Fahrgestell und Ladefläche', 'Unter der Ladefläche liegen zwei Achsen aus geschältem Fichtenstamm quer zum Wagen: hinten zwei Blöcke breit für die großen Räder, vorne einer. Darauf kommt die Ladefläche, 6 Blöcke lang und 3 breit, aus Fichtenholzbrettern.', {
-    tips: ['Stelle den Wagen leicht seitlich auf den Weg – so wirkt er abgestellt und nicht hingestellt.'],
+  b.phase('Fahrgestell und Ladefläche', 'Unter der Ladefläche liegen zwei Achsen aus entrindetem Fichtenstamm quer zum Wagen: hinten zwei Blöcke breit für die großen Räder, vorne einer. Darauf kommt die Ladefläche, 6 Blöcke lang und 3 breit, aus Fichtenholzbrettern.', {
+    tips: ['Lege zuerst die drei Achsen: an ihnen richtest du danach Ladefläche und Räder aus.'],
   });
-  b.step('Achsen', 'Lege auf den Weg hinten zwei Reihen und vorne eine Reihe geschälter Fichtenstämme, je 3 Blöcke lang quer zur Fahrtrichtung (Nord–Süd). Zwischen den Achsen bleiben zwei Blöcke frei.');
+  b.step('Achsen', 'Lege auf den Weg hinten zwei Reihen und vorne eine Reihe entrindeter Fichtenstämme, je 3 Blöcke lang quer zur Fahrtrichtung (Nord–Süd). Zwischen den Achsen bleiben zwei Blöcke frei.');
   for (const x of AXLES) for (let z = BED.z1; z <= BED.z2; z++) b.set(x, BED_Y - 1, z, AXLE);
   b.step('Ladefläche', 'Lege 6 × 3 Fichtenholzbretter auf die Achsen. Hinten schließt die Ladefläche mit der Achse ab, vorne ragt sie einen Block über die Vorderachse hinaus.');
   b.fill(BED.x1, BED_Y, BED.z1, BED.x2, BED_Y, BED.z2, 'spruce_planks');
 
   // --- Räder ---
-  b.phase('Räder', 'Die Räder sind offene Schwarzeichenholzfalltüren – dunkler als die Bordwände, damit man sie gut unterscheidet –, die flach an der Außenseite von Achsen und Ladefläche anliegen: hinten je vier (2 × 2), vorne je eine.', {
-    tips: ['Eine Falltür, die du gegen die Seite eines Blocks setzt und dann mit Rechtsklick öffnest, klappt flach an diese Seite.'],
+  b.phase('Räder', 'Die Räder sind aus Schwarzeichenholz – dunkler als die Ladefläche, damit man sie gut unterscheidet. Die großen Hinterräder sind runde Scheiben aus je vier Treppen an den Enden der beiden hinteren Achsen, die kleinen Vorderräder je eine offene Falltür an der vorderen Achse.', {
+    tips: [
+      'Für die runde Scheibe zeigen alle vier Treppen mit der hohen Seite zur Radmitte: die oberen stehen normal, die unteren setzt du umgedreht (an die Oberkante eines Blocks klicken).',
+      'Eine Falltür, die du gegen die Seite eines Blocks setzt und dann mit Rechtsklick öffnest, klappt flach an diese Seite.',
+    ],
   });
-  b.step('Hinterräder', 'Setze an beide Seiten der hinteren Achsen und der Ladefläche je vier Schwarzeichenholzfalltüren und öffne sie: zwei an den Achsen, zwei darüber an der Ladefläche.');
-  for (const x of [AXLES[0], AXLES[1]]) {
-    for (const y of [BED_Y - 1, BED_Y]) {
-      plate(b, x, y, BED.z2 + 1, WHEEL, 'south');
-      plate(b, x, y, BED.z1 - 1, WHEEL, 'north');
+  b.step('Hinterräder', 'Setze an beide Enden der hinteren Achsen je ein 2 × 2 großes Rad aus Schwarzeichenholztreppen, direkt neben Achse und Ladefläche. Oben stehen zwei Treppen normal, unten zwei umgedreht; die Treppen auf der Westseite zeigen mit der hohen Seite nach Osten, die auf der Ostseite nach Westen. So fehlt an jeder Außenecke ein Viertel und das Rad wirkt rund.');
+  for (const z of [BED.z1 - 1, BED.z2 + 1]) {
+    for (const [x, facing] of [[AXLES[0], 'east'], [AXLES[1], 'west']]) {
+      b.stairs(x, BED_Y, z, WHEEL_STAIRS, { facing, half: 'bottom' });
+      b.stairs(x, BED_Y - 1, z, WHEEL_STAIRS, { facing, half: 'top' });
     }
   }
   b.step('Vorderräder', 'Die Vorderräder sind je eine offene Schwarzeichenholzfalltür an den Enden der vorderen Achse.');
@@ -112,8 +117,8 @@ export default function build(b) {
   plate(b, AXLES[2], BED_Y - 1, BED.z1 - 1, WHEEL, 'north');
 
   // --- Heu ---
-  b.phase('Heuladung', 'Auf der Ladefläche türmt sich das Heu in drei Lagen: unten 5 × 3 Heuballen, darüber eine kürzere Lage mit abgerundeten Ecken, oben ein kleiner Gipfel aus drei Ballen. Leg die Ballen mal längs, mal quer. Die vorderste Reihe der Ladefläche bleibt frei für den Kutschbock.', {
-    tips: ['Ein Heuballen entsteht aus 9 Weizen – für die 28 Ballen auf dem Wagen und die 3 daneben brauchst du 279 Weizen.'],
+  b.phase('Heuladung', 'Auf der Ladefläche türmt sich das Heu in drei Lagen: unten 5 × 3 Strohballen, darüber eine kürzere Lage mit abgerundeten Ecken, oben ein kleiner Gipfel aus drei Ballen. Leg die Ballen mal längs, mal quer. Die vorderste Reihe der Ladefläche bleibt frei für den Kutschbock.', {
+    tips: ['Ein Strohballen entsteht aus 9 Weizen – für die 28 Ballen auf dem Wagen und die 3 daneben brauchst du 279 Weizen.'],
   });
   for (const [x, y, z, axis] of hayLoad()) b.set(x, y, z, `hay_block[axis=${axis}]`);
 
@@ -137,8 +142,8 @@ export default function build(b) {
   for (const [x, z] of DRAWBAR) b.set(x, BED_Y - 1, z, 'spruce_fence');
 
   // --- Umgebung ---
-  b.phase('Wegrand', 'Neben dem Wagen liegt ein heruntergefallener Heuballen, ein Fass steht am Weg, ein Busch und Wiesenblumen säumen den Rand.', {
-    tips: ['Lass den Wagen nicht genau in der Mitte des Wegs stehen – leicht seitlich wirkt er abgestellt.'],
+  b.phase('Wegrand', 'Neben dem Wagen liegt ein heruntergefallener Strohballen, ein Fass steht am Weg, ein Busch und Wiesenblumen säumen den Rand.', {
+    tips: ['Ein einzelner, schief liegender Strohballen neben dem Wagen sieht aus, als wäre er beim Abladen heruntergefallen – solche Kleinigkeiten machen eine Szene lebendig.'],
   });
   b.set(GROUND_HAY[0][0], GROUND_Y + 1, GROUND_HAY[0][1], 'hay_block[axis=z]');
   b.set(GROUND_HAY[1][0], GROUND_Y + 1, GROUND_HAY[1][1], 'hay_block[axis=y]');

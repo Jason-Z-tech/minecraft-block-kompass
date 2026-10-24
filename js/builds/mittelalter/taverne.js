@@ -120,9 +120,29 @@ function roof(b) {
     b.fill(x, 10, 8, x, 11, 8, 'glass_pane');
   }
   b.phase('Gauben', 'Vorne sitzen zwei Gauben im Dach (über den Gästezimmern): Vorderwand auf dem Rähm, Ecken aus Schwarzeichenstämmen, Wände aus Fichtenbrettern, ein Glasfenster und ein kleines Satteldach aus Schwarzeichentreppen mit einer Stufe als First. Die Hauptdachtreppen, wo die Gaube sitzt, nimmst du dafür heraus.', {
-    tips: ['Die Vorderwand der Gaube steht genau über der Fachwerkwand, eine Ebene über dem Rähm.'],
+    tips: [
+      'Die Vorderwand der Gaube steht genau über der Fachwerkwand, eine Ebene über dem Rähm.',
+      'Hinten laufen die Dachreihen der Gaube unter das Hauptdach. Setz direkt dahinter (4 Blöcke hinter der Vorderwand) unter jede Reihe ein Schwarzeichenbrett, sonst bleibt neben jeder Treppe ein Schlitz zum Dachboden offen.',
+    ],
   });
-  for (const x of [4, 10]) dormer(b, { x, y: PLATE_Y + 1, z: UP_Z2, facing: 'south', width: 3, wallHeight: 2, wall: spruce.planks, corner: dark.log, stairs: dark.stairs });
+  for (const x of [4, 10]) {
+    dormer(b, { x, y: PLATE_Y + 1, z: UP_Z2, facing: 'south', width: 3, wallHeight: 2, wall: spruce.planks, corner: dark.log, stairs: dark.stairs });
+    sealDormerBack(b, x);
+  }
+}
+
+// Die Dachreihen der Gaube laufen hinten unter das Hauptdach. Die offenen Hälften ihrer Treppen und der Firststufe
+// bilden dort halbblockhohe Kanäle, durch die man in den Dachboden sähe. Bretter neben und hinter den Reihen schließen
+// sie; der Durchgang vom Dachboden in die Gaube bleibt frei.
+const DORMER_DEPTH = 4;
+function sealDormerBack(b, x) {
+  const back = UP_Z2 - DORMER_DEPTH;
+  const cells = [
+    [-2, 11, back], [-1, 12, back], [0, 13, back], [1, 12, back], [2, 11, back],
+    [-3, 11, back + 1], [-3, 11, back + 2], [3, 11, back + 1], [3, 11, back + 2],
+    [-2, 12, back + 1], [2, 12, back + 1],
+  ];
+  for (const [dx, y, z] of cells) b.set(x + dx, y, z, dark.planks);
 }
 
 function openings(b) {

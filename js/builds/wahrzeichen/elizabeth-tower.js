@@ -15,7 +15,7 @@ export const meta = {
   accuracy: 'massstab',
   difficulty: 5,
   description: 'Der 96 m hohe Uhrturm des britischen Parlaments im Maßstab 1:1: quadratischer Schaft aus hellem '
-    + 'Kalkstein mit Lisenen, Maßwerkfenstern und Eckschäften, darüber das Uhrengeschoss mit vier 7-m-Zifferblättern, '
+    + 'Kalkstein mit Lisenen, Spitzbogenfenstern und Gesimsen, darüber das Uhrengeschoss mit vier 7-m-Zifferblättern, '
     + 'die Glockenstube mit der großen Glocke und den vier Viertelstunden-Glocken und der gusseiserne Spitzhelm mit '
     + 'Gauben, Ayrton-Laterne und Kreuzblume. Innen führt eine Wendeltreppe bis in die Uhrenstube. Die Höhen der oberen '
     + 'Bauteile stammen aus dem 3D-Modell von OpenStreetMap und sind deshalb Schätzungen.',
@@ -151,7 +151,11 @@ export default function build(b, { scale = 1 } = {}) {
   b.phase(detail ? 'Eingang und Umgebung' : 'Umgebung', (detail ? 'Zum Schluss setzt du die Eingangstür in der Südseite mit zwei '
     + 'Laternen auf Konsolen und stellst ' : 'Zum Schluss stellst du ') + 'vier Laternenmasten an die Ecken des Platzes. Das '
     + 'Eisengeländer lässt in der Mitte der Südseite eine Lücke frei.', {
-    tips: [detail ? 'Die Tür setzt du von außen mit Blick nach Norden.' : 'Die Masten stehen einen Block innerhalb des Geländers.'],
+    tips: detail
+      ? ['Die Tür setzt du von außen mit Blick nach Norden.',
+        'Innen gehst du vom Eingang nach links (Westen) im Gang herum bis zur Mitte der Nordseite – dort beginnt die Wendeltreppe. '
+          + 'Rechts herum kommst du kurz vor der Nordmitte nicht weiter, weil dort die ersten Stufen den Gang versperren.']
+      : ['Die Masten stehen einen Block innerhalb des Geländers.'],
   });
   buildEntranceAndSurroundings(b, L, detail);
 }
@@ -493,7 +497,7 @@ function buildLanternAndSpire(b, L, detail) {
   const [t1, t2] = L.spireThin;
   for (let y = t1; y <= t2; y++) b.set(0, y, 0, 'deepslate_tile_wall');
   // Kugel, Hals und Kreuz
-  b.step(detail ? 'Kugel und Kreuz' : 'Kugel und Blitzableiter', detail
+  b.step(detail ? 'Kugel und Kreuz' : 'Kugel und Spitze', detail
     ? `Auf Ebene ${L.orb + 1} sitzt die goldene Kugel, darüber zwei Glieder Eisenkette und das goldene Kreuz bis Ebene ${L.top + 1}.`
     : `Auf Ebene ${L.orb + 1} sitzt die goldene Kugel, darüber eine Eisenkette bis Ebene ${L.top + 1}.`);
   b.set(0, L.orb, 0, GOLD);
@@ -526,10 +530,10 @@ function buildSpireDetail(b, L) {
 function buildInterior(b, L) {
   const floor = L.corbel;
   b.step('Pendel und Uhrwerk', `Grab in der Mitte der Uhrenstube einen Schacht (1 × 1) durch den Boden vier Blöcke tief in den `
-    + 'Ziegelkern. Setz unten den Schweren Kern als Pendelgewicht und darüber vier Glieder Eisenkette bis in den Boden. Darauf steht das Uhrwerk: ein Rahmen aus poliertem Schwarzstein (5 × 3), zwei '
+    + 'Ziegelkern. Setz unten einen Eisenblock als Pendelgewicht und darüber vier Glieder Eisenkette bis in den Boden. Darauf steht das Uhrwerk: ein Rahmen aus poliertem Schwarzstein (5 × 3), zwei '
     + 'Schleifsteine als Zahnräder und zwei Eisenblöcke.');
   // Pendel im Schacht unter dem Uhrwerk
-  b.set(0, floor - 4, 0, 'heavy_core');
+  b.set(0, floor - 4, 0, 'iron_block');
   for (let y = floor - 3; y <= floor; y++) b.set(0, y, 0, 'iron_chain[axis=y]');
   // Uhrwerk
   b.fill(-2, floor + 1, -1, 2, floor + 1, 1, 'polished_blackstone');

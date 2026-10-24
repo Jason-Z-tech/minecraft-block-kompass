@@ -13,7 +13,7 @@ export const meta = {
   subtitle: 'Steinkirche mit Glockenturm, Buntglasfenstern und Friedhof',
   tags: ['Mittelalter', 'Dorf', 'Kirche', 'Kapelle', 'Glockenturm', 'Turm', 'Buntglas', 'Friedhof', 'Innenausbau'],
   aliases: [
-    'dorfkirche', 'dorf kirche', 'kirche', 'kirsche bau', 'kirch', 'kapelle', 'steinkirche', 'gotische kirche', 'glockenturm',
+    'dorfkirche', 'dorf kirche', 'kirche', 'kirch', 'kapelle', 'steinkirche', 'gotische kirche', 'glockenturm',
     'kirchturm', 'friedhof', 'church', 'village church', 'chapel', 'medieval church', 'bell tower', 'graveyard', 'cemetery',
   ],
   accuracy: 'eigenes',
@@ -159,13 +159,17 @@ function tower(b) {
 // Steiler Turmhelm: abwechselnd ein Ring Treppen und ein Ring voller Blöcke, jeder zweite Ring einen Block enger.
 function spire(b) {
   b.phase('Turmhelm', 'Der Helm ist steiler als ein normales Dach: auf einen Ring aus Treppen (hohe Seite innen) folgt jeweils ein Ring voller Tiefenschieferfliesen eine Ebene höher und einen Block enger, darauf wieder Treppen. Ganz oben sitzt ein Blitzableiter als Spitze.', {
-    tips: ['Der unterste Ring steht einen Block über die Turmmauer – so tropft der Regen nicht an der Wand herunter.'],
+    tips: [
+      'Der unterste Ring steht einen Block über die Turmmauer – so tropft der Regen nicht an der Wand herunter.',
+      'Jeder Ring voller Blöcke bekommt innen eine Reihe Tiefenschieferfliesen gleicher Größe eine Ebene tiefer (hinter den Treppen, von außen unsichtbar). Die unterste dieser Reihen liegt direkt auf der Turmmauer – an ihr setzt du auch den Treppenring davor an, sonst hätten die Blöcke keine Fläche zum Anbauen.',
+    ],
   });
   const cx = -3;
   const cz = 5;
   let y = TOWER.top + 1;
   for (let s = 4; s >= 1; s--) {
     if (s < 4) {
+      ringOf(b, cx, cz, s, y - 1, () => ROOF.full);
       ringOf(b, cx, cz, s, y, () => ROOF.full);
       y++;
     }
@@ -175,6 +179,7 @@ function spire(b) {
     });
     y++;
   }
+  b.set(cx, y - 1, cz, ROOF.full);
   b.set(cx, y, cz, ROOF.full);
   b.set(cx, y + 1, cz, `${ROOF.slab}[type=bottom]`);
   b.set(cx, y + 2, cz, 'lightning_rod[facing=up]');

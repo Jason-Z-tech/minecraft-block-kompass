@@ -18,7 +18,7 @@ export const meta = {
     'big oak', 'big oak tree', 'large oak', 'large oak tree', 'giant oak', 'custom oak', 'custom tree', 'oak tree', 'tree swing',
   ],
   accuracy: 'eigenes',
-  difficulty: 2,
+  difficulty: 3,
   description: 'Eine alte, frei stehende Eiche als Blickfang für Dorfplatz, Garten oder Wiese. Der Stamm ist unten fünf Blöcke breit und läuft nach oben schlank aus, sieben Wurzeln greifen über den kleinen Hügel und tauchen in den Boden. Sechs lange Äste mit Gabelungen tragen eine breite, lockere Krone aus Eichen- und Schwarzeichenlaub. Am tiefen Südast hängt eine Schaukel, am Nordast eine Laterne.',
   facts: [
     'Stamm aus Eichenstämmen, Wurzeln und Äste aus Eichenholz (Rinde auf allen Seiten), damit nirgends Jahresringe herausschauen.',
@@ -121,6 +121,21 @@ function moundHeight(x, z) {
   const n = (noise3(x, 0, z, 3, 11) - 0.5) * 1.6;
   if (d + n < 6.8) return 2;
   return 1;
+}
+
+// Der ausgefranste Rand des runden Geländes kann einzelne Säulen ohne seitlichen Anschluss erzeugen – die wirken wie
+// abgebrochene Pfeiler neben der Wiese und kommen weg.
+function trimLooseColumns(b, ground, r) {
+  let removed = 0;
+  for (let z = -r; z <= r; z++) {
+    for (let x = -r; x <= r; x++) {
+      const top = ground.top(x, z);
+      if (top === null || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => ground.top(x + dx, z + dz) !== null)) continue;
+      for (let y = 0; y <= top; y++) b.remove(x, y, z);
+      removed++;
+    }
+  }
+  return removed;
 }
 
 function planTrunk(y0) {
@@ -345,6 +360,7 @@ export default function build(b) {
     x: -GROUND_R, y: 0, z: -GROUND_R, width: GROUND_R * 2 + 1, depth: GROUND_R * 2 + 1, shape: 'rund', seed: 5,
     heightAt: (dx, dz) => moundHeight(dx - GROUND_R, dz - GROUND_R),
   });
+  trimLooseColumns(b, ground, GROUND_R);
   const y0 = ground.top(0, 0) + 1;
   const trunkTop = y0 + TRUNK_RADIUS.length - 1;
   const roots = planRoots(rng, ground, y0);

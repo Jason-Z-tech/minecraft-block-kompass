@@ -150,13 +150,16 @@ Sherwin-Williams heißt „Fireweed“ (SW 6328) [Q3]; dessen Farbwert steht nic
 |---|---|---|---|---|
 | Länge | 2737 m | 2737 | 1369 | 684 |
 | Turmhöhe | 227 m | 227 | 114 | 57 |
-| Hauptöffnung | 1280 m | 1280 | 640 | 320,5 |
+| Hauptöffnung | 1280 m | 1280 | 640 | 320 |
 | Fahrbahn über Wasser | 75 m (R) | 75 | 38 | 19 |
 | Durchfahrtshöhe | 67 m | 67 | 34 | 17 |
 | Breite gesamt | 27 m | 27 | 13 | 7 |
 | Fahrbahn | 19 m | 19 | 9 | 5 |
 | Turmbein am Fuß | 10 × 16 m | 10 × 16 | 5 × 8 | 3 × 4 |
 | Kabel-Tiefpunkt | 78 m (G) | 78 | 39 | 20 |
+
+Nachprüfung 2026-10-24 (Prüfer): Turmmitten bei 1:4 auf z 177,5 und 497,5 → Hauptöffnung genau 320 (der frühere Wert 320,5
+kam von einem Kabelblock auf der obersten Turmebene, der beim Messen mitgezählt wurde).
 
 ## 7. Quellenliste (Abruf 2026-10-23)
 

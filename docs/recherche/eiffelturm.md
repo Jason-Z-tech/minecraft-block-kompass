@@ -125,6 +125,10 @@ Farben gemessen mit `tmp/wahrzeichen-a/colors.mjs` aus `game-data/textures.bin`.
   den Aufzugsschacht ganz ausgelegt; eine Leiter führt vom verglasten Raum der dritten Etage aufs Oberdeck (I).
 - Maßstäbe `[1, 0.5, 0.25]`; bei 0,5 und 0,25 werden Gurte, Streben und Eckträger gröber, die Pavillons der zweiten Etage
   entfallen bei 0,5, bei 0,25 auch die der ersten.
+- Nachbesserung nach der Prüfung (2026-10-24): Streben, die an den schrägen Pfeilerflächen nur über Kanten hingen (16 bei
+  1:1, 24 bei 0,5), bekommen einen Verbindungsblock. Im nur 2 Blöcke hohen Raum der dritten Etage stehen die Laternen in den
+  Ecken und auf den Regalen statt auf Kopfhöhe zu hängen. Texte nennen die Streben jetzt richtig Kupferrost (Kupfergitter =
+  Geländer), die Eckträgerbreite im Tipp kommt aus dem Maßstab.
 
 **Nachgemessen im fertigen Volumen (scale 1, `tmp/wahrzeichen-a/measure.mjs`):**
 

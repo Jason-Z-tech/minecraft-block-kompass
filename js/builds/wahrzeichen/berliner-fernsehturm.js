@@ -132,6 +132,26 @@ function setRing(b, y, r, state) {
   return cells;
 }
 
+const FACES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+const solidNeighbors = (b, x, y, z) => FACES.filter(([dx, dy, dz]) => b.get(x + dx, y + dy, z + dz) !== 'air').length;
+
+// Blöcke, die nur über Kanten an der Wand hängen (schräge Kreisränder, schnell schrumpfende Ebenen), lassen sich im
+// Spiel nicht ohne Hilfsblock setzen. Je losem Block kommt innen ein gleicher Block dazu, der ihn mit der Wand verbindet.
+function connectLooseBlocks(b, cells) {
+  for (const [x, y, z] of cells) {
+    const state = b.get(x, y, z);
+    if (state === 'air' || solidNeighbors(b, x, y, z) > 0) continue;
+    let best = null;
+    for (const [dx, dy, dz] of FACES) {
+      const [nx, ny, nz] = [x + dx, y + dy, z + dz];
+      if (b.get(nx, ny, nz) !== 'air' || dist(nx, nz) > dist(x, z)) continue;
+      const score = solidNeighbors(b, nx, ny, nz) - 1;
+      if (score > 0 && (!best || score > best.score)) best = { nx, ny, nz, score };
+    }
+    if (best) b.set(best.nx, best.ny, best.nz, state);
+  }
+}
+
 // Lichter an der Innenwand: von der Achse aus nach außen bis zur Wand, Fackel mit Blick zur Achse.
 const AXES = [
   { dx: 1, dz: 0, facing: 'west' },
@@ -233,6 +253,7 @@ function buildPlaza(b, g) {
 
 function buildFoot(b, g, hollow) {
   const yTop = g.level(H.footTop) - 1;
+  const wall = [];
   for (let y = 1; y <= yTop; y++) {
     const r = g.radius(footDiameterM(g.meters(y)));
     if (!hollow) {
@@ -240,9 +261,16 @@ function buildFoot(b, g, hollow) {
       continue;
     }
     const cells = setRing(b, y, r, P.concrete);
+    for (const [x, z] of cells) wall.push([x, y, z]);
     if (y === g.level(10) && g.s >= 0.5) for (const [x, z] of evenlySpaced(cells, 16)) b.set(x, y, z, 'glass');
   }
   if (hollow) {
+    connectLooseBlocks(b, wall);
+    // Fackeln an der Innenwand des Fußes, damit auf der Wendeltreppe bis zum Schaft keine Monster erscheinen
+    for (let y = 4; y <= yTop; y += 3) {
+      const pair = Math.floor((y - 4) / 3) % 2 === 0 ? [AXES[0], AXES[1]] : [AXES[2], AXES[3]];
+      for (const axis of pair) wallTorch(b, y, axis);
+    }
     // Eingang nach Süden, zwei Blöcke hoch
     const r0 = g.radius(footDiameterM(0.5));
     for (let y = 1; y <= 2; y++) {
@@ -253,12 +281,14 @@ function buildFoot(b, g, hollow) {
     // Licht in der Halle
     const rl = g.radius(footDiameterM(0.5)) - 3;
     for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * 2 * Math.PI;
+      const a = ((i + 0.5) / 8) * 2 * Math.PI; // halb versetzt: keine Lampe direkt hinter dem Eingang im Süden
       const x = Math.round(CX + rl * Math.cos(a));
       const z = Math.round(CZ + rl * Math.sin(a));
       b.set(x, 1, z, 'andesite_wall');
       b.set(x, 2, z, 'lantern');
     }
+    // Laterne auf dem Boden unter der Wendeltreppe (Südseite des Kerns, abseits des Einstiegs im Norden)
+    b.set(1, 1, 2, 'lantern');
   }
 }
 
@@ -397,14 +427,20 @@ function buildSphereInterior(b, g, sphere, levels) {
     b.set(x, restCeiling - drop, z, 'lantern[hanging=true]');
   }
 
-  b.step('Technikgeschosse', 'In den Geschossen über dem Telecafé und unter der Aussichtsetage stehen Technik und Klimaanlage. Stell Fässer und Eisenblöcke als Geräte auf und setz Laternen auf den Boden, damit dort keine Monster erscheinen.');
+  b.step('Technikgeschosse', 'In den Geschossen über dem Telecafé und unter der Aussichtsetage stehen Technik und Klimaanlage. Stell rund um den Schaft zwei Blöcke hohe Geräteschränke auf, abwechselnd aus Fässern und aus Eisenblöcken mit einem Hochofen darüber, und setz Laternen auf den Boden, damit dort keine Monster erscheinen.');
   for (const yFloor of [levels.climate, ...levels.technical]) {
     lanternRing(yFloor, 6);
-    for (const [x, z] of ringPositions(shaftR(yFloor + 1) + 1.5, 4, 0.3)) {
-      if (b.get(x, yFloor, z) !== 'air' && b.get(x, yFloor + 1, z) === 'air') {
+    const cabinets = ringPositions(shaftR(yFloor + 1) + 1.5, 8, 0.3);
+    cabinets.forEach(([x, z, a], i) => {
+      if (b.get(x, yFloor, z) === 'air' || b.get(x, yFloor + 1, z) !== 'air' || b.get(x, yFloor + 2, z) !== 'air') return;
+      if (i % 2 === 0) {
         b.set(x, yFloor + 1, z, 'barrel[facing=up]');
+        b.set(x, yFloor + 2, z, 'barrel[facing=up]');
+      } else {
+        b.set(x, yFloor + 1, z, 'iron_block');
+        b.set(x, yFloor + 2, z, `blast_furnace[facing=${facingToward(a + Math.PI)}]`);
       }
-    }
+    });
   }
 }
 
@@ -482,6 +518,10 @@ function buildDishPlatforms(b, g) {
         b.set(x, y + 1, z, 'iron_block');
         b.set(x, y + 2, z, 'white_concrete');
       }
+      // Laternen zwischen den Antennen, damit auf den überdachten Bühnen keine Monster erscheinen
+      for (const [x, z] of ringPositions(r + 1.5, 6, 0.4 + Math.PI / 6)) {
+        if (b.get(x, y, z) !== 'air' && b.get(x, y + 1, z) === 'air') b.set(x, y + 1, z, 'lantern');
+      }
     }
   }
 }
@@ -527,8 +567,10 @@ function buildPavilionComplex(b, g) {
   const wallTop = (x, z) => (roofY.get(`${x},${z}`) ?? 2) - 1;
   const gallery = g.floorAt(ROOF.gallery);
 
-  b.step('Glaswände', `Die Umbauung ist ein Sechseck mit ${Math.round(2 * ROOF.wall * s)} Blöcken Eckmaß. Setze ringsum Glasscheiben bis unter das Dach; die sechs Ecken und ein Band auf Höhe der Galerie sind aus weißem Beton. Lass auf der Südseite einen Eingang frei.`);
-  const isWall = (x, z) => inHexagon(x, z, apothemWall) && !(inHexagon(x + 1, z, apothemWall) && inHexagon(x - 1, z, apothemWall) && inHexagon(x, z + 1, apothemWall) && inHexagon(x, z - 1, apothemWall));
+  b.step('Glaswände', `Die Umbauung ist ein Sechseck mit ${Math.round(2 * ROOF.wall * s)} Blöcken Eckmaß. Setze ringsum Glasscheiben bis unter das Dach; die sechs Ecken und ein Band auf Höhe der Galerie sind aus weißem Beton. An den vier schrägen Seiten setzt du die Scheiben treppenförmig und immer über Eck, damit jede Scheibe an der nächsten anschließt – sonst bleiben schmale Lücken, durch die Monster laufen. Lass auf der Südseite einen Eingang frei.`);
+  // Rand mit 8er-Nachbarschaft: an den schrägen Seiten stoßen die Scheiben über Flächen aneinander und verbinden sich
+  const NEIGHBORS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  const isWall = (x, z) => inHexagon(x, z, apothemWall) && NEIGHBORS8.some(([dx, dz]) => !inHexagon(x + dx, z + dz, apothemWall));
   const span2 = Math.ceil(ROOF.wall * s) + 1;
   const wallCells = [];
   for (let x = -span2; x <= span2 + 1; x++) {
@@ -564,7 +606,10 @@ function buildPavilionComplex(b, g) {
     }
     // Treppe zur Galerie an der Westseite
     const tx = -Math.round(apothemWall) + 3;
-    for (let i = 0; i < gallery; i++) b.stairs(tx + i, 1 + i, 0, 'smooth_quartz_stairs', { facing: 'east' });
+    for (let i = 0; i < gallery; i++) {
+      b.stairs(tx + i, 1 + i, 0, 'smooth_quartz_stairs', { facing: 'east' });
+      for (let y = 1; y < 1 + i; y++) b.set(tx + i, y, 0, P.roof);
+    }
     for (let i = 0; i < gallery - 1; i++) b.remove(tx + i, gallery, 0);
   }
 
@@ -578,6 +623,14 @@ function buildPavilionComplex(b, g) {
     }
     for (let yy = Math.min(low, y); yy <= y; yy++) if (b.get(x, yy, z) === 'air' || yy === y) b.set(x, yy, z, P.roof);
     if (roofSlab.has(key) && b.get(x, y + 1, z) === 'air') b.slab(x, y + 1, z, P.roofSlab);
+  }
+  // Einzelne Dachblöcke, die nur über Kanten am Dach hängen (Spitzen der Flügel), fallen weg
+  for (const [key, y] of roofY) {
+    const [x, z] = key.split(',').map(Number);
+    for (let yy = y + 1; yy >= 1; yy--) {
+      const state = b.get(x, yy, z);
+      if ((state === P.roof || state.startsWith(P.roofSlab)) && solidNeighbors(b, x, yy, z) === 0) b.remove(x, yy, z);
+    }
   }
 
   // Lampen in zwei Ringen in der Halle (Mauer mit Laterne) und ein Ring auf der Galerie
@@ -634,7 +687,9 @@ function buildPavilionComplex(b, g) {
 
 function buildWaterAndLamps(b, g) {
   const s = g.s;
-  const z0 = Math.round((ROOF.corner * Math.cos(Math.PI / 6) + 3) * s);
+  // vor der Dachkante (Südseite des Sechsecks), auch wenn die Rundung bei kleinen Maßstäben knapp wird
+  const roofEdge = Math.floor(CZ + ROOF.corner * Math.cos(Math.PI / 6) * s);
+  const z0 = Math.max(Math.round((ROOF.corner * Math.cos(Math.PI / 6) + 3) * s), roofEdge + 2);
   const w = Math.max(2, Math.round(6 * s));
   const d = Math.max(2, Math.round(4 * s));
   const gap = Math.max(1, Math.round(2 * s));
@@ -645,6 +700,8 @@ function buildWaterAndLamps(b, g) {
     for (let x = x1 - 1; x <= x1 + w; x++) {
       for (let z = z0 - 1; z <= z0 + d; z++) {
         const rim = x === x1 - 1 || x === x1 + w || z === z0 - 1 || z === z0 + d;
+        // Bei kleinen Maßstäben reicht ein Becken bis an den Platzrand: Boden ergänzen, sonst läuft das Wasser aus
+        if (b.get(x, 0, z) === 'air') b.set(x, 0, z, P.paving);
         b.set(x, 1, z, rim ? 'smooth_quartz' : 'water');
       }
     }
@@ -679,22 +736,22 @@ export default function build(b, { scale = 1 } = {}) {
   });
   buildPlaza(b, g);
 
-  b.phase('Turmfuß', `Der Fuß ist ein ${Math.round(H.footTop * scale)} Blöcke hoher Betonkegel aus poliertem Diorit, unten ${Math.round(D.foot * scale)} Blöcke breit, oben so breit wie der Schaft. Er zieht sich unten schnell und oben immer langsamer ein.${hollow ? ' Innen bleibt er hohl (Eingangshalle) mit einem Ring aus Bullaugen auf halber Höhe; der Eingang liegt im Süden. In der Mitte beginnt die Wendeltreppe: Aufzugskern aus grauem Beton, eine Stufe pro Ebene im Uhrzeigersinn, außen ein Gitterring mit dem Einstieg auf der Nordseite.' : ''}`, {
+  b.phase('Turmfuß', `Der Fuß ist ein ${Math.round(H.footTop * scale)} Blöcke hoher Betonkegel aus poliertem Diorit, unten ${Math.round(D.foot * scale)} Blöcke breit, oben so breit wie der Schaft. Er zieht sich unten schnell und oben immer langsamer ein.${hollow ? ' Innen bleibt er hohl (Eingangshalle) mit einem Ring aus Bullaugen auf halber Höhe; der Eingang liegt im Süden. In der Mitte beginnt die Wendeltreppe: Aufzugskern aus grauem Beton, eine Stufe pro Ebene im Uhrzeigersinn, außen ein Gitterring mit dem Einstieg auf der Nordseite. Laternen am Boden und ab Ebene 5 alle drei Ebenen zwei Fackeln an der Innenwand halten Halle und Treppe hell.' : ''}`, {
     tips: ['Prüfe jede Ebene mit der Ebenen-Ansicht: der Kreis wird pro Ebene nur um einen halben bis einen Block kleiner.'],
   });
   buildFoot(b, g, hollow);
   if (hollow) buildSpiral(b, 1, footTop);
 
-  b.phase('Schaft bis zur Kugel', `Der Betonschaft aus poliertem Diorit verjüngt sich gleichmäßig von ${Math.round(D.shaftBottom * scale)} auf rund ${Math.round(shaftDiameterM(197) * scale)} Blöcke unter der Kugel.${hollow ? ' Innen läuft die Wendeltreppe um den Aufzugskern bis zur Aussichtsetage, ringsum geschützt von einem Ring aus Eisengittern (Abstand 3 von der Kernmitte); alle drei Ebenen hängen zwei Fackeln an gegenüberliegenden Wänden. Alle 45 Blöcke zeigt ein Ring aus Bullaugen ein Zwischengeschoss, ab 91 m leuchten rote Hindernisfeuer außen am Schaft.' : ''}`, {
+  b.phase('Schaft bis zur Kugel', `Der Betonschaft aus poliertem Diorit verjüngt sich gleichmäßig von ${Math.round(D.shaftBottom * scale)} auf rund ${Math.round(shaftDiameterM(197) * scale)} Blöcke unter der Kugel.${hollow ? ' Innen läuft die Wendeltreppe um den Aufzugskern bis unter die Kugel, ringsum geschützt von einem Ring aus Eisengittern (Abstand 3 von der Kernmitte); alle drei Ebenen hängen zwei Fackeln an gegenüberliegenden Wänden. Alle 45 Blöcke zeigt ein Ring aus Bullaugen ein Zwischengeschoss, ab 91 m leuchten rote Hindernisfeuer außen am Schaft.' : ''}`, {
     tips: [
       'Bei der Wendeltreppe zeigt die hohe Seite jeder Stufe in Laufrichtung – du gehst im Uhrzeigersinn nach oben.',
       'Die roten Hindernisfeuer sind Redstone-Fackeln an der Außenwand.',
     ],
   });
   buildShaftLevels(b, g, footTop + 1, sphereLow - 1, { hollow, stairs: hollow });
-  if (hollow) buildSpiral(b, footTop + 1, obs);
+  if (hollow) buildSpiral(b, footTop + 1, sphereLow - 1);
 
-  b.phase('Die Kugel', `Die Kugel hat ${Math.round(H.sphereDiameter * scale)} Blöcke Durchmesser. Baue sie Ebene für Ebene von unten: Haut aus Eisenblöcken mit zwölf Längsfugen aus glattem Stein, die zwei Fensterbänder aus braunem Glas über der Aussichtsetage und dem Telecafé.${hollow ? ' Innen entstehen gleich die Böden der sieben Geschosse, und der Schaft läuft mitten hindurch.' : ''}`, {
+  b.phase('Die Kugel', `Die Kugel hat ${Math.round(H.sphereDiameter * scale)} Blöcke Durchmesser. Baue sie Ebene für Ebene von unten: Haut aus Eisenblöcken mit zwölf Längsfugen aus glattem Stein, die zwei Fensterbänder aus braunem Glas über der Aussichtsetage und dem Telecafé.${hollow ? ' Innen entstehen gleich die Böden der sieben Geschosse; der Schaft läuft mitten hindurch, und in ihm führt die Wendeltreppe samt Gitterring weiter bis zur Aussichtsetage.' : ''}`, {
     tips: [
       'Die Fensterbänder sitzen unter dem Äquator – deshalb schauen die Fenster leicht nach unten.',
       'Die Kugel hat einen geraden Durchmesser: die Mitte liegt zwischen den Blöcken, jede Ebene ist symmetrisch zu dieser Mitte.',
@@ -711,6 +768,14 @@ export default function build(b, { scale = 1 } = {}) {
       setRing(b, y, r, P.concrete);
       b.fill(-1, y, -1, 1, y, 1, P.core);
     }
+    // Erst jetzt die Wendeltreppe in der Kugel weiterführen – die Kugelhaut hätte sie unten sonst überschrieben.
+    buildSpiral(b, sphereLow, obs);
+    const shell = [];
+    for (let y = sphereLow; y <= sphereHigh; y++) {
+      const shaftR = g.radius(shaftDiameterM(g.meters(y)));
+      for (const [x, z] of circleCells(sphereR + 1)) if (!inside(x, z, shaftR + 1)) shell.push([x, y, z]);
+    }
+    connectLooseBlocks(b, shell);
     for (const yFloor of [levels.climate, sphere.obs, sphere.rest, ...levels.technical]) sphereFloor(b, g, sphere, yFloor, P.floor);
   } else {
     for (let y = sphereLow; y <= sphereHigh; y++) {

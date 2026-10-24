@@ -4,6 +4,7 @@
 // Baut in `container` die 3D-Bühne, den Schritt-Player und die Tabs Anleitung / Material / Ebenen / Infos.
 // source/params wie viewer.load; entry = Katalog-Eintrag oder gleich aufgebautes Objekt (fehlende Felder
 // werden weggelassen); progressKey = 'bk:progress:<id>[@<maßstab>]' oder null (dann wird nichts gespeichert).
+// onError(error, handle): handle ist null, wenn schon der Viewer nicht starten konnte, sonst der Griff mit dispose().
 import { el, clear } from './dom.js';
 import { loadNames } from './data.js';
 import { initTabs, renderLoading, renderInfo, icon, showToast } from './shared.js';
@@ -111,6 +112,8 @@ export async function mountBuildView(container, { source, params = {}, entry = n
 
   let disposed = false;
   let ctx = null;
+  // Griff zum Aufräumen; onError bekommt ihn mit, weil das Promise bei Fehlern keinen liefert
+  let handle = null;
   let scale = typeof params.scale === 'number' ? params.scale : null;
   let currentKey = progressKey;
   const offs = [];
@@ -127,7 +130,7 @@ export async function mountBuildView(container, { source, params = {}, entry = n
     }
     if (typeof onError === 'function') {
       try {
-        onError(error);
+        onError(error, handle);
       } catch (callbackError) {
         console.error('[Block-Kompass] Fehler in onError:', callbackError);
       }
@@ -223,7 +226,7 @@ export async function mountBuildView(container, { source, params = {}, entry = n
   window.addEventListener('pagehide', flush);
   offs.push(() => window.removeEventListener('pagehide', flush));
 
-  const handle = {
+  handle = {
     viewer,
     get result() { return ctx?.result ?? null; },
     get context() { return ctx; },

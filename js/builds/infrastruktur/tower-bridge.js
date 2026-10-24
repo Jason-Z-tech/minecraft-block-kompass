@@ -12,7 +12,7 @@ export const meta = {
   subtitle: 'Klapp- und Hängebrücke über die Themse in London, 287 m lang',
   tags: ['London', 'England', 'Großbritannien', 'Brücke', 'Klappbrücke', 'Hängebrücke', 'Türme', 'Neugotik', 'Wahrzeichen', 'Maßstab 1:1', 'Riesig', 'Fluss'],
   aliases: [
-    'tower bridge', 'towerbridge', 'tower brücke', 'tower bridge london', 'london bridge', 'londoner brücke', 'tauer bridge',
+    'tower bridge', 'towerbridge', 'tower brücke', 'tower bridge london', 'tauer bridge',
     'tower brige', 'towerbrücke', 'themse brücke', 'thames bridge', 'klappbrücke london', 'bascule bridge london', 'tower bridge england',
   ],
   accuracy: 'massstab',
@@ -22,7 +22,7 @@ export const meta = {
     'Eröffnet am 30. Juni 1894 nach acht Jahren Bauzeit; Architekt Horace Jones, nach seinem Tod 1887 Ingenieur John Wolfe Barry.',
     'Gesamtlänge 940 ft (rund 287 m) mit Widerlagern; Mittelöffnung 200 ft (61 m), Seitenfelder je 270 ft (82 m).',
     'Die Türme sind 65 m hoch, die oberen Stege liegen 143 ft (43,6 m) über der Themse bei Hochwasser.',
-    'Die Brücke ist 60 ft (18,3 m) breit, über der Klappe 49 ft (14,9 m); unter der geschlossenen Klappe bleiben 29 ft (8,8 m) Durchfahrtshöhe.',
+    'Die Brücke ist 60 ft (18,3 m) breit, über der Klappe 49 ft (14,9 m). Das Baugesetz von 1885 verlangte unter der geschlossenen Klappe 29 ft (8,8 m) Durchfahrtshöhe, im Modell sind es 8,1 m.',
     'Jede Klappe wiegt rund 1 070 t und hebt sich in etwa fünf Minuten; die Angaben zum Winkel schwanken zwischen 82° und 86°.',
     'Die Türme haben ein Stahlskelett, verkleidet mit Granit aus Cornwall und Portland-Kalkstein. Seit 2014 haben die Stege Glasböden.',
     'Blau-weiß gestrichen seit der Sanierung 2008–2012; zum Silberjubiläum 1977 war sie rot-weiß-blau.',
@@ -570,7 +570,10 @@ function buildRoofs(b, spec, geo) {
   const a = spec.abut;
   b.phase('Dächer und Turmspitzen',
     'Die Türme tragen steile Dächer aus Tiefenschiefer-Fliesen. Auf den Hauptturm kommt ein Walmdach hinter der Brüstung, darüber eine Spitze mit goldenem Knauf. Die Ecktürmchen bekommen spitze, achteckige Helme mit einem Blitzableiter als Spitze. Die Widerlagertürme erhalten dieselben Dächer in klein.',
-    { tips: ['Setz bei den spitzen Helmen zuerst die Mittelachse bis zur Spitze und bau die Treppen ringweise darum.'] });
+    { tips: [
+      'Setz bei den spitzen Helmen zuerst die Mittelachse bis zur Spitze und bau die Treppen ringweise darum.',
+      'Das Walmdach ist innen hohl: Jede Treppenreihe sitzt schräg über der darunter. Stell dich auf einen Hilfsblock, setz die erste Treppe einer Reihe dagegen und reih die anderen daran an.',
+    ] });
   bothHalves(b, () => {
     // Walmdach des Hauptturms (innerhalb der Brüstung)
     const heights = new Map();

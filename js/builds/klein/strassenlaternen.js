@@ -51,12 +51,12 @@ function rustic(b) {
     b.set(x, 0, 2, `${spruce.strippedLog}[axis=x]`);
   }
 
-  b.step('Pfahl und Arm', 'Stelle einen Fichtenstamm auf, darauf vier Fichtenzäune. An den obersten Zaun setzt du nach vorne (Süden) einen weiteren Zaun als Arm und hängst darunter eine Laterne: mit der Laterne in der Hand an die Unterseite des Arms klicken.');
+  b.step('Pfahl und Arm', 'Stelle einen Fichtenstamm auf, darauf vier Fichtenzäune. An den obersten Zaun setzt du nach vorne (Süden) einen weiteren Zaun als Arm und hängst darunter eine Laterne: mit der Laterne in der Hand an die Unterseite des Arms klicken. Als Hut legst du eine geschlossene Fichtenfalltür auf den Pfahl: von oben auf den obersten Zaun klicken.');
   lampPost(b, { x: 0, y: 1, z: -1, facing: 'south', height: 5, post: spruce.fence, base: spruce.log, style: 'arm' });
   b.set(0, 6, -1, `${spruce.trapdoor}[facing=south,half=bottom,open=false]`);
   b.note(0, 4, 0, 'Rustikal: Laterne hängt am Zaun-Arm');
 
-  b.step('Zaun und Fass', 'Hinter dem Gehweg läuft ein Fichtenzaun, neben der Laterne steht ein Fass. Als Hut liegt eine geschlossene Fichtenfalltür auf dem Pfahl.');
+  b.step('Zaun und Fass', 'Hinter dem Gehweg läuft ein Fichtenzaun, neben der Laterne steht ein Fass.');
   b.fill(x0, 1, -2, x1, 1, -2, spruce.fence);
   b.set(2, 1, -1, 'barrel[facing=up,open=false]');
 }
@@ -68,13 +68,14 @@ function city(b) {
   floorPattern(b, { x: x0, y: 0, z: -1, width: x1 - x0 + 1, depth: 3, pattern: 'random', blocks: [['stone_bricks', 5], ['polished_andesite', 2], ['cracked_stone_bricks', 1]] });
   b.fill(x0, 0, 2, x1, 0, 2, 'smooth_stone');
 
-  b.step('Mast', 'Setze einen gemeißelten polierten Schwarzstein als Sockel, darauf fünf Mauern aus poliertem Schwarzstein übereinander.');
+  b.step('Mast', 'Setze einen gemeißelten polierten Schwarzstein als Sockel, darauf vier Mauern aus poliertem Schwarzstein übereinander und oben als Kopf einen polierten Schwarzstein.');
   b.set(8, 1, -1, 'chiseled_polished_blackstone');
-  b.fill(8, 2, -1, 8, 6, -1, 'polished_blackstone_wall');
+  b.fill(8, 2, -1, 8, 5, -1, 'polished_blackstone_wall');
+  b.set(8, 6, -1, 'polished_blackstone');
 
-  b.step('Arme und Laternen', 'Setze links und rechts an die oberste Mauer je eine weitere Schwarzsteinmauer als Arm – sie verbinden sich zu einem T. Unter jedes Armende kommen eine Kette und eine hängende Laterne. Auf die Mastspitze stellst du eine dritte Laterne.');
+  b.step('Arme und Laternen', 'Setze links und rechts an den Kopf je ein Eisengitter als Arm – es verbindet sich mit dem Kopf zu einem schmalen Eisenträger. Unter jeden Arm kommen eine Kette und eine hängende Laterne. Auf den Kopf stellst du eine dritte Laterne.');
   for (const x of [7, 9]) {
-    b.set(x, 6, -1, 'polished_blackstone_wall');
+    b.set(x, 6, -1, 'iron_bars');
     b.set(x, 5, -1, 'iron_chain[axis=y]');
     b.set(x, 4, -1, 'lantern[hanging=true]');
   }
@@ -89,20 +90,21 @@ function city(b) {
 
 function modern(b) {
   const [x0, x1] = SEGMENTS.modern;
-  b.phase('Stil 3: Modern', 'Die moderne Mastleuchte: ein hellgrauer Betonmast mit flachem Ausleger, darunter ein Endstab als LED-Leuchte und oben ein Tageslichtsensor als Solarmodul. Passt zu Häusern aus Beton, Glas und Quarz.');
+  b.phase('Stil 3: Modern', 'Die moderne Mastleuchte: ein schlanker, hellgrauer Mast aus poliertem Tuffstein mit flachem Ausleger, darunter ein Endstab als LED-Leuchte und oben ein Tageslichtsensor als Solarmodul. Passt zu Häusern aus Beton, Glas und Quarz.');
   b.step('Platten und Kante', 'Lege den Gehweg in Streifen aus glattem Stein und poliertem Andesit, vorne eine Kante aus hellgrauem Beton.');
   floorPattern(b, { x: x0, y: 0, z: -1, width: x1 - x0 + 1, depth: 3, pattern: 'stripes', blocks: ['smooth_stone', 'polished_andesite'] });
   b.fill(x0, 0, 2, x1, 0, 2, 'light_gray_concrete');
 
-  b.step('Mast', 'Setze einen glatten Stein als Fuß und darauf fünf Blöcke hellgrauen Beton.');
-  b.set(16, 1, -1, 'smooth_stone');
-  b.fill(16, 2, -1, 16, 6, -1, 'light_gray_concrete');
+  b.step('Mast', 'Setze hellgrauen Beton als Fuß, darauf fünf Mauern aus poliertem Tuffstein – sie ergeben einen dünnen, runden Mast – und oben einen polierten Tuffstein als Kopf.');
+  b.set(16, 1, -1, 'light_gray_concrete');
+  b.fill(16, 2, -1, 16, 6, -1, 'polished_tuff_wall');
+  b.set(16, 7, -1, 'polished_tuff');
 
-  b.step('Ausleger, LED und Solarmodul', 'Lege an die oberste Betonebene nach vorne drei untere Stufen aus glattem Stein als Ausleger – er reicht bis über die Kante. Unter das vordere Ende kommt ein Endstab, der nach unten zeigt: klick dafür an die Unterseite der Stufe. Oben auf den Mast setzt du einen Tageslichtsensor.');
-  b.fill(16, 6, 0, 16, 6, 2, 'smooth_stone_slab[type=bottom]');
-  b.set(16, 5, 2, 'end_rod[facing=down]');
-  b.set(16, 7, -1, 'daylight_detector[inverted=false,power=0]');
-  b.note(16, 5, 2, 'Modern: Endstab als LED-Leuchte');
+  b.step('Ausleger, LED und Solarmodul', 'Lege vorne an den Kopf drei untere Stufen aus poliertem Tuffstein als Ausleger – er reicht bis über die Bordsteinkante. Unter das vordere Ende kommt ein Endstab, der nach unten zeigt: klick dafür an die Unterseite der Stufe. Oben auf den Kopf setzt du einen Tageslichtsensor.');
+  b.fill(16, 7, 0, 16, 7, 2, 'polished_tuff_slab[type=bottom]');
+  b.set(16, 6, 2, 'end_rod[facing=down]');
+  b.set(16, 8, -1, 'daylight_detector[inverted=false,power=0]');
+  b.note(16, 6, 2, 'Modern: Endstab als LED-Leuchte');
 
   b.step('Hecke und Pflanzkübel', 'Hinter dem Gehweg wächst eine niedrige, geschnittene Hecke aus Eichenlaub; neben dem Mast steht eine Azalee im Topf.');
   b.fill(x0, 1, -2, x1, 1, -2, 'oak_leaves');

@@ -101,6 +101,12 @@ Jede Angabe ist gekennzeichnet:
   Eisengittern (Abstand 3, Einstieg unten im Norden), damit man nicht in den hohlen Schaft fällt (I). Fackeln alle drei Ebenen; Kugel hohl mit Böden auf 200 / 203,78 / 207,53 / 216 / 220 / 224 m,
   Tresen, Telecafé-Tische, Technik, Laternen. 0,5 und 0,25: Fuß, Schaft und Kugel massiv, ohne Innenausbau.
 - Maßstäbe `[1, 0.5, 0.25]`.
+- Nachbesserung nach der Prüfung (2026-10-24): Die Wendeltreppe wird im Bereich der Kugel erst nach der Kugelhaut gebaut
+  (vorher überschrieb die untere Kugelkappe Stufe und Gitter bei 198–200 m: Lücke von 2 Blöcken, offenes Gitter über dem
+  Schacht). Blöcke, die nur über Kanten an Fuß oder Kugelhaut hingen (68 + 20 bei 1:1, ohne Hilfsblock nicht setzbar),
+  bekommen innen einen Verbindungsblock. Die Glaswände der Umbauung sind ein 4-zusammenhängender Rand (vorher 168 freistehende
+  Scheiben-Pfosten an den schrägen Seiten). Galerietreppe mit Unterbau, Fackeln im Turmfuß, Laternen auf den Richtfunkbühnen,
+  Geräteschränke in den Technikgeschossen, Boden unter den Wasserbecken bei 0,25. Die Maße der Tabelle bleiben gleich.
 
 **Nachgemessen im fertigen Volumen (scale 1, `tmp/wahrzeichen-a/measure.mjs`):**
 

@@ -57,15 +57,27 @@ function wallStone(b, y) {
 
 // Ersetzt in einem Bereich einen Teil der Steinziegel durch bemooste/rissige (Alterung).
 function weather(b, x1, y1, z1, x2, y2, z2, share = 0.25) {
-  for (let y = y1; y <= y2; y++) {
-    for (let z = z1; z <= z2; z++) {
-      for (let x = x1; x <= x2; x++) {
-        const state = b.get(x, y, z);
-        if (state === stone.block && b.chance(share)) b.set(x, y, z, b.chance(0.6) ? stone.mossy : stone.cracked);
-        else if (state.startsWith(`${stone.stairs}[`) && b.chance(share * 0.6)) b.set(x, y, z, state.replace(stone.stairs, stone.mossyStairs));
-      }
-    }
-  }
+  for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) for (let x = x1; x <= x2; x++) weatherCell(b, x, y, z, share);
+}
+
+function weatherCell(b, x, y, z, share) {
+  const state = b.get(x, y, z);
+  if (state === stone.block && b.chance(share)) b.set(x, y, z, b.chance(0.6) ? stone.mossy : stone.cracked);
+  else if (state.startsWith(`${stone.stairs}[`) && b.chance(share * 0.6)) b.set(x, y, z, state.replace(stone.stairs, stone.mossyStairs));
+}
+
+// Wie weather, aber nur für Blöcke, die draw() neu setzt: ältere Blöcke (z. B. die fertige Mauer) behalten ihr Kapitel
+// und fehlen in der Anleitung nicht bis zu diesem Schritt.
+function weatherNew(b, [x1, y1, z1, x2, y2, z2], share, draw) {
+  const before = new Map();
+  const each = (fn) => {
+    for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) for (let x = x1; x <= x2; x++) fn(x, y, z);
+  };
+  each((x, y, z) => before.set(`${x},${y},${z}`, b.get(x, y, z)));
+  draw();
+  each((x, y, z) => {
+    if (b.get(x, y, z) !== before.get(`${x},${y},${z}`)) weatherCell(b, x, y, z, share);
+  });
 }
 
 function ground(b) {
@@ -177,8 +189,9 @@ function walkway(b) {
     { x: x2 + 1, z: z1, facing: 'north', length: x2 - x1 + 3 },
     { x: x1, z: z1 - 1, facing: 'west', length: z2 - z1 + 3 },
   ];
-  for (const s of sides) battlements(b, { x: s.x, y: top + 1, z: s.z, facing: s.facing, length: s.length, block: stone.block, corbels: stone.stairs, cap: stone.slab });
-  weather(b, x1 - 1, top, z1 - 1, x2 + 1, top + 3, z2 + 1, 0.3);
+  weatherNew(b, [x1 - 1, top, z1 - 1, x2 + 1, top + 3, z2 + 1], 0.3, () => {
+    for (const s of sides) battlements(b, { x: s.x, y: top + 1, z: s.z, facing: s.facing, length: s.length, block: stone.block, corbels: stone.stairs, cap: stone.slab });
+  });
   b.fill(0, top + 1, 1, 0, top + 4, 1, spruce.fence);
   b.set(0, top + 5, 1, `${COLOR.blau.banner}[rotation=0]`);
   b.set(LADDER[0], top, LADDER[1], `${spruce.trapdoor}[facing=north,half=top,open=false]`);
@@ -199,11 +212,14 @@ function openings(b) {
     + 'Rundbogennischen (5 breit, 5 hoch, 2 tief), aus jeder führt eine Kreuzscharte durch die restliche Mauer zum Feld. Der '
     + `Turm bekommt eine Tür zur Stadt, Durchgänge für den Wehrgang auf Ebene ${lvl(TOP + 1)} und Schießscharten auf allen `
     + 'Feldseiten.');
-  for (const x of NICHES) {
-    arch(b, { x, y: 1, z: TOWN, facing: 'north', width: 5, height: 5, style: 'round', depth: 2, block: stone.block, stairs: stone.stairs });
-    arrowSlit(b, { x, y: 2, z: FIELD, facing: 'south', height: 3, style: 'cross', depth: 2 });
-    hangingLantern(b, { x, y: 5, z: TOWN + 1, chain: 1 });
-  }
+  // Nur die neuen Bogensteine altern; die Mauer selbst ist schon gemischt gemauert und bleibt in ihrem Kapitel.
+  weatherNew(b, [-16, 1, TOWN - 1, 24, 8, TOWN + 1], 0.15, () => {
+    for (const x of NICHES) {
+      arch(b, { x, y: 1, z: TOWN, facing: 'north', width: 5, height: 5, style: 'round', depth: 2, block: stone.block, stairs: stone.stairs });
+      arrowSlit(b, { x, y: 2, z: FIELD, facing: 'south', height: 3, style: 'cross', depth: 2 });
+      hangingLantern(b, { x, y: 5, z: TOWN + 1, chain: 1 });
+    }
+  });
   const { x1, x2, z1, z2 } = TOWER;
   doorway(b, { x: 0, y: 1, z: z1, facing: 'north', door: spruce.door, frame: null });
   b.set(0, 3, z1, stone.chiseled);
@@ -220,7 +236,6 @@ function openings(b) {
   }
   window(b, { x: 0, y: 6, z: z1, facing: 'north', width: 1, height: 2, glass: 'glass_pane', sill: stone.stairs });
   window(b, { x: 0, y: TOP + 1, z: z1, facing: 'north', width: 1, height: 2, glass: 'glass_pane', sill: stone.stairs });
-  weather(b, -16, 1, TOWN - 1, 24, 8, TOWN + 1, 0.15);
 }
 
 function interior(b) {

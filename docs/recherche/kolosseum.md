@@ -155,8 +155,12 @@ Jede Angabe ist gekennzeichnet:
   Lage im Bogenraster (Bogenlänge auf der Außenellipse / 80) → Zone (Pflaster, Stylobat, Außenwand, Umgang, Ring,
   Cavea, Podium, Arena) und Bauteil.
 - Erhaltungsgrad je Joch: Bögen XXIII–LIV voll, über 4 Joche auf den Ruinenzustand auslaufend.
-- Licht: Laternen an Ketten in jedem zweiten Joch der Umgänge (3 Blöcke über dem Boden), in jeder Kammer unter den
-  Rängen (1:1) und im Achsdurchgang alle 10 m; geprüft: keine begehbare Innenstelle mit Blocklicht 0.
+- Licht: je Lichtpunkt eine Laterne – an Ketten in jedem zweiten Joch der Umgänge (3 Blöcke über dem Boden), in jeder
+  Kammer unter den Rängen (1:1, auch in den oberen Kammern über den Achsdurchgängen) und im Achsdurchgang alle 10 m.
+  Im Kapitel „Beleuchtung“ ein eigener Schritt je Geschoss bzw. Bereich, damit Kette und Laterne zusammen gesetzt werden.
+  Geprüft (Prüfung 2026-10-24): keine begehbare Innenstelle mit Blocklicht 0; 596 Laternen bei 1:1, 133 bei 1:2.
+- Ruinenkanten: Blöcke, die im fertigen Bau nur über Eck an der Wand hingen (13 bei 1:1, 2 bei 1:2), fallen weg.
+  Das Gewölbe des äußeren Umgangs am Valadier-Pfeiler entsteht im Kapitel der Stützpfeiler (dort steht die Außenwand).
 
 ### Nachgemessen im fertigen Volumen (scripts/check-build, tmp/wahrzeichen-b/measure.mjs)
 

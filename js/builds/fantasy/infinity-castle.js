@@ -591,7 +591,8 @@ function buildZenitsuFloor(b, breaks) {
     const front = z1 + breaks[x - x1];
     const edge = x === x1 || x === x2;
     b.fill(x, y, front, x, y, z2, edge ? log('z') : P.tatami);
-    if (!edge && x % 3 === 0) b.set(x, y, z2, P.planks);
+    // Schwelle zur Galerie aus einem liegenden Stamm
+    if (!edge) b.set(x, y, z2, log('x'));
     // Bruchstück: umgedrehte Treppe unter der Bruchkante
     if (b.chance(0.55)) b.set(x, y - 1, front, `${P.stairs}[facing=${b.chance(0.5) ? 'south' : 'north'},half=top]`);
   }
@@ -1089,7 +1090,7 @@ export default function build(b) {
     b.phase('Zenitsus Sturzraum', `Vor der Süd-Galerie hängt ein Raum in den Schacht (x ${span(ZENITSU.x[0], ZENITSU.x[1])}, y ${ZENITSU.y}–${ZENITSU.y + 7}, z ${span(ZENITSU.z[0], ZENITSU.z[1])}) – Anklang an Zenitsus Kampf gegen Kaigaku, der laut Quelle „無限城を落ちゆく中“ stattfindet – im Fallen durch die Burg. Seine Bodenkante zum Schacht ist 2–4 Blöcke tief unregelmäßig ausgebrochen; unter der Bruchkante hängen umgedrehte Treppen als Bruchstücke (Interpretation).`, {
       tips: [`Lass den Boden an der Bruchkante bewusst ungleich: Jede Spalte beginnt erst 2, 3 oder 4 Blöcke hinter z ${tx(ZENITSU.z[0])}.`],
     });
-    b.step('Boden mit Bruchkante', `Tatami (Bambusmosaik) auf y ${ZENITSU.y}, x ${span(ZENITSU.x[0] + 1, ZENITSU.x[1] - 1)}, Randstämme bei x ${tx(ZENITSU.x[0])} und ${tx(ZENITSU.x[1])}; vorne bricht er unregelmäßig ab. Darunter tragen Stämme alle 4 Blöcke (y ${ZENITSU.y - 1}). An der Galerie z ${tx(MAX - 7)} entfällt der Zaun.`);
+    b.step('Boden mit Bruchkante', `Tatami (Bambusmosaik) auf y ${ZENITSU.y}, x ${span(ZENITSU.x[0] + 1, ZENITSU.x[1] - 1)}, Randstämme bei x ${tx(ZENITSU.x[0])} und ${tx(ZENITSU.x[1])}, hinten zur Galerie (z ${tx(ZENITSU.z[1])}) eine Schwelle aus liegenden Stämmen; vorne bricht er unregelmäßig ab. Darunter tragen Stämme alle 4 Blöcke (y ${ZENITSU.y - 1}). An der Galerie z ${tx(MAX - 7)} entfällt der Zaun.`);
     buildZenitsuFloor(b, zenitsuBreaks);
     b.step('Seitenwände', `Fusuma-Wände bei x ${tx(ZENITSU.x[0])} und ${tx(ZENITSU.x[1])} von y ${ZENITSU.y + 1} bis ${ZENITSU.y + 6}: Stützen alle 4, Felder aus Blasseichenholzbrettern, Oberlicht Ockernes Froschlicht; vorne an der Bruchkante sind einige Felder halb zerrissen.`);
     buildZenitsuWalls(b, zenitsuBreaks);
@@ -1126,24 +1127,27 @@ export default function build(b) {
     });
     b.step('Tatami-Boden', `Bambusmosaik auf y ${KOKUSHIBO.y}, Randstämme, alle 4 Blöcke ein Streifen aus geschältem Bambus (Tatami-Kanten), darunter Tragbalken alle 8. Zur Galerie hin (z ${tx(7)}) entfällt der Zaun.`);
     buildKokushiboFloor(b);
-    b.step('Säulen', `Zwei Reihen à 5 Säulen (stehende Stämme, 11 hoch) bei z ${tx(16)} und ${tx(24)}, x ${[60, 66, 72, 78, 84].map(tx).join(', ')}. Durchtrennt sind die Säulen bei x ${tx(66)}/z ${tx(16)}, x ${tx(78)}/z ${tx(24)} und x ${tx(84)}/z ${tx(16)}: unten ein Stumpf mit einer Treppe als schräger Schnitt, oben ein Stumpf an der Decke mit umgedrehter Treppe. Neben jeder Säule eine Laterne (bei den durchtrennten eine Stufe als „Bruchstück“).`);
-    buildKokushiboPillars(b);
     b.step('Wände', `Wände im Westen, Osten und Süden, y ${KOKUSHIBO.y + 1}–${KOKUSHIBO.y + 11}: Stützen alle 4, untere Felder Fusuma (in der Südwand zwei offene Felder mit Blick in den Schacht), obere Felder Fusuma oder Perlmutternes Froschlicht als kühles Mondlicht.`);
     buildKokushiboWalls(b);
-    b.step('Decke mit Mondsichel', `Decke aus Brettern auf y ${KOKUSHIBO.y + 12} mit Balken alle 8. Mondsichel aus Perlmutternem Froschlicht: Kreis mit Radius 6 um x ${tx(72)}, z ${tx(20)}, ohne den Kreis mit Radius 5 um x ${tx(74)}, z ${tx(18)}; die Sichel ist auch von oben zu sehen und hält das Dach hell. Acht Laternen hängen an je einer Kette.`);
+    b.step('Decke mit Mondsichel', `Decke aus Brettern auf y ${KOKUSHIBO.y + 12} mit Balken alle 8; sie liegt auf den drei Wänden. Mondsichel aus Perlmutternem Froschlicht: Kreis mit Radius 6 um x ${tx(72)}, z ${tx(20)}, ohne den Kreis mit Radius 5 um x ${tx(74)}, z ${tx(18)}; die Sichel ist auch von oben zu sehen und hält das Dach hell. Acht Laternen hängen an je einer Kette.`);
     buildKokushiboCeiling(b);
+    b.step('Säulen', `Zwei Reihen à 5 Säulen (stehende Stämme, 11 hoch, vom Boden bis unter die Decke) bei z ${tx(16)} und ${tx(24)}, x ${[60, 66, 72, 78, 84].map(tx).join(', ')}. Durchtrennt sind die Säulen bei x ${tx(66)}/z ${tx(16)}, x ${tx(78)}/z ${tx(24)} und x ${tx(84)}/z ${tx(16)}: unten ein Stumpf mit einer Treppe als schräger Schnitt, oben ein Stumpf, der an der Decke hängt, mit umgedrehter Treppe. Neben jeder Säule eine Laterne (bei den durchtrennten eine Stufe als „Bruchstück“).`);
+    buildKokushiboPillars(b);
 
     b.phase('Nakimes Bühne', `Mitten im Schacht schwebt Nakimes Bühne (x ${span(NAKIME.x[0], NAKIME.x[1])}, y ${NAKIME.y}, z ${span(NAKIME.z[0], NAKIME.z[1])}) – von hier steuert sie die Burg mit ihrer Biwa. Die schwebende Bühne im Atrium ist ein Anklang an das Ōkawasō (kein offizielles Vorbild).`, {
       tips: ['Baue die Bühne von einem Gerüst-Turm aus. Die Ketten setzt du danach von der Bühne aus Glied für Glied nach oben bis y 191 – die Sturzdecke aus dem nächsten Kapitel liegt dann direkt auf ihnen.'],
     });
-    b.step('Bühne', `Boden 7 × 7 auf y ${NAKIME.y} aus Brettern mit Randstämmen, darunter 5 × 5 Bretter und eine Hängelaterne. Fichtenholzzaun am Rand mit einer Lücke im Süden (x ${span(71, 73)}), ein Notenblock in der Mitte als Biwa-Zeichen, vier Laternen an den inneren Ecken.`);
+    b.step('Bühne', `Boden 7 × 7 auf y ${NAKIME.y} aus Brettern mit Randstämmen, darunter 5 × 5 Bretter und eine Hängelaterne. Fichtenholzzaun am Rand mit einer Lücke im Süden (x ${span(71, 73)}; in ihrer Mitte hängt später die südliche Kette), ein Notenblock in der Mitte als Biwa-Zeichen, vier Laternen an den inneren Ecken.`);
     buildNakimeStage(b);
     b.note(CENTER, NAKIME.y + 1, CENTER, 'Notenblock als Zeichen für Nakimes Biwa');
     b.step('Ketten zur Decke', `Vier Eisenketten von y ${NAKIME.y + 1} bis y ${TOP_Y - 1}, an den Mitten der vier Bühnenseiten (x ${tx(CENTER)}/z ${tx(NAKIME.z[0])}, x ${tx(CENTER)}/z ${tx(NAKIME.z[1])}, x ${tx(NAKIME.x[0])}/z ${tx(CENTER)}, x ${tx(NAKIME.x[1])}/z ${tx(CENTER)}). Sie enden unter den Balken der Sturzdecke (Kapitel 15).`);
     buildNakimeChains(b);
 
     b.phase('Sturzdecke', `Oben schließt die Decke auf y ${TOP_Y}: ein Balkenrost aus liegenden Stämmen alle 4 Blöcke über die ganze Fläche, die Felder dazwischen aus Blasseichenholzbrettern. Die Mitte (x und z ${span(41, 103)}) bleibt offen; dort hängen an jedem Feld aufgeklappte Blasseichenholzfalltüren – hier sind die Dämonenjäger hereingefallen („Nakime opens doors into the Infinity Castle beneath them“).`, {
-      tips: ['Die Decke baust du von der obersten Galerie aus mit Gerüst nach innen. Zum Schluss das Gerüst abbauen – der Blick fällt dann 190 Blöcke tief bis zum Wasserspiegel.'],
+      tips: [
+        'Die Decke baust du von der obersten Galerie aus mit Gerüst nach innen. Zum Schluss das Gerüst abbauen – der Blick fällt dann 190 Blöcke tief bis zum Wasserspiegel.',
+        'Die aufgeklappten Falltüren hängen frei im Feld, neben ihnen ist kein Block zum Anklicken. Setz je Falltür einen Hilfsblock direkt hinter ihre Kante (unter den Balken bzw. eine Ebene tiefer), klick dessen Seite in der oberen Hälfte an (dann sitzt die Falltür oben), klapp sie mit Rechtsklick auf und bau den Hilfsblock wieder ab. Die Falltür bleibt hängen.',
+      ],
     });
     b.step('Balkenrost', `Liegende Stämme auf y ${TOP_Y} alle 4 Blöcke (x und z = ${tx(0)}, ${tx(4)}, ${tx(8)} … ${tx(MAX)}), in beide Richtungen.`);
     buildCeilingBeams(b);

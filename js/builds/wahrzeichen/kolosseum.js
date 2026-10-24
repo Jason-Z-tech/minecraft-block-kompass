@@ -111,6 +111,11 @@ const PHASES = [
   { key: 'light', title: 'Beleuchtung' },
 ];
 
+// Schritte im Kapitel „Beleuchtung“ (Reihenfolge der Anleitung).
+const LIGHT_GROUPS = [
+  { key: 'amb-1' }, { key: 'amb-2' }, { key: 'amb-3' }, { key: 'axis' }, { key: 'cavea' },
+];
+
 function checkScale(scale) {
   if (!meta.scales.includes(scale)) throw new Error(`Kolosseum: Maßstab ${scale} gibt es nicht (erlaubt: ${meta.scales.join(', ')}).`);
   return scale;
@@ -264,7 +269,8 @@ export default function build(b, { scale = 1 } = {}) {
   const detailed = s >= 1;
   const noise = { ring2: makeNoise(b, 40), ring2b: makeNoise(b, 160), ring3: makeNoise(b, 40), cavea: makeNoise(b, 30), stub: makeNoise(b, 160) };
   const out = new Map(PHASES.map((p) => [p.key, []]));
-  const emit = (phase, x, y, z, state) => out.get(phase).push([x, y, z, weathered(x, y, z, state, s)]);
+  // group: nur im Kapitel „Beleuchtung“ – dort ein eigener Schritt je Gruppe (Kette und Laterne im selben Schritt).
+  const emit = (phase, x, y, z, state, group = null) => out.get(phase).push([x, y, z, weathered(x, y, z, state, s), group]);
   const ctx = { b, geo, s, detailed, noise, emit, hm: (y) => (y - G0 + 0.5) / s, special: specialCells(geo, detailed) };
   ctx.ladders = ladderCells(ctx);
 
@@ -277,17 +283,66 @@ export default function build(b, { scale = 1 } = {}) {
     }
   }
   placeLights(ctx);
+  dropLooseCells(out);
 
   for (const phase of PHASES) {
     const cells = out.get(phase.key);
     if (cells.length === 0) continue;
     const texts = phaseTexts(phase.key, geo, detailed);
     b.phase(phase.title, texts.text, { tips: texts.tips });
-    for (const [x, y, z, state] of cells) {
+    const put = ([x, y, z, state]) => {
       if (state === 'air') b.remove(x, y, z);
       else b.set(x, y, z, state);
+    };
+    if (phase.key === 'light') {
+      for (const group of LIGHT_GROUPS) {
+        const groupCells = cells.filter((cell) => cell[4] === group.key);
+        if (groupCells.length === 0) continue;
+        const step = lightStepText(group.key, geo, detailed);
+        b.step(step.title, step.text);
+        groupCells.forEach(put);
+      }
+    } else {
+      cells.forEach(put);
     }
     for (const note of notesFor(phase.key, ctx)) b.note(note[0], note[1], note[2], note[3]);
+  }
+}
+
+// Endzustand prüfen: Blöcke, die über keine Fläche mit dem Boden verbunden sind (Ruinenkanten der Ellipse, die nur
+// über Eck an der Wand hängen), fallen weg – im Spiel würden sie in der Luft schweben.
+function dropLooseCells(out) {
+  const keyOf = (x, y, z) => ((x + 512) * 1024 + (y + 512)) * 1024 + (z + 512); // Koordinaten weit unter ±512
+  const finalState = new Map();
+  for (const phase of PHASES) for (const cell of out.get(phase.key)) finalState.set(keyOf(cell[0], cell[1], cell[2]), cell);
+  const solid = new Set();
+  const queue = [];
+  const reached = new Set();
+  for (const [key, cell] of finalState) {
+    if (cell[3] === 'air') continue;
+    solid.add(key);
+    if (cell[1] <= 0) {
+      reached.add(key);
+      queue.push(cell);
+    }
+  }
+  const NEIGHBORS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  while (queue.length > 0) {
+    const [x, y, z] = queue.pop();
+    for (const [dx, dy, dz] of NEIGHBORS) {
+      const key = keyOf(x + dx, y + dy, z + dz);
+      if (solid.has(key) && !reached.has(key)) {
+        reached.add(key);
+        queue.push(finalState.get(key));
+      }
+    }
+  }
+  for (const phase of PHASES) {
+    const cells = out.get(phase.key);
+    out.set(phase.key, cells.filter((cell) => {
+      const key = keyOf(cell[0], cell[1], cell[2]);
+      return !solid.has(key) || reached.has(key);
+    }));
   }
 }
 
@@ -569,6 +624,8 @@ function buildAmbulatory(ctx, c, outerKey, innerKey, which) {
   const edgeOuter = c.d < zone.from + 1;
   const edgeInner = c.d >= zone.to - 1;
   const ladder = ladderCell(ctx, c, which);
+  // Am Valadier-Pfeiler entsteht die Außenwand erst im Kapitel der Stützpfeiler – das Gewölbe davor auch.
+  const phaseOf = (hm) => (which === 1 && inValadier(c) ? 'buttress' : phaseForHeight(hm));
   for (const st of STOREYS) {
     if (support < st.top) break;
     for (let y = G0; ; y++) {
@@ -576,9 +633,9 @@ function buildAmbulatory(ctx, c, outerKey, innerKey, which) {
       if (hm >= st.top) break;
       if (hm < st.vault - 1 / ctx.s) continue;
       if (ladder) continue;
-      if (hm >= st.vault) emit(phaseForHeight(hm), c.x, y, c.z, which === 1 ? b.pickWeighted(TRAV) : b.pickWeighted(BRICK));
+      if (hm >= st.vault) emit(phaseOf(hm), c.x, y, c.z, which === 1 ? b.pickWeighted(TRAV) : b.pickWeighted(BRICK));
       else if (which === 1 && (edgeOuter || edgeInner) && ctx.detailed) {
-        emit(phaseForHeight(hm), c.x, y, c.z, `${TRAV_STAIRS}[facing=${edgeOuter ? c.outward : c.inward},half=top]`);
+        emit(phaseOf(hm), c.x, y, c.z, `${TRAV_STAIRS}[facing=${edgeOuter ? c.outward : c.inward},half=top]`);
       }
     }
   }
@@ -710,21 +767,29 @@ function placeLights(ctx) {
   const lit = new Set();
   // Licht kommt ins Schlusskapitel (hängende Laternen erst, wenn ihre Gewölbe stehen); die Laternen im Hypogäum
   // setzt du vor dem Holzboden darüber.
-  const once = (x, y, z, state, phase = 'light') => {
+  const once = (x, y, z, state, group, phase = 'light') => {
     const k = `${x},${y},${z}`;
     if (lit.has(k)) return;
     lit.add(k);
-    emit(phase, x, y, z, state);
+    emit(phase, x, y, z, state, group);
+  };
+  // Je Lichtpunkt nur eine Spalte: Nahe der Bogenmitte erfüllen oft zwei benachbarte Spalten die Bedingung.
+  const taken = new Set();
+  const nearTaken = (zone, x, z) => {
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) if (taken.has(`${zone}:${x + dx},${z + dz}`)) return true;
+    return false;
   };
   const reach = Math.ceil(geo.a) + 1;
   const reachZ = Math.ceil(geo.b) + 1;
   for (let x = -reach; x < reach; x++) {
     for (let z = -reachZ; z < reachZ; z++) {
       const c = columnInfo(geo, x, z);
-      if (!c || Math.abs(c.alongM * s) >= 0.71) continue;
+      if (!c || Math.abs(c.alongM * s) >= 0.71 || nearTaken(c.zone, x, z)) continue;
+      const before = lit.size;
       if (c.zone === 'amb1' || c.zone === 'amb2') lightAmbulatory(ctx, c, once);
       else if (c.zone === 'cavea') lightCavea(ctx, c, once);
       else if (c.zone === 'arena') lightHypogeum(ctx, c, once);
+      if (lit.size > before) taken.add(`${c.zone}:${x},${z}`);
     }
   }
 }
@@ -743,18 +808,18 @@ function lightAmbulatory(ctx, c, once) {
     let floor = G0;
     while (ctx.hm(floor) < st.base) floor++;
     const lampY = Math.min(top, floor + 3);
-    for (let y = top; y > lampY; y--) once(c.x, y, c.z, 'iron_chain[axis=y]');
-    once(c.x, lampY, c.z, 'lantern[hanging=true]');
+    for (let y = top; y > lampY; y--) once(c.x, y, c.z, 'iron_chain[axis=y]', `amb-${st.id}`);
+    once(c.x, lampY, c.z, 'lantern[hanging=true]', `amb-${st.id}`);
   }
 }
 
 function lightCavea(ctx, c, once) {
-  if (c.k === 0 || c.k === 40) {
-    // Durchgang an der Längsachse: alle 10 m eine Laterne auf dem Boden (die Kammern darüber sind nach oben offen).
+  const axial = c.k === 0 || c.k === 40;
+  if (axial) {
+    // Durchgang an der Längsachse: alle 10 m eine Laterne auf dem Boden.
     if (Math.abs(c.alongM * ctx.s) < 0.6 && Math.abs((c.dm % 10) - 5) < 0.75 / ctx.s) {
-      once(c.x, G0, c.z, 'lantern[hanging=false]');
+      once(c.x, G0, c.z, 'lantern[hanging=false]', 'axis');
     }
-    return;
   }
   if (!ctx.detailed) return;
   const segments = [[12, 24], [25.2, 36], [37.2, 49]];
@@ -765,14 +830,15 @@ function lightCavea(ctx, c, once) {
   const surface = caveaHeight(c.dm);
   const shellFrom = surface - 2 / ctx.s;
   const cap = caveaCap(ctx, c);
-  const floors = [0];
+  // Über dem Achsdurchgang liegen nur die oberen Kammern (der Durchgang selbst hat seine eigenen Laternen).
+  const floors = axial ? [] : [0];
   for (const st of STOREYS) if (shellFrom > st.top + 2) floors.push(st.top);
   for (const floorM of floors) {
     let y = G0;
     while (ctx.hm(y) < floorM) y++;
     const hm = ctx.hm(y);
     if (hm + 1 >= shellFrom || hm >= cap) continue;
-    once(c.x, y, c.z, 'lantern[hanging=false]');
+    once(c.x, y, c.z, 'lantern[hanging=false]', 'cavea');
   }
 }
 
@@ -784,7 +850,7 @@ function lightHypogeum(ctx, c, once) {
   const inCorridor = e >= 25 ? Math.abs(c.Z) < 0.75 : Math.abs(e - ring * spacing - (spacing + 1.5 / ctx.s) / 2) < 0.5 / ctx.s;
   if (!inCorridor) return;
   const floorY = G0 - Math.round(HYPOGEUM_DEPTH_M * ctx.s) - 1;
-  once(c.x, floorY + 1, c.z, 'lantern[hanging=false]', 'hypo');
+  once(c.x, floorY + 1, c.z, 'lantern[hanging=false]', null, 'hypo');
 }
 
 // --- Texte ---
@@ -831,11 +897,34 @@ function phaseTexts(key, geo, detailed) {
       tips: ['Unter dem Holzboden stehen Laternen in den Gängen (die hast du schon beim Hypogäum gesetzt) – sonst spawnen dort Monster.'],
     },
     light: {
-      text: `Zum Schluss das Licht, damit in den überdachten Teilen keine Monster spawnen: In jedem zweiten Joch der Umgänge hängt in der Mitte eine Laterne an einer Eisenkette, 3 Blöcke über dem Boden des Geschosses – die Kette beginnt direkt unter dem Gewölbe.${detailed ? ' In jede Kammer unter den Rängen kommt eine Laterne auf den Boden, je Kammerreihe eine.' : ''} Im Durchgang an der Längsachse steht alle ${m(10)} Blöcke eine Laterne.`,
+      text: `Zum Schluss das Licht, damit in den überdachten Teilen keine Monster spawnen – Geschoss für Geschoss, jeweils Kette und Laterne zusammen: In jedem zweiten Joch der Umgänge hängt in der Mitte eine Laterne an einer Eisenkette, 3 Blöcke über dem Boden des Geschosses – die Kette beginnt direkt unter dem Gewölbe.${detailed ? ' In jede Kammer unter den Rängen kommt eine Laterne auf den Boden, je Kammerreihe eine.' : ''} Im Durchgang an der Längsachse steht alle ${m(10)} Blöcke eine Laterne.`,
       tips: ['Häng erst die Kette ans Gewölbe und dann die Laterne unten an die Kette – mit Rechtsklick an die Unterseite der Kette.'],
     },
   };
   return texts[key];
+}
+
+function lightStepText(key, geo, detailed) {
+  const m = (meters) => Math.max(1, Math.round(meters * geo.s));
+  const storeyNames = { 'amb-1': 'Erdgeschoss', 'amb-2': 'zweites Geschoss', 'amb-3': 'drittes Geschoss' };
+  if (storeyNames[key]) {
+    return {
+      title: `Umgänge: ${storeyNames[key]}`,
+      text: `Geh durch beide Umgänge (${storeyNames[key]}) und häng in jedem zweiten Joch mittig eine Laterne auf: erst die Eisenkette direkt unter das Gewölbe, Glied für Glied nach unten, dann die Laterne mit Rechtsklick an die Unterseite der untersten Kette – sie hängt 3 Blöcke über dem Boden. Neben den Leitern bleibt das Joch frei.`,
+    };
+  }
+  if (key === 'axis') {
+    return {
+      title: 'Durchgänge an der Längsachse',
+      text: `Stell in den beiden Durchgängen an der Längsachse (Ost und West) alle ${m(10)} Blöcke eine Laterne mitten auf den Boden.`,
+    };
+  }
+  return {
+    title: 'Kammern unter den Rängen',
+    text: detailed
+      ? 'In jede Kammer unter den Rängen kommt eine Laterne auf den Boden, auf jeder Ebene der Kammer eine – auch in die Kammern über den Achsdurchgängen.'
+      : 'In die Kammern unter den Rängen kommt je eine Laterne auf den Boden.',
+  };
 }
 
 function notesFor(key, ctx) {

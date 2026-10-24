@@ -9,12 +9,14 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#15171b">
   <title>Selber erstellen – Block-Kompass</title>
-  <meta name="description" content="Beschreibe in eigenen Worten, was du in Minecraft bauen möchtest, oder suche nach einem Bau im Katalog.">
+  <meta name="description" content="Beschreibe, was du in Minecraft bauen möchtest, erzeuge Grundformen mit eigenen Maßen oder importiere Baupläne und 3D-Modelle – mit Anleitung in 3D.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/atkinson-hyperlegible-next-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/build-view.css">
+  <link rel="stylesheet" href="css/create.css">
   <script type="module" src="js/ui/create-page.js"></script>
 </head>
 <body data-page="create">
@@ -62,36 +64,91 @@
           <span class="page-head__icon" aria-hidden="true"><svg class="icon icon--48" aria-hidden="true" focusable="false"><use href="assets/icons.svg#hammer"></use></svg></span>
           <h1 class="page-head__title" id="create-title">Selber erstellen</h1>
         </div>
-        <p class="page-head__lead">Beschreibe in eigenen Worten, was du bauen möchtest – ein Bauwerk, ein Thema oder eine Form mit Maßen.</p>
+        <p class="page-head__lead">Beschreibe, was du bauen möchtest, erzeuge eine Grundform mit eigenen Maßen oder lade einen fertigen Bauplan – die Anleitung entsteht direkt hier.</p>
       </div>
     </div>
 
     <div class="container section create-layout">
-      <form class="panel create-form" id="create-form" action="erstellen.html" method="get" role="search" aria-labelledby="create-form-title">
-        <h2 class="section__title" id="create-form-title">Deine Idee</h2>
-        <div class="create-form__row">
-          <div class="field">
-            <label class="field__label" for="create-query">Was möchtest du bauen?</label>
-            <input class="field__input field__input--lg" id="create-query" type="search" name="q" maxlength="120" autocomplete="off" enterkeyhint="search" spellcheck="true" aria-describedby="create-query-hint">
+      <div class="create-tabs" id="create-tabs">
+        <div class="create-tabs__list" role="tablist" aria-label="Wege zum eigenen Bau">
+          <button class="create-tab" type="button" role="tab" id="create-tab-idee" aria-controls="create-panel-idee" aria-selected="true">
+            <span class="create-tab__icon" aria-hidden="true"><svg class="icon icon--32" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg></span>
+            <span class="create-tab__text"><span class="create-tab__title">Idee</span><span class="create-tab__sub">Bau oder Form finden</span></span>
+          </button>
+          <button class="create-tab" type="button" role="tab" id="create-tab-formen" aria-controls="create-panel-formen" aria-selected="false" tabindex="-1">
+            <span class="create-tab__icon" aria-hidden="true"><svg class="icon icon--32" aria-hidden="true" focusable="false"><use href="assets/icons.svg#cube"></use></svg></span>
+            <span class="create-tab__text"><span class="create-tab__title">Formen</span><span class="create-tab__sub">Kugel, Turm, Pyramide …</span></span>
+          </button>
+          <button class="create-tab" type="button" role="tab" id="create-tab-import" aria-controls="create-panel-import" aria-selected="false" tabindex="-1">
+            <span class="create-tab__icon" aria-hidden="true"><svg class="icon icon--32" aria-hidden="true" focusable="false"><use href="assets/icons.svg#chest"></use></svg></span>
+            <span class="create-tab__text"><span class="create-tab__title">Import</span><span class="create-tab__sub">.schem, .litematic, 3D-Modelle</span></span>
+          </button>
+        </div>
+
+        <section class="create-panel" role="tabpanel" id="create-panel-idee" aria-labelledby="create-tab-idee">
+          <form class="panel create-form" id="create-form" action="erstellen.html" method="get" role="search" aria-labelledby="create-form-title">
+            <h2 class="section__title" id="create-form-title">Deine Idee</h2>
+            <div class="create-form__row">
+              <div class="field">
+                <label class="field__label" for="create-query">Was möchtest du bauen?</label>
+                <input class="field__input field__input--lg" id="create-query" type="search" name="q" maxlength="200" autocomplete="off" enterkeyhint="search" spellcheck="true" placeholder="z. B. Tokyo Skytree 1:2 oder hohle Kugel Radius 12 aus Glas" aria-describedby="create-query-hint">
+              </div>
+              <button class="btn btn--primary btn--lg" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Suchen</span></button>
+            </div>
+            <p class="field__hint" id="create-query-hint">Ein Bauwerk (auch mit Maßstab wie „1:1“ oder „halbe Größe“) oder eine Form mit Maßen und Material. Höchstens 200 Zeichen.</p>
+            <div class="create-examples" id="create-examples" hidden>
+              <p class="create-examples__label" id="create-examples-label">Probier zum Beispiel:</p>
+              <ul class="create-examples__list" id="create-examples-list" role="list" aria-labelledby="create-examples-label"></ul>
+            </div>
+          </form>
+
+          <div class="status-region" id="create-status" role="status" aria-live="polite"></div>
+
+          <section class="create-results" id="create-results" aria-labelledby="create-results-title" hidden>
+            <div class="section__head">
+              <h2 class="section__title" id="create-results-title">Ergebnis</h2>
+            </div>
+            <div id="create-results-body"></div>
+          </section>
+        </section>
+
+        <section class="create-panel" role="tabpanel" id="create-panel-formen" aria-labelledby="create-tab-formen" hidden>
+          <div class="shape-generator" id="shape-generator">
+            <div class="panel shape-setup">
+              <h2 class="section__title" id="shape-generator-title">Formen-Generator</h2>
+              <p class="section__lead">Wähle eine Grundform, stell Maße und Block ein – Größe und Blockzahl siehst du sofort, die Anleitung baut die Form Ebene für Ebene.</p>
+              <div id="shape-generator-body"></div>
+            </div>
+            <aside class="panel shape-summary" id="shape-summary" aria-labelledby="shape-summary-title">
+              <h3 class="shape-summary__title" id="shape-summary-title">Deine Form</h3>
+              <div id="shape-summary-body"></div>
+            </aside>
           </div>
-          <button class="btn btn--primary btn--lg" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Suchen</span></button>
-        </div>
-        <p class="field__hint" id="create-query-hint">Höchstens 120 Zeichen.</p>
-      </form>
+          <div class="create-view" id="shape-preview" hidden></div>
+        </section>
 
-      <div class="status-region" id="create-status" role="status" aria-live="polite"></div>
-
-      <section class="create-results" id="create-results" aria-labelledby="create-results-title" hidden>
-        <div class="section__head">
-          <h2 class="section__title" id="create-results-title">Ergebnisse</h2>
-        </div>
-        <div id="create-results-body"></div>
-      </section>
-
-      <section class="panel" id="shape-generator" aria-labelledby="shape-generator-title" hidden>
-        <h2 class="section__title" id="shape-generator-title">Formen-Generator</h2>
-        <div id="shape-generator-body"></div>
-      </section>
+        <section class="create-panel" role="tabpanel" id="create-panel-import" aria-labelledby="create-tab-import" hidden>
+          <div class="panel import-setup">
+            <h2 class="section__title" id="import-title">Datei importieren</h2>
+            <p class="section__lead">Lade einen fertigen Bauplan oder ein 3D-Modell – du bekommst 3D-Ansicht, Ebenen und Materialliste. Die Datei bleibt in deinem Browser.</p>
+            <div class="dropzone" id="import-drop">
+              <input class="dropzone__input visually-hidden" id="import-file" type="file" multiple aria-describedby="import-formats">
+              <label class="dropzone__label" for="import-file">
+                <span class="dropzone__icon" aria-hidden="true"><svg class="icon icon--48" aria-hidden="true" focusable="false"><use href="assets/icons.svg#chest"></use></svg></span>
+                <span class="dropzone__title">Datei hierher ziehen oder <span class="dropzone__link">auswählen</span></span>
+                <span class="dropzone__formats" id="import-formats">Baupläne: .schem, .litematic, .nbt (Strukturblock) · 3D-Modelle: .vox, .stl, .obj (+ .mtl), .glb, .gltf · höchstens 64 MB</span>
+              </label>
+            </div>
+            <div id="import-body"></div>
+            <div class="status-region" id="import-status" role="status" aria-live="polite"></div>
+          </div>
+          <section class="import-report" id="import-report" aria-labelledby="import-report-title" hidden>
+            <h2 class="section__title" id="import-report-title">Importiert</h2>
+            <div id="import-report-body"></div>
+          </section>
+          <div class="create-view" id="import-result" hidden></div>
+        </section>
+      </div>
     </div>
   </main>
 

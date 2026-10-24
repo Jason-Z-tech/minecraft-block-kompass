@@ -31,8 +31,10 @@ const spruce = WOOD.fichte;
 const BED = { x0: -4, x1: 4, z0: -5, z1: -1 };
 
 function ground(b) {
-  b.phase('Wiese', 'Such dir ein flaches Stück Wiese mit etwa 17 × 16 Blöcken. Die Bank schaut nach Süden.');
+  const { x0, x1, z0, z1 } = BED;
+  b.phase('Wiese', 'Such dir ein flaches Stück Wiese mit etwa 17 × 16 Blöcken. Die Bank schaut nach Süden. Wo das Hochbeet hinkommt (9 × 5 Blöcke), ersetzt du das Gras durch Erde – unter Rahmen und Beet würde es ohnehin zu Erde werden.');
   terrain(b, { x: -8, y: -1, z: -9, width: 17, depth: 16, height: 1, shape: 'rund', seed: 'parkbank' });
+  b.fill(x0, 0, z0, x1, 0, z1, 'dirt');
 }
 
 function flowerBox(b) {
@@ -54,7 +56,7 @@ function bench(b) {
   b.step('Sitzfläche', 'Setze drei Schwarzeichentreppen nebeneinander, die hohe Seite nach hinten zum Beet: schau beim Setzen nach Norden.');
   for (let x = -1; x <= 1; x++) b.stairs(x, 1, 0, dark.stairs, { facing: 'north' });
 
-  b.step('Lehne', 'Setze auf jede Treppe eine Schwarzeichenfalltür und öffne sie. Schau dabei nach Süden und klick auf die hintere Hälfte – dann klappt die Falltür an die Rückseite und bildet mit der Treppe eine hohe Lehne.');
+  b.step('Lehne', 'Stell dich vor die Bank, schau nach Norden und setze auf jede Treppe von oben eine Schwarzeichenfalltür. Klick sie danach mit rechts an: Sie klappt auf, legt sich an die Rückseite und bildet mit der Treppe eine hohe Lehne.');
   for (let x = -1; x <= 1; x++) b.set(x, 2, 0, `${dark.trapdoor}[facing=south,half=bottom,open=true]`);
 
   b.step('Armlehnen', 'Klick mit einem Schwarzeichenschild an die linke und die rechte Stirnseite der Bank. Den Text lässt du leer (Esc drücken).');
@@ -74,7 +76,7 @@ function extras(b) {
 function surroundings(b) {
   b.phase('Weg und Grün', 'Zum Schluss der Kiesweg vor der Bank, ein kleiner Baum, Büsche und Gras.');
   b.step('Kiesweg', 'Lege vor der Bank einen 3 Blöcke breiten Weg aus Kies und etwas grober Erde quer über die Wiese.');
-  path(b, { x: -7, y: 0, z: 2, facing: 'east', length: 15, width: 3, mix: 'kies', wiggle: 0.6, seed: 4 });
+  path(b, { x: -6, y: 0, z: 2, facing: 'east', length: 13, width: 3, mix: 'kies', wiggle: 0.6, seed: 4 });
 
   b.step('Baum und Büsche', 'Pflanze hinten links eine kleine Eiche, setze Büsche an die Ecken des Beets und streue Gras und Blumen auf die Wiese.');
   tree(b, { x: -6, y: 1, z: -6, species: 'eiche', size: 'klein', seed: 2 });

@@ -428,7 +428,7 @@ function chapterList(geo, interior, detailed) {
     {
       from: 0,
       title: interior ? 'Unterbau mit Verkleidungsresten' : 'Unterer Kern',
-      text: `Baue das Kernmauerwerk Ebene für Ebene: unten ${widthAt(0)} × ${widthAt(0)} Blöcke. Außen mischst du Sandstein, Glatten und Geschnittenen Sandstein für den verwitterten Kalkstein; das Innere ist voll. An der Nordseite liegen die letzten Steine der weißen Verkleidung auf dem Pflaster: unten ein voller Block und davor eine Treppe mit der hohen Seite zur Pyramide.`,
+      text: `Baue das Kernmauerwerk Ebene für Ebene: unten ${widthAt(0)} × ${widthAt(0)} Blöcke. Außen mischst du Sandstein, Glatten und Geschnittenen Sandstein für den verwitterten Kalkstein; das Innere ist voll. An der Nordseite liegen die letzten Steine der weißen Verkleidung auf dem Pflaster: unten ein voller Block und davor eine Treppe mit der hohen Seite zur Pyramide.${interior ? ' Schon in den untersten Ebenen lässt du das untere Ende des absteigenden Gangs frei: 1 Block breit, in der Achse des Eingangs (gut 7 Blöcke östlich der Mitte) im nördlichen Drittel – die Markierung zeigt dir die Stelle. Boden abwechselnd voller Block und untere Stufe, Decke abwechselnd voller Block und obere Stufe.' : ''}`,
       tips: [stepTip, 'Das Innere sieht niemand: Wenn dir der Sandstein ausgeht, kannst du es mit jedem anderen Block füllen.'],
     },
   ];
@@ -438,7 +438,7 @@ function chapterList(geo, interior, detailed) {
         from: m(6),
         title: 'Grabräubertunnel und absteigender Gang',
         text: `Auf etwa 7 m Höhe beginnt an der Nordseite der Grabräubertunnel, ${detailed ? '2 Blöcke breit und 3 hoch' : '1 Block breit und 2 hoch'}, und läuft 27 m nach Süden. Lass ihn beim Bauen der Ebenen einfach frei. Darunter siehst du schon den absteigenden Gang: Er fällt 1 Block pro 2 Blöcke nach Süden, Boden abwechselnd Block und untere Stufe, Decke abwechselnd Block und obere Stufe.`,
-        tips: ['Schau beim Setzen der Gangstufen nach Süden: Der Boden steigt nach Norden zum Eingang hin an.', 'Fackeln an der Westwand alle 10 Blöcke halten die Gänge monsterfrei.'],
+        tips: ['Leg dir die Gangachse (Eingang, 7 Blöcke östlich der Mitte) mit einer Reihe andersfarbiger Blöcke auf dem Pflaster aus – dann findest du die Gänge in jeder neuen Ebene sofort wieder.', 'Fackeln an der Westwand alle 10 Blöcke halten die Gänge monsterfrei.'],
       },
       {
         from: m(16),

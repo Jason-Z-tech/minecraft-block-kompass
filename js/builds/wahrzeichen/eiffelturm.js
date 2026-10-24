@@ -13,7 +13,7 @@ export const meta = {
   ],
   accuracy: 'massstab',
   difficulty: 5,
-  description: 'Der Eiffelturm im Maßstab 1:1: 330 m hoch mit Antennen, 125 m breite quadratische Grundfläche, vier geschwungene Pfeiler mit Zierbögen und drei Etagen auf 57,6 m, 115,7 m und 276,1 m. Das Eisen ist als sichtbares Gitterwerk gebaut – Eckträger und Gurte massiv, die Streben dazwischen aus Kupfergittern – in drei Brauntönen, unten dunkler als oben. Die Außenkurve folgt den 29 Feldern des echten Turms; die Pfeiler-Innenkanten, die Spitze und die Einrichtung der Pavillons sind vereinfacht und teils geschätzt.',
+  description: 'Der Eiffelturm im Maßstab 1:1: 330 m hoch mit Antennen, 125 m breite quadratische Grundfläche, vier geschwungene Pfeiler mit Zierbögen und drei Etagen auf 57,6 m, 115,7 m und 276,1 m. Das Eisen ist als sichtbares Gitterwerk gebaut – Eckträger und Gurte massiv, die Streben dazwischen aus Kupferrost – in drei Brauntönen, unten dunkler als oben. Die Außenkurve folgt den 29 Feldern des echten Turms; die Pfeiler-Innenkanten, die Spitze und die Einrichtung der Pavillons sind vereinfacht und teils geschätzt.',
   facts: [
     'Höhe heute 330 m mit Antennen (seit März 2022), Eisenkonstruktion 300 m, eröffnet 1889 zur Weltausstellung.',
     'Grundfläche: Quadrat mit 125 m Seitenlänge, zwischen den Pfeilern 74,24 m, jeder Pfeiler rund 26 m breit.',
@@ -215,6 +215,30 @@ function towerLevel(b, g, levels, y) {
   }
 }
 
+const FACES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+const solidNeighbors = (b, x, y, z) => FACES.filter(([dx, dy, dz]) => b.get(x + dx, y + dy, z + dz) !== 'air').length;
+
+// Streben, die an schrägen Flächen nur über Kanten hängen, lassen sich im Spiel nicht ohne Hilfsblock setzen.
+// Je losem Block kommt ein gleicher Block dazu (zur Turmmitte hin oder darunter), der ihn mit dem Gitter verbindet.
+function connectLooseBlocks(b, half, y1, y2) {
+  for (let y = y1; y <= y2; y++) {
+    for (let x = -half; x <= half; x++) {
+      for (let z = -half; z <= half; z++) {
+        const state = b.get(x, y, z);
+        if (state === 'air' || solidNeighbors(b, x, y, z) > 0) continue;
+        let best = null;
+        for (const [dx, dy, dz] of FACES) {
+          const [nx, ny, nz] = [x + dx, y + dy, z + dz];
+          if (b.get(nx, ny, nz) !== 'air' || Math.max(Math.abs(nx), Math.abs(nz)) > Math.max(Math.abs(x), Math.abs(z))) continue;
+          const score = solidNeighbors(b, nx, ny, nz) - 1;
+          if (score > 0 && (!best || score > best.score)) best = { nx, ny, nz, score };
+        }
+        if (best) b.set(best.nx, best.ny, best.nz, state);
+      }
+    }
+  }
+}
+
 function buildGround(b, g) {
   const k0 = g.outer(1);
   const edge = k0 + g.len(10, 3);
@@ -265,7 +289,7 @@ function buildArches(b, g) {
     ['Bogen Ostseite', (u, y, k) => [k, y, u]],
   ];
   for (const [title, place] of sides) {
-    b.step(title, 'Der Bogen liegt in der Außenfläche des Turms und spannt sich von Pfeiler zu Pfeiler. Setze die Bogenreihe von beiden Pfeilern aus gleichzeitig nach oben – die massiven Kanten zuerst, dann die Kupfergitter dazwischen. Am Scheitel treffen sich beide Hälften.');
+    b.step(title, 'Der Bogen liegt in der Außenfläche des Turms und spannt sich von Pfeiler zu Pfeiler. Setze die Bogenreihe von beiden Pfeilern aus gleichzeitig nach oben – die massiven Kanten zuerst, dann den Kupferrost dazwischen. Am Scheitel treffen sich beide Hälften.');
     for (let y = 1; y <= top; y++) {
       const m = g.meters(y);
       const k = g.outer(y);
@@ -393,7 +417,7 @@ function buildFloor1(b, g) {
       'Der Glasboden ist echt: seit 2014 kann man auf der ersten Etage über die Mitte des Turms laufen.',
     ],
   });
-  b.step('Randträger', `Baue den Randträger ringsum in der Außenkante der Plattform, ${beltH} Ebenen hoch: unten und oben einen massiven Gurt, dazwischen gekreuzte Kupfergitter.`);
+  b.step('Randträger', `Baue den Randträger ringsum in der Außenkante der Plattform, ${beltH} Ebenen hoch: unten und oben einen massiven Gurt, dazwischen gekreuzte Streben aus Kupferrost.`);
   buildBelt(b, g, half, yDeck - 1, beltH);
   b.note(0, yDeck - 1, -half, 'Randträger der ersten Etage – hier stand früher der Fries mit 72 Namen von Wissenschaftlern.');
   b.step('Plattformboden', `Lege den Boden aus Fichtenbrettern (Rand: entrindetes Fichtenholz). In der Mitte bleibt ein Loch von ${2 * hole - 1} × ${2 * hole - 1} Blöcken offen, umrahmt von einem Glasboden. Über den hohlen Pfeilern legst du einen Rost aus Kupferrost – so fällt niemand in den Pfeilerschacht, und man sieht trotzdem hinunter.`);
@@ -488,15 +512,22 @@ function buildFloor3(b, g) {
   }
   b.fill(-half, yUpper, -half, half, yUpper, half, P.deck);
   if (half >= 4) {
-    b.step('Gustave Eiffels Büro', 'Gustave Eiffel hatte hier oben ein kleines Büro für seine Messungen. Stell einen Schreibtisch mit Lesepult, zwei Stühle und Bücherregale auf und häng Laternen unter die Decke.');
+    b.step('Gustave Eiffels Büro', `Gustave Eiffel hatte hier oben ein kleines Büro für seine Messungen. Stell einen Schreibtisch mit Lesepult, zwei Stühle und Bücherregale auf. ${yUpper - yDeck - 1 >= 3 ? 'Häng Laternen unter die Decke.' : 'Der Raum ist nur 2 Blöcke hoch – hängende Laternen wären im Weg. Stell die Laternen deshalb in die vier Ecken und eine auf die Bücherregale.'}`);
     b.set(-1, yDeck + 1, -2, 'lectern[facing=south]');
     b.stairs(-1, yDeck + 1, -1, 'spruce_stairs', { facing: 'south' });
     b.set(1, yDeck + 1, -2, 'spruce_fence');
     b.set(1, yDeck + 2 >= yUpper ? yDeck + 1 : yDeck + 2, -2, 'spruce_pressure_plate');
     b.stairs(1, yDeck + 1, -1, 'spruce_stairs', { facing: 'south' });
     for (let x = -2; x <= 2; x++) b.set(x, yDeck + 1, half - 1, 'bookshelf');
-    for (const [x, z] of [[-half + 2, -half + 2], [half - 2, -half + 2], [-half + 2, half - 2], [half - 2, half - 2], [0, 0]]) {
-      b.set(x, yUpper - 1, z, 'lantern[hanging=true]');
+    if (yUpper - yDeck - 1 >= 3) {
+      for (const [x, z] of [[-half + 2, -half + 2], [half - 2, -half + 2], [-half + 2, half - 2], [half - 2, half - 2], [0, 0]]) {
+        b.set(x, yUpper - 1, z, 'lantern[hanging=true]');
+      }
+    } else {
+      for (const [x, z] of [[-half + 1, -half + 1], [half - 1, -half + 1], [-half + 1, half - 1], [half - 1, half - 1]]) {
+        b.set(x, yDeck + 1, z, 'lantern');
+      }
+      b.set(0, yDeck + 2, half - 1, 'lantern');
     }
   } else {
     b.step('Licht', 'Häng eine Laterne unter die Decke.');
@@ -568,18 +599,19 @@ export default function build(b, { scale = 1 } = {}) {
   });
   buildGround(b, g);
 
-  b.phase('Die vier Pfeiler bis zur ersten Etage', `Jeder Pfeiler ist ein hohler Gitterkasten: massive Eckträger in Dunkelbraun (Braune Keramik), dazwischen Gurte und gekreuzte Streben aus gewachsten Kupfergittern. Die Pfeiler neigen sich nach innen – in jeder Ebene rücken Außen- und Innenseite ein Stück zur Mitte.`, {
+  b.phase('Die vier Pfeiler bis zur ersten Etage', `Jeder Pfeiler ist ein hohler Gitterkasten: massive Eckträger und Gurte in Dunkelbraun (Braune Keramik), dazwischen gekreuzte Streben aus gewachstem angelaufenem Kupferrost; nur sehr schmale Felder füllst du mit gewachsten Kupfergittern. Die Pfeiler neigen sich nach innen – in jeder Ebene rücken Außen- und Innenseite ein Stück zur Mitte.`, {
     tips: [
       'Baue alle vier Pfeiler gleichzeitig Ebene für Ebene; so siehst du sofort, ob die Neigung überall gleich ist.',
       'Die Gurte (volle Reihen) liegen dort, wo beim echten Turm ein neues Feld beginnt.',
-      'Die Kupfergitter sind gewachst – so bleiben sie braun und laufen nicht grün an.',
+      'Kupferrost und Kupfergitter sind gewachst – so bleiben sie braun und laufen nicht grün an.',
     ],
   });
   for (let y = 1; y < yDeck1; y++) towerLevel(b, g, levels, y);
+  connectLooseBlocks(b, k0, 1, yDeck1 - 1);
   b.note(g.outer(1), 1, g.outer(1), 'Außenecke: hier misst der Turm 125 m von Ecke zu Ecke einer Seite.');
 
   b.phase('Die vier Zierbögen', 'Die Bögen zwischen den Pfeilern tragen nichts – sie machen den Turm zum Eingangstor der Weltausstellung. Ihr Scheitel liegt auf 39 m.', {
-    tips: ['Setze erst den inneren Rand des Bogens als Linie, dann den äußeren; die Gitter dazwischen gehen danach schnell.'],
+    tips: ['Setze erst den inneren Rand des Bogens als Linie, dann den äußeren; der Kupferrost dazwischen geht danach schnell.'],
   });
   buildArches(b, g);
   b.note(0, g.level(ARCH.apexM), -g.outer(g.level(ARCH.apexM)), 'Scheitel des Zierbogens auf 39 m.');
@@ -587,9 +619,10 @@ export default function build(b, { scale = 1 } = {}) {
   buildFloor1(b, g);
 
   b.phase('Die Pfeiler bis zur zweiten Etage', 'Über der ersten Etage werden die Pfeiler schmaler und rücken zusammen, bis sie auf der zweiten Etage verschmelzen.', {
-    tips: ['Die Eckträger sind hier nur noch zwei Blöcke breit.'],
+    tips: [`Die Eckträger sind hier nur noch ${cornerWidth(g, (FLOOR1.m + FLOOR2.m) / 2)} ${cornerWidth(g, (FLOOR1.m + FLOOR2.m) / 2) === 1 ? 'Block' : 'Blöcke'} breit.`],
   });
   for (let y = yDeck1; y < yDeck2; y++) towerLevel(b, g, levels, y);
+  connectLooseBlocks(b, g.outer(yDeck1), yDeck1, yDeck2 - 1);
 
   buildFloor2(b, g);
 

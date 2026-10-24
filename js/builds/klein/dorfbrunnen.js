@@ -14,8 +14,8 @@ export const meta = {
     'well', 'village well', 'wishing well', 'medieval well', 'stone well', 'mittelalter brunnen',
   ],
   accuracy: 'eigenes',
-  difficulty: 1,
-  description: 'Ein runder Brunnen aus Bruchstein mit Wasser im Schacht, darüber ein kleines Satteldach aus Fichte auf vier Pfosten. Unter dem First läuft die Seilwinde mit Kette, außen sitzt ein Hebel als Kurbel. Ein Pflasterring, eine Laterne, Fass und Wasserkessel machen ihn zum Mittelpunkt eines Dorfplatzes.',
+  difficulty: 2,
+  description: 'Ein runder Brunnen aus Bruchstein mit Wasser im Schacht, darüber ein kleines Satteldach aus Fichte auf vier Pfosten. Unter dem First läuft die Seilwinde mit Kette und Kessel-Eimer, außen sitzt ein Hebel als Kurbel; Kopfbänder aus Treppen steifen die Pfosten aus. Ein Pflasterring, eine Laterne, Fass und Wasserkessel machen ihn zum Mittelpunkt eines Dorfplatzes.',
   facts: [
     'Der Brunnenring hat 7 Blöcke Durchmesser, das Wasser darin 5 Blöcke.',
     'Das Wasser ist 2 Blöcke tief und besteht nur aus Wasserquellen – es fließt nichts aus.',
@@ -95,9 +95,18 @@ function frame(b) {
   b.step('Pfosten', 'Stelle auf die vier freien Felder der Mauer je 3 Fichtenstämme übereinander (Ebene 5 bis 7).');
   for (const [x, z] of POSTS) b.fill(x, 2, z, x, 4, z, `${spruce.log}[axis=y]`);
 
-  b.step('Balkenkranz', 'Lege auf Ebene 8 geschälte Fichtenstämme liegend von Pfosten zu Pfosten: vorne und hinten in Ost-West-Richtung, links und rechts in Nord-Süd-Richtung. Schau beim Setzen in die Richtung, in die der Balken laufen soll.');
+  b.step('Balkenkranz', 'Lege auf Ebene 8 geschälte Fichtenstämme liegend von Pfosten zu Pfosten: vorne und hinten in Ost-West-Richtung, links und rechts in Nord-Süd-Richtung. Stämme legen sich in die Richtung der angeklickten Fläche: Den Eckstamm, mit dem die vordere bzw. hintere Reihe beginnt, klickst du an die Ost- oder Westseite eines Hilfsblocks (danach wieder abbauen), jeden weiteren an die Seite des vorigen, in deren Richtung der Balken weiterläuft.');
   for (const z of [-2, 2]) b.fill(-2, 5, z, 2, 5, z, `${spruce.strippedLog}[axis=x]`);
   for (const x of [-2, 2]) b.fill(x, 5, -1, x, 5, 1, `${spruce.strippedLog}[axis=z]`);
+
+  b.step('Kopfbänder', 'Unter dem Balkenkranz sitzen an jedem Pfosten zwei Kopfbänder aus Fichtentreppen (Ebene 7): eine Treppe auf jeder Seite des Pfostens, die am Balken entlang zeigt. Setze sie als obere Treppen – klick dafür an die obere Hälfte der Pfostenseite – mit der hohen Seite zum Pfosten.');
+  for (const [px, pz] of POSTS) {
+    const sx = Math.sign(px);
+    const sz = Math.sign(pz);
+    // Kopfband neben dem Pfosten, Richtung Brunnenmitte; die hohe Seite zeigt zurück zum Pfosten.
+    b.stairs(px - sx, 4, pz, spruce.stairs, { facing: sx > 0 ? 'east' : 'west', half: 'top' });
+    b.stairs(px, 4, pz - sz, spruce.stairs, { facing: sz > 0 ? 'south' : 'north', half: 'top' });
+  }
 }
 
 function roof(b) {
@@ -109,14 +118,16 @@ function roof(b) {
 
 function winch(b) {
   b.phase('Seilwinde und Kurbel', 'Jetzt kommt die Seilwinde unter den First.');
-  b.step('Welle', 'Ersetze in beiden Giebeln das mittlere Brett auf Ebene 9 durch einen liegenden Fichtenstamm und verbinde sie mit drei weiteren Stämmen zu einer durchgehenden Welle in Ost-West-Richtung.');
-  b.fill(-2, 6, 0, 2, 6, 0, `${spruce.log}[axis=x]`);
+  b.step('Welle', 'Ersetze in beiden Giebeln das mittlere Brett auf Ebene 9 durch einen liegenden Fichtenstamm und verbinde sie mit drei weiteren Stämmen zu einer durchgehenden Welle in Ost-West-Richtung. Auf der Ostseite lässt du die Welle einen Block über den Giebel hinausragen (unter dem Dachüberstand).');
+  b.fill(-2, 6, 0, 3, 6, 0, `${spruce.log}[axis=x]`);
 
-  b.step('Seil und Kurbel', 'Hänge unter die Mitte der Welle drei Eisenketten nach unten – das ist das Brunnenseil. Setze an die Ostseite der Welle außen einen Hebel: er sieht aus wie die Kurbel. Unter den vorderen Balken kommt eine hängende Laterne.');
+  b.step('Seil, Eimer und Kurbel', 'Hänge unter die Mitte der Welle drei Eisenketten nach unten – das ist das Brunnenseil – und darunter einen Kessel als Eimer: mit dem Kessel in der Hand an die Unterseite der untersten Kette klicken. An das überstehende Ende der Welle kommt ein Hebel: er sieht aus wie die Kurbel. Unter den vorderen Balken hängt eine Laterne.');
   b.fill(0, 3, 0, 0, 5, 0, 'iron_chain[axis=y]');
-  b.set(3, 6, 0, 'lever[face=wall,facing=east,powered=false]');
+  b.set(0, 2, 0, 'cauldron');
+  b.set(4, 6, 0, 'lever[face=wall,facing=east,powered=false]');
   b.set(0, 4, 2, 'lantern[hanging=true]');
-  b.note(3, 6, 0, 'Hebel als Kurbel der Seilwinde');
+  b.note(4, 6, 0, 'Hebel als Kurbel der Seilwinde');
+  b.note(0, 2, 0, 'Kessel als Brunneneimer');
 }
 
 function surroundings(b) {

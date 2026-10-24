@@ -2,7 +2,7 @@
 // Koordinaten: x → Osten, z → Süden. Land im Norden (z 0 … 12), Kaimauer z 13 … 14, Hafenbecken x 4 … 37 / z 15 … 36,
 // Molen im Süden und Osten, Leuchtturm auf dem Molenkopf im Südosten. y = 0 Grundschicht, y = 1 Meeresboden,
 // Wasser y 2 … 4, Geländeoberkante y = 5 (du läufst auf Ebene 7, y = 6).
-import { doorway, window, lampPost, storage, lightRoom, findDarkSpots, tree, bush, rock, path, vegetation, floorPattern } from '../lib/index.js';
+import { doorway, window, lampPost, hangingLantern, storage, lightRoom, findDarkSpots, tree, bush, rock, path, vegetation, floorPattern } from '../lib/index.js';
 
 export const meta = {
   id: 'hafen-leuchtturm',
@@ -16,13 +16,13 @@ export const meta = {
     'leuchturm', 'leuchtturn', 'hafn', 'lighthous',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
+  difficulty: 4,
   description: 'Ein kleiner Hafen für deine Küste: Kaimauer und Molen aus Steinziegeln umschließen ein Becken mit zwei Holzstegen, '
     + 'Pollern und Leitern. Auf dem Molenkopf steht ein rot-weißer Leuchtturm mit Wendeltreppe, Galerie und Lichtraum mit Seelaterne '
     + 'und Leuchtstein. An Land warten ein Lagerhaus mit Fässern und Kisten, ein hölzerner Hafenkran und ein Fischstand.',
   facts: [
     'Das Becken ist ganz von Mauern umschlossen, damit kein Wasser ausläuft. Liegt dein Hafen am Meer, brich an der Markierung in der Südmole eine Einfahrt auf.',
-    'Der Leuchtturm ragt 26 Blöcke über den Molenkopf: 17 Ebenen Wendeltreppe um einen Kern aus Fichtenholz, oben Galerie mit Gitter und Lichtraum unter einem Kupferdach.',
+    'Der Leuchtturm ragt 26 Blöcke über den Molenkopf: eine Wendeltreppe mit 18 Stufen um einen Kern aus Fichtenholz, oben Galerie mit Gitter und Lichtraum unter einem Kupferdach.',
     'Alle begehbaren Innenräume (Leuchtturm, Lichtraum, Lagerhaus) haben Blocklicht über 0 – dort spawnen keine Monster.',
     'Das gewachste Kupferdach und der Blitzableiter bleiben grün und laufen nicht weiter an.',
     'Fässer und Truhen im Lagerhaus sind echte Behälter; Komposter dienen als Holzkisten.',
@@ -340,11 +340,13 @@ function buildLanternRoom(b) {
 function buildDome(b) {
   const { cx, cz } = LIGHTHOUSE;
   const y = TOWER.floor + 4;
-  b.disc(cx, y, cz, 4, P.eave, { hollow: true });
+  // Traufe als geschlossener Ring (ringCells): auch an den Schrägen hängen die Stufen über Flächen zusammen.
+  for (const [x, z] of ringCells(cx, cz, 4)) b.set(x, y, z, P.eave);
   // Kegeldach aus Treppenringen (hohe Seite zur Mitte), Ecken formen sich automatisch.
   for (const [r, dy] of [[3, 0], [2, 1], [1, 2]]) {
     for (const [x, z] of ringCells(cx, cz, r)) b.stairs(x, y + dy, z, P.domeStairs, { facing: towardCenter(x, z) });
   }
+  b.set(cx, y + 2, cz, P.dome);
   b.set(cx, y + 3, cz, P.dome);
   b.set(cx, y + 4, cz, 'waxed_oxidized_lightning_rod[facing=up]');
   for (const [dx, dz] of [[0, -4], [4, 0], [0, 4], [-4, 0]]) b.set(cx + dx, y - 1, cz + dz, 'lantern[hanging=true]');
@@ -388,13 +390,14 @@ function buildWarehouseRoof(b) {
 function buildWarehouseOpenings(b) {
   const { x1, x2, z1, z2 } = WAREHOUSE;
   doorway(b, { x: 9, y: WALK, z: z2, facing: 'south', door: 'spruce_door', width: 2, frame: P.frame, canopy: P.roofStairs });
+  // Fenster eine Ebene über dem Sockel: so sitzt die Fensterbank an der Bretterwand und nicht am Boden.
   for (const x of [5, 14]) {
-    window(b, { x, y: WALK + 1, z: z2, facing: 'south', height: 2, sill: P.stairs, shutters: 'spruce_trapdoor' });
-    window(b, { x, y: WALK + 1, z: z1, facing: 'north', height: 2, sill: P.stairs, shutters: 'spruce_trapdoor' });
+    window(b, { x, y: WALK + 2, z: z2, facing: 'south', height: 2, sill: P.stairs, shutters: 'spruce_trapdoor' });
+    window(b, { x, y: WALK + 2, z: z1, facing: 'north', height: 2, sill: P.stairs, shutters: 'spruce_trapdoor' });
   }
   for (const z of [3, 7]) {
-    window(b, { x: x1, y: WALK + 1, z, facing: 'west', height: 2, sill: P.stairs });
-    window(b, { x: x2, y: WALK + 1, z, facing: 'east', height: 2, sill: P.stairs });
+    window(b, { x: x1, y: WALK + 2, z, facing: 'west', height: 2, sill: P.stairs });
+    window(b, { x: x2, y: WALK + 2, z, facing: 'east', height: 2, sill: P.stairs });
   }
   // Ladeluke im Ostgiebel mit Kranbalken und hängendem Fass.
   b.set(x2, WALK + 6, 5, 'spruce_trapdoor[facing=east,half=bottom,open=true]');
@@ -422,10 +425,22 @@ function buildWarehouseInterior(b) {
   b.stairs(13, WALK, 7, 'spruce_stairs', { facing: 'south' });
   b.set(14, WALK, 6, 'chest[facing=south]');
   b.set(13, WALK + 1, 6, 'lantern[hanging=false]');
+  // Je eine Laterne an einer Kette mitten unter den beiden Zugbalken.
+  for (const x of [7, 12]) hangingLantern(b, { x, y: WALK + 3, z: 5, chain: 1 });
   lightRoom(b, { x1: x1 + 1, y1: WALK, z1: z1 + 1, x2: x2 - 1, y2: WALK + 3, z2: z2 - 1 });
 }
 
 // ---------------------------------------------------------------- Hafenkran
+
+// Schräge Strebe ab dem Mast: geschältes Fichtenholz im 45°-Winkel, unter jedem weiteren Holz eine obere Treppe mit der
+// hohen Seite zum Mast – so hängt die Strebe über Flächen zusammen statt nur über Kanten.
+function craneBrace(b, x, y0, z0, steps, dz) {
+  const towardMast = dz > 0 ? 'north' : 'south';
+  for (let i = 0; i <= steps; i++) {
+    b.set(x, y0 + i, z0 + i * dz, 'stripped_spruce_wood');
+    if (i > 0) b.stairs(x, y0 + i - 1, z0 + i * dz, P.stairs, { facing: towardMast, half: 'top' });
+  }
+}
 
 function buildCrane(b) {
   const { x, z } = CRANE;
@@ -438,8 +453,8 @@ function buildCrane(b) {
   // Ausleger über das Wasser, hinten Gegengewicht.
   const boomY = WALK + 11;
   b.fill(x, boomY, z - 3, x, boomY, z + 8, `${P.post}[axis=z]`);
-  b.line(x, WALK + 7, z + 1, x, boomY - 1, z + 4, 'stripped_spruce_wood');
-  b.line(x, WALK + 7, z - 1, x, boomY - 1, z - 3, 'stripped_spruce_wood');
+  craneBrace(b, x, WALK + 7, z + 1, 3, 1);
+  craneBrace(b, x, WALK + 8, z - 1, 2, -1);
   b.fill(x, boomY - 2, z - 3, x, boomY - 1, z - 3, 'cobblestone');
   b.fill(x, boomY - 4, z + 8, x, boomY - 1, z + 8, 'iron_chain[axis=y]');
   b.set(x, boomY - 5, z + 8, 'barrel[facing=up]');
@@ -556,7 +571,7 @@ export default function build(b) {
 
   b.phase('Leuchtturm: Galerie und Lichtraum', `Oben trägt ein Kranz aus umgedrehten Steinziegeltreppen die Galerie auf Ebene ${lvl(TOWER.floor)}. `
     + 'Der Lichtraum ist ein Glaszylinder mit Seelaterne und Leuchtstein, darüber ein grünes Kupferdach.', {
-    tips: ['Die Konsolen-Treppen setzt du von unten: schau beim Setzen zum Turm und halte Shift nicht – oben angeklickt werden sie umgedreht gesetzt.',
+    tips: ['Die Konsolen-Treppen setzt du umgedreht: schau beim Setzen zum Turm und klicke auf die obere Hälfte der Turmwand – dann sitzt die Treppe oben im Block.',
       'Gewachstes Kupfer bleibt so grün, wie es ist. Ungewachstes würdest du erst mit der Axt abkratzen müssen.'],
   });
   b.step('Konsolen und Galerieboden', `Ring aus oberen Steinziegeltreppen auf Ebene ${lvl(TOWER.floor - 1)} (hohe Seite zum Turm), darauf der Boden aus Glattem Stein mit 11 Blöcken Durchmesser. Über den letzten beiden Treppenstufen bleiben zwei Felder offen – dort kommst du hoch.`);
@@ -571,7 +586,7 @@ export default function build(b) {
 
   b.phase('Lagerhaus', `Das Lagerhaus (${WAREHOUSE.x2 - WAREHOUSE.x1 + 1} × ${WAREHOUSE.z2 - WAREHOUSE.z1 + 1}) steht hinter dem Kai: ein Sockel aus Steinziegeln, Wände aus Fichtenbrettern und ein Fachwerk-Gerippe aus geschälten Schwarzeichenstämmen.`, {
     tips: ['Setze zuerst alle Pfosten (Ecken und je zwei auf den Längsseiten), dann füllst du die Felder dazwischen.',
-      'Die Zugbalken quer durch den Raum tragen später die Laternen.'],
+      'An den beiden Zugbalken quer durch den Raum hängen später die Laternen.'],
   });
   b.step('Boden, Sockel und Wände', 'Boden aus Fichtenbrettern, eine Ebene Steinziegel als Sockel, darauf 3 Ebenen Bretterwand mit Pfosten, oben ein Kranz aus liegenden Stämmen.');
   buildWarehouseShell(b);
@@ -586,7 +601,7 @@ export default function build(b) {
     tips: ['Setze zuerst den Mast ganz hoch, dann den Ausleger obendrauf – die Streben kommen zuletzt.'],
   });
   b.step('Mast, Ausleger und Streben', 'Plattform 3 × 3 aus Fichtenbrettern, Mast 11 Blöcke hoch, am Fuß ein Kranz aus Fichtentreppen (hohe Seite zum Mast) und Stufen in den Ecken. '
-    + 'Obendrauf der 12 Blöcke lange Ausleger, darunter zwei schräge Streben aus geschältem Fichtenholz. Der Schleifstein daneben ist die Winde.');
+    + 'Obendrauf der 12 Blöcke lange Ausleger, darunter zwei schräge Streben aus geschältem Fichtenholz, jede Stufe unten mit einer umgedrehten Fichtentreppe ausgefüllt. Der Schleifstein daneben ist die Winde.');
   buildCrane(b);
   b.note(CRANE.x, WALK + 6, CRANE.z + 8, 'Am Kranhaken hängt ein Fass über dem Wasser – wie beim Entladen eines Schiffs.');
 
