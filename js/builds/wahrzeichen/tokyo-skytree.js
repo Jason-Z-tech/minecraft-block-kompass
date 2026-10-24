@@ -175,8 +175,12 @@ function bearing(dx, dz) {
   return phi < 0 ? phi + TAU : phi;
 }
 
+// Auf 1e-6 gerundet: sin/cos weichen zwischen Node und Chrome im letzten Bit ab, ohne Rundung kippen
+// einzelne Blöcke an .5-Grenzen (Katalog und Bau-Seite hätten sonst verschiedene Blockzahlen).
+const snapCoord = (v) => Math.round(v * 1e6) / 1e6;
+
 function polarPoint(phi, r, y) {
-  return [AXIS + r * Math.sin(phi), y, AXIS - r * Math.cos(phi)];
+  return [snapCoord(AXIS + r * Math.sin(phi)), y, snapCoord(AXIS - r * Math.cos(phi))];
 }
 
 // Tabelle Rundungsgrad t → Breite und Seitenverhältnis der Mischform.

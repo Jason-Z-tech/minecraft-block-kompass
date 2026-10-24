@@ -768,6 +768,9 @@ rectAlphaClass(entry, u0, v0, u1, v1)                    // Alpha-Klasse eines U
   `missing: true`, eine Sammel-Warnung in der Konsole. Mehr Ebenen als `MAX_ARRAY_TEXTURE_LAYERS` → Error
   „Zu viele Texturen: N Ebenen nötig, die Grafikkarte erlaubt höchstens M (MAX_ARRAY_TEXTURE_LAYERS).“ (vor dem Dekodieren).
   Nach Kontextverlust wird die Textur beim nächsten `prepare`/`bind`/`tick` aus dem CPU-Spiegel neu angelegt.
+  Änderung (Integration Runde 2): wächst die Kapazität (weiterer `load` im selben Viewer), wird die alte Textur erst nach dem
+  Anlegen der neuen gelöscht, und war sie gebunden, bleibt danach die neue gebunden. Vorher band `withUploadState` die schon
+  gelöschte Textur zurück → `INVALID_OPERATION` 1282, `load` lehnte ab („WebGL-Fehler beim Hochladen der Texturen“).
   Änderung (render:viewer): den Kontextverlust merkt sich der Store über das Ereignis `webglcontextlost` am Canvas des Kontexts
   (`gl.canvas`, auch OffscreenCanvas) statt bei jedem `bind`/`tick` `gl.isTexture` zu fragen – das ist in Chrome ein synchroner
   GPU-Aufruf und kostete ~5 ms je Bild. Ohne Canvas (Ersatz-Kontexte in Tests) bleibt die Prüfung mit `isTexture`.
@@ -1012,6 +1015,10 @@ export default function build(b, { scale = 1 } = {}) { … }
 Regeln: deterministisch (nur `b.rng()`), kein DOM, kein Netzwerk; nur Blöcke aus 26.2; Kapitel-
 und Schritttexte auf Deutsch in du-Form, konkret („Setze die Treppen mit der hohen Seite nach
 außen“); echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nichts erfinden.
+Änderung (Integration Runde 2): `Math.sin`, `Math.cos` und `Math.atan2` liefern in Node 24 (V8 13.6) und Chrome 156 im letzten
+Bit verschiedene Werte. Wer aus Winkeln Blockpositionen rundet, rundet das Ergebnis vorher auf ein feines Raster (z. B.
+`Math.round(v * 1e6) / 1e6`), sonst kippen einzelne Blöcke an .5-Grenzen und Katalog (Node) und Bau-Seite (Browser) haben
+verschiedene Blockzahlen (beim Tokyo Skytree 1:1 waren es 3 Blöcke; `tokyo-skytree.js` rundet jetzt in `polarPoint`).
 
 `scripts/build-catalog.mjs` liest alle Module und `game-structures.js`, prüft sie und schreibt
 `game-data/catalog.json`.
@@ -1419,6 +1426,18 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `{ ok, data (Base64-WebP), bytes, blocks, ms }`; die Kamera-Helfer `thumbAngles`/`thumbOrbit` in `tests/visual/thumb.js` sind rein.
 - `node --test "tests/unit/**/*.test.mjs"` – Unit-Tests (Ordnername allein geht nicht).
   `node tests/e2e.mjs` – Klick-Test.
+  Änderung (Integration Runde 2): `node tests/e2e.mjs [--only start,bau,erstellen,handy] [--gpu hardware|swiftshader] [--out <ordner>]`
+  prüft im echten Chrome gegen den echten Katalog (`game-data/catalog.json`, fehlt er → Exit-Code 2): Start → Kategorie (Filter,
+  Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1 mit Maßstab-Wechsel, Infinity Castle, ein Dorfhaus `spiel-…`, ein Redstone-
+  Bau: Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Bildrate) → „Selber erstellen“ (Freitext, Upload
+  je Fixture-Format) → Handy 390 × 844. Ausgabe je Prüfung `OK`/`FEHLER`, Leistungswerte, Screenshots und `e2e-report.json` (Standard
+  `tmp/integration/e2e/`); Exit-Code 1 bei Fehlern. Konsolenfehler zählen als Fehler (einzige Ausnahme: die absichtlich kaputte
+  Upload-Datei, deren Ablehnung `renderer.js` mit `console.error` meldet).
+- Änderung (Integration Runde 2): `node scripts/start.mjs [--port 8080] [--remote] [--no-thumbs]` – ein Befehl zum Starten: fehlen
+  Spieldaten (`meta.json`, `blocks.json`, `names.json`, `models.json`, `textures.json/.bin`, `structures/index.json`, Version 26.2),
+  ruft es `extract-game-data.mjs` (mit `--remote` aus dem Netz); ist der Katalog älter als `js/builds/`, `js/core/`, `build-catalog.mjs`,
+  `check-build.mjs`, `structures/index.json` oder `blocks.json` (oder fehlt er), ruft es `build-catalog.mjs --thumbs`; dann startet
+  der Server (belegter Port → die nächsten 9 probieren, außer bei `--port`). Exportiert `parseStartArgs`, `checkGameData`, `checkCatalog`.
 - `tests/browser.mjs` – Chrome über DevTools-Protokoll, freier Debug-Port (parallele Läufe gehen).
   `launchBrowser({ gpu: 'hardware' })` nutzt die Grafikkarte (Intel UHD 770, D3D11),
   `gpu: 'swiftshader'` Software-WebGL. Beide liefern WebGL2 mit 2048 Textur-Ebenen.

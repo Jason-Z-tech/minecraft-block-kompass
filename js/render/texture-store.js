@@ -837,7 +837,9 @@ const UPLOAD_PARAMS = ['UNPACK_FLIP_Y_WEBGL', 'UNPACK_PREMULTIPLY_ALPHA_WEBGL', 
 const UPLOAD_DEFAULTS = { UNPACK_FLIP_Y_WEBGL: false, UNPACK_PREMULTIPLY_ALPHA_WEBGL: false, UNPACK_ALIGNMENT: 4 };
 
 // Setzt den Pixel-Speicher-Zustand für Uploads aus Typed Arrays und stellt ihn danach wieder her.
-function withUploadState(gl, texture, run) {
+// replaced: alte Textur, die gleich gelöscht wird – war sie gebunden, bleibt danach die neue gebunden
+// (eine gelöschte Textur wieder zu binden, wäre INVALID_OPERATION 1282).
+function withUploadState(gl, texture, run, replaced = null) {
   const saved = UPLOAD_PARAMS.map((name) => [name, gl.getParameter(gl[name])]);
   const unpackBuffer = gl.getParameter(gl.PIXEL_UNPACK_BUFFER_BINDING);
   const bound = gl.getParameter(gl.TEXTURE_BINDING_2D_ARRAY);
@@ -847,7 +849,7 @@ function withUploadState(gl, texture, run) {
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
     run();
   } finally {
-    gl.bindTexture(gl.TEXTURE_2D_ARRAY, bound);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, replaced !== null && bound === replaced ? texture : bound);
     if (unpackBuffer) gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, unpackBuffer);
     for (const [name, value] of saved) gl.pixelStorei(gl[name], value);
   }
@@ -1043,7 +1045,8 @@ export class TextureStore {
       });
       state.capacity = capacity;
     }
-    if (valid) gl.deleteTexture(state.texture);
+    // Die alte Textur erst nach dem Neu-Anlegen löschen (siehe withUploadState)
+    const old = valid ? state.texture : null;
     const texture = gl.createTexture();
     if (!texture) throw new Error('WebGL konnte keine Textur anlegen (Kontext verloren?).');
     state.texture = texture;
@@ -1058,7 +1061,8 @@ export class TextureStore {
       // Immer die ganze Kapazität hochladen (unbenutzte Ebenen = 0): nur teilweise beschriebene Ebenen
       // lässt ANGLE/D3D11 sonst einzeln nachträglich initialisieren (gemessen ~700 statt ~90 ms bei 2048 Ebenen).
       this.#uploadRange(gl, state, 0, state.capacity);
-    });
+    }, old);
+    if (old) gl.deleteTexture(old);
   }
 
   #writeLayer(state, layer, levels) {

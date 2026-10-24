@@ -310,6 +310,14 @@
   animation: fade-in var(--dur) var(--ease-out) both;
 }
 
+/* Touch: unten liegen Joystick und Knöpfe – der Hinweis rückt unter die Werkzeugleiste */
+@media (pointer: coarse) {
+  .bv-walkhelp {
+    top: calc(var(--space-4) + 3.5rem);
+    bottom: auto;
+  }
+}
+
 /* Notiz-Markierungen (b.note) über der 3D-Ansicht */
 .bv-notes {
   position: absolute;
