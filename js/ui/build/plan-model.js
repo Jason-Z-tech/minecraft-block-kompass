@@ -92,8 +92,26 @@ export function rulerStep(cellPx, minPx = 28) {
   return 1000;
 }
 
-/** Auflösung der vorgerenderten Ebene: 16 px je Zelle, bei großen Ebenen weniger (Speicher). */
-export function bakeResolution(cols, rows, maxPixels = 4_200_000) {
-  for (const tile of [16, 8, 4, 2]) if (cols * rows * tile * tile <= maxPixels) return tile;
-  return 1;
+/**
+ * Auflösung der vorgerenderten Ebene: 16 px je Zelle, bei großen Ebenen weniger (Speicher). Zusätzlich keine Kante über
+ * maxEdge Pixel (Grenze vieler Handy-GPUs; die Golden Gate 1:1 hat Ebenen mit über 10 000 Feldern Länge) – dann auch
+ * weniger als 1 px je Feld.
+ */
+export function bakeResolution(cols, rows, maxPixels = 4_200_000, maxEdge = 4096) {
+  const edge = Math.max(cols, rows);
+  for (const tile of [16, 8, 4, 2, 1]) if (cols * rows * tile * tile <= maxPixels && edge * tile <= maxEdge) return tile;
+  return Math.min(maxEdge / edge, Math.sqrt(maxPixels / (cols * rows)));
+}
+
+/** Mittlere Farbe einer Draufsicht-Kachel (RGBA-Bytes) über Hintergrund bg ([r, g, b]) → [r, g, b] (0–255, gerundet). */
+export function averageTileColor(data, bg) {
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3] / 255;
+    r += data[i] * a + bg[0] * (1 - a);
+    g += data[i + 1] * a + bg[1] * (1 - a);
+    b += data[i + 2] * a + bg[2] * (1 - a);
+    n++;
+  }
+  return n ? [Math.round(r / n), Math.round(g / n), Math.round(b / n)] : [...bg];
 }

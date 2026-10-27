@@ -6,13 +6,18 @@ import { el } from '../dom.js';
 import { formatNumber, formatCount, icon } from '../shared.js';
 import { dominantLayer } from './step-model.js';
 import {
-  readLayer, cellStatus, layerCounts, fitView, zoomAt, clampView, cellAt, rulerStep, bakeResolution,
+  readLayer, cellStatus, layerCounts, fitView, zoomAt, clampView, cellAt, rulerStep, bakeResolution, averageTileColor,
   CELL_CURRENT, CELL_LATER,
 } from './plan-model.js';
 import { FloatingTooltip, blockTooltipParts, positionText } from './kit.js';
 
 const TILE = 16;
 const RULER = 22;
+// Ab dieser Auflösung (px je Feld) wird die Ebene als Farbbild vorgerendert statt Feld für Feld mit Texturen gezeichnet:
+// bei sehr großen Ebenen (Hunderttausende Felder) sonst sekundenlange Blockaden, auf Handys noch länger.
+const FAST_BAKE_TILE = 4;
+const EMPTY_RGB = [0x18, 0x1b, 0x20];
+const PLACEHOLDER_RGB = [0x3a, 0x3f, 0x48];
 const COLORS = {
   ground: '#101215',
   empty: '#181b20',
@@ -49,6 +54,10 @@ export class LayerPlan {
   #offs = [];
   #tilesJob = 0;
   #visible = false;
+  // Arbeit, die wartet, bis der Tab sichtbar ist (Ebene laden bzw. Kennzeichnung aktualisieren)
+  #pendingLoad = false;
+  #overlayStale = false;
+  #tileColors = new Map();
 
   constructor(ctx) {
     this.#ctx = ctx;
@@ -56,7 +65,7 @@ export class LayerPlan {
     this.#tooltip = new FloatingTooltip(ctx.overlayRoot);
     this.#layerY = this.#defaultLayer();
     this.#offs.push(ctx.events.on('step', () => this.#onStep()));
-    this.#offs.push(ctx.events.on('progress', () => this.#updateOverlay()));
+    this.#offs.push(ctx.events.on('progress', () => this.#refreshOverlay()));
     this.#loadLayer();
   }
 
@@ -139,18 +148,40 @@ export class LayerPlan {
         return;
       }
     }
+    this.#refreshOverlay();
+  }
+
+  // Kennzeichnung (fertig / aktuell / später) nur bei sichtbarem Tab neu rechnen, sonst beim Öffnen nachholen
+  #refreshOverlay() {
+    if (!this.#visible) {
+      this.#overlayStale = true;
+      return;
+    }
     this.#updateOverlay();
   }
 
-  #loadLayer() {
+  #updateControls() {
     const { result } = this.#ctx;
-    const started = performance.now();
-    this.#layer = readLayer(result.volume, result.size, this.#layerY);
     this.#parts.slider.value = String(this.#layerY + 1);
     this.#parts.slider.style.setProperty('--fill', `${result.size[1] > 1 ? (this.#layerY / (result.size[1] - 1)) * 100 : 0}%`);
     this.#parts.layerLabel.textContent = `Ebene ${formatNumber(this.#layerY + 1)} von ${formatNumber(result.size[1])} · y = ${formatNumber(this.#layerY)}`;
     this.#parts.prev.setAttribute('aria-disabled', String(this.#layerY <= 0));
     this.#parts.next.setAttribute('aria-disabled', String(this.#layerY >= result.size[1] - 1));
+  }
+
+  #loadLayer() {
+    this.#updateControls();
+    // Unsichtbar (anderer Tab offen): nicht lesen und nicht vorrendern – bei Riesenbauten kostete das bei jedem
+    // Schrittwechsel Sekunden bis Minuten. activate() holt es nach.
+    if (!this.#visible) {
+      this.#pendingLoad = true;
+      return;
+    }
+    this.#pendingLoad = false;
+    this.#overlayStale = false;
+    const { result } = this.#ctx;
+    const started = performance.now();
+    this.#layer = readLayer(result.volume, result.size, this.#layerY);
     this.#baked = null;
     this.#updateOverlay();
     if (!this.#userMoved || !this.#view) this.#fit(false);
@@ -214,6 +245,8 @@ export class LayerPlan {
       place(paletteIndex, (ctx, dx, dy) => {
         if (image) ctx.putImageData(new ImageData(new Uint8ClampedArray(image.data.buffer, image.data.byteOffset, image.data.length), TILE, TILE), dx, dy);
       });
+      const [r, g2, b] = image ? averageTileColor(image.data, EMPTY_RGB) : PLACEHOLDER_RGB;
+      this.#tileColors.set(paletteIndex, packColor(r, g2, b, 1));
     }
     this.#atlas = atlas;
     this.#atlasIndex = index;
@@ -223,6 +256,10 @@ export class LayerPlan {
   #bake() {
     const layer = this.#layer;
     const tile = bakeResolution(layer.width, layer.length);
+    if (tile <= FAST_BAKE_TILE) {
+      this.#bakeColors(layer, tile);
+      return;
+    }
     const canvas = el('canvas');
     canvas.width = layer.width * tile;
     canvas.height = layer.length * tile;
@@ -243,6 +280,34 @@ export class LayerPlan {
         }
       }
     }
+    this.#baked = canvas;
+    this.#bakedTile = tile;
+    this.#invalidate();
+  }
+
+  // Große Ebenen: je Feld die mittlere Farbe seiner Draufsicht als Pixel (ein putImageData statt Hunderttausender drawImage).
+  // tile < 1 (sehr lange Ebenen): je Pixel das Feld in seiner Mitte. Beim Hineinzoomen zeichnet #drawCells echte Texturen.
+  #bakeColors(layer, tile) {
+    const width = Math.max(1, Math.round(layer.width * tile));
+    const height = Math.max(1, Math.round(layer.length * tile));
+    const canvas = el('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const g = canvas.getContext('2d');
+    const image = g.createImageData(width, height);
+    const data = new Uint32Array(image.data.buffer);
+    const empty = packColor(...EMPTY_RGB, 1);
+    const placeholder = packColor(...PLACEHOLDER_RGB, 1);
+    const columns = new Int32Array(width);
+    for (let px = 0; px < width; px++) columns[px] = Math.min(layer.width - 1, Math.floor((px + 0.5) / tile));
+    for (let py = 0; py < height; py++) {
+      const row = Math.min(layer.length - 1, Math.floor((py + 0.5) / tile)) * layer.width;
+      for (let px = 0; px < width; px++) {
+        const index = layer.indices[row + columns[px]];
+        data[py * width + px] = index ? (this.#tileColors.get(index) ?? placeholder) : empty;
+      }
+    }
+    g.putImageData(image, 0, 0);
     this.#baked = canvas;
     this.#bakedTile = tile;
     this.#invalidate();
@@ -290,6 +355,11 @@ export class LayerPlan {
   activate() {
     this.#visible = true;
     this.#measure();
+    if (this.#pendingLoad) this.#loadLayer();
+    else if (this.#overlayStale) {
+      this.#overlayStale = false;
+      this.#updateOverlay();
+    }
   }
 
   deactivate() {

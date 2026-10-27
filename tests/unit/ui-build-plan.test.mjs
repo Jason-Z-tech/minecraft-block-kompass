@@ -10,7 +10,7 @@ import { Builder } from '../../js/core/builder.js';
 import { BlockVolume } from '../../js/core/volume.js';
 import buildHouse from '../fixtures/core/example-house.js';
 import {
-  readLayer, cellStatus, layerCounts, fitView, zoomAt, clampView, cellAt, rulerStep, bakeResolution,
+  readLayer, cellStatus, layerCounts, fitView, zoomAt, clampView, cellAt, rulerStep, bakeResolution, averageTileColor,
   CELL_DONE, CELL_CURRENT, CELL_LATER, MIN_CELL_PX, MAX_CELL_PX,
 } from '../../js/ui/build/plan-model.js';
 import {
@@ -81,6 +81,23 @@ test('Ansicht einpassen, zoomen, begrenzen, Zelle finden', () => {
   assert.equal(bakeResolution(10, 10), 16);
   assert.equal(bakeResolution(150, 150), 8, '150 × 150 mit 8 px je Feld (1,4 Mio. Pixel)');
   assert.equal(bakeResolution(1000, 1000), 2);
+  assert.equal(bakeResolution(2000, 100), 2, 'lange Ebene: Kante höchstens 4096 px');
+  assert.equal(bakeResolution(4096, 10), 1);
+  const huge = bakeResolution(304, 10944);
+  assert.ok(huge < 1 && Math.round(10944 * huge) <= 4096, `Golden Gate 1:1 (304 × 10 944 Felder) → ${huge} px je Feld`);
+  const square = bakeResolution(4096, 4096);
+  assert.ok(4096 * 4096 * square * square <= 4_200_000 + 1, 'auch die Fläche bleibt begrenzt');
+  assert.ok(bakeResolution(1, 1) === 16);
+});
+
+test('averageTileColor: Mittel über Deckkraft, durchsichtige Pixel zeigen den Hintergrund', () => {
+  const opaque = new Uint8Array([255, 0, 0, 255, 0, 0, 255, 255]);
+  assert.deepEqual(averageTileColor(opaque, [0, 0, 0]), [128, 0, 128]);
+  const clear = new Uint8Array([255, 255, 255, 0, 255, 255, 255, 0]);
+  assert.deepEqual(averageTileColor(clear, [24, 27, 32]), [24, 27, 32]);
+  const half = new Uint8Array([200, 100, 0, 128]);
+  assert.deepEqual(averageTileColor(half, [0, 0, 0]), [100, 50, 0]);
+  assert.deepEqual(averageTileColor(new Uint8Array(0), [1, 2, 3]), [1, 2, 3]);
 });
 
 const RED = [255, 0, 0, 255];
