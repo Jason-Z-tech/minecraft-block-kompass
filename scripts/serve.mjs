@@ -85,7 +85,29 @@ export function isAllowedHost(hostHeader, port) {
   return host === `${HOST}:${port}` || host === `localhost:${port}`;
 }
 
-async function handleRequest(rootDir, req, res) {
+// Fragt overrides(pathname) (nur Tests, siehe startServer) und sendet deren Antwort. → true, wenn beantwortet.
+async function answerFromOverrides(overrides, req, res) {
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname);
+  } catch {
+    return false;
+  }
+  if (pathname.includes('\0')) return false;
+  const answer = await overrides(pathname);
+  if (answer === null || answer === undefined) return false;
+  const { status = 200, body, type = 'application/octet-stream' } = answer;
+  if (!Number.isInteger(status) || status < 200 || status > 599 || typeof type !== 'string'
+    || (typeof body !== 'string' && !(body instanceof Uint8Array))) {
+    throw new Error(`overrides(${pathname}) lieferte keine gültige Antwort ({ status, body: Text oder Uint8Array, type }).`);
+  }
+  const payload = typeof body === 'string' ? Buffer.from(body, 'utf8') : body;
+  res.writeHead(status, { ...SECURITY_HEADERS, 'Content-Type': type, 'Content-Length': payload.length, 'Cache-Control': 'no-store' });
+  res.end(req.method === 'HEAD' ? undefined : payload);
+  return true;
+}
+
+async function handleRequest(rootDir, req, res, overrides = null) {
   if (!isAllowedHost(req.headers.host, req.socket.localPort)) {
     sendText(res, 403, 'Nicht erlaubt.');
     return;
@@ -95,6 +117,7 @@ async function handleRequest(rootDir, req, res) {
     sendText(res, 405, 'Methode nicht erlaubt.');
     return;
   }
+  if (overrides && await answerFromOverrides(overrides, req, res)) return;
   const filePath = resolveRequestPath(rootDir, req.url ?? '/');
   if (!filePath) {
     sendText(res, 404, 'Nicht gefunden.');
@@ -137,10 +160,14 @@ async function handleRequest(rootDir, req, res) {
 }
 
 // Startet den Server; port 0 = freier Port (für Tests). Gibt { url, port, close } zurück.
-export function startServer({ port = DEFAULT_PORT, rootDir = ROOT } = {}) {
+// overrides (nur programmatisch, für Tests): (pathname) → null | { status = 200, body: Text | Uint8Array, type }
+// (auch als Promise); wird nach Host- und Methodenprüfung vor der Dateisuche gefragt, Antwort mit denselben
+// Sicherheits-Headern und Cache-Control: no-store. null = normale Datei ausliefern.
+export function startServer({ port = DEFAULT_PORT, rootDir = ROOT, overrides = null } = {}) {
+  if (overrides !== null && typeof overrides !== 'function') return Promise.reject(new TypeError('startServer: overrides muss eine Funktion sein.'));
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      handleRequest(rootDir, req, res).catch((error) => {
+      handleRequest(rootDir, req, res, overrides).catch((error) => {
         console.error('Serverfehler:', error);
         if (!res.headersSent) sendText(res, 500, 'Interner Fehler.');
         else res.destroy();

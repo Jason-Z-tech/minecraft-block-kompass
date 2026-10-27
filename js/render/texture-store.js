@@ -3,6 +3,8 @@
 // Mipmaps, Transparenz und Animationen wie Minecraft 26.2 (MipmapGenerator, TextureUtil, SpriteContents).
 // PNGs liest ein kleiner eigener Decoder: exakte Pixel, auch die Farbe voll transparenter Pixel,
 // die die Glas-Mipmaps (Strategie „mean“) mitteln. Läuft in Browser, Worker und Node.
+// Zwei Quellen: textures.bin (einzelne PNGs, lokal aus game-data/) oder Atlasbilder (PNG je Atlas, online aus
+// misode/mcmeta) – im Atlas-Modus wird jede Textur aus dem einmal dekodierten Atlasbild ausgeschnitten.
 
 export const DEFAULT_LAYER_SIZE = 32;
 export const TICK_MS = 50;
@@ -13,9 +15,37 @@ export const MIP_STRATEGIES = Object.freeze(['auto', 'mean', 'cutout', 'strict_c
 const NAME_PATTERN = /^[a-z0-9_.\-/]+$/;
 const REGION_PATTERN = /^region:([^:]+):(\d{1,5}),(\d{1,5}),(\d{1,5}),(\d{1,5})$/;
 const ID_PATTERN = /^[a-z0-9_.-]{1,128}$/;
+const ATLAS_NAME_PATTERN = /^[a-z][a-z0-9_]{0,31}$/;
 const MAX_PNG_SIDE = 4096;
+const MAX_ATLAS_SIDE = 4096;
 const MIN_CAPACITY = 64;
 const f32 = Math.fround;
+
+/**
+ * Die Quelle der Texturen (ein Atlas) ist nicht ladbar oder nicht lesbar – betrifft alle Texturen daraus.
+ * prepare lehnt dann ganz ab (statt überall die Fehltextur zu zeigen); ein späterer Aufruf versucht es neu.
+ * atlas: Name des Atlas, cause: ursprünglicher Fehler (z. B. vom Netz).
+ */
+export class TextureSourceError extends Error {
+  constructor(message, { atlas = null, cause } = {}) {
+    super(message, cause === undefined ? undefined : { cause });
+    this.name = 'TextureSourceError';
+    this.atlas = atlas;
+  }
+}
+
+// ArrayBuffer oder Typed Array → Uint8Array (ohne Kopie), sonst null. Auch für Puffer aus anderen Realms (Worker).
+function asBytes(value) {
+  if (value instanceof Uint8Array) return value;
+  if (ArrayBuffer.isView(value)) return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  if (value instanceof ArrayBuffer || Object.prototype.toString.call(value) === '[object ArrayBuffer]') return new Uint8Array(value);
+  return null;
+}
+
+// Quelle mit Atlas-Lader ({ atlas: (name) => Promise<Uint8Array> }) statt Bytes von textures.bin?
+function isAtlasSource(source) {
+  return source !== null && typeof source === 'object' && asBytes(source) === null && 'atlas' in source;
+}
 
 // ---------------------------------------------------------------- Bilder (RGBA, Uint8Array)
 
@@ -638,12 +668,32 @@ function checkAnimation(anim, width, height, name) {
   return count;
 }
 
+// Form eines Eintrags: 'bin' = { o, l } (Bytes in textures.bin), 'atlas' = { atlas, x, y } (Rechteck im Atlasbild).
+function entryForm(entry) {
+  return entry !== null && typeof entry === 'object' && entry.atlas !== undefined ? 'atlas' : 'bin';
+}
+
+// Prüft einen Eintrag in seiner Form (binLength nur für textures.bin). w/h = Größe des ganzen PNGs bzw. Rechtecks.
 function checkEntry(name, entry, binLength) {
   const isInt = (v) => Number.isInteger(v) && v >= 0;
   if (!entry || typeof entry !== 'object') throw new Error(`textures.json: Eintrag „${name}“ fehlt oder ist kein Objekt.`);
-  if (!isInt(entry.o) || !isInt(entry.l) || entry.l < 8 || entry.o + entry.l > binLength) throw new Error(`textures.json: „${name}“ zeigt außerhalb von textures.bin.`);
+  const atlas = entryForm(entry) === 'atlas';
+  if (atlas) {
+    if (typeof entry.atlas !== 'string' || !ATLAS_NAME_PATTERN.test(entry.atlas)) {
+      throw new Error(`textures.json: „${name}“ hat einen ungültigen Atlasnamen (erlaubt: a–z, 0–9 und _, höchstens 32 Zeichen).`);
+    }
+    if (entry.o !== undefined || entry.l !== undefined) throw new Error(`textures.json: „${name}“ hat zugleich atlas und o/l – erlaubt ist nur eine Form.`);
+    if (!isInt(entry.x) || !isInt(entry.y)) throw new Error(`textures.json: „${name}“ hat eine ungültige Atlas-Position (x, y müssen ganze Zahlen ≥ 0 sein).`);
+  } else if (entry.o === undefined && entry.l === undefined) {
+    throw new Error(`textures.json: „${name}“ hat weder o/l (textures.bin) noch atlas/x/y.`);
+  } else if (!isInt(entry.o) || !isInt(entry.l) || entry.l < 8 || entry.o + entry.l > binLength) {
+    throw new Error(`textures.json: „${name}“ zeigt außerhalb von textures.bin.`);
+  }
   if (!isInt(entry.w) || !isInt(entry.h) || entry.w < 1 || entry.h < 1 || entry.w > MAX_PNG_SIDE || entry.h > MAX_PNG_SIDE) {
     throw new Error(`textures.json: „${name}“ hat eine ungültige Größe.`);
+  }
+  if (atlas && (entry.x + entry.w > MAX_ATLAS_SIDE || entry.y + entry.h > MAX_ATLAS_SIDE)) {
+    throw new Error(`textures.json: „${name}“ liegt außerhalb jedes möglichen Atlas (höchstens ${MAX_ATLAS_SIDE}×${MAX_ATLAS_SIDE}).`);
   }
   if (entry.anim !== null && entry.anim !== undefined) checkAnimation(entry.anim, entry.w, entry.h, name);
   if (entry.mip !== undefined && typeof entry.mip !== 'string') throw new Error(`textures.json: „${name}“ hat ein ungültiges mip.`);
@@ -876,32 +926,73 @@ function normalizeFaceLayers(spec, label) {
 export class TextureStore {
   #version;
   #entries;
-  #bin;
+  #bin = null;
+  #atlasSource = null;
   #layerSize;
   #levelCount;
   #images = new Map();
+  #atlases = new Map();
+  #atlasRemaining = new Map();
   #icons = new Map();
   #contexts = new WeakMap();
   #warnedStrategies = new Set();
 
   /**
-   * json: Inhalt von textures.json, bin: Bytes von textures.bin (ArrayBuffer oder Uint8Array).
+   * json: Inhalt von textures.json ({ version, entries }).
+   * source: Bytes von textures.bin (ArrayBuffer oder Uint8Array) – Einträge { o, l, w, h, anim, mip? } –
+   *   oder { atlas: (name) => Promise<Uint8Array> } (PNG-Bytes eines Atlas) – Einträge { atlas, x, y, w, h, anim, mip? }.
+   *   Einträge beider Formen gemischt sind ein Fehler; die Form muss zur Quelle passen.
    * options.layerSize: Ebenengröße (Zweierpotenz 16 … 64, Standard 32).
    */
-  constructor(json, bin, { layerSize = DEFAULT_LAYER_SIZE } = {}) {
+  constructor(json, source, { layerSize = DEFAULT_LAYER_SIZE } = {}) {
     if (!json || typeof json !== 'object' || !json.entries || typeof json.entries !== 'object') {
       throw new Error('textures.json hat nicht das erwartete Format ({ version, entries }).');
     }
     if (![16, 32, 64].includes(layerSize)) throw new Error(`Ebenengröße ${layerSize} nicht erlaubt (16, 32 oder 64).`);
-    this.#bin = bin instanceof Uint8Array ? bin : new Uint8Array(bin);
+    if (isAtlasSource(source)) {
+      if (typeof source.atlas !== 'function') throw new Error('Texturquelle: atlas muss eine Funktion (name) => Promise<Uint8Array> sein.');
+      this.#atlasSource = source;
+    } else {
+      this.#bin = asBytes(source);
+      if (!this.#bin) throw new Error('Texturquelle fehlt: erwartet textures.bin (ArrayBuffer oder Uint8Array) oder { atlas: (name) => Promise<Uint8Array> }.');
+    }
+    const mode = this.mode;
+    const examples = {};
+    for (const [name, entry] of Object.entries(json.entries)) {
+      if (entry && typeof entry === 'object') examples[entryForm(entry)] ??= name;
+    }
+    if (examples.bin !== undefined && examples.atlas !== undefined) {
+      throw new Error(`textures.json mischt Einträge aus textures.bin ({ o, l }, z. B. „${examples.bin}“) und aus Atlanten ({ atlas, x, y }, z. B. „${examples.atlas}“) – erlaubt ist nur eine Form.`);
+    }
+    if (mode === 'bin' && examples.atlas !== undefined) {
+      throw new Error(`textures.json: „${examples.atlas}“ ist ein Atlas-Eintrag ({ atlas, x, y }), die Quelle ist aber textures.bin.`);
+    }
+    if (mode === 'atlas' && examples.bin !== undefined) {
+      throw new Error(`textures.json: „${examples.bin}“ hat kein Feld atlas, die Quelle liefert aber Atlanten.`);
+    }
     this.#entries = new Map();
     for (const [name, entry] of Object.entries(json.entries)) {
-      checkEntry(name, entry, this.#bin.length);
+      checkEntry(name, entry, this.#bin ? this.#bin.length : 0);
       this.#entries.set(name, entry);
+      if (mode === 'atlas') this.#atlasRemaining.set(entry.atlas, (this.#atlasRemaining.get(entry.atlas) ?? 0) + 1);
     }
     this.#version = typeof json.version === 'string' ? json.version : null;
     this.#layerSize = layerSize;
     this.#levelCount = Math.log2(layerSize) + 1;
+  }
+
+  /**
+   * Store aus einer Texturquelle wie loadGameTextures() (js/data/game-data.js) sie liefert:
+   * { json, bin } (textures.bin) oder { json, atlas: (name) => Promise<Uint8Array> } (PNG-Bytes eines Atlas).
+   * Synchron; Fehler im Format werfen sofort.
+   */
+  static fromSource(source, options = {}) {
+    if (!source || typeof source !== 'object') throw new Error('Texturquelle fehlt: erwartet { json, bin } oder { json, atlas }.');
+    const hasBin = source.bin !== undefined && source.bin !== null;
+    const hasAtlas = source.atlas !== undefined && source.atlas !== null;
+    if (hasBin === hasAtlas) throw new Error('Texturquelle braucht genau eins von bin (textures.bin) oder atlas (Lader für Atlasbilder).');
+    if (hasAtlas && typeof source.atlas !== 'function') throw new Error('Texturquelle: atlas muss eine Funktion (name) => Promise<Uint8Array> sein.');
+    return new TextureStore(source.json, hasBin ? source.bin : { atlas: (name) => source.atlas(name) }, options);
   }
 
   // Lädt textures.json und textures.bin (je ein fetch) relativ zur Seite.
@@ -921,6 +1012,8 @@ export class TextureStore {
   get version() { return this.#version; }
   get layerSize() { return this.#layerSize; }
   get levelCount() { return this.#levelCount; }
+  // 'bin' (textures.bin) oder 'atlas' (Atlasbilder)
+  get mode() { return this.#atlasSource ? 'atlas' : 'bin'; }
 
   names() {
     return [...this.#entries.keys()].sort();
@@ -959,18 +1052,85 @@ export class TextureStore {
     return info;
   }
 
-  // Dekodiertes Gesamtbild einer Textur (alle Frames), zwischengespeichert.
+  /**
+   * Dekodiertes Gesamtbild einer Textur (alle Frames), zwischengespeichert.
+   * Atlas-Modus: Ausschnitt aus dem einmal geladenen Atlasbild; Fehler werden nicht behalten (neuer Versuch beim
+   * nächsten Aufruf). Ist der Atlas nicht ladbar/lesbar → TextureSourceError.
+   */
   image(texture) {
     let promise = this.#images.get(texture);
     if (!promise) {
       const entry = this.#entries.get(texture);
       if (!entry) return Promise.reject(new Error(`Textur „${texture}“ gibt es nicht.`));
-      promise = decodePng(this.#bin.subarray(entry.o, entry.o + entry.l)).catch((error) => {
-        throw new Error(`Textur „${texture}“ lässt sich nicht lesen: ${error.message}`);
-      });
-      this.#images.set(texture, promise);
+      if (this.#bin) {
+        promise = decodePng(this.#bin.subarray(entry.o, entry.o + entry.l)).catch((error) => {
+          throw new Error(`Textur „${texture}“ lässt sich nicht lesen: ${error.message}`);
+        });
+        this.#images.set(texture, promise);
+      } else {
+        const current = this.#cropFromAtlas(texture, entry);
+        promise = current;
+        this.#images.set(texture, current);
+        current.catch(() => {
+          if (this.#images.get(texture) === current) this.#images.delete(texture);
+        });
+      }
     }
     return promise;
+  }
+
+  async #cropFromAtlas(texture, entry) {
+    const atlas = await this.#atlasImage(entry.atlas);
+    if (entry.x + entry.w > atlas.width || entry.y + entry.h > atlas.height) {
+      throw new Error(`Textur „${texture}“: Rechteck x ${entry.x}, y ${entry.y}, ${entry.w}×${entry.h} liegt außerhalb des Atlas „${entry.atlas}“ (${atlas.width}×${atlas.height}).`);
+    }
+    const image = cropImage(atlas, entry.x, entry.y, entry.w, entry.h);
+    // Sind alle Texturen dieses Atlas ausgeschnitten (und in #images), braucht es das große Bild nicht mehr.
+    const remaining = this.#atlasRemaining.get(entry.atlas) - 1;
+    this.#atlasRemaining.set(entry.atlas, remaining);
+    if (remaining === 0) this.#atlases.delete(entry.atlas);
+    return image;
+  }
+
+  // Atlasbild (RGBA), je Name einmal geladen und dekodiert; ein Fehler wird nicht behalten.
+  #atlasImage(name) {
+    let promise = this.#atlases.get(name);
+    if (!promise) {
+      const current = this.#loadAtlas(name);
+      promise = current;
+      this.#atlases.set(name, current);
+      current.catch(() => {
+        if (this.#atlases.get(name) === current) this.#atlases.delete(name);
+      });
+    }
+    return promise;
+  }
+
+  async #loadAtlas(name) {
+    let raw;
+    try {
+      raw = await this.#atlasSource.atlas(name);
+    } catch (error) {
+      throw new TextureSourceError(`Der Textur-Atlas „${name}“ konnte nicht geladen werden: ${error?.message ?? String(error)}`, { atlas: name, cause: error });
+    }
+    const bytes = asBytes(raw);
+    if (!bytes) throw new TextureSourceError(`Der Textur-Atlas „${name}“ kam nicht als PNG-Bytes an (erwartet Uint8Array oder ArrayBuffer).`, { atlas: name });
+    let image;
+    try {
+      image = await decodePng(bytes);
+    } catch (error) {
+      throw new TextureSourceError(`Der Textur-Atlas „${name}“ lässt sich nicht lesen: ${error.message}`, { atlas: name, cause: error });
+    }
+    // decodePng prüft die Größe schon im Kopf (vor dem Entpacken); hier ausdrücklich für Atlanten.
+    if (image.width > MAX_ATLAS_SIDE || image.height > MAX_ATLAS_SIDE) {
+      throw new TextureSourceError(`Der Textur-Atlas „${name}“ ist ${image.width}×${image.height} groß (höchstens ${MAX_ATLAS_SIDE}×${MAX_ATLAS_SIDE}).`, { atlas: name });
+    }
+    return image;
+  }
+
+  // Namen der Atlanten, deren Bild gerade im Speicher liegt oder lädt (für Tests und Fehlersuche).
+  loadedAtlases() {
+    return [...this.#atlases.keys()].sort();
   }
 
   #strategyOf(texture, entry) {
@@ -1073,6 +1233,8 @@ export class TextureStore {
    * Bereitet die Texturen für einen WebGL2-Kontext vor (nur neue werden dekodiert und hochgeladen; Ebenen
    * bleiben für diesen Kontext stabil). Rückgabe: Map<name, { layer, alpha, mask, maskWidth, maskHeight,
    * animated, missing }>. Unbekannte oder ungültige Namen bekommen die Fehltextur (Warnung in der Konsole).
+   * Atlas-Modus: ist ein nötiger Atlas nicht ladbar oder lesbar, lehnt prepare mit TextureSourceError ab
+   * (nichts wird hinzugefügt, ein neuer Aufruf versucht es noch einmal).
    */
   prepare(gl, names) {
     if (!gl || typeof gl.texStorage3D !== 'function') return Promise.reject(new Error('prepare braucht einen WebGL2-Kontext.'));
@@ -1114,10 +1276,13 @@ export class TextureStore {
 
     // Alle auf einmal: DecompressionStream braucht mehrere Runden der Ereignisschleife, parallel ist es am schnellsten
     // (gemessen: 1269 Block-Texturen 217 ms statt ~900 ms mit 16 bis 64 gleichzeitig).
+    // Ist ein Atlas nicht ladbar (Netz, kaputtes PNG), lehnt prepare ab, bevor sich etwas ändert – ein späterer
+    // Aufruf lädt neu. Fehler einzelner Texturen → Fehltextur wie bei textures.bin.
     const built = await Promise.all(newKeys.map(async ({ key, parsed }) => {
       try {
         return { key, layer: await this.#buildFor(parsed) };
       } catch (error) {
+        if (error instanceof TextureSourceError) throw error;
         problems.push(`${key} (${error.message})`);
         return { key, layer: null, fallback: true };
       }
