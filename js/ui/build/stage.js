@@ -9,6 +9,11 @@ import { raycastBlocks } from '../../render/picking.js';
 import { toolButton, setPressed, FloatingTooltip, blockTooltipParts, positionText } from './kit.js';
 import { stepLabel } from './step-player.js';
 
+/** Grobe Zeigersteuerung (Touch) als Hauptbedienung? */
+export function prefersCoarsePointer() {
+  return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+}
+
 export const VIEW_LABELS = Object.freeze({ iso: 'Iso', top: 'Oben', front: 'Vorne', side: 'Seite' });
 const VIEW_TITLES = { iso: 'Schräg von oben', top: 'Von oben', front: 'Von vorne (Süden)', side: 'Von der Seite (Osten)' };
 const STATUS_STEPS = [
@@ -160,9 +165,11 @@ export class Stage {
       this.#pointer = { x: event.clientX, y: event.clientY, type: event.pointerType };
       if (this.#tooltip.visible && event.pointerType === 'mouse') this.#tooltip.move(event.clientX, event.clientY);
     };
-    const onLeave = () => {
+    const onLeave = (event) => {
       this.#pointer = null;
-      if (this.#ctx?.viewer.mode !== 'walk') this.#tooltip.hide();
+      // Nur bei der Maus: Auf Touch-Geräten folgt pointerleave direkt auf das Antippen und würde den Tipp-Tooltip
+      // (onPick, 2,5 s) sofort wieder entfernen.
+      if (event.pointerType === 'mouse' && this.#ctx?.viewer.mode !== 'walk') this.#tooltip.hide();
     };
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerdown', onMove);
@@ -372,7 +379,9 @@ export class Stage {
     const parts = blockTooltipParts(hit.state, { step: hit.step, stepTitle: step?.title ?? '', coords: positionText(hit.x, hit.y, hit.z) });
     if (viewer.mode === 'walk') {
       const box = this.#root.getBoundingClientRect();
-      this.#tooltip.show(parts, box.left + box.width / 2 + 12, box.top + box.height / 2 + 12);
+      // Mit Touch-Bedienung liegen unten Joystick und Knöpfe: dann oben in der Mitte zeigen (unter den Werkzeugen)
+      if (prefersCoarsePointer()) this.#tooltip.show(parts, box.left + box.width / 2 - 112, box.top + 48);
+      else this.#tooltip.show(parts, box.left + box.width / 2 + 12, box.top + box.height / 2 + 12);
       return;
     }
     if (this.#pointer && this.#pointer.type === 'mouse') this.#tooltip.show(parts, this.#pointer.x, this.#pointer.y);
