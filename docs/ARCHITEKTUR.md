@@ -1371,6 +1371,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `--jar`/`--assets`), `--out <ordner>` schreibt statt nach `game-data/` dorthin (Cache `<ordner>/.cache/`). Fehlt das Jar,
   nennt die Meldung `--remote`. `parseCliArgs` liefert `remote`/`out` nur, wenn gesetzt. Als Bibliothek:
   `extractGameData({ remote: true, out, offline }, log)`.
+  Änderung (ohne Minecraft): ohne `--jar`, `--assets` und `--remote` und ohne Jar am Standardort wechselt der Aufruf
+  automatisch auf `--remote` (Meldung „Keine Minecraft-Installation gefunden“). Entscheidung in
+  `chooseSource(options, { jarPath, exists })` → `{ options, auto, jarPath }`; `extractGameData` selbst bleibt unverändert.
 - `node scripts/check-imports.mjs [--root <ordner>]` (cloud:spieldaten) – prüft alle statisch erkennbaren lokalen Verweise auf
   exakte Groß-/Kleinschreibung (unter Linux entscheidend): JS/MJS in `js/`, `scripts/`, `tests/` (`import … from`,
   `export … from`, `import('…')`, `new URL('…', import.meta.url)` und daraus gebildete Basis-Variablen, `new Worker('…')`,
@@ -1438,6 +1441,12 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   ruft es `extract-game-data.mjs` (mit `--remote` aus dem Netz); ist der Katalog älter als `js/builds/`, `js/core/`, `build-catalog.mjs`,
   `check-build.mjs`, `structures/index.json` oder `blocks.json` (oder fehlt er), ruft es `build-catalog.mjs --thumbs`; dann startet
   der Server (belegter Port → die nächsten 9 probieren, außer bei `--port`). Exportiert `parseStartArgs`, `checkGameData`, `checkCatalog`.
+  Änderung (ohne Minecraft): `ensureGameData({ remote, run, check, minecraftJar, log })` → `'present' | 'local' | 'remote'`.
+  Jar am Standardort (`findMinecraftJar()`) → daraus lesen; scheitert das, ohne Jar oder mit `--remote` →
+  `extract-game-data.mjs --remote`. Fehlen danach noch Dateien → Fehler mit Hinweis aufs Internet. Die Fehleranzeige der Seite
+  nennt bei fehlendem `game-data/` (Katalog und `meta.json` fehlen) nur noch `node scripts/start.mjs`; bei einzelnen
+  fehlenden Spieldaten `node scripts/extract-game-data.mjs` (geht ebenfalls ohne Minecraft). `serve.mjs` nennt beim Start
+  `start.mjs`, wenn `game-data/catalog.json` fehlt.
 - `tests/browser.mjs` – Chrome über DevTools-Protokoll, freier Debug-Port (parallele Läufe gehen).
   `launchBrowser({ gpu: 'hardware' })` nutzt die Grafikkarte (Intel UHD 770, D3D11),
   `gpu: 'swiftshader'` Software-WebGL. Beide liefern WebGL2 mit 2048 Textur-Ebenen.

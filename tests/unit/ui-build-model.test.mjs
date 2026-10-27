@@ -149,6 +149,7 @@ test('Fehler des Viewers werden verständlich, Spieldaten mit Befehl', () => {
   const data = viewerErrorState({ code: 'data', message: 'Die Spieldaten fehlen.' });
   assert.equal(data.title, 'Spieldaten fehlen');
   assert.equal(data.steps[0].command, 'node scripts/extract-game-data.mjs');
+  assert.match(data.steps[0].text, /ohne Minecraft/, 'geht auch ohne Minecraft-Installation');
   assert.equal(viewerErrorState({ code: 'no-webgl2', message: 'kein WebGL2' }).title, '3D-Ansicht nicht möglich');
   assert.equal(viewerErrorState({ code: 'build', message: 'kaputt' }).text, 'kaputt');
   assert.equal(viewerErrorState(null).title, 'Der Bau konnte nicht geladen werden');

@@ -51,7 +51,9 @@ test('404 bei Spieldaten → „Spieldaten fehlen“ mit Anleitung', async () =>
     assert.equal(error.status, 404);
     assert.equal(error.title, 'Spieldaten fehlen');
     assert.match(error.message, /game-data\/catalog\.json/);
-    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), ['node scripts/extract-game-data.mjs', 'node scripts/build-catalog.mjs']);
+    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), ['node scripts/start.mjs'], 'ein Befehl, der auch ohne Minecraft geht');
+    assert.doesNotMatch(error.steps[0].text, /Minecraft-Installation lesen/, 'verlangt keine Minecraft-Installation');
+    assert.match(error.steps[0].text, /ohne Minecraft/);
     return true;
   });
   await assert.rejects(loadJson('daten/liste.json', { fetch, root: ROOT }), { kind: 'missing', title: 'Datei nicht gefunden' });
@@ -80,7 +82,8 @@ test('loadJson lehnt unsichere Pfade ab, ohne überhaupt anzufragen', async () =
 });
 
 test('recoverySteps passt zur Datei', () => {
-  assert.equal(recoverySteps(CATALOG_PATH).length, 3);
+  assert.equal(recoverySteps(CATALOG_PATH).length, 2);
+  assert.deepEqual(recoverySteps(CATALOG_PATH).map((step) => step.command).filter(Boolean), ['node scripts/start.mjs']);
   assert.deepEqual(recoverySteps(NAMES_PATH).map((step) => step.command).filter(Boolean), ['node scripts/extract-game-data.mjs']);
   assert.deepEqual(recoverySteps('andere.json').map((step) => step.command).filter(Boolean), []);
 });

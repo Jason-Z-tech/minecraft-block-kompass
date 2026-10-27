@@ -68,7 +68,7 @@ test('loadBuildEntry: Eintrag mit allen Feldern, Testmodule erlaubt, unbekannt â
 test('Katalog fehlt: DataError mit Befehl', async () => {
   const fetch = async () => new Response('', { status: 404 });
   await assert.rejects(loadBuildEntry('example-house', { fetch, root: SITE }), (error) => error.name === 'DataError' && error.kind === 'missing'
-    && error.steps.some((step) => step.command?.includes('extract-game-data')));
+    && error.steps.some((step) => step.command === 'node scripts/start.mjs'));
 });
 
 test('normalizeBuildDetails prÃ¼ft jedes Feld', () => {

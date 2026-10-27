@@ -11,7 +11,7 @@ import {
   REMOTE_DOMAINS, RemoteSourceError, archiveAssets, mergeAssets, readMcmetaVersion, createDownloader, loadRemoteSources,
   blockedDomainMessage, mcmetaArchiveUrl, mcmetaRawUrl, mojangObjectUrl, proxyRelaunchPlan,
 } from '../../scripts/lib/remote-source.mjs';
-import { MC_VERSION, MCMETA_TAG, UserError, parseCliArgs, extractGameData } from '../../scripts/extract-game-data.mjs';
+import { MC_VERSION, MCMETA_TAG, UserError, parseCliArgs, extractGameData, chooseSource } from '../../scripts/extract-game-data.mjs';
 import { chromeCandidates, platformChromeFlags } from '../browser.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -320,6 +320,29 @@ test('Kommandozeile: --remote und --out, Widersprüche werden abgelehnt', () => 
   assert.throws(() => parseCliArgs(['--remote', '--jar', 'a.jar']), (error) => error instanceof UserError && /verträgt sich nicht/.test(error.message));
   assert.throws(() => parseCliArgs(['--remote', '--assets', 'x']), /verträgt sich nicht/);
   assert.throws(() => parseCliArgs(['--out', ' ']), /braucht einen Pfad/);
+});
+
+test('Ohne Minecraft-Jar und ohne Optionen: automatisch aus öffentlichen Quellen, sonst unverändert', () => {
+  const jarPath = path.join('x', 'versions', MC_VERSION, `${MC_VERSION}.jar`);
+  const none = () => false;
+  const found = () => true;
+  const auto = chooseSource(parseCliArgs([]), { jarPath, exists: none });
+  assert.equal(auto.auto, true);
+  assert.equal(auto.options.remote, true);
+  assert.equal(auto.jarPath, jarPath);
+  assert.equal(chooseSource(parseCliArgs(['--offline']), { jarPath, exists: none }).options.offline, true, '--offline bleibt erhalten');
+
+  const local = chooseSource(parseCliArgs([]), { jarPath, exists: found });
+  assert.equal(local.auto, false, 'installiertes Minecraft hat Vorrang');
+  assert.equal(Object.hasOwn(local.options, 'remote'), false);
+  for (const argv of [['--jar', 'eigene.jar'], ['--assets', 'assets']]) {
+    const explicit = chooseSource(parseCliArgs(argv), { jarPath, exists: none });
+    assert.equal(explicit.auto, false, `${argv[0]} wird nie überstimmt`);
+    assert.equal(Object.hasOwn(explicit.options, 'remote'), false);
+  }
+  const remote = chooseSource(parseCliArgs(['--remote']), { jarPath, exists: found });
+  assert.equal(remote.auto, false);
+  assert.equal(remote.options.remote, true);
 });
 
 function mcmetaBlocksFixture() {

@@ -1,13 +1,16 @@
 // Ein Befehl zum Starten: prüft die Spieldaten (fehlen sie, werden sie erzeugt), prüft, ob der Katalog zu den
 // Bau-Modulen passt (sonst neu bauen), und startet den lokalen Server.
 //   node scripts/start.mjs [--port 8080] [--remote] [--no-thumbs]
-// --remote: Spieldaten ohne Minecraft-Installation aus öffentlichen Quellen laden (siehe README „In der Cloud“).
+// Spieldaten: aus der Minecraft-Installation (nur lesend); ohne Installation oder wenn das scheitert automatisch aus
+// öffentlichen Quellen (siehe README „Ohne Minecraft“).
+// --remote: immer aus öffentlichen Quellen laden, auch wenn Minecraft installiert ist.
 // --no-thumbs: Katalog ohne Vorschaubilder bauen (braucht dann kein Chrome).
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
+import { defaultSourcePaths } from './extract-game-data.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GAME_DATA = path.join(ROOT, 'game-data');
@@ -92,6 +95,45 @@ export function checkCatalog({ root = ROOT, catalogFile = CATALOG } = {}) {
   return { fresh: true, reason: null, missing };
 }
 
+/** Minecraft-Jar 26.2 am Standardort → Pfad, sonst null. */
+export function findMinecraftJar(jarPath = defaultSourcePaths().jar) {
+  return statSync(jarPath, { throwIfNoEntry: false })?.isFile() ? jarPath : null;
+}
+
+/**
+ * Sorgt für vollständige Spieldaten. Mit Minecraft-Installation: daraus lesen; ohne (oder wenn das scheitert) und mit
+ * --remote: aus öffentlichen Quellen laden. → 'present' | 'local' | 'remote', sonst Error.
+ * run(script, args) → Exit-Code, check() → Liste der Probleme (für Tests austauschbar).
+ */
+export function ensureGameData({ remote = false, run = runNode, check = checkGameData, minecraftJar = findMinecraftJar, log = console.log } = {}) {
+  const problems = check();
+  if (!problems.length) {
+    log('✓ Spieldaten vorhanden (game-data/)');
+    return 'present';
+  }
+  log(`Spieldaten fehlen (${problems.join(', ')}).`);
+  const jar = remote ? null : minecraftJar();
+  if (jar) {
+    log(`Lese sie aus deiner Minecraft-Installation (nur lesend): ${jar} …\n`);
+    if (run('scripts/extract-game-data.mjs', []) === 0 && check().length === 0) return 'local';
+    log('\nAus der Installation ging es nicht (Meldung oben). Lade die Spieldaten stattdessen aus öffentlichen Quellen …\n');
+  } else if (remote) {
+    log('Lade sie aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 13 MB) …\n');
+  } else {
+    log('Keine Minecraft-Installation gefunden – lade sie ohne Minecraft aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 13 MB) …\n');
+  }
+  const status = run('scripts/extract-game-data.mjs', ['--remote']);
+  const left = check();
+  if (status !== 0 || left.length) {
+    throw new Error([
+      'Die Spieldaten konnten nicht erzeugt werden (Meldung oben).',
+      left.length ? `Noch offen: ${left.join(', ')}.` : null,
+      'Ohne Minecraft braucht es einmalig Internet (Domains im README unter „Ohne Minecraft“).',
+    ].filter(Boolean).join('\n'));
+  }
+  return 'remote';
+}
+
 function runNode(script, args) {
   const result = spawnSync(process.execPath, [path.join(ROOT, script), ...args], { stdio: 'inherit', cwd: ROOT });
   if (result.error) throw result.error;
@@ -118,20 +160,7 @@ async function main() {
   console.log('Block-Kompass · Minecraft Java 26.2\n');
 
   // 1. Spieldaten
-  let problems = checkGameData();
-  if (problems.length) {
-    console.log(`Spieldaten fehlen (${problems.join(', ')}). Erzeuge sie jetzt${options.remote ? ' aus öffentlichen Quellen' : ' aus deiner Minecraft-Installation (wird nur gelesen)'} …\n`);
-    const status = runNode('scripts/extract-game-data.mjs', options.remote ? ['--remote'] : []);
-    problems = checkGameData();
-    if (status !== 0 || problems.length) {
-      throw new Error([
-        'Die Spieldaten konnten nicht erzeugt werden (Meldung oben).',
-        options.remote ? 'Prüfe den Netzwerkzugriff (README „In der Cloud“).' : 'Ohne installiertes Minecraft Java 26.2: node scripts/start.mjs --remote',
-      ].join('\n'));
-    }
-  } else {
-    console.log('✓ Spieldaten vorhanden (game-data/)');
-  }
+  ensureGameData({ remote: options.remote });
   if (!existsSync(path.join(GAME_DATA, 'block-colors.json'))) {
     console.log('  Hinweis: game-data/block-colors.json fehlt – 3D-Modelle lassen sich nicht importieren. Erzeugen: node scripts/build-block-colors.mjs');
   }

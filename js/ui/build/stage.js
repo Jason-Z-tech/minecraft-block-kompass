@@ -44,7 +44,7 @@ export function viewerErrorState(error) {
     return {
       kind: 'error', title: 'Spieldaten fehlen', text: message,
       steps: [
-        { text: 'Spieldaten aus deiner Minecraft-Installation lesen (nur lesend, Minecraft muss dafür nicht laufen):', command: DATA_COMMAND },
+        { text: 'Spieldaten neu holen (ohne Minecraft aus dem Internet, sonst aus deiner Installation):', command: DATA_COMMAND },
         { text: 'Danach diese Seite neu laden.' },
       ],
     };

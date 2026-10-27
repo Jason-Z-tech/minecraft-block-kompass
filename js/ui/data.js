@@ -8,7 +8,8 @@ export const NAMES_PATH = 'game-data/names.json';
 const DEFAULT_TIMEOUT_MS = 15000;
 const MAX_SIZE = 4064;
 
-const STEP_EXTRACT = { text: 'Spieldaten aus deiner Minecraft-Installation lesen (nur lesend, Minecraft muss dafür nicht laufen):', command: 'node scripts/extract-game-data.mjs' };
+const STEP_START = { text: 'Im Projektordner ausführen. Das holt die Spieldaten (ohne Minecraft einmalig aus dem Internet, sonst aus deiner Installation) und baut den Katalog:', command: 'node scripts/start.mjs' };
+const STEP_EXTRACT = { text: 'Spieldaten neu holen (ohne Minecraft aus dem Internet, sonst aus deiner Installation):', command: 'node scripts/extract-game-data.mjs' };
 const STEP_CATALOG = { text: 'Katalog der Bauten erzeugen:', command: 'node scripts/build-catalog.mjs' };
 const STEP_SERVER = { text: 'Den lokalen Server starten (im Projektordner):', command: 'node scripts/serve.mjs' };
 const STEP_RELOAD = { text: 'Danach diese Seite neu laden.' };
@@ -27,7 +28,7 @@ export class DataError extends Error {
 
 /** Anleitung, wie eine fehlende oder kaputte Datei neu entsteht. */
 export function recoverySteps(path) {
-  if (path === CATALOG_PATH) return [STEP_EXTRACT, STEP_CATALOG, STEP_RELOAD];
+  if (path === CATALOG_PATH) return [STEP_START, STEP_RELOAD];
   if (typeof path === 'string' && path.startsWith('game-data/')) return [STEP_EXTRACT, STEP_RELOAD];
   return [STEP_RELOAD];
 }

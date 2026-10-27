@@ -2,24 +2,29 @@
 
 Lokale Webseite mit Minecraft-Bauten (Java Edition 26.2). Jeder Bau hat eine 3D-Schritt-für-Schritt-Anleitung im Browser (Block für Block, auch zum Herumlaufen wie im Spiel), eine Materialliste mit den deutschen Blocknamen zum Abhaken und einen Ebenen-Plan. Dazu kommt „Selber erstellen“: Katalogsuche per Freitext, Formen-Generator (Kugel, Turm, Bogen …) und Upload von Bauplänen (`.schem`, `.litematic`, `.nbt`) oder 3D-Modellen (`.vox`, `.stl`, `.obj`, `.glb`, `.gltf`).
 
-Nur für den Eigengebrauch: Die Seite läuft ausschließlich lokal auf `127.0.0.1` und wird nicht veröffentlicht. Texturen, Modelle und Namen stammen aus deiner Minecraft-Installation und bleiben auf deinem Rechner (`game-data/`, `thumbs/` sind nicht im Repo).
+Nur für den Eigengebrauch: Die Seite läuft ausschließlich lokal auf `127.0.0.1` und wird nicht veröffentlicht. Texturen, Modelle und Namen stammen original aus Minecraft 26.2 (aus deiner Installation oder, ohne Minecraft, aus öffentlichen Quellen geladen) und bleiben auf deinem Rechner (`game-data/`, `thumbs/` sind nicht im Repo).
 
 ## Voraussetzungen
 - **Node.js 24** (nur Bordmittel, keine npm-Pakete)
-- **Minecraft Java 26.2 installiert** (Launcher oder CurseForge): Texturen, Modelle, deutsche Namen und Original-Strukturen werden daraus nur **gelesen**. Das Spiel, ein Server oder ein Jar werden nie gestartet, in `.minecraft` wird nichts geschrieben. Ohne Installation geht es mit `--remote` (siehe „In der Cloud“).
+- **Minecraft ist nicht nötig.** Ist Minecraft Java 26.2 installiert (Launcher oder CurseForge), werden Texturen, Modelle, deutsche Namen und Original-Strukturen daraus nur **gelesen**: Das Spiel, ein Server oder ein Jar werden nie gestartet, in `.minecraft` wird nichts geschrieben. Ohne Installation lädt der Start die gleichen Dateien einmalig aus dem Internet (siehe „Ohne Minecraft“).
 - **Chrome oder Edge** für Vorschaubilder, Klick-Test und Screenshots (headless, mit Grafikkarte oder Software-WebGL)
 
 ## Starten
 ```powershell
 node scripts/start.mjs
 ```
-Das Skript prüft die Spieldaten (fehlen sie, erzeugt es sie aus der Installation), prüft, ob der Katalog zu den Bau-Modulen passt (sonst baut es ihn samt Vorschaubildern neu), und startet den Server. Danach die angezeigte Adresse öffnen, normalerweise http://127.0.0.1:8080 (ist der Port belegt, nimmt es den nächsten freien).
+Das Skript prüft die Spieldaten (fehlen sie, liest es sie aus der Minecraft-Installation, ohne Installation lädt es sie aus dem Internet), prüft, ob der Katalog zu den Bau-Modulen passt (sonst baut es ihn samt Vorschaubildern neu), und startet den Server. Danach die angezeigte Adresse öffnen, normalerweise http://127.0.0.1:8080 (ist der Port belegt, nimmt es den nächsten freien).
 
-Optionen: `--port <zahl>`, `--remote` (Spieldaten ohne Installation laden), `--no-thumbs` (Katalog ohne Vorschaubilder, braucht kein Chrome).
+Optionen: `--port <zahl>`, `--remote` (Spieldaten immer aus dem Internet, auch wenn Minecraft installiert ist), `--no-thumbs` (Katalog ohne Vorschaubilder, braucht kein Chrome).
+
+## Ohne Minecraft
+Einfach `node scripts/start.mjs` ausführen. Findet es keine Installation von Minecraft Java 26.2 (oder klappt das Lesen daraus nicht), lädt es die Spieldaten einmalig aus öffentlichen Quellen: Archive von [misode/mcmeta](https://github.com/misode/mcmeta) (unveränderte Dateien der 26.2-Jar) und die deutsche Sprachdatei von Mojang, zusammen ≈ 13 MB. Das Ergebnis ist Byte für Byte gleich wie mit dem Jar. Danach läuft alles ohne Internet, die Daten liegen in `game-data/`.
+
+Auch `node scripts/extract-game-data.mjs` ohne Optionen wechselt automatisch auf die öffentlichen Quellen, wenn am Standardort keine Jar liegt. Die nötigen Domains stehen unten unter „In der Cloud“.
 
 Einzelschritte, falls nötig:
 ```powershell
-node scripts/extract-game-data.mjs      # Spieldaten nach game-data/ (≈ 2 s)
+node scripts/extract-game-data.mjs      # Spieldaten nach game-data/ (≈ 2 s; ohne Minecraft automatisch aus dem Internet)
 node scripts/build-catalog.mjs --thumbs # Katalog game-data/catalog.json + Vorschaubilder in thumbs/
 node scripts/serve.mjs                  # nur der Server
 ```

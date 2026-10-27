@@ -2,8 +2,8 @@
 // Liest nur: die Client-Jar, den Asset-Index mit de_de.json und einmalig den Blockbericht von
 // misode/mcmeta (Cache in game-data/.cache/). Schreibt nie in .minecraft/curseforge, startet nichts.
 // Aufruf: node scripts/extract-game-data.mjs [--jar <pfad>] [--assets <ordner>] [--offline] [--out <ordner>]
-// Ohne Installation (Cloud): node scripts/extract-game-data.mjs --remote – gleiche Daten aus öffentlichen Quellen
-// (scripts/lib/remote-source.mjs).
+// Ohne Installation: node scripts/extract-game-data.mjs --remote – gleiche Daten aus öffentlichen Quellen
+// (scripts/lib/remote-source.mjs). Ohne Optionen und ohne Jar am Standardort passiert das automatisch.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -97,6 +97,7 @@ const USAGE = [
   '  --offline          nichts herunterladen (Blockbericht nur aus game-data\\.cache, sonst abgeleitet;',
   '                     mit --remote alles nur aus dem Cache)',
   '  --remote           ohne Minecraft-Installation: Dateien von misode/mcmeta (GitHub) und Mojang laden',
+  '                     (ohne --jar/--assets automatisch, wenn am Standardort keine Jar liegt)',
   `                     (Domains: ${REMOTE_DOMAINS.map((domain) => domain.host).join(', ')})`,
   '  --out <ordner>     Zielordner statt game-data (Cache dann in <ordner>/.cache)',
 ].join('\n');
@@ -229,6 +230,15 @@ export function defaultSourcePaths(env = process.env, home = os.homedir()) {
     jar: path.join(minecraftDir, 'versions', MC_VERSION, `${MC_VERSION}.jar`),
     assetDirs: [path.join(home, 'curseforge', 'minecraft', 'Install', 'assets'), path.join(minecraftDir, 'assets')],
   };
+}
+
+/**
+ * Ohne --jar, --assets und --remote, aber auch ohne Jar am Standardort: aus öffentlichen Quellen laden wie mit --remote,
+ * damit es auch ohne Minecraft-Installation geht. → { options, auto, jarPath } (auto = automatisch auf remote gewechselt)
+ */
+export function chooseSource(options, { jarPath = defaultSourcePaths().jar, exists = isFile } = {}) {
+  if (options.remote || options.jar !== undefined || options.assets !== undefined || exists(jarPath)) return { options, auto: false, jarPath };
+  return { options: { ...options, remote: true }, auto: true, jarPath };
 }
 
 // Asset-Index-ID aus der Versionsdatei neben der Jar (26.2.json), sonst der bekannte Wert für 26.2.
@@ -1543,13 +1553,13 @@ export async function extractGameData(options, log = console.log) {
 }
 
 // Node-fetch ignoriert HTTPS_PROXY ohne --use-env-proxy (z. B. in Cloud-Containern): dann einmal damit neu starten.
-// → true, wenn der Kindprozess die Arbeit gemacht hat (Exit-Code übernommen).
-function relaunchWithEnvProxy() {
+// → true, wenn der Kindprozess die Arbeit gemacht hat (Exit-Code übernommen). extraArgs: z. B. ['--remote'] nach automatischem Wechsel.
+function relaunchWithEnvProxy(extraArgs = []) {
   const plan = proxyRelaunchPlan();
   if (plan.warn) console.warn(`Hinweis: ${plan.reason}. Downloads können am Proxy scheitern.`);
   if (!plan.relaunch) return false;
   console.log(`${plan.reason} – starte mit --use-env-proxy neu, damit die Downloads über den Proxy laufen.`);
-  const result = spawnSync(process.execPath, ['--use-env-proxy', ...process.execArgv, ...process.argv.slice(1)], { stdio: 'inherit' });
+  const result = spawnSync(process.execPath, ['--use-env-proxy', ...process.execArgv, ...process.argv.slice(1), ...extraArgs], { stdio: 'inherit' });
   if (result.error) throw result.error;
   process.exitCode = result.status ?? 1;
   return true;
@@ -1558,9 +1568,16 @@ function relaunchWithEnvProxy() {
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (isMainModule) {
   try {
-    const options = parseCliArgs(process.argv.slice(2));
-    if (options.help) console.log(USAGE);
-    else if (!(options.remote && relaunchWithEnvProxy())) await extractGameData(options);
+    const parsed = parseCliArgs(process.argv.slice(2));
+    if (parsed.help) console.log(USAGE);
+    else {
+      const { options, auto, jarPath } = chooseSource(parsed);
+      if (auto) {
+        console.log(`Keine Minecraft-Installation gefunden (${jarPath}).`);
+        console.log('Lade die Spieldaten ohne Minecraft aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 13 MB) …');
+      }
+      if (!(options.remote && relaunchWithEnvProxy(auto ? ['--remote'] : []))) await extractGameData(options);
+    }
   } catch (error) {
     if (error instanceof UserError) console.error(`Fehler: ${error.message}`);
     else console.error('Unerwarteter Fehler bei der Extraktion:', error);

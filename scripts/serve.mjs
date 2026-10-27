@@ -2,7 +2,7 @@
 // Start: node scripts/serve.mjs [--port 8080]
 
 import http from 'node:http';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -174,6 +174,10 @@ if (isMainModule) {
   try {
     const { url } = await startServer({ port: readPortArgument(process.argv.slice(2)) });
     console.log(`Block-Kompass läuft: ${url}  (beenden mit Strg+C)`);
+    if (!existsSync(path.join(ROOT, 'game-data', 'catalog.json'))) {
+      console.log('Hinweis: Spieldaten oder Katalog fehlen noch, die Seite zeigt darum „Spieldaten fehlen“.');
+      console.log('Alles in einem Schritt (holt die Spieldaten auch ohne Minecraft): node scripts/start.mjs');
+    }
   } catch (error) {
     if (error.code === 'EADDRINUSE') console.error('Der Port ist schon belegt. Anderen wählen, z. B.: node scripts/serve.mjs --port 8081');
     else console.error(error.message);
