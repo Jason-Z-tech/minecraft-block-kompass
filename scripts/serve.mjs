@@ -174,8 +174,8 @@ if (isMainModule) {
   try {
     const { url } = await startServer({ port: readPortArgument(process.argv.slice(2)) });
     console.log(`Block-Kompass läuft: ${url}  (beenden mit Strg+C)`);
-    if (!existsSync(path.join(ROOT, 'game-data', 'catalog.json'))) {
-      console.log('Hinweis: Spieldaten oder Katalog fehlen noch, die Seite zeigt darum „Spieldaten fehlen“.');
+    if (!existsSync(path.join(ROOT, 'game-data', 'meta.json'))) {
+      console.log('Hinweis: game-data/ fehlt, die 3D-Ansichten brauchen die Spieldaten.');
       console.log('Alles in einem Schritt (holt die Spieldaten auch ohne Minecraft): node scripts/start.mjs');
     }
   } catch (error) {

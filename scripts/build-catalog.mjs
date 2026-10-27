@@ -1,13 +1,18 @@
 // Katalog der Bauten (ARCHITEKTUR §9): prüft alle Bau-Module js/builds/<kategorie>/<id>.js mit checkBuild (für jeden
-// Maßstab) und die Original-Strukturen aus js/builds/game-structures.js und schreibt game-data/catalog.json atomar.
+// Maßstab) und die Original-Strukturen aus js/builds/game-structures.js und schreibt data/catalog.json atomar.
+// Der Katalog liegt im Repo und wird mit der Webseite veröffentlicht: Er enthält nur Projekttexte, Größen, Zahlen und
+// Block-IDs, keine Spieldaten und keine Vorschaubilder (die liegen nur lokal in thumbs/, siehe thumbs/index.json).
+// „inputs“ hält einen Fingerabdruck der Eingaben (Quelltext und Spieldaten); passt er nicht mehr, ist der Katalog veraltet.
 // Aufruf: node scripts/build-catalog.mjs [--thumbs [--force]] [--modules-dir <ordner>] [--structures <datei> | --no-structures]
 //                                        [--data <ordner>] [--out <datei>] [--thumbs-dir <ordner>]
 // Fehlerhafte Einträge fehlen im Katalog (Hinweis unter „warnings“); alle Fehler stehen am Ende, Exit-Code 1.
 
 import { readFile, readdir, rename, writeFile, unlink, mkdir, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { checkBuild, CATEGORIES, ACCURACIES } from './check-build.mjs';
+import { moduleSources } from './lib/module-sources.mjs';
 import { materialsFromPaletteCounts } from '../js/core/materials.js';
 import { CATEGORIES as CATEGORY_INFO } from '../js/ui/shared.js';
 
@@ -16,6 +21,10 @@ export const DEFAULT_MODULES_DIR = path.join(ROOT, 'js', 'builds');
 export const DEFAULT_STRUCTURES_FILE = path.join(ROOT, 'js', 'builds', 'game-structures.js');
 export const DEFAULT_DATA_DIR = path.join(ROOT, 'game-data');
 export const DEFAULT_THUMBS_DIR = path.join(ROOT, 'thumbs');
+export const DEFAULT_OUT = path.join(ROOT, 'data', 'catalog.json');
+const SELF_FILE = fileURLToPath(import.meta.url);
+// Einstiegspunkte des Fingerabdrucks (samt aller relativ importierten Dateien), dazu jedes Bau-Modul und die Strukturliste
+const FINGERPRINT_ENTRIES = [path.join(ROOT, 'scripts', 'check-build.mjs'), path.join(ROOT, 'js', 'core', 'materials.js')];
 
 export const TOP_MATERIALS = 8;
 export const STRUCTURE_ID_PREFIX = 'spiel-';
@@ -33,7 +42,7 @@ const USAGE = `Aufruf: node scripts/build-catalog.mjs [Optionen]
   --structures <datei>     Liste der Original-Strukturen, Standard js/builds/game-structures.js
   --no-structures          keine Original-Strukturen aufnehmen
   --data <ordner>          Spieldaten, Standard game-data
-  --out <datei>            Ziel, Standard <data>/catalog.json
+  --out <datei>            Ziel, Standard data/catalog.json
   --thumbs-dir <ordner>    Ordner der Vorschaubilder, Standard thumbs`;
 
 export class UsageError extends Error {
@@ -69,7 +78,8 @@ export function parseArgs(argv) {
     }
   }
   if (options.force && !options.thumbs) throw new UsageError('--force gibt es nur zusammen mit --thumbs.');
-  options.out ??= path.join(options.dataDir, 'catalog.json');
+  // Mit eigenen Spieldaten (--data) nicht den veröffentlichten Katalog im Repo überschreiben
+  options.out ??= options.dataDir === DEFAULT_DATA_DIR ? DEFAULT_OUT : path.join(options.dataDir, 'catalog.json');
   return options;
 }
 
@@ -95,6 +105,63 @@ async function exists(file) {
 
 async function readJson(file) {
   return JSON.parse(await readFile(file, 'utf8'));
+}
+
+const sha256 = (data) => createHash('sha256').update(data).digest('hex');
+// Zeilenenden vereinheitlichen: Eine Windows-Arbeitskopie kann CRLF haben, der Fingerabdruck soll trotzdem gleich bleiben.
+const textHash = (text) => sha256(text.replace(/\r\n/g, '\n'));
+const byName = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * Fingerabdruck des Quelltexts, der den Katalog bestimmt: dieses Skript, scripts/check-build.mjs, js/core/materials.js,
+ * alle Bau-Module und die Strukturliste, jeweils samt aller relativ importierten Dateien (Hilfsbibliothek, Kern, …).
+ * Die Oberfläche (js/ui/) zählt nicht. → sha256 als Hex-Text
+ */
+export async function codeFingerprint({ modulesDir = DEFAULT_MODULES_DIR, structuresFile = DEFAULT_STRUCTURES_FILE, root = ROOT } = {}) {
+  const { modules } = await findModules(modulesDir);
+  const entries = [...FINGERPRINT_ENTRIES, ...modules.map((mod) => mod.file), ...(structuresFile ? [structuresFile] : [])];
+  const files = new Map();
+  for (const entry of entries) {
+    try {
+      for (const { file, text } of await moduleSources(entry, { root })) files.set(file, text);
+    } catch (error) {
+      // Kaputter Import oder Datei außerhalb des Projekts: nicht abbrechen (den Fehler meldet die Prüfung des Moduls),
+      // aber im Fingerabdruck festhalten, damit er sich ändert, sobald das Modul repariert ist
+      files.set(`${toPosix(path.relative(root, entry))} (nicht lesbar)`, String(error?.message ?? error));
+    }
+  }
+  // Das Skript selbst nur als Datei: seine Importe für die Konsolen-Ausgabe (js/ui/shared.js) ändern den Katalog nicht
+  files.set(toPosix(path.relative(root, SELF_FILE)), await readFile(SELF_FILE, 'utf8'));
+  return sha256([...files].sort(byName).map(([file, text]) => `${file} ${textHash(text)}`).join('\n'));
+}
+
+/**
+ * Fingerabdruck der Spieldaten, die den Katalog bestimmen: Version, blocks.json und structures/index.json (mit Größe und
+ * Blockzahl jeder Struktur). Unabhängig davon, ob die Daten aus der Jar oder aus öffentlichen Quellen stammen.
+ */
+export async function dataFingerprint(dataDir = DEFAULT_DATA_DIR) {
+  const parts = [];
+  try {
+    const meta = await readJson(path.join(dataDir, 'meta.json'));
+    parts.push(`version ${meta.version ?? ''}|${meta.worldVersion ?? ''}`);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    parts.push('version ?');
+  }
+  for (const name of ['blocks.json', path.join('structures', 'index.json')]) {
+    try {
+      parts.push(`${toPosix(name)} ${sha256(await readFile(path.join(dataDir, name)))}`);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      parts.push(`${toPosix(name)} fehlt`);
+    }
+  }
+  return sha256(parts.join('\n'));
+}
+
+/** Beide Fingerabdrücke für das Feld „inputs“ des Katalogs. */
+export async function catalogInputs({ modulesDir = DEFAULT_MODULES_DIR, structuresFile = DEFAULT_STRUCTURES_FILE, dataDir = DEFAULT_DATA_DIR, root = ROOT } = {}) {
+  return { code: await codeFingerprint({ modulesDir, structuresFile, root }), data: await dataFingerprint(dataDir) };
 }
 
 const isNonEmptyText = (value) => typeof value === 'string' && value.trim() !== '';
@@ -465,10 +532,11 @@ function warnDuplicateTitles(builds, warnings) {
   for (const [, ids] of byTitle) if (ids.length > 1) warnings.push(`Titel doppelt: ${ids.join(', ')} – bitte unterscheidbar benennen.`);
 }
 
-async function attachThumbs(builds, thumbsDir) {
-  for (const build of builds) {
-    build.thumb = (await exists(path.join(thumbsDir, `${build.id}.webp`))) ? `thumbs/${build.id}.webp` : null;
-  }
+/** Anzahl der Einträge mit lokalem Vorschaubild <thumbsDir>/<id>.webp (nur für die Ausgabe; der Katalog kennt keine Bilder). */
+async function countThumbs(builds, thumbsDir) {
+  let count = 0;
+  for (const build of builds) if (await exists(path.join(thumbsDir, `${build.id}.webp`))) count++;
+  return count;
 }
 
 export function countBuilds(builds) {
@@ -482,11 +550,12 @@ export function countBuilds(builds) {
  * errors: Fehler (Einträge fehlen im Katalog); notes: Hinweise für die Konsole.
  */
 export async function buildCatalog({
-  modulesDir = DEFAULT_MODULES_DIR, structuresFile = DEFAULT_STRUCTURES_FILE, dataDir = DEFAULT_DATA_DIR,
-  thumbsDir = DEFAULT_THUMBS_DIR, onProgress = null,
+  modulesDir = DEFAULT_MODULES_DIR, structuresFile = DEFAULT_STRUCTURES_FILE, dataDir = DEFAULT_DATA_DIR, onProgress = null,
 } = {}) {
   const started = performance.now();
   const version = await readGameDataVersion(dataDir);
+  // Fingerabdruck vor dem Bauen: ändert sich eine Eingabe während des Laufs, gilt der Katalog danach als veraltet
+  const inputs = await catalogInputs({ modulesDir, structuresFile, dataDir });
   const errors = [];
   const warnings = [];
   const notes = [];
@@ -525,10 +594,10 @@ export async function buildCatalog({
 
   const builds = sortBuilds(removeDuplicateIds(collected, errors, warnings));
   warnDuplicateTitles(builds, warnings);
-  await attachThumbs(builds, thumbsDir);
   const catalog = {
     generatedAt: new Date().toISOString(),
     version,
+    inputs,
     counts: countBuilds(builds),
     warnings,
     builds,
@@ -579,6 +648,22 @@ export async function writeFileAtomic(file, text) {
 
 export async function writeCatalog(file, catalog) {
   await writeFileAtomic(file, serializeCatalog(catalog));
+}
+
+/**
+ * Wie writeCatalog, lässt die Datei aber unberührt, wenn sich außer generatedAt nichts geändert hat (kein unnötiger
+ * Unterschied im Repo). → true, wenn geschrieben wurde
+ */
+export async function writeCatalogIfChanged(file, catalog) {
+  try {
+    const { generatedAt: _old, ...previous } = await readJson(file);
+    const { generatedAt: _new, ...next } = catalog;
+    if (JSON.stringify(previous) === JSON.stringify(next)) return false;
+  } catch (error) {
+    if (error.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error;
+  }
+  await writeCatalog(file, catalog);
+  return true;
 }
 
 // ------------------------------------------------------------------ Ausgabe
@@ -638,17 +723,16 @@ export async function main(argv = process.argv.slice(2)) {
     return 1;
   }
   const { catalog, errors, notes } = built;
-  await writeCatalog(options.out, catalog);
+  const written = await writeCatalogIfChanged(options.out, catalog);
   if (options.thumbs) {
     const thumbs = await runThumbs(catalog, options);
     errors.push(...thumbs.errors);
-    await attachThumbs(catalog.builds, options.thumbsDir);
-    await writeCatalog(options.out, catalog);
   }
   console.log(`\nBlock-Kompass · Katalog für Minecraft ${catalog.version}`);
   console.log(summaryTable(catalog));
-  const withThumbs = catalog.builds.filter((b) => b.thumb).length;
-  console.log(`Vorschaubilder: ${withThumbs} von ${catalog.builds.length}${withThumbs < catalog.builds.length && !options.thumbs ? ' (fehlende erzeugen: node scripts/build-catalog.mjs --thumbs)' : ''}`);
+  const withThumbs = await countThumbs(catalog.builds, options.thumbsDir);
+  console.log(`Vorschaubilder (nur lokal, thumbs/): ${withThumbs} von ${catalog.builds.length}${withThumbs < catalog.builds.length && !options.thumbs ? ' (fehlende erzeugen: node scripts/build-catalog.mjs --thumbs)' : ''}`);
+  if (!written) console.log('Katalog inhaltlich unverändert – Datei nicht neu geschrieben.');
   for (const note of notes) console.log(`Hinweis: ${note}`);
   if (catalog.warnings.length) {
     console.log(`Warnungen (${catalog.warnings.length}):`);

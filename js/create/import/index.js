@@ -152,7 +152,7 @@ async function importNbtFamily(bytes, declared, name, ctx) {
   }
   const { kind, sponge } = detectNbtKind(root);
   if (NBT_FORMATS.includes(declared) && kind !== declared) warnings.push(`„${name}“ ist eigentlich im Format ${FORMAT_LABELS[kind]} und wird so geladen.`);
-  if (!isBlockDataLoaded()) throw new ImportError('data-missing', 'Die Blockdaten fehlen (game-data/blocks.json). Erzeuge sie mit: node scripts/extract-game-data.mjs');
+  if (!isBlockDataLoaded()) throw new ImportError('data-missing', 'Die Blockdaten (Liste aller Blöcke) sind nicht geladen.');
   const converter = new StateConverter();
   const collector = new BlockCollector(limits);
   const text = `Importiert aus „${name}“ – baue Ebene für Ebene von unten nach oben.`;
@@ -228,7 +228,7 @@ async function importModel(bytes, format, ctx) {
     throw new ImportError('model', `Das Modell konnte nicht umgewandelt werden: ${error?.message ?? String(error)}`, { detail: error?.stack ?? null });
   }
   checkVolume(volume);
-  if (!isBlockDataLoaded()) throw new ImportError('data-missing', 'Die Blockdaten fehlen (game-data/blocks.json). Erzeuge sie mit: node scripts/extract-game-data.mjs');
+  if (!isBlockDataLoaded()) throw new ImportError('data-missing', 'Die Blockdaten (Liste aller Blöcke) sind nicht geladen.');
   const converter = new StateConverter();
   const collector = new BlockCollector(limits);
   const entries = volume.palette.map((state, i) => (i === 0 ? null : converter.fromString(state)));

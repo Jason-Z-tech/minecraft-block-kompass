@@ -1,4 +1,4 @@
-// Klick-Test der ganzen Seite im echten Chrome gegen den echten Katalog (game-data/catalog.json):
+// Klick-Test der ganzen Seite im echten Chrome gegen den echten Katalog (data/catalog.json):
 //   node tests/e2e.mjs [--gpu hardware|swiftshader] [--out tmp/integration/e2e] [--only start,bau,erstellen,handy]
 // Start → Kategorie (Filter, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Dorfhaus aus dem
 // Spiel, ein Redstone-Bau: Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Maßstab) →
@@ -13,7 +13,7 @@ import { startServer } from '../scripts/serve.mjs';
 import { launchBrowser } from './browser.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CATALOG_FILE = path.join(ROOT, 'game-data', 'catalog.json');
+const CATALOG_FILE = path.join(ROOT, 'data', 'catalog.json');
 const IMPORT_DIR = path.join(ROOT, 'tests/fixtures/create/import');
 const MODEL_DIR = path.join(ROOT, 'tests/fixtures/create/voxelize');
 const FLOW_NAMES = ['start', 'bau', 'erstellen', 'handy'];
@@ -43,7 +43,14 @@ try {
   process.exit(2);
 }
 if (!existsSync(CATALOG_FILE)) {
-  console.error('game-data/catalog.json fehlt. Erst die Spieldaten und den Katalog erzeugen:\n  node scripts/extract-game-data.mjs\n  node scripts/build-catalog.mjs --thumbs');
+  console.error('data/catalog.json fehlt. Katalog erzeugen (braucht game-data/):\n  node scripts/extract-game-data.mjs\n  node scripts/build-catalog.mjs --thumbs');
+  process.exit(2);
+}
+// Der Klick-Test prüft die lokale Seite mit Spieldaten und Vorschaubildern (der Katalog allein liegt im Repo)
+const NEEDED = [['game-data/meta.json', 'node scripts/extract-game-data.mjs'], ['thumbs/index.json', 'node scripts/make-thumbs.mjs']];
+const absent = NEEDED.filter(([file]) => !existsSync(path.join(ROOT, file)));
+if (absent.length) {
+  console.error(`Für den Klick-Test fehlt: ${absent.map(([file]) => file).join(', ')}. Erzeugen:\n${absent.map(([, command]) => `  ${command}`).join('\n')}\n(oder alles auf einmal: node scripts/start.mjs)`);
   process.exit(2);
 }
 const OUT = path.resolve(ROOT, OPTIONS.out);

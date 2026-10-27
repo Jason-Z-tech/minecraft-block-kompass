@@ -18,7 +18,7 @@ const SITE = new URL('http://127.0.0.1:8080/');
 
 function catalogFetch(body = CATALOG) {
   return async (url) => {
-    if (String(url).endsWith('game-data/catalog.json')) return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (String(url).endsWith('/data/catalog.json')) return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
     return new Response('nicht da', { status: 404 });
   };
 }
@@ -65,10 +65,23 @@ test('loadBuildEntry: Eintrag mit allen Feldern, Testmodule erlaubt, unbekannt �
   assert.equal(await loadBuildEntry('gibt-es-nicht', { fetch, root: SITE }), null);
 });
 
-test('Katalog fehlt: DataError mit Befehl', async () => {
-  const fetch = async () => new Response('', { status: 404 });
+test('Katalog fehlt: DataError „Katalog fehlt“ ohne Befehle', async () => {
+  const calls = [];
+  const fetch = async (url) => { calls.push(String(url)); return new Response('', { status: 404 }); };
   await assert.rejects(loadBuildEntry('example-house', { fetch, root: SITE }), (error) => error.name === 'DataError' && error.kind === 'missing'
-    && error.steps.some((step) => step.command === 'node scripts/start.mjs'));
+    && error.title === 'Katalog fehlt' && error.steps.length > 0 && error.steps.every((step) => !step.command));
+  assert.deepEqual(calls, ['http://127.0.0.1:8080/data/catalog.json'], 'nur der Katalog, online keine Nachfrage nach Vorschaubildern');
+});
+
+test('loadBuildEntry: auf dem eigenen Rechner kommt das lokale Vorschaubild dazu', async () => {
+  const fetch = async (url) => {
+    if (String(url).endsWith('/thumbs/index.json')) return new Response(JSON.stringify({ version: 1, entries: { 'example-house': {} } }), { status: 200 });
+    return catalogFetch()(url);
+  };
+  const local = await loadBuildEntry('example-house', { fetch, root: SITE, location: { hostname: '127.0.0.1' } });
+  assert.equal(local.thumb, 'thumbs/example-house.webp');
+  const online = await loadBuildEntry('example-house', { fetch, root: SITE, location: { hostname: 'jason-z-tech.github.io' } });
+  assert.equal(online.thumb, CATALOG.builds.find((b) => b.id === 'example-house').thumb ?? null, 'online nur, was im Katalog steht');
 });
 
 test('normalizeBuildDetails prüft jedes Feld', () => {

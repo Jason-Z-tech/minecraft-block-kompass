@@ -138,7 +138,7 @@ function wrapBuildError(label, error) {
 }
 
 function checkStructureData(data) {
-  const fail = (what) => new EngineError(`Die Strukturdatei ist beschädigt (${what}). Erzeuge die Spieldaten neu: node scripts/extract-game-data.mjs`, { code: 'data' });
+  const fail = (what) => new EngineError(`Die Strukturdatei ist beschädigt (${what}).`, { code: 'data' });
   if (!isPlainObject(data)) throw fail('kein Objekt');
   const { size, palette, rle } = data;
   if (!Array.isArray(size) || size.length !== 3 || !size.every((v) => Number.isInteger(v) && v > 0 && v <= 4064)) throw fail('size');
@@ -976,7 +976,7 @@ function startWorker(scope) {
 
   function getEngine() {
     if (!enginePromise) {
-      const missing = 'Die Spieldaten fehlen (game-data/models.json, blocks.json). Erzeuge sie mit: node scripts/extract-game-data.mjs';
+      const missing = 'Die Spieldaten (Blockmodelle und Blockliste) konnten nicht geladen werden.';
       enginePromise = Promise.all([fetchJson(new URL('models.json', dataUrl), missing), fetchJson(new URL('blocks.json', dataUrl), missing)])
         .then(([modelsJson, blocksJson]) => new Engine({ modelsJson, blocksJson }));
       enginePromise.catch(() => { enginePromise = null; });
@@ -1019,8 +1019,7 @@ function startWorker(scope) {
     // Blockfarben für den Modell-Import: einmal laden, danach aus dem Speicher
     loadBlockColors() {
       if (!blockColorsPromise) {
-        blockColorsPromise = fetchJson(new URL('block-colors.json', dataUrl),
-          'Die Blockfarben für den Modell-Import fehlen (game-data/block-colors.json). Erzeuge sie mit: node scripts/build-block-colors.mjs');
+        blockColorsPromise = fetchJson(new URL('block-colors.json', dataUrl), 'Die Blockfarben für den Modell-Import konnten nicht geladen werden.');
         blockColorsPromise.catch(() => { blockColorsPromise = null; });
       }
       return blockColorsPromise;

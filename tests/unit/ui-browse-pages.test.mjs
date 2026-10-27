@@ -42,7 +42,7 @@ async function open(t, { catalogBody = null, width = 1280, height = 900, thumbs 
     throw error;
   }
   t.after(() => page.close());
-  await page.route('game-data/catalog.json', catalogBody === null ? { file: FIXTURE } : { body: catalogBody, contentType: 'application/json' });
+  await page.route('data/catalog.json', catalogBody === null ? { file: FIXTURE } : { body: catalogBody, contentType: 'application/json' });
   if (thumbs) await page.route('/thumbs/', { body: THUMB, contentType: 'image/png' });
   return page;
 }
@@ -192,14 +192,14 @@ test('Kategorie: Fehler beim Laden, leere und unbekannte Kategorie, Übersicht',
   await page.goto(`${server.url}/kategorie.html`);
   await page.waitFor('document.querySelector("#category-count").textContent');
   assert.equal(await text(page, '#category-count'), '158 Bauten in 8 Kategorien');
-  await page.unroute('game-data/catalog.json');
-  await page.route('game-data/catalog.json', { body: 'kaputt', status: 500, contentType: 'text/plain' });
+  await page.unroute('data/catalog.json');
+  await page.route('data/catalog.json', { body: 'kaputt', status: 500, contentType: 'text/plain' });
   await page.goto(`${server.url}/kategorie.html?k=haeuser`);
   await page.waitFor('document.querySelector("#category-status .state--error")');
   assert.equal(await page.eval('document.querySelector("#category-browse").hidden'), true);
   assert.equal(await text(page, '#category-status .state__title'), 'Datei konnte nicht geladen werden');
-  await page.unroute('game-data/catalog.json');
-  await page.route('game-data/catalog.json', { file: FIXTURE });
+  await page.unroute('data/catalog.json');
+  await page.route('data/catalog.json', { file: FIXTURE });
   await page.click('#category-status button');
   await page.waitFor(`document.querySelector(${JSON.stringify(CARDS)})`, 5000);
   assert.equal(await text(page, '#category-more-status'), '24 von 27 angezeigt');

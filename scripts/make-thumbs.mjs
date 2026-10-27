@@ -11,10 +11,14 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
 import { launchBrowser } from '../tests/browser.mjs';
-import { writeFileAtomic, serializeCatalog } from './build-catalog.mjs';
+import { writeFileAtomic } from './build-catalog.mjs';
+import { moduleSources } from './lib/module-sources.mjs';
+
+// moduleSources wohnt jetzt in scripts/lib/module-sources.mjs (auch für den Katalog-Fingerabdruck); hier weiter exportiert.
+export { moduleSources };
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const DEFAULT_CATALOG = path.join(ROOT, 'game-data', 'catalog.json');
+export const DEFAULT_CATALOG = path.join(ROOT, 'data', 'catalog.json');
 export const DEFAULT_OUT_DIR = path.join(ROOT, 'thumbs');
 export const DEFAULT_DATA_DIR = path.join(ROOT, 'game-data');
 export const THUMB_SIZE = Object.freeze([640, 400]);
@@ -29,7 +33,7 @@ const RENDER_TIMEOUT_MS = 180_000;
 const USAGE = `Aufruf: node scripts/make-thumbs.mjs [Optionen]
   --force                alle Bilder neu rendern
   --only <id>            nur diesen Eintrag (mehrfach möglich)
-  --catalog <datei>      Katalog, Standard game-data/catalog.json
+  --catalog <datei>      Katalog, Standard data/catalog.json
   --out <ordner>         Zielordner, Standard thumbs
   --data <ordner>        Spieldaten, Standard game-data
   --gpu <art>            hardware (Standard, Rückfall swiftshader) oder swiftshader
@@ -88,25 +92,6 @@ export async function dataStamp(dataDir) {
   const meta = await readJsonFile(path.join(dataDir, 'meta.json'));
   if (typeof meta.version !== 'string') throw new Error(`${path.join(dataDir, 'meta.json')} hat keine Version – erzeuge die Spieldaten neu: node scripts/extract-game-data.mjs`);
   return `${meta.version}|${meta.worldVersion ?? ''}|${meta.resourcePack ?? ''}`;
-}
-
-const IMPORT_PATTERN = /(?:^|[\s;])(?:import|export)\s[^'"`]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|(?:^|[\s;])import\s*['"](\.{1,2}\/[^'"]+)['"]|import\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g;
-
-/** Quelltext eines Moduls und aller relativ importierten Dateien (rekursiv) → [{ file, text }], fest sortiert. */
-export async function moduleSources(entryFile, { root = ROOT } = {}) {
-  const seen = new Map();
-  const visit = async (file) => {
-    if (seen.has(file)) return;
-    if (!file.startsWith(root + path.sep)) throw new Error(`Import außerhalb des Projekts: ${file}`);
-    const text = await readFile(file, 'utf8');
-    seen.set(file, text);
-    for (const match of text.matchAll(IMPORT_PATTERN)) {
-      const spec = match[1] ?? match[2] ?? match[3];
-      await visit(path.resolve(path.dirname(file), spec));
-    }
-  };
-  await visit(entryFile);
-  return [...seen].map(([file, text]) => ({ file: path.relative(root, file).split(path.sep).join('/'), text })).sort((a, b) => (a.file < b.file ? -1 : 1));
 }
 
 /** Hash eines Katalog-Eintrags für die Vorschau (ohne das Feld thumb). */
@@ -317,12 +302,10 @@ export async function makeThumbs({
 }
 
 /** Trägt vorhandene Bilder als thumb-Feld in den Katalog ein. → Zahl der Einträge mit Bild */
-export async function attachThumbFields(catalog, outDir) {
+/** Anzahl der Katalog-Einträge, zu denen es ein Vorschaubild <outDir>/<id>.webp gibt. */
+export async function countThumbs(catalog, outDir) {
   let count = 0;
-  for (const build of catalog.builds) {
-    build.thumb = (await fileExists(path.join(outDir, `${build.id}.webp`))) ? `thumbs/${build.id}.webp` : null;
-    if (build.thumb) count++;
-  }
+  for (const build of catalog.builds) if (await fileExists(path.join(outDir, `${build.id}.webp`))) count++;
   return count;
 }
 
@@ -349,11 +332,9 @@ export async function main(argv = process.argv.slice(2)) {
     return 1;
   }
   const result = await makeThumbs({ ...options, catalog, log: (line) => console.log(line) });
-  // Katalog direkt vor dem Schreiben neu lesen, damit nur die thumb-Felder geändert werden
-  const fresh = await readJsonFile(options.catalog);
-  const withThumbs = await attachThumbFields(fresh, options.outDir);
-  await writeFileAtomic(options.catalog, serializeCatalog(fresh));
-  console.log(`Fertig: ${result.rendered.length} gerendert${result.retried.length ? ` (${result.retried.length} im zweiten Versuch)` : ""}, ${result.skipped.length} aktuell, ${withThumbs}/${fresh.builds.length} Einträge mit Bild · ${(result.durationMs / 1000).toFixed(1).replace('.', ',')} s`);
+  // Der Katalog bleibt unverändert (er liegt im Repo und kennt keine Bilder); die Seite findet sie lokal über thumbs/index.json.
+  const withThumbs = await countThumbs(catalog, options.outDir);
+  console.log(`Fertig: ${result.rendered.length} gerendert${result.retried.length ? ` (${result.retried.length} im zweiten Versuch)` : ""}, ${result.skipped.length} aktuell, ${withThumbs}/${catalog.builds.length} Einträge mit Bild · ${(result.durationMs / 1000).toFixed(1).replace('.', ',')} s`);
   if (result.orphans.length) console.log(`Hinweis: ${result.orphans.length} Bilder ohne Katalog-Eintrag (löschen mit --prune): ${result.orphans.slice(0, 10).join(', ')}${result.orphans.length > 10 ? ' …' : ''}`);
   if (result.errors.length) {
     console.error(`Fehler (${result.errors.length}):`);

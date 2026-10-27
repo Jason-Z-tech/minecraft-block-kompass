@@ -42,7 +42,9 @@ async function openBrowser({ mobile = false } = {}) {
     await page?.close();
     page = await launchBrowser({ ...size, gpu: 'swiftshader', reducedMotion: false });
   }
-  await page.route('game-data/catalog.json', { file: CATALOG });
+  await page.route('data/catalog.json', { file: CATALOG });
+  // Unabhängig von lokal erzeugten Vorschaubildern (thumbs/ fehlt z. B. nach frischem Klon): leere Liste
+  await page.route('thumbs/index.json', { body: JSON.stringify({ version: 1, entries: {} }), contentType: 'application/json' });
   return page;
 }
 
@@ -292,17 +294,17 @@ async function errorFlow(server) {
     await page.goto(`${server.url}/bau.html?id=x%3Cscript%3E`);
     await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
     check('Ungültige ID: Fehlerzustand', await page.eval("/Ungültige Adresse/.test(document.querySelector('#build-status').textContent)"));
-    // Struktur fehlt in game-data → „Spieldaten fehlen“ mit Befehl
-    await page.unroute('game-data/catalog.json');
+    // Struktur fehlt in game-data → „Spieldaten fehlen“ mit verständlichem Hinweis, ohne Befehl (läuft auch online)
+    await page.unroute('data/catalog.json');
     const broken = JSON.stringify({ version: '26.2', builds: [{ id: 'spiel-fehlt', title: 'Fehlt', category: 'haeuser', accuracy: 'original', structure: 'gibt_es_nicht.json', module: null, size: [3, 3, 3], blocks: 1, steps: 1 }] });
-    await page.route('game-data/catalog.json', { body: broken, contentType: 'application/json' });
+    await page.route('data/catalog.json', { body: broken, contentType: 'application/json' });
     await page.goto(`${server.url}/bau.html?id=spiel-fehlt`);
     await page.waitFor("document.querySelector('.bv-stage.is-error')", 30000);
-    check('Fehlende Spieldaten: Anleitung mit Befehl', await page.eval("/extract-game-data/.test(document.querySelector('.bv-stage__status').textContent)"));
+    check('Fehlende Spieldaten: Hinweis ohne Befehl', await page.eval("(() => { const t = document.querySelector('.bv-stage__status').textContent; return /Spieldaten fehlen/.test(t) && /neu/.test(t) && !/node |scripts\\/|Projektordner/.test(t); })()"));
     await shot(page, 'fehler-03-spieldaten');
     takeErrors(page);
-    await page.unroute('game-data/catalog.json');
-    await page.route('game-data/catalog.json', { file: CATALOG });
+    await page.unroute('data/catalog.json');
+    await page.route('data/catalog.json', { file: CATALOG });
     // Kein WebGL2
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: "(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : original.call(this, type, ...rest); }; })();" });
     await page.goto(`${server.url}/bau.html?id=example-house`);

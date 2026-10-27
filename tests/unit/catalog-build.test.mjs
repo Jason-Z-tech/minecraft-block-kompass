@@ -7,7 +7,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildCatalog, parseArgs, sizeClass, defaultScaleOf, structureFileName, analyzeStructure, validateStructureDefinition,
-  serializeCatalog, writeCatalog, countBuilds, findModules, main, UsageError, TOP_MATERIALS,
+  serializeCatalog, writeCatalog, writeCatalogIfChanged, countBuilds, findModules, main, UsageError, TOP_MATERIALS,
+  codeFingerprint, dataFingerprint, DEFAULT_OUT,
 } from '../../scripts/build-catalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -87,13 +88,15 @@ function assertEntrySchema(entry) {
   for (let i = 1; i < entry.topMaterials.length; i++) assert.ok(entry.topMaterials[i - 1][1] >= entry.topMaterials[i][1], 'absteigend');
   assert.ok(entry.topMaterials.every(([item, n]) => /^[a-z0-9_]+$/.test(item) && Number.isInteger(n) && n > 0));
   assert.equal(entry.sizeClass, sizeClass(entry.blocks));
-  assert.ok(entry.thumb === null || entry.thumb === `thumbs/${entry.id}.webp`);
+  assert.equal(entry.thumb, null, 'der Katalog kennt keine Vorschaubilder (die gibt es nur lokal)');
 }
 
 function assertCatalogSchema(catalog) {
-  assert.deepEqual(Object.keys(catalog), ['generatedAt', 'version', 'counts', 'warnings', 'builds']);
+  assert.deepEqual(Object.keys(catalog), ['generatedAt', 'version', 'inputs', 'counts', 'warnings', 'builds']);
   assert.ok(!Number.isNaN(Date.parse(catalog.generatedAt)));
   assert.equal(catalog.version, '26.2');
+  assert.deepEqual(Object.keys(catalog.inputs), ['code', 'data']);
+  assert.ok(/^[0-9a-f]{64}$/.test(catalog.inputs.code) && /^[0-9a-f]{64}$/.test(catalog.inputs.data), 'sha256 als Hex');
   assert.deepEqual(catalog.counts, countBuilds(catalog.builds));
   assert.deepEqual(Object.keys(catalog.counts.byCategory), CATEGORIES);
   assert.ok(Array.isArray(catalog.warnings) && catalog.warnings.every((w) => typeof w === 'string'));
@@ -125,7 +128,8 @@ describe('Hilfsfunktionen', () => {
     assert.equal(o.structuresFile, null);
     assert.equal(o.modulesDir, path.resolve('x'));
     assert.ok(o.thumbs && o.force);
-    assert.equal(parseArgs([]).out, path.join(DATA_DIR, 'catalog.json'));
+    assert.equal(parseArgs([]).out, DEFAULT_OUT);
+    assert.equal(DEFAULT_OUT, path.join(ROOT, 'data', 'catalog.json'), 'Standard-Ziel liegt im Repo, nicht unter game-data/');
     assert.throws(() => parseArgs(['--bla']), UsageError);
     assert.throws(() => parseArgs(['--force']), UsageError);
     assert.throws(() => parseArgs(['--out']), UsageError);
@@ -254,13 +258,13 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     assert.ok(b.errors.some((e) => /exportiert keine Liste GAME_STRUCTURES/.test(e)));
   });
 
-  test('thumb wird nur gesetzt, wenn das Bild existiert', async () => {
+  test('thumb bleibt im Katalog immer null, auch wenn lokal ein Bild existiert (der Katalog wird veröffentlicht)', async () => {
     const thumbs = path.join(workDir, 'thumbs-attach');
     await mkdir(thumbs, { recursive: true });
     await writeFile(path.join(thumbs, 'spiel-test-iglu.webp'), 'x');
     const file = await structuresFile('thumb-structures', `${DEFAULTS}\nexport const GAME_STRUCTURES = [${iglu()}, ${iglu('spiel-ohne-bild', 'igloo/bottom')}];`);
     const { catalog } = await buildCatalog({ modulesDir: path.join(workDir, 'leer'), structuresFile: file, thumbsDir: thumbs });
-    assert.deepEqual(Object.fromEntries(catalog.builds.map((b) => [b.id, b.thumb])), { 'spiel-test-iglu': 'thumbs/spiel-test-iglu.webp', 'spiel-ohne-bild': null });
+    assert.deepEqual(Object.fromEntries(catalog.builds.map((b) => [b.id, b.thumb])), { 'spiel-test-iglu': null, 'spiel-ohne-bild': null });
   });
 
   test('main: schreibt atomar (keine Zwischendatei bleibt), Exit-Code 1 bei Fehlern, 2 bei falschen Optionen', async () => {
@@ -287,6 +291,73 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     assert.ok(logs.some((l) => /Häuser & Wohnen\s+1/.test(l)), logs.join('\n'));
     assert.ok(logs.some((l) => /Laufzeit/.test(l)));
   });
+});
+
+test('Fingerabdruck: reagiert auf Modul, Hilfsdatei und Spieldaten, nicht auf Zeilenenden', async () => {
+  const dir = path.join(workDir, 'fingerprint');
+  await mkdir(path.join(dir, 'haeuser'), { recursive: true });
+  await mkdir(path.join(dir, 'lib'), { recursive: true });
+  await writeFile(path.join(dir, 'lib', 'hilfe.js'), 'export const wert = 1;\n');
+  await writeFile(path.join(dir, 'haeuser', 'haus.js'), "import { wert } from '../lib/hilfe.js';\nexport const meta = { wert };\n");
+  const base = await codeFingerprint({ modulesDir: dir, structuresFile: null });
+  assert.match(base, /^[0-9a-f]{64}$/);
+  assert.equal(await codeFingerprint({ modulesDir: dir, structuresFile: null }), base, 'stabil');
+  await writeFile(path.join(dir, 'haeuser', 'haus.js'), "import { wert } from '../lib/hilfe.js';\r\nexport const meta = { wert };\r\n");
+  assert.equal(await codeFingerprint({ modulesDir: dir, structuresFile: null }), base, 'CRLF zählt nicht');
+  await writeFile(path.join(dir, 'lib', 'hilfe.js'), 'export const wert = 2;\n');
+  const helperChanged = await codeFingerprint({ modulesDir: dir, structuresFile: null });
+  assert.notEqual(helperChanged, base, 'importierte Hilfsdatei zählt');
+  await writeFile(path.join(dir, 'haeuser', 'zweites.js'), 'export const meta = {};\n');
+  assert.notEqual(await codeFingerprint({ modulesDir: dir, structuresFile: null }), helperChanged, 'neues Modul zählt');
+
+  const data = path.join(workDir, 'fingerprint-data');
+  await mkdir(path.join(data, 'structures'), { recursive: true });
+  await writeFile(path.join(data, 'meta.json'), JSON.stringify({ version: '26.2', worldVersion: 4903 }));
+  await writeFile(path.join(data, 'blocks.json'), '{"a":1}');
+  await writeFile(path.join(data, 'structures', 'index.json'), '{"structures":[]}');
+  const dataBase = await dataFingerprint(data);
+  await writeFile(path.join(data, 'blocks.json'), '{"a":2}');
+  assert.notEqual(await dataFingerprint(data), dataBase, 'blocks.json zählt');
+  await writeFile(path.join(data, 'blocks.json'), '{"a":1}');
+  assert.equal(await dataFingerprint(data), dataBase);
+  await writeFile(path.join(data, 'names.json'), '{"egal":true}');
+  assert.equal(await dataFingerprint(data), dataBase, 'names.json zählt nicht (je nach Quelle leicht verschieden, für den Katalog egal)');
+  await writeFile(path.join(data, 'structures', 'index.json'), '{"structures":[{"file":"a.json"}]}');
+  assert.notEqual(await dataFingerprint(data), dataBase, 'structures/index.json zählt');
+  await writeFile(path.join(data, 'structures', 'index.json'), '{"structures":[]}');
+  await writeFile(path.join(data, 'meta.json'), JSON.stringify({ version: '26.2', worldVersion: 4904, extractedAt: 'x' }));
+  assert.notEqual(await dataFingerprint(data), dataBase, 'Datenversion zählt');
+  await writeFile(path.join(data, 'meta.json'), JSON.stringify({ version: '26.2', worldVersion: 4903, extractedAt: 'andere Zeit', sources: { x: 1 } }));
+  assert.equal(await dataFingerprint(data), dataBase, 'Zeit und Quellen in meta.json zählen nicht');
+});
+
+test('writeCatalogIfChanged: schreibt nur bei inhaltlicher Änderung (generatedAt allein zählt nicht)', async () => {
+  const file = path.join(workDir, 'unchanged', 'catalog.json');
+  const catalog = { generatedAt: '2026-10-27T00:00:00.000Z', version: '26.2', inputs: { code: 'a', data: 'b' }, counts: countBuilds([]), warnings: [], builds: [] };
+  assert.equal(await writeCatalogIfChanged(file, catalog), true, 'neu');
+  const before = await readFile(file, 'utf8');
+  assert.equal(await writeCatalogIfChanged(file, { ...catalog, generatedAt: '2026-10-28T00:00:00.000Z' }), false, 'nur die Zeit anders');
+  assert.equal(await readFile(file, 'utf8'), before);
+  assert.equal(await writeCatalogIfChanged(file, { ...catalog, inputs: { code: 'c', data: 'b' } }), true, 'Fingerabdruck anders');
+  assert.match(await readFile(file, 'utf8'), /"code": "c"/);
+  await writeFile(file, '{ kaputt');
+  assert.equal(await writeCatalogIfChanged(file, catalog), true, 'kaputte Datei wird ersetzt');
+});
+
+test('Fingerabdruck bricht bei kaputtem Import nicht ab und ändert sich, sobald das Modul repariert ist', async () => {
+  const dir = path.join(workDir, 'fingerprint-broken');
+  await mkdir(path.join(dir, 'haeuser'), { recursive: true });
+  await writeFile(path.join(dir, 'haeuser', 'haus.js'), "import { x } from './gibt-es-nicht.js';\nexport const meta = { x };\n");
+  const broken = await codeFingerprint({ modulesDir: dir, structuresFile: null });
+  assert.match(broken, /^[0-9a-f]{64}$/);
+  await writeFile(path.join(dir, 'haeuser', 'gibt-es-nicht.js'), 'export const x = 1;\n');
+  assert.notEqual(await codeFingerprint({ modulesDir: dir, structuresFile: null }), broken);
+});
+
+test('parseArgs: mit eigenen Spieldaten (--data) landet der Katalog dort, nicht im Repo', () => {
+  assert.equal(parseArgs(['--data', 'tmp/andere-daten']).out, path.join(path.resolve('tmp/andere-daten'), 'catalog.json'));
+  assert.equal(parseArgs(['--data', 'tmp/andere-daten', '--out', 'tmp/k.json']).out, path.resolve('tmp/k.json'));
+  assert.equal(parseArgs([]).out, DEFAULT_OUT);
 });
 
 test('serializeCatalog ergibt gültiges JSON mit einem Eintrag je Zeile', async () => {

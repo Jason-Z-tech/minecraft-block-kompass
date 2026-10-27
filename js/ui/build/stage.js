@@ -17,7 +17,6 @@ const STATUS_STEPS = [
   ['textures', 'Texturen'],
   ['meshing', '3D-Modell'],
 ];
-const DATA_COMMAND = 'node scripts/extract-game-data.mjs';
 
 /**
  * Punkt (Welt) → Bildschirm: { x, y } in CSS-Pixeln der Fläche oder null (hinter der Kamera / außerhalb).
@@ -43,10 +42,7 @@ export function viewerErrorState(error) {
   if (code === 'data') {
     return {
       kind: 'error', title: 'Spieldaten fehlen', text: message,
-      steps: [
-        { text: 'Spieldaten neu holen (ohne Minecraft aus dem Internet, sonst aus deiner Installation):', command: DATA_COMMAND },
-        { text: 'Danach diese Seite neu laden.' },
-      ],
+      steps: [{ text: 'Lade die Seite neu. Hilft das nicht, versuche es später noch einmal.' }],
     };
   }
   if (code === 'context-lost') return { kind: 'error', title: 'Grafikkarte zurückgesetzt', text: message, steps: [{ text: 'Lade die Seite neu.' }] };

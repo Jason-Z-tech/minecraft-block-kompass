@@ -1,18 +1,19 @@
-// Laden der Spieldaten (game-data/*.json) mit verständlichen Fehlern und Prüfung des Katalogs (§9).
-// Fehlermeldungen sind für Menschen geschrieben; technische Details hängen am Fehlerobjekt (cause, status).
+// Laden der Daten der Seite (Katalog data/catalog.json, Spieldaten game-data/*.json) mit verständlichen Fehlern und
+// Prüfung des Katalogs (§9). Fehlermeldungen sind für Menschen geschrieben und nennen keine Befehle (die Seite läuft
+// auch als Webseite, z. B. auf dem Handy); technische Details hängen am Fehlerobjekt (cause, status).
 import { SITE_ROOT, isSafeSitePath, isSafeUrl } from './dom.js';
 import { CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN, SIZE_CLASS_KEYS } from './shared.js';
 
-export const CATALOG_PATH = 'game-data/catalog.json';
+// Der Katalog liegt im Repo (nur Projekttexte, Größen und Zahlen, keine Spieldaten) und wird mit der Seite veröffentlicht.
+export const CATALOG_PATH = 'data/catalog.json';
 export const NAMES_PATH = 'game-data/names.json';
+// Lokale Vorschaubilder (scripts/make-thumbs.mjs): nur auf dem eigenen Rechner vorhanden, nie online.
+export const THUMBS_INDEX_PATH = 'thumbs/index.json';
 const DEFAULT_TIMEOUT_MS = 15000;
 const MAX_SIZE = 4064;
+const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
-const STEP_START = { text: 'Im Projektordner ausführen. Das holt die Spieldaten (ohne Minecraft einmalig aus dem Internet, sonst aus deiner Installation) und baut den Katalog:', command: 'node scripts/start.mjs' };
-const STEP_EXTRACT = { text: 'Spieldaten neu holen (ohne Minecraft aus dem Internet, sonst aus deiner Installation):', command: 'node scripts/extract-game-data.mjs' };
-const STEP_CATALOG = { text: 'Katalog der Bauten erzeugen:', command: 'node scripts/build-catalog.mjs' };
-const STEP_SERVER = { text: 'Den lokalen Server starten (im Projektordner):', command: 'node scripts/serve.mjs' };
-const STEP_RELOAD = { text: 'Danach diese Seite neu laden.' };
+const STEP_RELOAD = { text: 'Lade die Seite neu. Hilft das nicht, versuche es später noch einmal.' };
 
 export class DataError extends Error {
   constructor(message, { kind, path, title, status = null, steps = [], cause } = {}) {
@@ -26,15 +27,28 @@ export class DataError extends Error {
   }
 }
 
-/** Anleitung, wie eine fehlende oder kaputte Datei neu entsteht. */
-export function recoverySteps(path) {
-  if (path === CATALOG_PATH) return [STEP_START, STEP_RELOAD];
-  if (typeof path === 'string' && path.startsWith('game-data/')) return [STEP_EXTRACT, STEP_RELOAD];
+/** Was man bei einer fehlenden oder kaputten Datei tun kann (ohne Befehle: die Seite läuft auch online). */
+export function recoverySteps() {
   return [STEP_RELOAD];
 }
 
 function isGameData(path) {
   return path.startsWith('game-data/');
+}
+
+function damagedTitle(path) {
+  if (path === CATALOG_PATH) return 'Katalog beschädigt';
+  return isGameData(path) ? 'Spieldaten beschädigt' : 'Datei beschädigt';
+}
+
+function missingTitle(path) {
+  if (path === CATALOG_PATH) return 'Katalog fehlt';
+  return isGameData(path) ? 'Spieldaten fehlen' : 'Datei nicht gefunden';
+}
+
+/** Läuft die Seite auf dem eigenen Rechner (127.0.0.1/localhost)? Nur dort gibt es lokale Vorschaubilder. */
+export function isLocalSite(location = globalThis.location) {
+  return typeof location?.hostname === 'string' && LOCAL_HOSTS.has(location.hostname);
 }
 
 export function isSafeDataPath(path) {
@@ -60,19 +74,17 @@ export async function loadJson(path, { fetch: fetchImpl = globalThis.fetch, time
     });
   } catch (cause) {
     if (cause?.name === 'TimeoutError' || cause?.name === 'AbortError') {
-      throw new DataError('Der lokale Server hat nicht rechtzeitig geantwortet.', { kind: 'timeout', path, title: 'Zeitüberschreitung', steps: [STEP_SERVER, STEP_RELOAD], cause });
+      throw new DataError(`Das Laden von „${path}“ hat zu lange gedauert.`, { kind: 'timeout', path, title: 'Zeitüberschreitung', steps: [STEP_RELOAD], cause });
     }
-    throw new DataError('Die Seite erreicht den lokalen Server nicht. Läuft er noch?', { kind: 'network', path, title: 'Keine Verbindung zum lokalen Server', steps: [STEP_SERVER, STEP_RELOAD], cause });
+    throw new DataError(`„${path}“ konnte nicht geladen werden. Prüfe die Internetverbindung.`, { kind: 'network', path, title: 'Keine Verbindung', steps: [STEP_RELOAD], cause });
   }
   if (response.status === 404) {
     throw new DataError(`Die Datei „${path}“ wurde nicht gefunden.`, {
-      kind: 'missing', path, status: 404,
-      title: isGameData(path) ? 'Spieldaten fehlen' : 'Datei nicht gefunden',
-      steps: recoverySteps(path),
+      kind: 'missing', path, status: 404, title: missingTitle(path), steps: recoverySteps(),
     });
   }
   if (!response.ok) {
-    throw new DataError(`Der lokale Server konnte „${path}“ nicht liefern.`, { kind: 'http', path, status: response.status, title: 'Datei konnte nicht geladen werden', steps: [STEP_RELOAD] });
+    throw new DataError(`„${path}“ konnte nicht geladen werden (Fehler ${response.status}).`, { kind: 'http', path, status: response.status, title: 'Datei konnte nicht geladen werden', steps: [STEP_RELOAD] });
   }
   let text;
   try {
@@ -83,12 +95,12 @@ export async function loadJson(path, { fetch: fetchImpl = globalThis.fetch, time
   try {
     return JSON.parse(text);
   } catch (cause) {
-    throw new DataError(`„${path}“ ist beschädigt (kein gültiges JSON).`, { kind: 'parse', path, title: isGameData(path) ? 'Spieldaten beschädigt' : 'Datei beschädigt', steps: recoverySteps(path), cause });
+    throw new DataError(`„${path}“ ist beschädigt (kein gültiges JSON).`, { kind: 'parse', path, title: damagedTitle(path), steps: recoverySteps(), cause });
   }
 }
 
 function formatError(path, detail) {
-  return new DataError(`„${path}“ hat nicht das erwartete Format (${detail}).`, { kind: 'format', path, title: 'Spieldaten unvollständig', steps: recoverySteps(path) });
+  return new DataError(`„${path}“ hat nicht das erwartete Format (${detail}).`, { kind: 'format', path, title: path === CATALOG_PATH ? 'Katalog unvollständig' : 'Spieldaten unvollständig', steps: recoverySteps() });
 }
 
 function isPlainObject(value) {
@@ -231,31 +243,37 @@ export function normalizeCatalog(json, path = CATALOG_PATH) {
   };
 }
 
-/** Gibt es schon Spieldaten (game-data/meta.json)? Nur für eine genauere Anleitung im Fehlerfall. */
-async function gameDataPresent({ fetch: fetchImpl = globalThis.fetch, root = SITE_ROOT } = {}) {
+/**
+ * IDs mit lokalem Vorschaubild aus thumbs/index.json (Format von scripts/make-thumbs.mjs: { version: 1, entries: { id: … } }).
+ * Nur auf dem eigenen Rechner: online gibt es keine Vorschaubilder (sie enthalten Spieltexturen) und keine Anfrage danach.
+ * Fehlt oder stört die Datei, gibt es eben keine Bilder (leere Menge, Hinweis in der Konsole).
+ */
+export async function loadLocalThumbIds({ location = globalThis.location, ...options } = {}) {
+  if (!isLocalSite(location)) return new Set();
   try {
-    const response = await fetchImpl(new URL('game-data/meta.json', root), { method: 'HEAD', cache: 'no-cache', credentials: 'same-origin', signal: AbortSignal.timeout(5000) });
-    return response.ok;
-  } catch (cause) {
-    console.warn('[Block-Kompass] Prüfung von game-data/meta.json fehlgeschlagen:', cause);
-    return false;
+    const index = await loadJson(THUMBS_INDEX_PATH, { timeoutMs: 5000, ...options });
+    if (!isPlainObject(index) || index.version !== 1 || !isPlainObject(index.entries)) throw new Error('unbekanntes Format');
+    return new Set(Object.keys(index.entries).filter((id) => BUILD_ID_PATTERN.test(id)));
+  } catch (error) {
+    if (error?.kind !== 'missing') console.warn(`[Block-Kompass] ${THUMBS_INDEX_PATH} nicht nutzbar, Karten zeigen Icons:`, error);
+    return new Set();
   }
 }
 
-/** Lädt und prüft game-data/catalog.json. Fehlt nur der Katalog, nennt der Fehler nur den nötigen Befehl. */
-export async function loadCatalog(options = {}) {
-  let json;
-  try {
-    json = await loadJson(CATALOG_PATH, options);
-  } catch (error) {
-    if (error.kind === 'missing' && await gameDataPresent(options)) {
-      throw new DataError('Die Spieldaten sind vorhanden, aber der Katalog der Bauten (game-data/catalog.json) wurde noch nicht erzeugt.', {
-        kind: 'missing', path: CATALOG_PATH, status: 404, title: 'Katalog fehlt', steps: [STEP_CATALOG, STEP_RELOAD], cause: error,
-      });
-    }
-    throw error;
+/** Trägt lokale Vorschaubilder (thumbs/<id>.webp) in Einträge ohne Bild ein. ids: Ergebnis von loadLocalThumbIds. */
+export function applyThumbs(builds, ids) {
+  for (const build of builds) {
+    if (!build.thumb && ids.has(build.id)) build.thumb = `thumbs/${build.id}.webp`;
   }
-  return normalizeCatalog(json);
+  return builds;
+}
+
+/** Lädt und prüft data/catalog.json; auf dem eigenen Rechner kommen vorhandene Vorschaubilder dazu. */
+export async function loadCatalog(options = {}) {
+  const [json, thumbIds] = await Promise.all([loadJson(CATALOG_PATH, options), loadLocalThumbIds(options)]);
+  const catalog = normalizeCatalog(json);
+  applyThumbs(catalog.builds, thumbIds);
+  return catalog;
 }
 
 /** Lädt game-data/names.json ({ block: {id: {de, en}}, item: {…} }). */

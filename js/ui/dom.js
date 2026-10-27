@@ -59,7 +59,7 @@ function parsesTo(value, check, base) {
 
 /**
  * Pfad innerhalb der Webseite (ohne Schema, ohne „..“, ohne führenden Schrägstrich),
- * z. B. „game-data/catalog.json“ oder „bau.html?id=turm“.
+ * z. B. „data/catalog.json“ oder „bau.html?id=turm“.
  */
 export function isSafeSitePath(value) {
   if (typeof value !== 'string' || value === '' || value.length > MAX_URL_LENGTH) return false;

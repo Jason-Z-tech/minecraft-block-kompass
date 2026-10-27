@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   loadJson, loadCatalog, loadNames, normalizeCatalog, normalizeBuild, recoverySteps, isSafeDataPath, findBuild,
-  countByCategory, DataError, CATALOG_PATH, NAMES_PATH,
+  countByCategory, DataError, CATALOG_PATH, NAMES_PATH, THUMBS_INDEX_PATH, isLocalSite, loadLocalThumbIds, applyThumbs,
 } from '../../js/ui/data.js';
 
 const ROOT = new URL('http://127.0.0.1:8080/');
@@ -42,20 +42,23 @@ test('loadJson liefert geparstes JSON und fragt ab der Website-Wurzel', async ()
   assert.ok(calls[0].options.signal instanceof AbortSignal, 'mit Zeitlimit');
 });
 
-test('404 bei Spieldaten → „Spieldaten fehlen“ mit Anleitung', async () => {
+test('404 → verständliche Meldung ohne Befehle (die Seite läuft auch online, z. B. auf dem Handy)', async () => {
   const { fetch } = fakeFetch(() => new Response('Nicht gefunden.', { status: 404 }));
+  assert.equal(CATALOG_PATH, 'data/catalog.json', 'der Katalog liegt im Repo, nicht unter game-data/');
   await assert.rejects(loadJson(CATALOG_PATH, { fetch, root: ROOT }), (error) => {
     assert.ok(error instanceof DataError);
     assert.equal(error.name, 'DataError');
     assert.equal(error.kind, 'missing');
     assert.equal(error.status, 404);
-    assert.equal(error.title, 'Spieldaten fehlen');
-    assert.match(error.message, /game-data\/catalog\.json/);
-    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), ['node scripts/start.mjs'], 'ein Befehl, der auch ohne Minecraft geht');
-    assert.doesNotMatch(error.steps[0].text, /Minecraft-Installation lesen/, 'verlangt keine Minecraft-Installation');
-    assert.match(error.steps[0].text, /ohne Minecraft/);
+    assert.equal(error.title, 'Katalog fehlt');
+    assert.match(error.message, /data\/catalog\.json/);
+    assert.ok(error.steps.length > 0, 'es gibt einen Hinweis, was man tun kann');
+    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), [], 'keine Befehle');
+    assert.doesNotMatch(error.steps.map((step) => step.text).join(' '), /node|scripts\/|Projektordner|Server/);
     return true;
   });
+  await assert.rejects(loadJson(NAMES_PATH, { fetch, root: ROOT }), (error) => error.kind === 'missing' && error.title === 'Spieldaten fehlen'
+    && error.steps.every((step) => !step.command));
   await assert.rejects(loadJson('daten/liste.json', { fetch, root: ROOT }), { kind: 'missing', title: 'Datei nicht gefunden' });
 });
 
@@ -63,7 +66,10 @@ test('Serverfehler, Netzwerk, Zeitlimit und kaputtes JSON haben eigene Meldungen
   await assert.rejects(loadJson(NAMES_PATH, { fetch: fakeFetch(() => new Response('x', { status: 500 })).fetch, root: ROOT }), { kind: 'http', status: 500 });
   await assert.rejects(loadJson(NAMES_PATH, { fetch: async () => { throw new TypeError('Failed to fetch'); }, root: ROOT }), (error) => {
     assert.equal(error.kind, 'network');
-    assert.ok(error.steps.some((step) => step.command === 'node scripts/serve.mjs'));
+    assert.equal(error.title, 'Keine Verbindung');
+    assert.match(error.message, /Internetverbindung/);
+    assert.doesNotMatch(`${error.message} ${error.steps.map((step) => step.text).join(' ')}`, /lokal|Server|node/, 'kein „lokaler Server“ mehr');
+    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), []);
     assert.ok(error.cause instanceof TypeError, 'Ursache bleibt erhalten');
     return true;
   });
@@ -81,11 +87,11 @@ test('loadJson lehnt unsichere Pfade ab, ohne überhaupt anzufragen', async () =
   assert.equal(isSafeDataPath('game-data/structures/village__plains__houses__plains_small_house_1.json'), true);
 });
 
-test('recoverySteps passt zur Datei', () => {
-  assert.equal(recoverySteps(CATALOG_PATH).length, 2);
-  assert.deepEqual(recoverySteps(CATALOG_PATH).map((step) => step.command).filter(Boolean), ['node scripts/start.mjs']);
-  assert.deepEqual(recoverySteps(NAMES_PATH).map((step) => step.command).filter(Boolean), ['node scripts/extract-game-data.mjs']);
-  assert.deepEqual(recoverySteps('andere.json').map((step) => step.command).filter(Boolean), []);
+test('recoverySteps: ein Hinweis zum Neuladen, nie ein Befehl', () => {
+  const steps = recoverySteps();
+  assert.equal(steps.length, 1);
+  assert.match(steps[0].text, /neu/);
+  assert.equal(steps[0].command, undefined);
 });
 
 test('normalizeBuild übernimmt gültige Einträge vollständig', () => {
@@ -135,30 +141,60 @@ test('normalizeCatalog: überspringt ungültige und doppelte Einträge und melde
     assert.match(warnings[0], /2 Einträge/);
   });
   assert.throws(() => normalizeCatalog([]), { kind: 'format' });
-  assert.throws(() => normalizeCatalog({ builds: {} }), { kind: 'format', title: 'Spieldaten unvollständig' });
+  assert.throws(() => normalizeCatalog({ builds: {} }), { kind: 'format', title: 'Katalog unvollständig' });
 });
 
-test('loadCatalog: fehlt nur der Katalog, nennt die Anleitung nur build-catalog', async () => {
-  const onlyMeta = fakeFetch((url, options) => (String(url).endsWith('meta.json') && options.method === 'HEAD' ? new Response(null, { status: 200 }) : new Response('', { status: 404 })));
-  await assert.rejects(loadCatalog({ fetch: onlyMeta.fetch, root: ROOT }), (error) => {
+test('loadCatalog: fehlt der Katalog, kommt „Katalog fehlt“ – ohne Nachfragen nach Spieldaten oder Bildern (online)', async () => {
+  const nothing = fakeFetch(() => new Response('', { status: 404 }));
+  await assert.rejects(loadCatalog({ fetch: nothing.fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } }), (error) => {
     assert.equal(error.kind, 'missing');
     assert.equal(error.title, 'Katalog fehlt');
-    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), ['node scripts/build-catalog.mjs']);
+    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), []);
     return true;
   });
-  assert.deepEqual(onlyMeta.calls.map((call) => call.url), ['http://127.0.0.1:8080/game-data/catalog.json', 'http://127.0.0.1:8080/game-data/meta.json']);
-  const nothing = fakeFetch(() => new Response('', { status: 404 }));
-  await assert.rejects(loadCatalog({ fetch: nothing.fetch, root: ROOT }), { title: 'Spieldaten fehlen' });
+  assert.deepEqual(nothing.calls.map((call) => call.url), ['http://127.0.0.1:8080/data/catalog.json'], 'genau eine Anfrage');
+  const offline = fakeFetch(async () => { throw new TypeError('Failed to fetch'); });
+  await assert.rejects(loadCatalog({ fetch: offline.fetch, root: ROOT }), { kind: 'network', title: 'Keine Verbindung' });
+});
+
+test('isLocalSite: nur 127.0.0.1, localhost und [::1] gelten als eigener Rechner', () => {
+  for (const hostname of ['127.0.0.1', 'localhost', '[::1]']) assert.equal(isLocalSite({ hostname }), true, hostname);
+  for (const hostname of ['jason-z-tech.github.io', 'example.org', '127.0.0.1.evil.example', '']) assert.equal(isLocalSite({ hostname }), false, hostname);
+  assert.equal(isLocalSite(undefined), false);
+  assert.equal(isLocalSite(null), false);
+});
+
+test('Lokale Vorschaubilder: nur auf dem eigenen Rechner aus thumbs/index.json, online keine Anfrage', async () => {
+  const index = { version: 1, entries: { 'tokyo-skytree': { hash: 'a', bytes: 1 }, 'kein gueltiger name': { hash: 'b' } }, style: 3 };
+  const local = fakeFetch((url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json(index) : new Response('', { status: 404 })));
+  const ids = await loadLocalThumbIds({ fetch: local.fetch, root: ROOT, location: { hostname: '127.0.0.1' } });
+  assert.deepEqual([...ids], ['tokyo-skytree'], 'nur gültige IDs');
+  assert.deepEqual(local.calls.map((call) => call.url), ['http://127.0.0.1:8080/thumbs/index.json']);
+
+  const online = fakeFetch(() => json(index));
+  assert.equal((await loadLocalThumbIds({ fetch: online.fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } })).size, 0);
+  assert.equal(online.calls.length, 0, 'online wird thumbs/index.json nie angefragt');
+
+  const missing = fakeFetch(() => new Response('', { status: 404 }));
+  assert.equal((await loadLocalThumbIds({ fetch: missing.fetch, root: ROOT, location: { hostname: 'localhost' } })).size, 0, 'fehlt die Datei: keine Bilder');
   await quietly(async (warnings) => {
-    let calls = 0;
-    const flaky = async () => {
-      calls += 1;
-      if (calls === 1) return new Response('', { status: 404 });
-      throw new TypeError('Failed to fetch');
-    };
-    await assert.rejects(loadCatalog({ fetch: flaky, root: ROOT }), { title: 'Spieldaten fehlen' });
-    assert.equal(warnings.length, 1, 'fehlgeschlagene Prüfung wird gemeldet');
+    const broken = fakeFetch(() => json({ version: 2, entries: {} }));
+    assert.equal((await loadLocalThumbIds({ fetch: broken.fetch, root: ROOT, location: { hostname: 'localhost' } })).size, 0);
+    assert.equal(warnings.length, 1, 'unbekanntes Format wird gemeldet');
   });
+
+  const builds = [{ id: 'tokyo-skytree', thumb: null }, { id: 'kolben-tuer', thumb: null }, { id: 'eigenes-bild', thumb: 'thumbs/x.webp' }];
+  applyThumbs(builds, new Set(['tokyo-skytree', 'eigenes-bild']));
+  assert.deepEqual(builds.map((build) => build.thumb), ['thumbs/tokyo-skytree.webp', null, 'thumbs/x.webp'], 'vorhandene Pfade bleiben');
+});
+
+test('loadCatalog ergänzt lokale Vorschaubilder nur auf dem eigenen Rechner', async () => {
+  const body = { version: '26.2', builds: [{ ...VALID_BUILD, thumb: null }, { ...VALID_BUILD, id: 'kolben-tuer', category: 'redstone', thumb: null }] };
+  const respond = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json({ version: 1, entries: { 'kolben-tuer': {} } }) : json(body));
+  const local = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: '127.0.0.1' } });
+  assert.deepEqual(local.builds.map((build) => build.thumb), [null, 'thumbs/kolben-tuer.webp']);
+  const online = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } });
+  assert.deepEqual(online.builds.map((build) => build.thumb), [null, null]);
 });
 
 test('loadCatalog, findBuild und countByCategory', async () => {

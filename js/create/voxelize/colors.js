@@ -136,7 +136,7 @@ const prepared = new WeakMap();
 function checkFace(value, where) {
   if (!value || !Array.isArray(value.rgb) || value.rgb.length !== 3 || !Array.isArray(value.lab) || value.lab.length !== 3
     || !value.lab.every(Number.isFinite) || !Number.isFinite(value.pattern)) {
-    throw new Error(`Blockfarben: ${where} ist unvollständig – erzeuge sie neu mit node scripts/build-block-colors.mjs`);
+    throw new Error(`Blockfarben: ${where} ist unvollständig.`);
   }
 }
 
@@ -150,11 +150,11 @@ export function inAllSet(entry) {
  * { entries: [{ id, state, group, faces: [top, side, bottom, all], … }], byId: Map }.
  */
 export function prepareBlockColors(json) {
-  if (!json || typeof json !== 'object') throw new Error('Blockfarben fehlen – erzeuge sie mit node scripts/build-block-colors.mjs');
+  if (!json || typeof json !== 'object') throw new Error('Blockfarben fehlen.');
   let ready = prepared.get(json);
   if (ready) return ready;
   if (json.format !== BLOCK_COLORS_FORMAT || !json.blocks || typeof json.blocks !== 'object') {
-    throw new Error(`Blockfarben haben ein unbekanntes Format (erwartet format ${BLOCK_COLORS_FORMAT}) – erzeuge sie neu mit node scripts/build-block-colors.mjs`);
+    throw new Error(`Blockfarben haben ein unbekanntes Format (erwartet format ${BLOCK_COLORS_FORMAT}).`);
   }
   const entries = [];
   for (const id of Object.keys(json.blocks).sort()) {
@@ -170,7 +170,7 @@ export function prepareBlockColors(json) {
       animated: raw.animated === true, tinted: raw.tinted === true,
     }));
   }
-  if (entries.length === 0) throw new Error('Blockfarben: die Liste ist leer – erzeuge sie neu mit node scripts/build-block-colors.mjs');
+  if (entries.length === 0) throw new Error('Blockfarben: die Liste ist leer.');
   ready = Object.freeze({ entries, byId: new Map(entries.map((entry) => [entry.id, entry])) });
   prepared.set(json, ready);
   return ready;

@@ -1,7 +1,7 @@
 // Katalog-Eintrag für die Bau-Seite: die zusätzlichen Felder des Katalogs aus Runde 2 prüfen (Beschreibung,
 // Fakten, Quellen, Credits, Maßstäbe, Varianten …), Maßstab aus der Adresse auflösen, Quelle für den Viewer.
 // Ohne DOM-Zugriff beim Laden, daher in Node testbar.
-import { loadJson, loadCatalog, normalizeCatalog, findBuild, CATALOG_PATH } from '../data.js';
+import { loadJson, loadLocalThumbIds, applyThumbs, normalizeCatalog, findBuild, CATALOG_PATH } from '../data.js';
 import { isSafeUrl, isSafeSitePath } from '../dom.js';
 import { formatNumber, CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN } from '../shared.js';
 
@@ -106,24 +106,21 @@ export function normalizeBuildDetails(raw) {
   };
 }
 
-/** Katalog-JSON laden. Fehlt der Katalog, liefert loadCatalog die genauere Anleitung (Katalog oder Spieldaten). */
+/** Katalog-JSON (data/catalog.json) roh laden; Fehler kommen als DataError mit verständlicher Meldung. */
 export async function loadCatalogJson(options = {}) {
-  try {
-    return await loadJson(CATALOG_PATH, options);
-  } catch (error) {
-    if (error?.name !== 'DataError' || error.kind !== 'missing') throw error;
-    await loadCatalog(options);
-    // Die Datei ist inzwischen da (loadCatalog hat nicht geworfen): noch einmal roh laden
-    return loadJson(CATALOG_PATH, options);
-  }
+  return loadJson(CATALOG_PATH, options);
 }
 
-/** Eintrag mit allen geprüften Feldern oder null, wenn es die ID nicht gibt. Wirft DataError bei Ladefehlern. */
+/**
+ * Eintrag mit allen geprüften Feldern oder null, wenn es die ID nicht gibt. Wirft DataError bei Ladefehlern.
+ * Auf dem eigenen Rechner kommt ein vorhandenes lokales Vorschaubild dazu (wie in loadCatalog).
+ */
 export async function loadBuildEntry(id, options = {}) {
-  const json = await loadCatalogJson(options);
+  const [json, thumbIds] = await Promise.all([loadCatalogJson(options), loadLocalThumbIds(options)]);
   const catalog = normalizeCatalog(json);
   const base = findBuild(catalog, id);
   if (!base) return null;
+  applyThumbs([base], thumbIds);
   const raw = json.builds.find((entry) => isPlainObject(entry) && entry.id === id);
   return { ...base, ...normalizeBuildDetails(raw) };
 }

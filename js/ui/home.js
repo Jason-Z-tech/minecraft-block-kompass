@@ -48,8 +48,7 @@ async function loadHome() {
     clear(sections);
     renderEmpty(status, {
       title: 'Der Katalog ist noch leer',
-      text: 'Er enthält noch keine Bauten. Erzeuge ihn neu, sobald Bau-Module da sind:',
-      steps: [{ text: 'Katalog der Bauten erzeugen:', command: 'node scripts/build-catalog.mjs' }, { text: 'Danach diese Seite neu laden.' }],
+      text: 'Er enthält noch keine Bauten.',
       compact: true,
     });
     return;

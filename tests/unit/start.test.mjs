@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensureGameData, findMinecraftJar, checkGameData, parseStartArgs } from '../../scripts/start.mjs';
+import { ensureGameData, findMinecraftJar, checkGameData, checkCatalog, ensureThumbs, parseStartArgs } from '../../scripts/start.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const JAR = 'C:/x/.minecraft/versions/26.2/26.2.jar';
@@ -103,4 +103,58 @@ test('checkGameData und parseStartArgs', () => {
   assert.equal(parseStartArgs(['--remote']).remote, true);
   assert.throws(() => parseStartArgs(['--port', '80']), /Ungültiger Port/);
   assert.throws(() => parseStartArgs(['--minecraft']), /Unbekannte Option/);
+});
+
+test('checkCatalog: Fingerabdruck statt Dateizeiten, fehlende Module werden gemeldet', async () => {
+  const dir = path.join(ROOT, 'tmp', `start-test-catalog-${process.pid}`);
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(path.join(dir, 'js', 'builds', 'haeuser'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'js', 'builds', 'haeuser', 'haus.js'), 'export const meta = {};');
+  fs.writeFileSync(path.join(dir, 'js', 'builds', 'haeuser', 'turm.js'), 'export const meta = {};');
+  const file = path.join(dir, 'catalog.json');
+  const inputs = { code: 'c1', data: 'd1' };
+  try {
+    assert.deepEqual(await checkCatalog({ root: dir, catalogFile: file, inputs }), { fresh: false, reason: 'Der Katalog fehlt.', missing: [] });
+    fs.writeFileSync(file, '{ kaputt');
+    assert.match((await checkCatalog({ root: dir, catalogFile: file, inputs })).reason, /nicht lesbar/);
+    fs.writeFileSync(file, JSON.stringify({ inputs, builds: {} }));
+    assert.match((await checkCatalog({ root: dir, catalogFile: file, inputs })).reason, /unbekanntes Format/);
+    const write = (catalogInputs) => fs.writeFileSync(file, JSON.stringify({ inputs: catalogInputs, builds: [{ id: 'haus', module: 'js/builds/haeuser/haus.js' }] }));
+    write({ code: 'alt', data: 'd1' });
+    const code = await checkCatalog({ root: dir, catalogFile: file, inputs });
+    assert.equal(code.fresh, false);
+    assert.match(code.reason, /Bau-Module oder Kern/);
+    write({ code: 'c1', data: 'alt' });
+    assert.match((await checkCatalog({ root: dir, catalogFile: file, inputs })).reason, /Spieldaten/);
+    write(undefined);
+    assert.match((await checkCatalog({ root: dir, catalogFile: file, inputs })).reason, /Bau-Module oder Kern und Spieldaten/, 'alter Katalog ohne Fingerabdruck');
+    write(inputs);
+    // Neuere Dateizeiten machen den Katalog nicht mehr „veraltet“ (z. B. nach git pull), nur der Inhalt zählt
+    const later = new Date(Date.now() + 60_000);
+    fs.utimesSync(path.join(dir, 'js', 'builds', 'haeuser', 'haus.js'), later, later);
+    assert.deepEqual(await checkCatalog({ root: dir, catalogFile: file, inputs }), { fresh: true, reason: null, missing: ['js/builds/haeuser/turm.js'] });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('ensureThumbs: mit Bildern make-thumbs, ohne eine leere thumbs/index.json (kein 404 auf der lokalen Seite)', () => {
+  const dir = path.join(ROOT, 'tmp', `start-test-thumbs-${process.pid}`);
+  fs.rmSync(dir, { recursive: true, force: true });
+  try {
+    const runs = [];
+    assert.equal(ensureThumbs({ thumbs: true, thumbsDir: dir, run: (script, args) => { runs.push([script, args]); return 0; }, log: () => {} }), 'rendered');
+    assert.deepEqual(runs, [['scripts/make-thumbs.mjs', []]]);
+    const logs = [];
+    assert.equal(ensureThumbs({ thumbs: true, thumbsDir: dir, run: () => 1, log: (line) => logs.push(line) }), 'failed');
+    assert.match(logs.join(' '), /Kategorie-Icon/);
+    assert.equal(fs.existsSync(dir), false, 'mit Bildern legt ensureThumbs selbst nichts an');
+    assert.equal(ensureThumbs({ thumbs: false, thumbsDir: dir }), 'placeholder');
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')), { version: 1, entries: {} });
+    fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify({ version: 1, entries: { haus: {} } }));
+    assert.equal(ensureThumbs({ thumbs: false, thumbsDir: dir }), 'present');
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')).entries, { haus: {} }, 'vorhandene Liste bleibt');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

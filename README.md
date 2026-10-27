@@ -1,8 +1,8 @@
 # Block-Kompass
 
-Lokale Webseite mit Minecraft-Bauten (Java Edition 26.2). Jeder Bau hat eine 3D-Schritt-für-Schritt-Anleitung im Browser (Block für Block, auch zum Herumlaufen wie im Spiel), eine Materialliste mit den deutschen Blocknamen zum Abhaken und einen Ebenen-Plan. Dazu kommt „Selber erstellen“: Katalogsuche per Freitext, Formen-Generator (Kugel, Turm, Bogen …) und Upload von Bauplänen (`.schem`, `.litematic`, `.nbt`) oder 3D-Modellen (`.vox`, `.stl`, `.obj`, `.glb`, `.gltf`).
+Webseite mit Minecraft-Bauten (Java Edition 26.2). Jeder Bau hat eine 3D-Schritt-für-Schritt-Anleitung im Browser (Block für Block, auch zum Herumlaufen wie im Spiel), eine Materialliste mit den deutschen Blocknamen zum Abhaken und einen Ebenen-Plan. Dazu kommt „Selber erstellen“: Katalogsuche per Freitext, Formen-Generator (Kugel, Turm, Bogen …) und Upload von Bauplänen (`.schem`, `.litematic`, `.nbt`) oder 3D-Modellen (`.vox`, `.stl`, `.obj`, `.glb`, `.gltf`).
 
-Nur für den Eigengebrauch: Die Seite läuft ausschließlich lokal auf `127.0.0.1` und wird nicht veröffentlicht. Texturen, Modelle und Namen stammen original aus Minecraft 26.2 (aus deiner Installation oder, ohne Minecraft, aus öffentlichen Quellen geladen) und bleiben auf deinem Rechner (`game-data/`, `thumbs/` sind nicht im Repo).
+Für den Eigengebrauch. Online als Webseite (auch auf dem Handy, ohne etwas zu installieren): https://jason-z-tech.github.io/minecraft-block-kompass/ (GitHub Pages, Branch `main`). Texturen, Modelle und Namen stammen original aus Minecraft 26.2; Mojang-Dateien liegen nie im Repo oder auf der Seite (`game-data/`, `thumbs/` sind gitignored). Im Repo liegt nur der Katalog der Bauten (`data/catalog.json`: Projekttexte, Größen, Zahlen und Block-IDs).
 
 ## Voraussetzungen
 - **Node.js 24** (nur Bordmittel, keine npm-Pakete)
@@ -25,9 +25,16 @@ Auch `node scripts/extract-game-data.mjs` ohne Optionen wechselt automatisch auf
 Einzelschritte, falls nötig:
 ```powershell
 node scripts/extract-game-data.mjs      # Spieldaten nach game-data/ (≈ 2 s; ohne Minecraft automatisch aus dem Internet)
-node scripts/build-catalog.mjs --thumbs # Katalog game-data/catalog.json + Vorschaubilder in thumbs/
+node scripts/build-catalog.mjs --thumbs # Katalog data/catalog.json (im Repo) + Vorschaubilder in thumbs/ (nur lokal)
 node scripts/serve.mjs                  # nur der Server
 ```
+
+## Katalog im Repo
+`data/catalog.json` wird mit der Seite veröffentlicht. Er enthält einen Fingerabdruck der Bau-Module und Spieldaten (`inputs`); der Unit-Test `tests/unit/catalog-fresh.test.mjs` schlägt fehl, sobald er veraltet ist. Dann neu erzeugen (braucht `game-data/`) und mit committen:
+```bash
+node scripts/build-catalog.mjs
+```
+Vorschaubilder (`node scripts/build-catalog.mjs --thumbs`) gibt es nur lokal: Die Seite zeigt sie auf 127.0.0.1/localhost (Liste in `thumbs/index.json`), online zeigen die Karten das Kategorie-Icon.
 
 ## Seiten
 - `index.html`: Start mit Suche, Kategorien und Empfehlungen
@@ -47,7 +54,8 @@ node scripts/serve.mjs                  # nur der Server
 - `scripts/`: Start, Server, Spieldaten-Extraktion, Katalog, Vorschaubilder, Prüf- und Screenshot-Werkzeuge
 - `tests/`: Unit-Tests (`unit/`), Klick-Test (`e2e.mjs`), Testseiten und Sichtprüfungen (`visual/`), Testdaten (`fixtures/`), Chrome-Steuerung (`browser.mjs`)
 - `docs/ARCHITEKTUR.md`: verbindliche Spezifikation mit allen Schnittstellen; `docs/recherche/`: Maße und Quellen der echten Bauwerke
-- Erzeugt und nicht im Repo: `game-data/` (Spieldaten, Katalog), `thumbs/` (Vorschaubilder), `tmp/` (Screenshots, Testreste)
+- `data/catalog.json`: Katalog der Bauten (erzeugt, aber im Repo); `.nojekyll`: GitHub Pages liefert alles unverändert aus
+- Erzeugt und nicht im Repo: `game-data/` (Spieldaten), `thumbs/` (Vorschaubilder), `tmp/` (Screenshots, Testreste)
 
 ## Testen
 ```powershell

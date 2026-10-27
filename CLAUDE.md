@@ -1,6 +1,6 @@
 # Block-Kompass – Hinweise für Claude
 
-Lokale Webseite (nur Eigengebrauch) mit Minecraft-Bauten: 3D-Schritt-für-Schritt-Anleitungen im Browser (eigener WebGL2-Viewer mit Lauf-Modus), Materiallisten, Ebenen-Plan und „Selber erstellen“. Minecraft **Java Edition 26.2**.
+Webseite (Eigengebrauch) mit Minecraft-Bauten: 3D-Schritt-für-Schritt-Anleitungen im Browser (eigener WebGL2-Viewer mit Lauf-Modus), Materiallisten, Ebenen-Plan und „Selber erstellen“. Minecraft **Java Edition 26.2**. Online auf GitHub Pages: https://jason-z-tech.github.io/minecraft-block-kompass/
 Verbindliche Spezifikation: `docs/ARCHITEKTUR.md` (Ordner, Schnittstellen, Datenformate, Design). Recherchen mit Quellen: `docs/recherche/`.
 
 ## Entscheidungen des Users (verbindlich)
@@ -10,6 +10,7 @@ Verbindliche Spezifikation: `docs/ARCHITEKTUR.md` (Ordner, Schnittstellen, Daten
 - Kein Export, keine Warnung zur Bauhöhe, kein Hinweis- oder Disclaimer-Text.
 - Sehr viele Bauten (Ziel: 100+ pro Kategorie). Fertige Online-Bauten dürfen übernommen werden; Quelle und Lizenz in `sources`/`credits` notieren.
 - Redstone und Farmen sind nicht im Spiel getestet und tragen `tested: false`.
+- 2026-10-27: Die Seite muss als normale Webseite laufen, auch auf dem Handy, ohne dass der User ein Node-Skript ausführt oder Minecraft verbindet. Gewählt ist „Weg A“: Der Browser lädt die Original-Spieldaten selbst aus misode/mcmeta (raw.githubusercontent.com) und wandelt sie um; auf der Seite und im Repo liegen keine Mojang-Dateien. Der Katalog `data/catalog.json` (ohne Spieldaten) liegt im Repo. Vorschaubilder online vorerst als Icons. Seitentexte nennen nie Befehle.
 - Seite und Antworten auf Deutsch, Code-Namen auf Englisch.
 
 ## Arbeitsregeln
@@ -21,7 +22,7 @@ Verbindliche Spezifikation: `docs/ARCHITEKTUR.md` (Ordner, Schnittstellen, Daten
 - Sicherheit: Eingaben und Uploads prüfen (Typ, Grösse), Ausgaben escapen, die strenge CSP beibehalten.
 
 ## Git und GitHub
-- Privates Repo `Jason-Z-tech/minecraft-block-kompass`, Branch `main`.
+- Repo `Jason-Z-tech/minecraft-block-kompass` (öffentlich, für GitHub Pages: „Deploy from a branch“ `main`, Root), Branch `main`.
 - Auftrag des Users (2026-10-22): nach jedem erreichten Meilenstein committen und pushen, damit GitHub immer aktuell ist. Das macht nur die Haupt-Session. Workflow- und Sub-Agenten führen keine git-Schreibbefehle aus.
 - Identität nur `Jason-Z-tech` / `181737057+Jason-Z-tech@users.noreply.github.com`. Nie echte Namen oder E-Mail-Adressen in Commits oder Dateien.
 - Nie force-push, `reset --hard` oder `clean`. Commit-Nachrichten auf Deutsch.

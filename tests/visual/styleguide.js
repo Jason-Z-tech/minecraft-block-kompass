@@ -260,7 +260,7 @@ async function renderStates() {
     createState({ kind: 'info', title: '3D-Ansicht folgt', text: 'Ein neutraler Hinweis, z. B. für Bereiche, die noch kommen.', headingLevel: 3, compact: true }),
     createState({ kind: 'warning', title: 'Sehr großer Bau', text: 'Über eine Million Blöcke – die 3D-Ansicht kann eine Weile laden.', headingLevel: 3 }),
   );
-  // Echter Fehlerzustand: loadJson mit einer Antwort 404, so wie ohne game-data/catalog.json
+  // Echter Fehlerzustand: loadJson mit einer Antwort 404, so wie ohne data/catalog.json
   const errorBox = el('div');
   states.append(errorBox);
   try {

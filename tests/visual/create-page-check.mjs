@@ -4,7 +4,7 @@
 // Prüft Freitext (Bau mit Maßstab, Fantasy-Bau, Form, ehrlich nicht vorhanden), Formen-Generator (Form wechseln, Zahl,
 // Block-Suche per Tastatur, Vorschau, Link), Datei-Import mit den Fixtures aus tests/fixtures/create/** (Erfolg, Fehler,
 // 3D-Modelle mit Einstellungen) und die Handy-Ansicht. Screenshots als ganze Seite. Konsolenfehler zählen als Fehler.
-// Braucht game-data/ inkl. catalog.json (ohne --catalog der echte Katalog). Exit-Code 1, wenn eine Prüfung fehlschlägt.
+// Braucht game-data/ und data/catalog.json (ohne --catalog der echte Katalog). Exit-Code 1, wenn eine Prüfung fehlschlägt.
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,7 +46,9 @@ async function openBrowser({ mobile = false } = {}) {
     await page?.close();
     page = await launchBrowser({ ...size, gpu: 'swiftshader', reducedMotion: true });
   }
-  if (CATALOG) await page.route('game-data/catalog.json', { file: path.resolve(ROOT, CATALOG) });
+  if (CATALOG) await page.route('data/catalog.json', { file: path.resolve(ROOT, CATALOG) });
+  // Unabhängig von lokal erzeugten Vorschaubildern (thumbs/ fehlt z. B. nach frischem Klon): leere Liste
+  await page.route('thumbs/index.json', { body: JSON.stringify({ version: 1, entries: {} }), contentType: 'application/json' });
   return page;
 }
 
@@ -360,14 +362,14 @@ async function mobileFlow(server) {
 async function statesFlow(server) {
   const page = await openBrowser();
   try {
-    await page.route('game-data/catalog.json', { body: 'nicht da', status: 404, contentType: 'text/plain' });
+    await page.route('data/catalog.json', { body: 'nicht da', status: 404, contentType: 'text/plain' });
     await page.goto(`${server.url}/erstellen.html?q=Burg`);
     await page.waitFor(READY, 30000);
     check('Katalog fehlt: Fehlerzustand mit Anleitung', await page.eval("!!document.querySelector('#create-status .state--error .state__steps')"));
     check('Katalog fehlt: Formen gehen trotzdem', await page.eval("window.__createPage.shape?.ok === true"));
     await shot(page, 'zustand-01-katalog-fehlt');
     takeErrors(page);
-    await page.unroute();
+    await page.unroute('data/catalog.json');
 
     // Kein WebGL2: getContext('webgl2') liefert null
     await page.send('Page.addScriptToEvaluateOnNewDocument', {

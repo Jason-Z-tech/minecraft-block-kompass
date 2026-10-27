@@ -4,24 +4,23 @@
 // Spieldaten: aus der Minecraft-Installation (nur lesend); ohne Installation oder wenn das scheitert automatisch aus
 // öffentlichen Quellen (siehe README „Ohne Minecraft“).
 // --remote: immer aus öffentlichen Quellen laden, auch wenn Minecraft installiert ist.
-// --no-thumbs: Katalog ohne Vorschaubilder bauen (braucht dann kein Chrome).
+// --no-thumbs: keine Vorschaubilder rendern (braucht dann kein Chrome); die lokale Seite zeigt dann Kategorie-Icons.
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
 import { defaultSourcePaths } from './extract-game-data.mjs';
+import { catalogInputs, DEFAULT_OUT as CATALOG } from './build-catalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GAME_DATA = path.join(ROOT, 'game-data');
-const CATALOG = path.join(GAME_DATA, 'catalog.json');
 const BUILDS_DIR = path.join(ROOT, 'js', 'builds');
+const THUMBS_DIR = path.join(ROOT, 'thumbs');
 const DEFAULT_PORT = 8080;
 const PORT_TRIES = 10;
 const REQUIRED_DATA = ['meta.json', 'blocks.json', 'names.json', 'models.json', 'textures.json', 'textures.bin', 'structures/index.json'];
 const CATEGORY_DIRS = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'redstone', 'farmen', 'infrastruktur'];
-// Ändert sich eine dieser Dateien oder Ordner, kann der Katalog veraltet sein
-const CATALOG_INPUTS = ['js/builds', 'js/core', 'scripts/build-catalog.mjs', 'scripts/check-build.mjs', 'game-data/structures/index.json', 'game-data/blocks.json'];
 
 export function parseStartArgs(argv) {
   const options = { port: DEFAULT_PORT, portGiven: false, remote: false, thumbs: true };
@@ -52,17 +51,6 @@ export function checkGameData(dir = GAME_DATA) {
   return problems;
 }
 
-function newestMtime(target) {
-  if (!existsSync(target)) return 0;
-  const info = statSync(target);
-  if (!info.isDirectory()) return info.mtimeMs;
-  let newest = info.mtimeMs;
-  for (const entry of readdirSync(target, { withFileTypes: true })) {
-    newest = Math.max(newest, newestMtime(path.join(target, entry.name)));
-  }
-  return newest;
-}
-
 function moduleFiles(buildsDir = BUILDS_DIR) {
   const files = [];
   for (const category of CATEGORY_DIRS) {
@@ -74,11 +62,12 @@ function moduleFiles(buildsDir = BUILDS_DIR) {
 }
 
 /**
- * Passt der Katalog zu den Modulen? → { fresh, reason, missing }
- * Veraltet, wenn er fehlt, kaputt ist oder älter als ein Modul, der Kern oder die Spieldaten. Fehlen Module im
- * Katalog, obwohl er neuer ist, hatten sie beim letzten Lauf Fehler: dann nicht endlos neu bauen, nur melden.
+ * Passt der Katalog (data/catalog.json) zu Modulen und Spieldaten? → { fresh, reason, missing }
+ * Veraltet, wenn er fehlt, kaputt ist oder sein Fingerabdruck („inputs“, siehe build-catalog.mjs) nicht mehr zum
+ * Quelltext oder zu den Spieldaten passt. Fehlen Module im Katalog, obwohl er aktuell ist, hatten sie beim letzten Lauf
+ * Fehler: dann nicht endlos neu bauen, nur melden. inputs: für Tests, sonst aus den Dateien berechnet.
  */
-export function checkCatalog({ root = ROOT, catalogFile = CATALOG } = {}) {
+export async function checkCatalog({ root = ROOT, catalogFile = CATALOG, inputs = null } = {}) {
   if (!existsSync(catalogFile)) return { fresh: false, reason: 'Der Katalog fehlt.', missing: [] };
   let catalog;
   try {
@@ -87,9 +76,11 @@ export function checkCatalog({ root = ROOT, catalogFile = CATALOG } = {}) {
     return { fresh: false, reason: `Der Katalog ist nicht lesbar (${error.message}).`, missing: [] };
   }
   if (!Array.isArray(catalog.builds)) return { fresh: false, reason: 'Der Katalog hat ein unbekanntes Format.', missing: [] };
-  const catalogTime = statSync(catalogFile).mtimeMs;
-  const newer = CATALOG_INPUTS.filter((input) => newestMtime(path.join(root, input)) > catalogTime);
-  if (newer.length) return { fresh: false, reason: `Geändert seit dem letzten Katalog: ${newer.join(', ')}.`, missing: [] };
+  const current = inputs ?? await catalogInputs();
+  const changed = [];
+  if (catalog.inputs?.code !== current.code) changed.push('Bau-Module oder Kern');
+  if (catalog.inputs?.data !== current.data) changed.push('Spieldaten');
+  if (changed.length) return { fresh: false, reason: `Geändert seit dem letzten Katalog: ${changed.join(' und ')}.`, missing: [] };
   const listed = new Set(catalog.builds.map((build) => build.module).filter(Boolean));
   const missing = moduleFiles(path.join(root, 'js', 'builds')).filter((file) => !listed.has(file));
   return { fresh: true, reason: null, missing };
@@ -134,6 +125,24 @@ export function ensureGameData({ remote = false, run = runNode, check = checkGam
   return 'remote';
 }
 
+/**
+ * Vorschaubilder für die lokale Seite. Mit thumbs: make-thumbs (rendert nur Fehlendes/Veraltetes). Ohne: eine leere
+ * thumbs/index.json anlegen, falls keine da ist – die lokale Seite fragt sie ab und soll dabei keinen 404 bekommen.
+ * → 'rendered' | 'failed' | 'placeholder' | 'present'
+ */
+export function ensureThumbs({ thumbs = true, run = runNode, thumbsDir = THUMBS_DIR, log = console.log } = {}) {
+  if (thumbs) {
+    const status = run('scripts/make-thumbs.mjs', []);
+    if (status !== 0) log('  Hinweis: Nicht alle Vorschaubilder ließen sich erzeugen (siehe oben); die Seite zeigt dort das Kategorie-Icon.');
+    return status === 0 ? 'rendered' : 'failed';
+  }
+  const index = path.join(thumbsDir, 'index.json');
+  if (existsSync(index)) return 'present';
+  mkdirSync(thumbsDir, { recursive: true });
+  writeFileSync(index, `${JSON.stringify({ version: 1, entries: {} }, null, 2)}\n`);
+  return 'placeholder';
+}
+
 function runNode(script, args) {
   const result = spawnSync(process.execPath, [path.join(ROOT, script), ...args], { stdio: 'inherit', cwd: ROOT });
   if (result.error) throw result.error;
@@ -165,23 +174,26 @@ async function main() {
     console.log('  Hinweis: game-data/block-colors.json fehlt – 3D-Modelle lassen sich nicht importieren. Erzeugen: node scripts/build-block-colors.mjs');
   }
 
-  // 2. Katalog
-  const state = checkCatalog();
+  // 2. Katalog (liegt im Repo; neu bauen nur, wenn er nicht mehr zu Modulen oder Spieldaten passt)
+  const state = await checkCatalog();
   if (!state.fresh) {
-    console.log(`${state.reason} Baue den Katalog neu${options.thumbs ? ' (mit Vorschaubildern)' : ''} …\n`);
-    const status = runNode('scripts/build-catalog.mjs', options.thumbs ? ['--thumbs'] : []);
+    console.log(`${state.reason} Baue den Katalog neu …\n`);
+    const status = runNode('scripts/build-catalog.mjs', []);
     if (status !== 0) {
       if (!existsSync(CATALOG)) throw new Error('Der Katalog konnte nicht erzeugt werden (Meldung oben).');
       console.log('\nAchtung: Beim Katalog gab es Fehler (siehe oben). Fehlerhafte Bauten fehlen in der Seite.\n');
     }
-    const after = checkCatalog();
+    const after = await checkCatalog();
     if (after.missing.length) console.log(`  Nicht im Katalog (Fehler beim Prüfen): ${after.missing.join(', ')}`);
   } else {
     console.log('✓ Katalog passt zu den Bau-Modulen');
     if (state.missing.length) console.log(`  Nicht im Katalog (beim letzten Lauf fehlerhaft): ${state.missing.join(', ')}`);
   }
 
-  // 3. Server
+  // 3. Vorschaubilder (nur lokal): fehlende oder veraltete rendern; ohne --no-thumbs geht das schnell, wenn alle aktuell sind
+  ensureThumbs({ thumbs: options.thumbs });
+
+  // 4. Server
   const server = await listen(options);
   console.log(`\nBlock-Kompass läuft: ${server.url}  (nur auf diesem Rechner erreichbar, beenden mit Strg+C)`);
 }

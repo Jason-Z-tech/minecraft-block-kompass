@@ -98,8 +98,7 @@ async function startBuild(params) {
     showPageState({
       kind: 'error',
       title: 'Keine 3D-Daten',
-      text: `Für „${entry.title}“ fehlt im Katalog das Bau-Modul oder die Struktur. Erzeuge den Katalog neu.`,
-      steps: [{ text: 'Katalog neu erzeugen:', command: 'node scripts/build-catalog.mjs' }, { text: 'Danach diese Seite neu laden.' }],
+      text: `Für „${entry.title}“ fehlt im Katalog das Bau-Modul oder die Struktur.`,
       actions: [linkButton('Zu den Kategorien', 'kategorie.html', { iconName: 'grid' })],
     });
     return;

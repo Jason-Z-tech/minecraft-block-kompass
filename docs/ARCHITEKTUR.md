@@ -12,6 +12,11 @@ und nennt sie im Abschlussbericht.
 
 - **Zweck:** private, lokale Webseite mit Minecraft-Bauprojekten und Schritt-für-Schritt-Anleitungen
   in 3D. Nur für den eigenen Gebrauch des Users, wird nicht veröffentlicht.
+  Änderung (Webseite, 2026-10-27, Entscheid des Users): Die Seite ist online auf GitHub Pages
+  (https://jason-z-tech.github.io/minecraft-block-kompass/, „Deploy from a branch“ main, Root, `.nojekyll`) und soll ohne
+  Node und auch auf dem Handy laufen. Weiterhin gilt: keine Mojang-Dateien im Repo oder auf der Seite. Der Katalog
+  (`data/catalog.json`, nur Projekttexte, Größen, Zahlen, IDs) liegt im Repo; die Spieldaten lädt der Browser selbst aus
+  öffentlichen Quellen (misode/mcmeta, „Weg A“, siehe Etappe 2). Lokal (127.0.0.1/localhost) bleibt `game-data/` nutzbar.
 - **Technik:** statisches HTML/CSS/JS mit ES-Modulen. Kein Build-Tool, **keine npm-Pakete, keine
   CDNs**. Node-Skripte nur mit Bordmitteln (`node:fs`, `node:zlib`, `node:http`, `node:test`,
   `node:child_process` …). Installiert: Node 24, Python 3.13, git, Chrome.
@@ -76,8 +81,10 @@ minecraft-block-kompass/
   tests/visual/      Testseiten für Screenshots
   tests/browser.mjs  Chrome-Steuerung über DevTools-Protokoll (aus dem Dyna-Kompass übernommen)
   game-data/         ERZEUGT, gitignored
-  thumbs/            ERZEUGT, gitignored (Vorschaubilder)
+  data/catalog.json  ERZEUGT von build-catalog.mjs, aber im Repo (Etappe 1; ohne Spieldaten, mit der Seite veröffentlicht)
+  thumbs/            ERZEUGT, gitignored (Vorschaubilder, nur lokal)
   tmp/               gitignored (Screenshots, Testreste)
+  .nojekyll          GitHub Pages liefert alle Dateien unverändert aus (kein Jekyll)
   docs/              ARCHITEKTUR.md, recherche/*.md
 ```
 Änderung: `assets/` enthält zusätzlich das Icon-Sprite `icons.svg` (eigene 16×16-Pixel-Icons, Farbe =
@@ -304,6 +311,7 @@ Optional `"mip"` = `texture.mipmap_strategy` aus der .mcmeta (`dark_cutout` Laub
   schematisch – das echte `plains_small_house_1` ist 7×7×7 mit 153 Blöcken und 22 Paletteneinträgen.
 
 `catalog.json` – erzeugt von `scripts/build-catalog.mjs` (siehe §9).
+Änderung (Webseite, Etappe 1): Der Katalog liegt nicht mehr hier, sondern im Repo unter `data/catalog.json` (§9).
 
 Änderung (create:voxelize): `block-colors.json` – mittlere Blockfarben für den Modell-Import (§12.3), erzeugt von
 `node scripts/build-block-colors.mjs [--data <ordner>]` (≈ 0,3 s) und automatisch von `extract-game-data.mjs` (scheitert es
@@ -1022,6 +1030,15 @@ verschiedene Blockzahlen (beim Tokyo Skytree 1:1 waren es 3 Blöcke; `tokyo-skyt
 
 `scripts/build-catalog.mjs` liest alle Module und `game-structures.js`, prüft sie und schreibt
 `game-data/catalog.json`.
+Änderung (Webseite, Etappe 1): Ziel ist `data/catalog.json` (im Repo, wird mit der Seite veröffentlicht). Neu ist das Feld
+`"inputs": { "code": sha256, "data": sha256 }` nach `version`: `code` = Fingerabdruck dieses Skripts (nur die Datei), von
+`scripts/check-build.mjs`, `js/core/materials.js`, allen Bau-Modulen und `game-structures.js`, jeweils samt aller relativ
+importierten Dateien (CRLF zählt als LF); `data` = Spieldaten-Version (`version|worldVersion` aus `meta.json`),
+`blocks.json` und `structures/index.json`. Passt einer nicht mehr, ist der Katalog veraltet (`start.mjs`, Unit-Test
+`tests/unit/catalog-fresh.test.mjs`). `thumb` ist im Katalog immer `null`: Vorschaubilder enthalten Spieltexturen und gibt es
+nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur auf 127.0.0.1/localhost (`loadLocalThumbIds`,
+`applyThumbs` in `js/ui/data.js`), online gibt es keine Anfrage danach und die Karten zeigen das Kategorie-Icon.
+Ändert sich außer `generatedAt` nichts, bleibt die Datei unberührt (`writeCatalogIfChanged`).
 Änderung (catalog, verbindlich ab Runde 2 – ersetzt das kürzere Format):
 ```json
 { "generatedAt": "ISO-Zeit", "version": "26.2",
@@ -1412,6 +1429,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `--out <datei>`, `--thumbs-dir <ordner>`. Als Bibliothek: `buildCatalog({ modulesDir, structuresFile, dataDir, thumbsDir })` →
   `{ catalog, errors, notes, stats }`, `catalogModule`, `catalogStructures`, `analyzeStructure`, `sizeClass`, `serializeCatalog`,
   `writeCatalog`, `writeFileAtomic`.
+  Änderung (Webseite, Etappe 1): Standard für `--out` ist `data/catalog.json` (`DEFAULT_OUT`); `--thumbs` rendert nur noch die
+  Bilder (der Katalog bekommt keine thumb-Felder). Neu: `codeFingerprint`, `dataFingerprint`, `catalogInputs`,
+  `writeCatalogIfChanged`. `moduleSources` liegt jetzt in `scripts/lib/module-sources.mjs` (make-thumbs exportiert es weiter).
 - `node scripts/make-thumbs.mjs [--force] [--only <id>]… [--catalog <datei>] [--out thumbs] [--data <ordner>]
   [--gpu hardware|swiftshader] [--prune]` (catalog) – Vorschaubilder: ein Chrome (Grafikkarte, sonst swiftshader) lädt
   `tests/visual/thumb.html` und rendert jeden Eintrag mit dem echten Viewer in doppelter Auflösung, verkleinert auf **WebP
@@ -1423,14 +1443,14 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   Neu gerendert wird nur bei geändertem Hash (Eintrag ohne `thumb`, Modul-Quelltext samt relativ importierter Dateien,
   Strukturdatei, Spieldaten-Stand `version|worldVersion|resourcePack`, `THUMB_STYLE`) – gespeichert in `thumbs/index.json`
   (`{ version: 1, style, size, entries: { <id>: { hash, bytes, renderedAt } } }`). Danach trägt es die thumb-Felder in den
-  Katalog ein. `--prune` löscht Bilder ohne Katalog-Eintrag (sonst nur Hinweis). Schlägt ein Bild fehl, lädt es die Seite neu und
+  Katalog ein. Änderung (Webseite, Etappe 1): Der Katalog bleibt unverändert, Standard für `--catalog` ist `data/catalog.json`. `--prune` löscht Bilder ohne Katalog-Eintrag (sonst nur Hinweis). Schlägt ein Bild fehl, lädt es die Seite neu und
   versucht es einmal. Als Bibliothek: `makeThumbs({ catalog, outDir, dataDir, force, only, gpu, prune, log })` →
   `{ rendered, skipped, retried, errors, orphans, durationMs }`. Render-Seite: `window.__thumb.render({ source, scale })` →
   `{ ok, data (Base64-WebP), bytes, blocks, ms }`; die Kamera-Helfer `thumbAngles`/`thumbOrbit` in `tests/visual/thumb.js` sind rein.
 - `node --test "tests/unit/**/*.test.mjs"` – Unit-Tests (Ordnername allein geht nicht).
   `node tests/e2e.mjs` – Klick-Test.
   Änderung (Integration Runde 2): `node tests/e2e.mjs [--only start,bau,erstellen,handy] [--gpu hardware|swiftshader] [--out <ordner>]`
-  prüft im echten Chrome gegen den echten Katalog (`game-data/catalog.json`, fehlt er → Exit-Code 2): Start → Kategorie (Filter,
+  prüft im echten Chrome gegen den echten Katalog (`game-data/catalog.json`, seit Etappe 1 `data/catalog.json`; fehlt er → Exit-Code 2): Start → Kategorie (Filter,
   Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1 mit Maßstab-Wechsel, Infinity Castle, ein Dorfhaus `spiel-…`, ein Redstone-
   Bau: Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Bildrate) → „Selber erstellen“ (Freitext, Upload
   je Fixture-Format) → Handy 390 × 844. Ausgabe je Prüfung `OK`/`FEHLER`, Leistungswerte, Screenshots und `e2e-report.json` (Standard
@@ -1447,6 +1467,10 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   nennt bei fehlendem `game-data/` (Katalog und `meta.json` fehlen) nur noch `node scripts/start.mjs`; bei einzelnen
   fehlenden Spieldaten `node scripts/extract-game-data.mjs` (geht ebenfalls ohne Minecraft). `serve.mjs` nennt beim Start
   `start.mjs`, wenn `game-data/catalog.json` fehlt.
+  Änderung (Webseite, Etappe 1): Die Seite nennt nie Befehle (sie läuft auch online, z. B. auf dem Handy): Fehlerzustände sagen,
+  was fehlt, und bieten Neuladen an; Entwickler-Hinweise stehen nur in der Konsole. `checkCatalog` ist async und vergleicht den
+  Fingerabdruck (`inputs`) statt Dateizeiten (die nach `git pull` nichts aussagen); Katalog = `data/catalog.json`. `serve.mjs`
+  nennt `start.mjs`, wenn `game-data/meta.json` fehlt.
 - `tests/browser.mjs` – Chrome über DevTools-Protokoll, freier Debug-Port (parallele Läufe gehen).
   `launchBrowser({ gpu: 'hardware' })` nutzt die Grafikkarte (Intel UHD 770, D3D11),
   `gpu: 'swiftshader'` Software-WebGL. Beide liefern WebGL2 mit 2048 Textur-Ebenen.
@@ -1488,7 +1512,7 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
 ### 12.1 Freitext und Formen (`search.js`, `text-parser.js`, `block-lookup.js`, `shape-generators.js`)
 
 Keine KI: Katalogsuche, Formen-Generator und ein ehrliches „nicht gefunden“. Alles rein (kein DOM), läuft in Browser, Worker
-und Node. Katalog = `game-data/catalog.json` (Format §9, Runde 2), Namen = `names.json`, Blöcke = `blocks.json` (§5).
+und Node. Katalog = `data/catalog.json` (Format §9, Runde 2; bis Etappe 1 `game-data/catalog.json`), Namen = `names.json`, Blöcke = `blocks.json` (§5).
 
 ```js
 // search.js – auch für die Textfilter der Seiten

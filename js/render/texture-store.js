@@ -910,7 +910,7 @@ export class TextureStore {
     const fetchOk = async (file) => {
       const url = new URL(file, base);
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Spieldaten fehlen (${url.pathname}: HTTP ${response.status}). Erzeuge sie mit: node scripts/extract-game-data.mjs`);
+      if (!response.ok) throw new Error(`Die Texturen konnten nicht geladen werden (${url.pathname}: HTTP ${response.status}).`);
       return response;
     };
     const [jsonResponse, binResponse] = await Promise.all([fetchOk('textures.json'), fetchOk('textures.bin')]);
