@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   CATEGORIES, CATEGORY_SLUGS, ACCURACY_LABELS, ICON_NAMES, SEARCH_MAX_LENGTH, findCategory, accuracyLabel, difficultyLabel,
   isValidBuildId, formatNumber, formatCount, formatSize, normalizeSearchQuery, searchHref, parseBuildParams, parseScale,
-  storageGet, storageSet, storageRemove, parseHex, contrastRatio, mixHex,
+  storageGet, storageSet, storageRemove, parseHex, contrastRatio, mixHex, isExpectedDataError,
 } from '../../js/ui/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -227,4 +227,13 @@ test('Farbfunktionen: Hex lesen, Kontrast nach WCAG, Mischen wie color-mix', () 
   assert.equal(Number(contrastRatio('#777777', '#ffffff').toFixed(2)), 4.48);
   assert.equal(mixHex('#ffffff', '#000000', 0.5), '#808080');
   assert.equal(mixHex('#f2c14e', '#272b32', 0.16), '#474336');
+});
+
+test('isExpectedDataError: Netz weg, Datei fehlt und Serverfehler sind erwartbar, Programmfehler nicht', () => {
+  for (const kind of ['missing', 'network', 'timeout', 'rate-limit']) assert.equal(isExpectedDataError({ kind }), true, kind);
+  assert.equal(isExpectedDataError({ kind: 'http', status: 503 }), true);
+  assert.equal(isExpectedDataError({ kind: 'http', status: 403 }), false);
+  for (const kind of ['parse', 'format', 'damaged', 'version', 'invalid-path', 'unknown', undefined]) {
+    assert.equal(isExpectedDataError({ kind }), false, String(kind));
+  }
 });

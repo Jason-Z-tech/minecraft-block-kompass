@@ -1,12 +1,16 @@
-// Laden der Daten der Seite (Katalog data/catalog.json, Spieldaten game-data/*.json) mit verständlichen Fehlern und
-// Prüfung des Katalogs (§9). Fehlermeldungen sind für Menschen geschrieben und nennen keine Befehle (die Seite läuft
-// auch als Webseite, z. B. auf dem Handy); technische Details hängen am Fehlerobjekt (cause, status).
+// Laden der Daten der Seite (Katalog data/catalog.json; Spieldaten über js/data/game-data.js, lokal game-data/*.json,
+// online aus misode/mcmeta) mit verständlichen Fehlern und Prüfung des Katalogs (§9). Fehlermeldungen sind für Menschen
+// geschrieben und nennen keine Befehle (die Seite läuft auch als Webseite, z. B. auf dem Handy); technische Details
+// hängen am Fehlerobjekt (cause, status).
 import { SITE_ROOT, isSafeSitePath, isSafeUrl } from './dom.js';
 import { CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN, SIZE_CLASS_KEYS } from './shared.js';
+import { loadGameBlocks, loadGameNames, toGameDataError } from '../data/game-data.js';
 
 // Der Katalog liegt im Repo (nur Projekttexte, Größen und Zahlen, keine Spieldaten) und wird mit der Seite veröffentlicht.
 export const CATALOG_PATH = 'data/catalog.json';
+// Logische Namen der Spieldaten (lokal liegen sie genau dort; online kommen sie über js/data/game-data.js)
 export const NAMES_PATH = 'game-data/names.json';
+export const BLOCKS_PATH = 'game-data/blocks.json';
 // Lokale Vorschaubilder (scripts/make-thumbs.mjs): nur auf dem eigenen Rechner vorhanden, nie online.
 export const THUMBS_INDEX_PATH = 'thumbs/index.json';
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -14,6 +18,7 @@ const MAX_SIZE = 4064;
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
 const STEP_RELOAD = { text: 'Lade die Seite neu. Hilft das nicht, versuche es später noch einmal.' };
+const STEP_WAIT = { text: 'Warte ein paar Minuten und lade die Seite dann neu.' };
 
 export class DataError extends Error {
   constructor(message, { kind, path, title, status = null, steps = [], cause } = {}) {
@@ -276,10 +281,38 @@ export async function loadCatalog(options = {}) {
   return catalog;
 }
 
-/** Lädt game-data/names.json ({ block: {id: {de, en}}, item: {…} }). */
-export async function loadNames(options) {
-  const json = await loadJson(NAMES_PATH, options);
+/**
+ * Fehler der Spieldaten (GameDataError aus js/data/game-data.js oder unbekannt) → DataError mit gleichem kind, Titel und
+ * Text (network, timeout, rate-limit, http, missing, too-large, damaged, version, invalid, unknown) und einem Schritt
+ * ohne Befehle.
+ */
+export function gameDataToDataError(error, path) {
+  const failure = toGameDataError(error);
+  return new DataError(failure.message, {
+    kind: failure.kind, path, title: failure.title, status: failure.status ?? null,
+    steps: [failure.kind === 'rate-limit' ? STEP_WAIT : STEP_RELOAD], cause: failure,
+  });
+}
+
+async function loadGameJson(load, path) {
+  try {
+    return await load();
+  } catch (error) {
+    throw gameDataToDataError(error, path);
+  }
+}
+
+/** Lädt die Blocknamen (names.json: { block: {id: {de, en}}, item: {…} }) über js/data/game-data.js. */
+export async function loadNames({ load = loadGameNames } = {}) {
+  const json = await loadGameJson(load, NAMES_PATH);
   if (!isPlainObject(json) || !isPlainObject(json.block) || !isPlainObject(json.item)) throw formatError(NAMES_PATH, '„block“ und „item“ erwartet');
+  return json;
+}
+
+/** Lädt die Blockliste (blocks.json: { version, blocks: { id: { props, default } } }) über js/data/game-data.js. */
+export async function loadBlockList({ load = loadGameBlocks } = {}) {
+  const json = await loadGameJson(load, BLOCKS_PATH);
+  if (!isPlainObject(json) || !isPlainObject(json.blocks)) throw formatError(BLOCKS_PATH, '„blocks“ erwartet');
   return json;
 }
 

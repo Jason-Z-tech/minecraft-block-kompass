@@ -2,14 +2,17 @@
 
 Webseite mit Minecraft-Bauten (Java Edition 26.2). Jeder Bau hat eine 3D-Schritt-für-Schritt-Anleitung im Browser (Block für Block, auch zum Herumlaufen wie im Spiel), eine Materialliste mit den deutschen Blocknamen zum Abhaken und einen Ebenen-Plan. Dazu kommt „Selber erstellen“: Katalogsuche per Freitext, Formen-Generator (Kugel, Turm, Bogen …) und Upload von Bauplänen (`.schem`, `.litematic`, `.nbt`) oder 3D-Modellen (`.vox`, `.stl`, `.obj`, `.glb`, `.gltf`).
 
-Für den Eigengebrauch. Online als Webseite (auch auf dem Handy, ohne etwas zu installieren): https://jason-z-tech.github.io/minecraft-block-kompass/ (GitHub Pages, Branch `main`). Texturen, Modelle und Namen stammen original aus Minecraft 26.2; Mojang-Dateien liegen nie im Repo oder auf der Seite (`game-data/`, `thumbs/` sind gitignored). Im Repo liegt nur der Katalog der Bauten (`data/catalog.json`: Projekttexte, Größen, Zahlen und Block-IDs).
+Für den Eigengebrauch. **Online als Webseite, auch auf dem Handy, ohne etwas zu installieren:** https://jason-z-tech.github.io/minecraft-block-kompass/ (GitHub Pages, Branch `main`, iOS ab 16.4, aktuelles Chrome/Android).
 
-## Voraussetzungen
+Texturen, Modelle und Namen stammen original aus Minecraft 26.2. Mojang-Dateien liegen nie im Repo oder auf der Seite (`game-data/`, `thumbs/` sind gitignored): Der Browser lädt sie beim ersten Besuch selbst aus [misode/mcmeta](https://github.com/misode/mcmeta) auf GitHub (feste Commits, ≈ 2 MB, gut 1 s), wandelt sie um und speichert sie im Browser (IndexedDB); danach geht es ohne Download. Im Repo liegt nur der Katalog der Bauten (`data/catalog.json`: Projekttexte, Größen, Zahlen und Block-IDs). Online zeigen die Karten Kategorie-Icons statt Vorschaubildern.
+
+## Voraussetzungen (nur zum Entwickeln)
 - **Node.js 24** (nur Bordmittel, keine npm-Pakete)
 - **Minecraft ist nicht nötig.** Ist Minecraft Java 26.2 installiert (Launcher oder CurseForge), werden Texturen, Modelle, deutsche Namen und Original-Strukturen daraus nur **gelesen**: Das Spiel, ein Server oder ein Jar werden nie gestartet, in `.minecraft` wird nichts geschrieben. Ohne Installation lädt der Start die gleichen Dateien einmalig aus dem Internet (siehe „Ohne Minecraft“).
 - **Chrome oder Edge** für Vorschaubilder, Klick-Test und Screenshots (headless, mit Grafikkarte oder Software-WebGL)
 
-## Starten
+## Lokal starten (nur zum Entwickeln)
+Die Webseite braucht kein Node. Lokal ist es nur zum Entwickeln und Testen nötig; mit vorhandenem `game-data/` nutzt die Seite auf 127.0.0.1/localhost diese Dateien (offline, schnell), sonst lädt sie wie online aus misode/mcmeta.
 ```powershell
 node scripts/start.mjs
 ```
@@ -65,6 +68,7 @@ node scripts/check-imports.mjs           # alle lokalen Verweise mit exakter Gro
 node scripts/check-build.mjs <modulpfad> [--scale <zahl>] [--json]   # einen Bau prüfen
 node scripts/shot.mjs --module <modulpfad>                           # Screenshots der 3D-Ansicht
 ```
+- `node tests/e2e-remote.mjs [--live]`: Klick-Test wie auf GitHub Pages (eigener statischer Server auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`). Ohne `--live` aus dem Spiegel `tmp/mcmeta-mirror/` (erzeugen mit `node scripts/mirror-mcmeta.mjs`), mit `--live` gegen das echte raw.githubusercontent.com.
 - Der Klick-Test geht Start → Kategorie (Filter, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Dorfhaus, ein Redstone-Bau) → „Selber erstellen“ (Freitext, Upload je Dateiformat) → Handy-Ansicht durch, misst Ladezeiten und Bildrate und legt Screenshots nach `tmp/integration/e2e/`. Optionen: `--only start,bau,erstellen,handy`, `--gpu swiftshader`, `--out <ordner>`.
 - Ausführlichere Sichtprüfungen einzelner Seiten: `node tests/visual/build-page-check.mjs`, `node tests/visual/create-page-check.mjs`.
 

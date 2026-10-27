@@ -151,6 +151,18 @@ test('fetchBytes: Netzfehler werden wiederholt und deutsch gemeldet', async () =
   await assert.rejects(fetchBytes('/__mcmeta/x/version.json', { maxBytes: 10, fetch: local.fetch, retries: 0 }), /: Keine Verbindung zum Server\. Prüfe die Internetverbindung/);
 });
 
+test('fetchBytes: Gerät meldet „offline“ → sofort Fehler ohne Warten, andere Fehler weiter mit Wiederholung', async () => {
+  const offline = fakeFetch(new TypeError('fetch failed'));
+  const { waits, sleep } = recordSleep();
+  await assert.rejects(fetchBytes(URL_JSON, { maxBytes: 10, fetch: offline.fetch, sleep, isOffline: () => true }), (error) => error.kind === 'network');
+  assert.equal(offline.calls.length, 1);
+  assert.deepEqual(waits, []);
+  // 503 ist kein Netzproblem des Geräts: wird trotz „offline“-Meldung wiederholt
+  const busy = fakeFetch(status(503), () => ok('ok'));
+  assert.equal(new TextDecoder().decode(await fetchBytes(URL_JSON, { maxBytes: 10, fetch: busy.fetch, sleep, isOffline: () => true })), 'ok');
+  assert.equal(busy.calls.length, 2);
+});
+
 test('fetchBytes: Zeitlimit beim Warten auf die Antwort und beim Lesen des Körpers', async () => {
   // Antwortet nie, bricht nur über das Signal ab (wie echtes fetch).
   const hanging = (url, options) => new Promise((resolve, reject) => {

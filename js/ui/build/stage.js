@@ -45,8 +45,10 @@ export function viewerErrorState(error) {
     return { kind: 'error', title: '3D-Ansicht nicht möglich', text: message, steps: [] };
   }
   if (code === 'data') {
+    // Titel aus js/data/game-data.js (z. B. „Keine Verbindung zu GitHub“), sonst allgemein
+    const title = typeof error?.title === 'string' && error.title.trim() !== '' ? error.title.trim().slice(0, 120) : 'Spieldaten fehlen';
     return {
-      kind: 'error', title: 'Spieldaten fehlen', text: message,
+      kind: 'error', title, text: message,
       steps: [{ text: 'Lade die Seite neu. Hilft das nicht, versuche es später noch einmal.' }],
     };
   }

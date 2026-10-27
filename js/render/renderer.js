@@ -7,6 +7,7 @@ import { mat4, frustumPlanes, aabbInFrustum } from './mat.js';
 import { OrbitControls, WalkControls, lookVector, DEG } from './controls.js';
 import { raycastBlocks, rayFromScreen } from './picking.js';
 import { TextureStore } from './texture-store.js';
+import { loadGameTextures, onGameDataProgress, toGameDataError } from '../data/game-data.js';
 import { createQuadIndices, VERTEX_BYTES } from './mesher.js';
 import { BlockVolume, chunkKey } from '../core/volume.js';
 import {
@@ -36,11 +37,13 @@ const GROUND_BOX = Object.freeze([Object.freeze([0, 0, 0, 1, 1, 1])]);
 const VIEW_ANGLES = Object.freeze({ iso: [35, 28], top: [0, 89.9], front: [0, 6], side: [90, 6] });
 
 export class ViewerError extends Error {
-  constructor(code, message, { detail = null } = {}) {
+  // title: eigener Titel für die Anzeige (z. B. „Keine Verbindung zu GitHub“ bei code 'data'), sonst null
+  constructor(code, message, { detail = null, title = null } = {}) {
     super(message);
     this.name = 'ViewerError';
     this.code = code;
     this.detail = detail;
+    this.title = typeof title === 'string' && title !== '' ? title : null;
   }
 }
 
@@ -186,12 +189,21 @@ function rayBox(origin, dir, min, max) {
 
 let sharedStore = null;
 
-function loadTextureStore() {
+/**
+ * Texturen der Seite (einmal je Seite, geteilt mit den Block-Icons in js/ui/build/appearance.js): lokal aus
+ * game-data/, online aus den Atlanten von misode/mcmeta (js/data/game-data.js). Fehler werden nicht behalten.
+ */
+export function loadTextureStore() {
   if (!sharedStore) {
-    sharedStore = TextureStore.load(new URL('../../game-data/', import.meta.url).href);
+    sharedStore = loadGameTextures().then((source) => TextureStore.fromSource(source));
     sharedStore.catch(() => { sharedStore = null; });
   }
   return sharedStore;
+}
+
+// Fehler der Spieldaten (Laden der Texturen oder Atlasbilder) erkennen; sie bekommen eine menschliche Meldung
+function isGameDataFailure(error) {
+  return error?.name === 'GameDataError' || error?.name === 'TextureSourceError';
 }
 
 // Statische Linien/Flächen: 12 Würfelkanten (24 Punkte), 6 Seiten (je 6 Punkte), Fadenkreuz (3 Rechtecke).
@@ -290,6 +302,10 @@ export class Viewer {
   #lost = false;
   #remeshing = false;
   #disposed = false;
+  // Phase des laufenden Ladens ('loading' | 'building' | 'textures' | 'meshing' | null) und höchster gezeigter Anteil
+  // beim Laden der Spieldaten (Worker und Seite melden getrennt; die Anzeige springt nie zurück)
+  #loadPhase = null;
+  #dataShare = 0;
   #ready = false;
   #reducedMotion;
   #offs = [];
@@ -332,6 +348,8 @@ export class Viewer {
     this.#listen(canvas, 'pointermove', (event) => this.#onPointerMove(event));
     this.#listen(canvas, 'pointerleave', () => this.#setPointer(null));
     this.#listen(canvas, 'pointerdown', (event) => this.#onPointerDown(event));
+    // Erster Besuch online: Fortschritt der Spieldaten dieser Seite (Texturen, Namen) in der Ladeanzeige
+    this.#offs.push(onGameDataProgress((event) => this.#onDataProgress(event)));
     if (typeof ResizeObserver === 'function') {
       this.#resizeObserver = new ResizeObserver(() => this.#resize());
       this.#resizeObserver.observe(canvas);
@@ -392,6 +410,8 @@ export class Viewer {
     const promise = new Promise((resolve, reject) => {
       this.#pending = { job, resolve, reject, started: performance.now() };
     });
+    this.#loadPhase = 'loading';
+    this.#dataShare = 0;
     this.#status('loading', 'Lade Spieldaten …', 0);
     // Fehler beim Texturladen meldet #onBuilt; hier nur früh anstoßen
     loadTextureStore().catch(() => {});
@@ -592,6 +612,7 @@ export class Viewer {
   #failPending(error) {
     const pending = this.#pending;
     this.#pending = null;
+    this.#loadPhase = null;
     this.#status('error', error.message);
     if (pending) pending.reject(error);
     else console.error('3D-Ansicht:', error.message, error.detail ?? '');
@@ -601,7 +622,7 @@ export class Viewer {
     if (!message || typeof message !== 'object' || message.job !== this.#job || this.#disposed) return;
     try {
       switch (message.type) {
-        case 'status': this.#status(message.phase === 'data' ? 'loading' : 'building', message.message, null); break;
+        case 'status': this.#onWorkerStatus(message); break;
         case 'built': this.#onBuilt(message).catch((error) => this.#onFatal(error, 'textures')); break;
         case 'palette': this.#palette = { collision: message.collision, outline: message.outline, pickable: message.pickable }; break;
         case 'chunks': this.#onChunks(message); break;
@@ -616,9 +637,43 @@ export class Viewer {
     }
   }
 
+  #onWorkerStatus(message) {
+    const progress = typeof message.progress === 'number' && Number.isFinite(message.progress) ? Math.max(0, Math.min(1, message.progress)) : null;
+    if (message.phase !== 'data') {
+      if (this.#loadPhase === 'loading') this.#loadPhase = 'building';
+      this.#status('building', message.message, progress);
+      return;
+    }
+    if (progress === null) {
+      this.#status('loading', message.message, null);
+      return;
+    }
+    this.#showDataProgress('loading', message.message, progress);
+  }
+
+  // Fortschritt der Spieldaten in dieser Seite (js/data/game-data.js): nur während des Ladens der Daten bzw. Texturen
+  #onDataProgress(event) {
+    if (this.#disposed || !this.#pending) return;
+    if (this.#loadPhase !== 'loading' && this.#loadPhase !== 'textures') return;
+    this.#showDataProgress(this.#loadPhase, event.text, event.share);
+  }
+
+  #showDataProgress(state, message, share) {
+    if (share < this.#dataShare) return;
+    this.#dataShare = share;
+    this.#status(state, message, share);
+  }
+
   #onFatal(error, code) {
     if (error instanceof ViewerError) {
       this.#failPending(error);
+      return;
+    }
+    if (isGameDataFailure(error)) {
+      // Erwartbar (z. B. offline): verständlich melden, „Erneut versuchen“ lädt neu (Fehler werden nirgends behalten)
+      const failure = toGameDataError(error);
+      console.warn('3D-Ansicht:', failure.message, failure.cause ?? '');
+      this.#failPending(new ViewerError('data', failure.message, { title: failure.title, detail: String(failure.cause?.message ?? failure.kind) }));
       return;
     }
     console.error('3D-Ansicht:', error);
@@ -629,7 +684,9 @@ export class Viewer {
   }
 
   #onWorkerError(message) {
-    console.error(`3D-Worker (${message.request}): ${message.message}`, message.detail ?? '');
+    // Fehlende oder nicht ladbare Spieldaten sind erwartbar (z. B. offline): Warnung statt Fehler
+    if (message.code === 'data') console.warn(`3D-Worker (${message.request}): ${message.message}`, message.detail ?? '');
+    else console.error(`3D-Worker (${message.request}): ${message.message}`, message.detail ?? '');
     if (message.request === 'step' || message.request === 'cap') {
       // Nicht endlos neu anfragen: fehlgeschlagene Meshes merken
       if (message.request === 'step') {
@@ -642,7 +699,7 @@ export class Viewer {
       this.#status('error', message.message);
       return;
     }
-    this.#failPending(new ViewerError(message.code ?? 'build', message.message, { detail: message.detail }));
+    this.#failPending(new ViewerError(message.code ?? 'build', message.message, { detail: message.detail, title: message.title ?? null }));
   }
 
   async #onBuilt(message) {
@@ -659,6 +716,8 @@ export class Viewer {
     this.#updateGrid();
     this.#orbit.setView(orbitForView('iso', this.#bounds, this.#aspect()), { animate: false });
     this.#orbit.setHome();
+    this.#loadPhase = 'textures';
+    this.#dataShare = 0;
     this.#status('textures', 'Lade Texturen …', null);
     const started = performance.now();
     if (!this.#store) this.#store = await loadTextureStore();
@@ -672,6 +731,7 @@ export class Viewer {
     // prepare kann das Texturobjekt neu anlegen (mehr Ebenen) → beim nächsten Bild neu binden
     this.#textureBound = false;
     this.#timings.textureMs = Math.round(performance.now() - started);
+    this.#loadPhase = 'meshing';
     this.#status('meshing', 'Erzeuge das 3D-Modell … 0 %', 0);
     this.#worker.postMessage({ type: 'textures', job, map });
     this.#dirty = true;

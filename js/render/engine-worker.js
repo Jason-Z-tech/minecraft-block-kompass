@@ -11,14 +11,28 @@ import { hashPosition } from '../core/random.js';
 import { isFence, isWall, isFenceGate } from '../core/connections.js';
 import { BlockModels } from './block-models.js';
 import { meshChunk, meshStep, meshCap } from './mesher.js';
+import {
+  loadGameBlockColors, loadGameBlocks, loadGameModels, loadGameStructure, onGameDataProgress, toGameDataError,
+} from '../data/game-data.js';
 
 export class EngineError extends Error {
-  constructor(message, { code = 'engine', detail = null } = {}) {
+  // title: eigener Titel für die Anzeige (Spieldaten-Fehler, z. B. „Keine Verbindung zu GitHub“), sonst null
+  constructor(message, { code = 'engine', detail = null, title = null } = {}) {
     super(message);
     this.name = 'EngineError';
     this.code = code;
     this.detail = detail;
+    this.title = title;
   }
+}
+
+/** Fehler beim Laden der Spieldaten (js/data/game-data.js) → EngineError code 'data' mit der menschlichen Meldung. */
+export function dataEngineError(error) {
+  if (error instanceof EngineError) return error;
+  const failure = toGameDataError(error);
+  const cause = failure.cause;
+  const detail = cause ? `${cause.name ?? 'Error'}: ${cause.message ?? String(cause)}` : `${failure.kind}${failure.file ? ` (${failure.file})` : ''}`;
+  return new EngineError(failure.message, { code: 'data', detail, title: failure.title });
 }
 
 // ------------------------------------------------------------------ Quellen prüfen
@@ -939,11 +953,12 @@ function userMessage(error) {
 }
 
 function startWorker(scope) {
-  const dataUrl = new URL('../../game-data/', import.meta.url);
   const rootUrl = new URL('../../', import.meta.url);
   let enginePromise = null;
   let engine = null;
   let currentJob = 0;
+  // Auftrag, dessen Spieldaten gerade laden (Fortschritt als Phase „data“), sonst 0
+  let dataJob = 0;
   let meshRun = 0;
   let boundGate = null;
   let blockColorsPromise = null;
@@ -959,25 +974,17 @@ function startWorker(scope) {
     channel.port2.postMessage(0);
   });
 
-  async function fetchJson(url, missingMessage) {
-    let response;
-    try {
-      response = await fetch(url);
-    } catch (error) {
-      throw new EngineError(missingMessage, { code: 'data', detail: error.message });
-    }
-    if (!response.ok) throw new EngineError(missingMessage, { code: 'data', detail: `${url.pathname}: HTTP ${response.status}` });
-    try {
-      return await response.json();
-    } catch (error) {
-      throw new EngineError(`${url.pathname.split('/').pop()} ist kein gültiges JSON.`, { code: 'data', detail: error.message });
-    }
-  }
+  // Erster Besuch online: Fortschritt der Spieldaten (js/data/game-data.js) an die Seite melden. Beim Laden der Daten
+  // als Phase „data“ mit Anteil, später (Blockfarben beim Modell-Import) nur als Text des Bauens.
+  onGameDataProgress((event) => {
+    if (dataJob !== 0 && dataJob === currentJob) status(dataJob, 'data', event.text, event.share);
+    else if (currentJob !== 0) status(currentJob, 'build', event.text);
+  });
 
   function getEngine() {
     if (!enginePromise) {
-      const missing = 'Die Spieldaten (Blockmodelle und Blockliste) konnten nicht geladen werden.';
-      enginePromise = Promise.all([fetchJson(new URL('models.json', dataUrl), missing), fetchJson(new URL('blocks.json', dataUrl), missing)])
+      enginePromise = Promise.all([loadGameModels(), loadGameBlocks()])
+        .catch((error) => { throw dataEngineError(error); })
         .then(([modelsJson, blocksJson]) => new Engine({ modelsJson, blocksJson }));
       enginePromise.catch(() => { enginePromise = null; });
     }
@@ -992,8 +999,12 @@ function startWorker(scope) {
         throw new EngineError(`Das Bau-Modul „${path}“ konnte nicht geladen werden.`, { code: 'build', detail: error?.stack ?? String(error) });
       }
     },
-    loadStructure(file) {
-      return fetchJson(new URL(`structures/${file}`, dataUrl), `Die Struktur „${file}“ gibt es nicht in game-data/structures/.`);
+    async loadStructure(file) {
+      try {
+        return await loadGameStructure(file);
+      } catch (error) {
+        throw dataEngineError(error);
+      }
     },
     async importShapes() {
       try {
@@ -1019,7 +1030,7 @@ function startWorker(scope) {
     // Blockfarben für den Modell-Import: einmal laden, danach aus dem Speicher
     loadBlockColors() {
       if (!blockColorsPromise) {
-        blockColorsPromise = fetchJson(new URL('block-colors.json', dataUrl), 'Die Blockfarben für den Modell-Import konnten nicht geladen werden.');
+        blockColorsPromise = loadGameBlockColors().catch((error) => { throw dataEngineError(error); });
         blockColorsPromise.catch(() => { blockColorsPromise = null; });
       }
       return blockColorsPromise;
@@ -1036,8 +1047,19 @@ function startWorker(scope) {
     currentJob = job;
     meshRun++;
     boundGate = { job, ...deferred() };
+    dataJob = job;
     status(job, 'data', 'Lade Spieldaten …');
-    const loaded = await getEngine();
+    // Original-Struktur gleich mitladen (parallel zu den Blockmodellen, Fortschritt noch in der Phase „data“); ihre
+    // Fehler meldet erst build() über dieselbe Promise
+    const structureFile = source?.kind === 'structure' && typeof source.file === 'string' && STRUCTURE_PATTERN.test(source.file) ? source.file : null;
+    const structure = structureFile ? loaders.loadStructure(structureFile) : null;
+    structure?.catch(() => {});
+    let loaded;
+    try {
+      [loaded] = await Promise.all([getEngine(), structure?.catch(() => null)]);
+    } finally {
+      if (dataJob === job) dataJob = 0;
+    }
     if (job !== currentJob) return;
     status(job, 'build', 'Baue …');
     const started = performance.now();
@@ -1045,7 +1067,9 @@ function startWorker(scope) {
     const progress = (message) => {
       if (job === currentJob) status(job, 'build', String(message).slice(0, 200));
     };
-    const result = await loaded.build(source, params, { ...loaders, progress });
+    const jobLoaders = { ...loaders, progress };
+    if (structure) jobLoaders.loadStructure = (file) => (file === structureFile ? structure : loaders.loadStructure(file));
+    const result = await loaded.build(source, params, jobLoaders);
     if (job !== currentJob) return;
     engine = loaded;
     engine.use(result);
@@ -1131,6 +1155,7 @@ function startWorker(scope) {
       post({
         type: 'error', job: message.job, request: message.type, step: message.step ?? null, y: message.y ?? null,
         code: error?.code ?? 'internal', message: userMessage(error), detail: error?.detail ?? error?.stack ?? String(error),
+        title: error instanceof EngineError ? error.title : null,
       });
     });
   });

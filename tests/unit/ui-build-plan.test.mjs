@@ -18,6 +18,7 @@ import {
 } from '../../js/ui/build/appearance.js';
 import { TextureStore } from '../../js/render/texture-store.js';
 import { BlockModels } from '../../js/render/block-models.js';
+import { itemForState } from '../../js/core/materials.js';
 import { contrastRatio, mixHex } from '../../js/ui/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -176,4 +177,23 @@ test('Echte Spieldaten: Draufsicht und Icons aus Modellen und Texturen', { skip:
   assert.match(torch, /^data:image\/png;base64,/);
   assert.match(await appearance.iconUrl('redstone', 'redstone_wire[east=none,north=none,power=0,south=none,west=none]'), /^data:image\/png;base64,/, 'Item-Bild des Spiels');
   assert.equal(await appearance.iconUrl('gibt_es_nicht', null), null);
+});
+
+test('Echte Spieldaten: Icon für jede Pflanze im Blumentopf (Zusatz-Gegenstand ohne eigenen Zustand im Bau)', { skip: !hasGameData && 'game-data/ fehlt' }, async () => {
+  const store = new TextureStore(JSON.parse(readFileSync(path.join(GAME_DATA, 'textures.json'), 'utf8')), new Uint8Array(readFileSync(path.join(GAME_DATA, 'textures.bin'))));
+  const modelsJson = JSON.parse(readFileSync(path.join(GAME_DATA, 'models.json'), 'utf8'));
+  const models = new BlockModels(modelsJson, JSON.parse(readFileSync(path.join(GAME_DATA, 'blocks.json'), 'utf8')));
+  const appearance = new Appearance(store, models);
+  const potted = Object.keys(modelsJson.blocks).filter((id) => id.startsWith('potted_'));
+  assert.ok(potted.length > 20, `Topfpflanzen gefunden: ${potted.length}`);
+  const states = statesByItem(potted);
+  const missing = [];
+  for (const state of potted) {
+    for (const [item] of itemForState(state).extra) {
+      if (!(await appearance.iconUrl(item, states.get(item) ?? null))) missing.push(`${state} → ${item}`);
+    }
+  }
+  assert.deepEqual(missing, [], 'jede Pflanze hat ein Icon');
+  // Genau der Fall aus dem Fachwerkhaus: Azalee kommt nur als potted_azalea_bush vor
+  assert.match(await appearance.iconUrl('azalea', null), /^data:image\/png;base64,/);
 });

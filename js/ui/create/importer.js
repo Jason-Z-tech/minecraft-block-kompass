@@ -2,15 +2,13 @@
 // 3D-Modelle, Laden mit der Bau-Komponente (progressKey null), Kennzahlen und verständliche Warnungen.
 import { el, clear } from '../dom.js';
 import { icon, renderState, renderLoading, formatNumber } from '../shared.js';
-import { loadJson } from '../data.js';
+import { loadGameBlockColors } from '../../data/game-data.js';
 import { intField, segmentedField, checkboxField } from './fields.js';
 import { BlockPicker } from './block-picker.js';
 import {
   FILE_ACCEPT, checkSelectedFiles, isModelFormat, formatLabel, fileSizeText, defaultModelOptions, modelParams, uploadEntry,
   uploadFacts, uploadAdjustments, MODEL_PALETTES, MODEL_UP_AXES, MODEL_HEIGHT,
 } from './model.js';
-
-const BLOCK_COLORS_PATH = 'game-data/block-colors.json';
 
 export class Importer {
   #slot;
@@ -236,10 +234,11 @@ export class Importer {
     if (single && !this.#colorIds) this.#loadColorIds();
   }
 
-  // Nur Blöcke mit Farbwert (volle, deckende Würfel) taugen für „Ein Block“
+  // Nur Blöcke mit Farbwert (volle, deckende Würfel) taugen für „Ein Block“. Blockfarben erst hier, bei Bedarf
+  // (online beim ersten Mal aus den Texturen berechnet, js/data/game-data.js)
   async #loadColorIds() {
     try {
-      const json = await loadJson(BLOCK_COLORS_PATH, { timeoutMs: 30000 });
+      const json = await loadGameBlockColors();
       const ids = json && typeof json.blocks === 'object' && json.blocks ? Object.keys(json.blocks) : [];
       if (ids.length === 0) throw new Error('block-colors.json enthält keine Blöcke.');
       this.#colorIds = new Set(ids);

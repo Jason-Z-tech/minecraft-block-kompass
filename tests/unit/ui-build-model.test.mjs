@@ -152,6 +152,12 @@ test('Fehler des Viewers werden verständlich, Spieldaten ohne Befehle', () => {
   assert.ok(data.steps.length > 0, 'ein Hinweis, was man tun kann');
   assert.deepEqual(data.steps.map((step) => step.command).filter(Boolean), [], 'keine Befehle (läuft auch online)');
   assert.doesNotMatch(data.steps.map((step) => step.text).join(' '), /node|scripts\/|Projektordner/);
+  // Spieldaten online (js/data/game-data.js): eigener Titel, gleicher Hinweis ohne Befehle
+  const offline = viewerErrorState({ code: 'data', title: 'Keine Verbindung zu GitHub', message: 'Die Spieldaten konnten nicht von GitHub geladen werden. Prüfe die Internetverbindung.' });
+  assert.equal(offline.title, 'Keine Verbindung zu GitHub');
+  assert.match(offline.text, /Internetverbindung/);
+  assert.deepEqual(offline.steps, data.steps);
+  assert.equal(viewerErrorState({ code: 'data', title: '  ', message: 'x' }).title, 'Spieldaten fehlen', 'leerer Titel → allgemein');
   assert.equal(viewerErrorState({ code: 'no-webgl2', message: 'kein WebGL2' }).title, '3D-Ansicht nicht möglich');
   assert.equal(viewerErrorState({ code: 'build', message: 'kaputt' }).text, 'kaputt');
   assert.equal(viewerErrorState(null).title, 'Der Bau konnte nicht geladen werden');

@@ -16,7 +16,7 @@ und nennt sie im Abschlussbericht.
   (https://jason-z-tech.github.io/minecraft-block-kompass/, „Deploy from a branch“ main, Root, `.nojekyll`) und soll ohne
   Node und auch auf dem Handy laufen. Weiterhin gilt: keine Mojang-Dateien im Repo oder auf der Seite. Der Katalog
   (`data/catalog.json`, nur Projekttexte, Größen, Zahlen, IDs) liegt im Repo; die Spieldaten lädt der Browser selbst aus
-  öffentlichen Quellen (misode/mcmeta, „Weg A“, siehe Etappe 2). Lokal (127.0.0.1/localhost) bleibt `game-data/` nutzbar.
+  öffentlichen Quellen (misode/mcmeta, „Weg A“, §13). Lokal (127.0.0.1/localhost) bleibt `game-data/` nutzbar.
 - **Technik:** statisches HTML/CSS/JS mit ES-Modulen. Kein Build-Tool, **keine npm-Pakete, keine
   CDNs**. Node-Skripte nur mit Bordmitteln (`node:fs`, `node:zlib`, `node:http`, `node:test`,
   `node:child_process` …). Installiert: Node 24, Python 3.13, git, Chrome.
@@ -1722,3 +1722,58 @@ PALETTE_SETS · MATCH_WEIGHTS · PATTERN_WEIGHT (0,1)
   Umwandlung auf der Seite (Kennzahlen, Draufsicht, Blockliste) und dieselbe Datei über `{ kind:'upload' }` im echten Viewer;
   `?view=`, `?ui=0`; Fertig-Signal `window.__voxelTest.loads`/`.ready`/`.error`, dazu `.page` und `.viewer`. Die Upload-Quelle
   trägt nur eine Datei – eine `.mtl` wirkt dort noch nicht (Warnung „… die .mtl-Datei fehlt …“).
+
+## 13. Spieldaten im Browser (`js/data/`, Etappe 2, „Weg A“)
+
+Änderung (Webseite, Etappe 2, 2026-10-27): Die Seite braucht kein `game-data/` mehr. Online (GitHub Pages) lädt der Browser
+die Original-Dateien von Minecraft Java 26.2 selbst aus misode/mcmeta auf raw.githubusercontent.com (CORS `*`, gzip) und
+wandelt sie mit derselben Logik wie `scripts/extract-game-data.mjs` um. Ergebnis: genau das Format von `game-data/`
+(names, blocks, models, Strukturen, Blockfarben Text für Text gleich; Texturen pixelgleich, als Atlas-Einträge). Auf der Seite
+und im Repo liegen keine Mojang-Dateien. Ablage im Browser (IndexedDB), danach ohne Netz.
+
+Dateien (alle laufen in Fenster, Worker und Node, ohne DOM):
+- `convert.js` – reine Umwandlung (vorher im Node-Skript, das sie jetzt importiert und weiter exportiert): Namen, Blockbericht,
+  Modelle (`buildModels`, `createAssetsFromSummary` als Assets-Adapter für die mcmeta-Zusammenfassungen), Textur-Einträge
+  (`textureEntry`, `selectTextureNames`, `parseAnimation`), Strukturen (`convertStructure`, `structureFileName`/
+  `structurePathFromFile`). `CONVERT_VERSION` (heute 1) erhöhen, sobald sich die Ausgabe ändert – sonst behalten Besucher alte
+  Daten; `tests/unit/data-remote.test.mjs` hält dafür eine Prüfsumme je Version fest.
+- `block-colors.js` – Kern der Blockfarben (`buildBlockColorsFrom` mit synchronem `textureImage(name)`), auch von
+  `scripts/build-block-colors.mjs` genutzt.
+- `sources.js` – feste Commits (unveränderlich): summary `711a353b…` (version.json, Blockbericht, alle Blockstates, alle
+  Modelle), atlas `dbfab673…` (blocks/items/entities: `atlas.png` + `data.min.json` mit `[x, y, w, h]`), assets `a4151022…`
+  (101 `.png.mcmeta`, Liste `MCMETA_TEXTURES` = Texturen mit Animation oder Mipmap-Strategie), assetsJson `9a92e5df…`
+  (de_de/en_us), data `4d12c055…` (Struktur-NBT). `mcmetaUrl` prüft Pfade streng; `LIMITS` je Dateiart.
+  Die Zeile `MCMETA_BASE = 'https://raw.githubusercontent.com/misode/mcmeta/'` ersetzt nur der Testserver (Spiegel).
+- `net.js` – `fetchBytes`/`fetchJson`: nur einfache GET ohne eigene Header (raw.githubusercontent.com beantwortet den
+  CORS-Preflight mit 403), `credentials: 'omit'`, Größengrenze (Content-Length und beim Lesen), Zeitlimit je Versuch,
+  Wiederholung bei Netzfehler/429/5xx (0,5/1,5/4 s), `NetError { kind: network|timeout|http|rate-limit|too-large|format }`
+  mit deutschen Meldungen; `createLimiter`.
+- `store.js` – IndexedDB „block-kompass-data“ (Objektspeicher „files“), Rückfall auf den Arbeitsspeicher (privates Fenster,
+  Kontingent, Fehler), `withLock` über Web Locks.
+- `remote.js` – `createRemoteSource()`: `names()`, `blocks()`, `models()`, `textures()` (Einträge `{ atlas, x, y, w, h, anim,
+  mip? }`, ohne die 3 Colormaps, die zur Laufzeit niemand braucht), `atlas(name)` (PNG-Bytes), `structure(file)`,
+  `blockColors()`, `isCached(name)`. Je Stufe: gemerkte Promise → Speicher → Sperre `bk-data:<name>` (Seite und Worker laden
+  nie doppelt) → Speicher erneut → erzeugen → speichern; Fehler werden nie gemerkt. Schlüssel
+  `v<STORE_VERSION>.<CONVERT_VERSION>.<BLOCK_COLORS_FORMAT>|<Commits>|<Stufe>`, alte Schlüssel räumt `keepOnly` weg.
+  Scheitert eine `.mcmeta`, werden die übrigen abgebrochen (bei 429 keine Anfragen im Hintergrund). Höchstens 16 gleichzeitig.
+- `game-data.js` – einzige Datenquelle der Seite: `dataMode()` ('local' nur auf 127.0.0.1/localhost/[::1] mit vorhandenem
+  `game-data/meta.json`, sonst 'remote' – online ohne jede Anfrage nach `game-data/`), `loadGameNames/Blocks/Models/
+  Textures/Structure/BlockColors()` (Texturen lokal `{ json, bin }`, online `{ json, atlas }` für `TextureStore.fromSource`),
+  `onGameDataProgress` (`{ stage, label, done, total, share, text }`, nur bei echtem Download, z. B. „Spieldaten von GitHub
+  laden (einmalig) … 42 %“), `GameDataError { kind, title, message }` / `toGameDataError` (menschliche Texte ohne Befehle).
+  Benutzt von `renderer.js` (`loadTextureStore`), `appearance.js`, `engine-worker.js` (Modelle, Blöcke, Strukturen,
+  Blockfarben; Fortschritt als Status „data“ mit Anteil), `ui/data.js` (`loadNames`), `create-page.js`, `create/importer.js`.
+- `texture-store.js`: Atlas-Modus (`new TextureStore(json, { atlas })`, `TextureStore.fromSource`, `mode`,
+  `TextureSourceError`); jeder Atlas wird einmal geladen und dekodiert, nach dem Ausschneiden aller Einträge freigegeben.
+
+CSP: `connect-src 'self' https://raw.githubusercontent.com/misode/mcmeta/` (Seiten-Meta und `scripts/serve.mjs`); nur
+dieses Repo ist erlaubt. Hinweis: Auf GitHub Pages gibt es keine HTTP-Header; Modul-Worker haben dort keine eigene CSP.
+
+Messwerte (headless Chrome, echtes raw.githubusercontent.com): erster Besuch einer Bau-Seite 112 Anfragen, ≈ 1,5 s
+(mit 4-facher CPU-Drosselung ≈ 2,4–3,2 s), danach aus IndexedDB ≈ 30–250 ms ohne Anfrage. Mindestversion bleibt iOS 16.4
+(DecompressionStream).
+
+Tests: `tests/unit/data-*.test.mjs` (u. a. Gleichheit mit `game-data/` über den Spiegel, Chrome mit IndexedDB),
+`node scripts/mirror-mcmeta.mjs` (Spiegel der festen Dateien nach `tmp/mcmeta-mirror/`), `tests/lib/mcmeta-mirror.mjs`
+(`mirrorOverrides` für `startServer({ overrides })`, nur programmatisch), `node tests/e2e-remote.mjs [--live]`
+(Pages-Nachbau auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`, mit Spiegel oder echtem GitHub).

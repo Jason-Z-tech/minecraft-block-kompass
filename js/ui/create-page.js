@@ -10,7 +10,8 @@
 //                                 #import-status, Bericht #import-report (#import-report-body), Ergebnis #import-result
 // Für Klick-Tests: window.__createPage (ready, error, request, shape, imports, views { shape, import }).
 import { el, clear, requireElement } from './dom.js';
-import { loadCatalog, loadNames, loadJson } from './data.js';
+import { loadCatalog, loadNames, loadBlockList } from './data.js';
+import { onGameDataProgress } from '../data/game-data.js';
 import { initPage, initTabs, renderLoading, renderError, renderState, nudge, icon } from './shared.js';
 import { parseRequest } from '../create/text-parser.js';
 import { ViewSlot } from './create/view-slot.js';
@@ -19,7 +20,6 @@ import { Importer } from './create/importer.js';
 import { renderRequestResult } from './create/idea.js';
 import { CREATE_TABS, tabFromHash, requestFromSearch, createHref, pickExamples } from './create/model.js';
 
-const BLOCKS_PATH = 'game-data/blocks.json';
 const page = { ready: false, error: null, request: null, shape: null, imports: 0, lastImport: null, views: { shape: null, import: null } };
 window.__createPage = page;
 
@@ -68,7 +68,18 @@ async function main() {
   const shapeBody = requireElement('shape-generator-body');
   renderLoading(status, { title: 'Katalog und Blockdaten werden geladen …', compact: true });
   renderLoading(shapeBody, { title: 'Blockdaten werden geladen …', compact: true });
-  const [catalog, names, blocks] = await Promise.allSettled([loadCatalog(), loadNames(), loadJson(BLOCKS_PATH, { timeoutMs: 30000 })]);
+  // Erster Besuch online: Fortschritt der Spieldaten (Blocknamen und Blockliste) in beiden Ladeanzeigen
+  const offProgress = onGameDataProgress((event) => {
+    renderLoading(status, { title: 'Katalog und Blockdaten werden geladen …', text: event.text, compact: true });
+    renderLoading(shapeBody, { title: 'Blockdaten werden geladen …', text: event.text, compact: true });
+  });
+  let results;
+  try {
+    results = await Promise.allSettled([loadCatalog(), loadNames(), loadBlockList()]);
+  } finally {
+    offProgress();
+  }
+  const [catalog, names, blocks] = results;
   data = {
     catalog: catalog.status === 'fulfilled' ? catalog.value : null,
     names: names.status === 'fulfilled' ? names.value : null,

@@ -1,15 +1,14 @@
 // Aussehen von Blöcken für Material-Icons und den Ebenen-Plan: aus den echten Blockmodellen (models.json)
-// und Texturen (textures.bin) des Spiels. Die Flächen einer Blickrichtung werden orthografisch auf ein
-// kleines Bild gerastert (Draufsicht für den Plan; oben/Norden/Osten für isometrische Inventar-Icons).
-// Ohne DOM-Zugriff beim Laden; die reinen Raster-Funktionen sind in Node testbar.
-import { TextureStore, parseTextureName, renderBlockIcon, encodePng, createImage, cropImage } from '../../render/texture-store.js';
+// und Texturen des Spiels (über js/data/game-data.js: lokal game-data/, online aus misode/mcmeta). Die Flächen einer
+// Blickrichtung werden orthografisch auf ein kleines Bild gerastert (Draufsicht für den Plan; oben/Norden/Osten für
+// isometrische Inventar-Icons). Ohne DOM-Zugriff beim Laden; die reinen Raster-Funktionen sind in Node testbar.
+import { parseTextureName, renderBlockIcon, encodePng, createImage, cropImage } from '../../render/texture-store.js';
 import { BlockModels } from '../../render/block-models.js';
 import { FLUID_TEXTURES } from '../../render/special-models.js';
+import { loadTextureStore } from '../../render/renderer.js';
 import { itemForState } from '../../core/materials.js';
-import { loadJson } from '../data.js';
-import { SITE_ROOT } from '../dom.js';
+import { loadGameModels } from '../../data/game-data.js';
 
-export const MODELS_PATH = 'game-data/models.json';
 const ALPHA_SKIP = 26; // ≈ 0,1 wie der Alpha-Test für durchscheinende Flächen
 const FACE_SIZE = 16;
 
@@ -149,6 +148,11 @@ export function statesByItem(palette) {
   return map;
 }
 
+// Die Quelle der Texturen (ein Atlas) war gerade nicht ladbar: nichts davon behalten, der nächste Aufruf versucht es neu
+function isSourceFailure(error) {
+  return error?.name === 'TextureSourceError';
+}
+
 function toBase64(bytes) {
   let binary = '';
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -176,11 +180,12 @@ export class Appearance {
     this.#models = models;
   }
 
-  static async load({ root = SITE_ROOT } = {}) {
-    const [store, modelsJson] = await Promise.all([
-      TextureStore.load(new URL('game-data/', root).href),
-      loadJson(MODELS_PATH, { root, timeoutMs: 60000 }),
-    ]);
+  /**
+   * Texturen und Blockmodelle über js/data/game-data.js; die Texturen sind derselbe Store wie in der 3D-Ansicht
+   * (nicht doppelt geladen). Für Tests austauschbar: loadStore() → TextureStore, loadModels() → models.json.
+   */
+  static async load({ loadStore = loadTextureStore, loadModels = loadGameModels } = {}) {
+    const [store, modelsJson] = await Promise.all([loadStore(), loadModels()]);
     return new Appearance(store, new BlockModels(modelsJson, null));
   }
 
@@ -216,8 +221,13 @@ export class Appearance {
   async #frame(name) {
     let promise = this.#frames.get(name);
     if (!promise) {
-      promise = this.#loadFrame(name);
-      this.#frames.set(name, promise);
+      const current = this.#loadFrame(name);
+      promise = current;
+      this.#frames.set(name, current);
+      // Abgelehnte (z. B. Atlas offline nicht ladbar) nicht behalten: der nächste Aufruf lädt neu
+      current.catch(() => {
+        if (this.#frames.get(name) === current) this.#frames.delete(name);
+      });
     }
     return promise;
   }
@@ -233,14 +243,21 @@ export class Appearance {
 
   async #sampler(names) {
     const frames = new Map();
+    let sourceFailure = null;
     await Promise.all([...new Set(names)].map(async (name) => {
       try {
         frames.set(name, await this.#frame(name));
       } catch (error) {
+        if (isSourceFailure(error)) {
+          sourceFailure ??= error;
+          return;
+        }
         console.warn(`[Block-Kompass] Textur „${name}“ für die Vorschau nicht lesbar:`, error);
         frames.set(name, null);
       }
     }));
+    // Ganze Texturquelle nicht ladbar: kein Bild mit Lücken erzeugen (und merken), sondern ablehnen
+    if (sourceFailure) throw sourceFailure;
     return (name, u, v) => {
       const image = frames.get(name);
       if (!image) return null;
@@ -269,8 +286,12 @@ export class Appearance {
     const key = `${state}|${size}`;
     let promise = this.#tiles.get(key);
     if (!promise) {
-      promise = this.#buildTile(state, size);
-      this.#tiles.set(key, promise);
+      const current = this.#buildTile(state, size);
+      promise = current;
+      this.#tiles.set(key, current);
+      current.catch(() => {
+        if (this.#tiles.get(key) === current) this.#tiles.delete(key);
+      });
     }
     return promise;
   }
@@ -294,19 +315,24 @@ export class Appearance {
     const key = `${item}|${state ?? ''}|${size}`;
     let promise = this.#icons.get(key);
     if (!promise) {
-      promise = this.#buildIcon(item, state, size).catch((error) => {
+      const current = this.#buildIcon(item, state, size).catch((error) => {
         console.warn(`[Block-Kompass] Kein Icon für „${item}“:`, error);
+        // Texturquelle nur gerade nicht ladbar: nicht als „kein Icon“ merken
+        if (isSourceFailure(error) && this.#icons.get(key) === current) this.#icons.delete(key);
         return null;
       });
-      this.#icons.set(key, promise);
+      promise = current;
+      this.#icons.set(key, current);
     }
     return promise;
   }
 
   async #buildIcon(item, state, size) {
     if (this.#store.has(`item/${item}`)) return this.#store.iconDataUrl(item, null, { size });
-    const quads = state ? this.quadsFor(state) : [];
-    const fluid = state ? this.#fluidQuad(state) : null;
+    // Ohne Zustand aus dem Bau (z. B. die Azalee im Blumentopf) den gleichnamigen Block im Grundzustand nehmen
+    const source = state ?? (this.#models.hasBlock(item) ? item : null);
+    const quads = source ? this.quadsFor(source) : [];
+    const fluid = source ? this.#fluidQuad(source) : null;
     const all = fluid && quads.length === 0 ? [fluid] : quads;
     if (all.length === 0) return this.#store.has(`block/${item}`) ? this.#store.iconDataUrl(item, null, { size }) : null;
     const sample = await this.#sampler(all.map((quad) => quad.texture));

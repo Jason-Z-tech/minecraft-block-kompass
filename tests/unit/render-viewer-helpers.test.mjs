@@ -91,13 +91,17 @@ test('Viewer ohne WebGL2 oder ohne Canvas: verständlicher Fehler', () => {
   assert.throws(() => new Viewer(null), (e) => e instanceof ViewerError && e.code === 'argument');
 });
 
-test('Testseite viewer.html: CSP wie der Server, ein Modul-Skript, keine Inline-Skripte oder -Styles, Verweise vorhanden', async () => {
+test('Testseite viewer.html: CSP wie der Server (Netz nur zur eigenen Seite), ein Modul-Skript, keine Inline-Skripte oder -Styles, Verweise vorhanden', async () => {
   const file = path.join(ROOT, 'tests', 'visual', 'viewer.html');
   const html = await readFile(file, 'utf8');
   assert.match(html, /^<!doctype html>\n<html lang="de">/);
   const csp = /<meta http-equiv="Content-Security-Policy" content="([^"]+)">/.exec(html);
   assert.ok(csp, 'CSP-Meta fehlt');
-  assert.equal(csp[1], CONTENT_SECURITY_POLICY.split('; ').filter((rule) => !rule.startsWith('frame-ancestors')).join('; '));
+  // Die Testseite liest nur game-data/ vom eigenen Server; GitHub (misode/mcmeta) brauchen nur die Seiten der Website
+  assert.match(CONTENT_SECURITY_POLICY, /(^|; )connect-src 'self' https:\/\/raw\.githubusercontent\.com\/misode\/mcmeta\/(;|$)/);
+  const expected = CONTENT_SECURITY_POLICY.split('; ').filter((rule) => !rule.startsWith('frame-ancestors'))
+    .map((rule) => (rule.startsWith('connect-src ') ? "connect-src 'self'" : rule)).join('; ');
+  assert.equal(csp[1], expected);
   assert.ok(html.indexOf('Content-Security-Policy') < html.indexOf('<link'));
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
   assert.equal(scripts.length, 1);

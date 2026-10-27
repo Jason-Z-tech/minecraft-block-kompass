@@ -209,10 +209,15 @@ async function attempt(url, { maxBytes, timeoutMs, fetch, signal }) {
   }
 }
 
+// Meldet der Browser sicher „kein Netz“ (Flugmodus), lohnt kein neuer Versuch
+function defaultIsOffline() {
+  return globalThis.navigator?.onLine === false;
+}
+
 // → Uint8Array. maxBytes ist Pflicht (Schutz vor unerwartet großen Antworten).
 export async function fetchBytes(url, {
   maxBytes, timeoutMs = DEFAULT_TIMEOUT_MS, retries = DEFAULT_RETRIES,
-  fetch = globalThis.fetch, sleep = defaultSleep, signal,
+  fetch = globalThis.fetch, sleep = defaultSleep, isOffline = defaultIsOffline, signal,
 } = {}) {
   if (typeof url !== 'string' || url === '') throw new TypeError('fetchBytes: Adresse fehlt.');
   if (!Number.isFinite(maxBytes) || maxBytes <= 0) throw new TypeError('fetchBytes: maxBytes (Größengrenze) fehlt.');
@@ -226,6 +231,7 @@ export async function fetchBytes(url, {
       return await attempt(url, { maxBytes, timeoutMs, fetch, signal });
     } catch (error) {
       if (!(error instanceof NetError) || !error.retryable || index + 1 >= tries) throw error;
+      if (error.kind === 'network' && isOffline()) throw error;
       const backoff = RETRY_DELAYS_MS[Math.min(index, RETRY_DELAYS_MS.length - 1)];
       const retryAfter = error.retryAfterMs ?? null;
       // Verlangt der Server eine lange Pause, lohnt Warten nicht: gleich ehrlich melden.

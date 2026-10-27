@@ -1,9 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  loadJson, loadCatalog, loadNames, normalizeCatalog, normalizeBuild, recoverySteps, isSafeDataPath, findBuild,
-  countByCategory, DataError, CATALOG_PATH, NAMES_PATH, THUMBS_INDEX_PATH, isLocalSite, loadLocalThumbIds, applyThumbs,
+  loadJson, loadCatalog, loadNames, loadBlockList, normalizeCatalog, normalizeBuild, recoverySteps, isSafeDataPath, findBuild,
+  countByCategory, DataError, CATALOG_PATH, NAMES_PATH, BLOCKS_PATH, THUMBS_INDEX_PATH, isLocalSite, loadLocalThumbIds, applyThumbs,
+  gameDataToDataError,
 } from '../../js/ui/data.js';
+import { createGameData, GameDataError } from '../../js/data/game-data.js';
+import { NetError } from '../../js/data/net.js';
 
 const ROOT = new URL('http://127.0.0.1:8080/');
 
@@ -205,8 +208,64 @@ test('loadCatalog, findBuild und countByCategory', async () => {
   assert.deepEqual(countByCategory(catalog), { haeuser: 0, wahrzeichen: 1, fantasy: 0, mittelalter: 0, klein: 0, redstone: 1, farmen: 0, infrastruktur: 0 });
 });
 
+// Spieldaten kommen über js/data/game-data.js; hier ein lokaler Zugang mit Fake-fetch (game-data/ auf 127.0.0.1)
+function localGameData(respond) {
+  const { fetch, calls } = fakeFetch((url, options) => (String(url).endsWith('/meta.json') ? json({ version: '26.2' }) : respond(url, options)));
+  return { data: createGameData({ location: { hostname: '127.0.0.1' }, fetch, root: new URL('game-data/', ROOT) }), calls };
+}
+
 test('loadNames prüft das Format von names.json', async () => {
   const good = { block: { stone_bricks: { de: 'Steinziegel', en: 'Stone Bricks' } }, item: {} };
-  assert.deepEqual(await loadNames({ fetch: fakeFetch(() => json(good)).fetch, root: ROOT }), good);
-  await assert.rejects(loadNames({ fetch: fakeFetch(() => json({ block: {} })).fetch, root: ROOT }), { kind: 'format' });
+  const { data, calls } = localGameData(() => json(good));
+  assert.deepEqual(await loadNames({ load: data.loadNames }), good);
+  assert.deepEqual(calls.map((call) => call.url), ['http://127.0.0.1:8080/game-data/meta.json', 'http://127.0.0.1:8080/game-data/names.json']);
+  await assert.rejects(loadNames({ load: localGameData(() => json({ block: {} })).data.loadNames }), { kind: 'format', title: 'Spieldaten unvollständig' });
+  await assert.rejects(loadNames({ load: async () => 'kein Objekt' }), { kind: 'format' });
+});
+
+test('loadBlockList prüft das Format von blocks.json', async () => {
+  const good = { version: '26.2', blocks: { stone: { props: {}, default: {} } } };
+  assert.deepEqual(await loadBlockList({ load: localGameData(() => json(good)).data.loadBlocks }), good);
+  await assert.rejects(loadBlockList({ load: async () => ({ version: '26.2' }) }), (error) => error instanceof DataError && error.kind === 'format' && error.path === BLOCKS_PATH);
+});
+
+test('Fehler der Spieldaten werden zu DataError mit Titel, Text und Schritt ohne Befehle', async () => {
+  const noCommands = (error) => {
+    assert.ok(error instanceof DataError);
+    assert.ok(error.steps.length > 0, 'ein Hinweis, was man tun kann');
+    assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), [], 'keine Befehle');
+    assert.doesNotMatch(`${error.message} ${error.steps.map((step) => step.text).join(' ')}`, /node |scripts\/|Projektordner|extract/);
+  };
+  // lokal: Datei fehlt
+  await assert.rejects(loadNames({ load: localGameData(() => new Response('Nicht gefunden.', { status: 404 })).data.loadNames }), (error) => {
+    noCommands(error);
+    assert.equal(error.kind, 'missing');
+    assert.equal(error.title, 'Spieldaten fehlen');
+    assert.equal(error.status, 404);
+    assert.equal(error.path, NAMES_PATH);
+    assert.match(error.message, /^Spieldaten fehlen: .*game-data\/names\.json/);
+    assert.ok(error.cause instanceof GameDataError, 'Ursache bleibt erhalten');
+    return true;
+  });
+  // online: Netz weg, GitHub bremst
+  const offline = new NetError('Keine Verbindung zu GitHub.', { kind: 'network', url: 'https://raw.githubusercontent.com/misode/mcmeta/x/de_de.json' });
+  await assert.rejects(loadNames({ load: async () => { throw offline; } }), (error) => {
+    noCommands(error);
+    assert.equal(error.kind, 'network');
+    assert.equal(error.title, 'Keine Verbindung zu GitHub');
+    assert.equal(error.message, 'Die Spieldaten konnten nicht von GitHub geladen werden. Prüfe die Internetverbindung.');
+    assert.equal(error.cause.cause, offline);
+    return true;
+  });
+  const limited = gameDataToDataError(new NetError('429', { kind: 'rate-limit', status: 429, url: 'https://raw.githubusercontent.com/a.json' }), BLOCKS_PATH);
+  noCommands(limited);
+  assert.equal(limited.kind, 'rate-limit');
+  assert.equal(limited.status, 429);
+  assert.equal(limited.message, 'GitHub begrenzt gerade die Downloads. Versuche es in ein paar Minuten noch einmal.');
+  assert.match(limited.steps[0].text, /ein paar Minuten/);
+  // Unerwartetes wird nicht durchgereicht, sondern allgemein verständlich
+  const odd = gameDataToDataError(new TypeError('x is undefined'), NAMES_PATH);
+  noCommands(odd);
+  assert.equal(odd.kind, 'unknown');
+  assert.doesNotMatch(odd.message, /undefined/);
 });

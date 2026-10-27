@@ -35,7 +35,8 @@ export const CONTENT_SECURITY_POLICY = [
   "style-src 'self'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // Spieldaten im Browser („Weg A“, js/data/remote.js): nur die Dateien von misode/mcmeta auf GitHub
+  "connect-src 'self' https://raw.githubusercontent.com/misode/mcmeta/",
   "worker-src 'self'",
   "object-src 'none'",
   "base-uri 'none'",

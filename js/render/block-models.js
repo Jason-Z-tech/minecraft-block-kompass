@@ -303,6 +303,11 @@ export class BlockModels {
     return [...this.#warnings];
   }
 
+  // Gibt es zu dieser Block-ID eine Blockstate-Definition?
+  hasBlock(id) {
+    return Object.hasOwn(this.#blocks, id);
+  }
+
   // Zählt hoch, sobald bindTextures neue Ebenen setzt (für Caches außerhalb, z. B. im Mesher).
   get bindVersion() {
     return this.#bindVersion;

@@ -526,10 +526,17 @@ export function renderInfo(container, { title, text = '', ...rest }) {
   return renderState(container, { kind: 'info', title, text, ...rest });
 }
 
+const EXPECTED_DATA_ERRORS = new Set(['missing', 'network', 'timeout', 'rate-limit']);
+
+export function isExpectedDataError(error) {
+  return EXPECTED_DATA_ERRORS.has(error.kind) || (error.kind === 'http' && Number(error.status) >= 500);
+}
+
 /** Zeigt einen Fehler allgemein verständlich an; Details landen in der Konsole. */
 export function renderError(container, error, { onRetry = null, actions = [], ...rest } = {}) {
   const known = error && error.name === 'DataError';
-  if (known && error.kind === 'missing') console.warn('[Block-Kompass]', error.message, error);
+  // Erwartbare Fälle (Datei fehlt, Netz weg, Server überlastet) sind kein Programmfehler
+  if (known && isExpectedDataError(error)) console.warn('[Block-Kompass]', error.message, error);
   else console.error('[Block-Kompass]', error);
   // Nach dem Klick verschwindet der Knopf – der Fokus bleibt deshalb im Statusbereich
   const retryAndKeepFocus = () => {
