@@ -1,0 +1,9 @@
+{
+  "block.minecraft.stone": "Stone",
+  "block.minecraft.glass": "Glass",
+  "block.minecraft.oak_planks": "Oak Planks",
+  "block.minecraft.oak_stairs": "Oak Stairs",
+  "item.minecraft.stick": "Stick",
+  "block.minecraft.banner.base": "Fully Field",
+  "gui.done": "Done"
+}

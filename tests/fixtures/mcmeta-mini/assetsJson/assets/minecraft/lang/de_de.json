@@ -1,0 +1,9 @@
+﻿{
+  "block.minecraft.stone": "Stein",
+  "block.minecraft.glass": "Glas",
+  "block.minecraft.oak_planks": "Eichenholzbretter",
+  "block.minecraft.oak_stairs": "Eichenholztreppe",
+  "block.minecraft.sea_lantern": "Seelaterne",
+  "item.minecraft.stick": "Stock",
+  "gui.done": "Fertig"
+}

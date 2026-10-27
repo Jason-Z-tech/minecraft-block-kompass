@@ -4,6 +4,10 @@
 // (Ergebnis Byte für Byte gleich); Dateien, Zip, Netz und Schreiben bleiben dort.
 
 export const MC_VERSION = '26.2';
+// Erhöhen, sobald sich die Ausgabe der Umwandlung ändert (z. B. ein Fehler in buildModels behoben): Die Webseite legt die
+// umgewandelten Daten im Browser ab (js/data/remote.js) und erzeugt sie mit neuer Version einmal neu.
+// tests/unit/data-remote.test.mjs merkt, wenn sich die Ausgabe ohne neue Version ändert.
+export const CONVERT_VERSION = 1;
 export const MCMETA_TAG = `${MC_VERSION}-summary`;
 
 // Pfade wie in der Jar bzw. in den mcmeta-Archiven.
