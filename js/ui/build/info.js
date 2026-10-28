@@ -1,5 +1,5 @@
-// Infos: Beschreibung, Herkunft, „nicht im Spiel getestet“, Quellen (nur https), Credits,
-// Kennzahlen, Maßstab-Auswahl (bei scales) und der eigene Fortschritt mit „Zurücksetzen“.
+// Infos: Beschreibung, Herkunft, „nicht im Spiel getestet“, Quellen (nur https), Ersteller mit Link und Lizenz
+// (credits), Kennzahlen, Maßstab-Auswahl (bei scales) und der eigene Fortschritt mit „Zurücksetzen“.
 import { el, isSafeUrl } from '../dom.js';
 import {
   formatNumber, formatSize, accuracyLabel, createAccuracyChip, createUntestedChip, createCategoryChip,
@@ -71,9 +71,10 @@ export class InfoPanel {
         el('h3', { class: 'bv-info__heading' }, 'Quellen'),
         el('ul', { class: 'bv-info__sources' }, sources.map((source) => el('li', null, externalLink(source.url, source.title || new URL(source.url).hostname))))) : null,
       credits ? el('section', { class: 'bv-info__section' },
-        el('h3', { class: 'bv-info__heading' }, 'Design'),
+        el('h3', { class: 'bv-info__heading' }, 'Ersteller'),
         el('p', { class: 'bv-info__credits' }, 'Von ', credits.url ? externalLink(credits.url, credits.author) : el('strong', null, credits.author),
-          credits.license ? ` · Lizenz: ${credits.license}` : '')) : null,
+          credits.license ? ' · Lizenz: ' : '',
+          credits.license ? (credits.licenseUrl ? externalLink(credits.licenseUrl, credits.license) : credits.license) : '')) : null,
       Array.isArray(entry.tags) && entry.tags.length ? el('ul', { class: 'chip-list bv-info__tags', role: 'list', 'aria-label': 'Schlagwörter' }, entry.tags.map((tag) => el('li', null, createChip(tag)))) : null,
       this.#progressBox);
   }

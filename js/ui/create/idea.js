@@ -22,8 +22,14 @@ export function renderRequestResult(result, { actions, names = null }) {
   return { title: 'Dafür gibt es noch keinen Bauplan', nodes: [...notices, ...noneNodes(result, actions)] };
 }
 
+/** Genau ein Treffer entspricht der ganzen Anfrage (Titel, Alias oder ID): er wird groß gezeigt, die übrigen darunter. */
+function mainMatch(result) {
+  const exact = result.matches.filter((match) => match.exact);
+  return exact.length === 1 && result.matches[0].exact ? result.matches[0] : null;
+}
+
 function buildTitle(result) {
-  return result.matches.length === 1 ? 'Passender Bau gefunden' : `${formatCount(result.matches.length, 'Bau passt', 'Bauten passen')} – welchen meinst du?`;
+  return result.matches.length === 1 || mainMatch(result) ? 'Passender Bau gefunden' : `${formatCount(result.matches.length, 'Bau passt', 'Bauten passen')} – welchen meinst du?`;
 }
 
 function noteList(items) {
@@ -39,8 +45,14 @@ function buildNodes(result, actions) {
   if (result.scaleText) meta.push(createChip(`Maßstab erkannt: ${result.scaleText}`, { className: 'chip--ok' }));
   if (meta.length) nodes.push(el('div', { class: 'cluster create-result__meta' }, meta));
   if (result.notes.length) nodes.push(noteList(result.notes.map((text) => ({ kind: 'info', text }))));
+  const main = mainMatch(result);
   if (result.matches.length === 1) {
     nodes.push(featureCard(result.matches[0]));
+  } else if (main) {
+    nodes.push(featureCard(main));
+    nodes.push(el('section', { class: 'create-suggestions create-more', 'aria-labelledby': 'create-more-title' },
+      el('h3', { class: 'create-suggestions__title', id: 'create-more-title' }, 'Weitere passende Bauten'),
+      el('ul', { class: 'card-grid create-matches', role: 'list' }, result.matches.filter((match) => match !== main).map((match) => el('li', null, matchCard(match))))));
   } else {
     nodes.push(el('ul', { class: 'card-grid create-matches', role: 'list' }, result.matches.map((match) => el('li', null, matchCard(match)))));
   }

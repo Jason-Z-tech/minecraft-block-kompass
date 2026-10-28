@@ -18,7 +18,6 @@ const CATEGORY_TEXT = Object.freeze({
   fantasy: 'Fantasy Anime Film',
   mittelalter: 'Mittelalter Burgen',
   klein: 'Kleine Projekte Deko',
-  farmen: 'Farmen Technik Farm',
   infrastruktur: 'Brücken Bahnhöfe Häfen',
 });
 
@@ -51,7 +50,6 @@ export const SYNONYM_GROUPS = Object.freeze([
   ['stadt', 'city'],
   ['garten', 'garden'],
   ['baum', 'baeume', 'tree', 'trees'],
-  ['farm', 'farmen', 'farms'],
   ['tuer', 'tueren', 'door', 'doors', 'tor'],
   ['unendlichkeit', 'infinity'],
   ['eiffelturm', 'eiffel'],
@@ -259,17 +257,17 @@ export function scoreEntry(entry, tokens) {
 }
 
 /**
- * Durchsucht den Katalog → [{ entry, score, matched }], beste zuerst.
+ * Durchsucht den Katalog → [{ entry, score, matched, exact }], beste zuerst (exact: Titel, Alias oder ID = ganze Suche).
  * Leere Suche: alle Einträge (score 0) – praktisch für Textfilter.
  * Optionen: limit, category (Slug), threshold (Mindestwert, Standard MATCH_THRESHOLD), relative (0 … 1: nur Treffer ≥ relative · bester;
- * gibt es dann einen Eintrag, dessen Titel, Alias oder ID genau der Suche entspricht, bleiben nur solche).
+ * genaue Treffer stehen dann vorn, die übrigen folgen als weitere passende Bauten).
  */
 export function searchCatalog(catalog, query, { limit = 20, category = null, threshold = MATCH_THRESHOLD, relative = 0 } = {}) {
   const max = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 1000) : 20;
   let entries = catalogEntries(catalog);
   if (typeof category === 'string' && category) entries = entries.filter((entry) => entry.category === category);
   const tokens = Array.isArray(query) ? query.filter((t) => typeof t === 'string' && t) : tokenize(query);
-  if (!tokens.length) return entries.slice(0, max).map((entry) => ({ entry, score: 0, matched: [] }));
+  if (!tokens.length) return entries.slice(0, max).map((entry) => ({ entry, score: 0, matched: [], exact: false }));
   const results = [];
   for (const entry of entries) {
     const { score, matched, exact } = scoreEntry(entry, tokens);
@@ -279,7 +277,8 @@ export function searchCatalog(catalog, query, { limit = 20, category = null, thr
   let kept = results;
   if (relative > 0 && results.length) {
     const cut = results[0].score * relative;
-    kept = results.some((r) => r.exact) ? results.filter((r) => r.exact) : results.filter((r) => r.score >= cut);
+    // genaue Treffer zuerst, danach die übrigen guten Treffer (nicht verwerfen: „Windmühle“ zeigt alle Windmühlen)
+    kept = [...results.filter((r) => r.exact), ...results.filter((r) => !r.exact && r.score >= cut)];
   }
-  return kept.slice(0, max).map(({ entry, score, matched }) => ({ entry, score, matched }));
+  return kept.slice(0, max).map(({ entry, score, matched, exact }) => ({ entry, score, matched, exact }));
 }

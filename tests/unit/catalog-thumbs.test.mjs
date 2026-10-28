@@ -45,9 +45,16 @@ describe('Helfer', () => {
     assert.deepEqual(jobFor(entry()), { source: { kind: 'module', path: 'tests/fixtures/core/example-house.js' }, scale: null });
     assert.deepEqual(jobFor(entry({ module: 'js/builds/haeuser/a-b.js', defaultScale: 0.5 })), { source: { kind: 'module', path: 'js/builds/haeuser/a-b.js' }, scale: 0.5 });
     assert.throws(() => jobFor(entry({ module: 'https://x.y/a.js' })), /ungültiger Modulpfad/);
-    // Original-Strukturen gibt es nicht mehr: ein Eintrag ohne Bau-Modul (auch mit altem Feld structure) ist ein Fehler
-    assert.throws(() => jobFor(entry({ module: null })), /kein Bau-Modul/);
-    assert.throws(() => jobFor(entry({ module: null, structure: 'igloo__top.json' })), /kein Bau-Modul/);
+    // Original-Strukturen gibt es nicht mehr: ein Eintrag ohne Bau-Modul und ohne Community-Datei (auch mit altem Feld
+    // structure) ist ein Fehler
+    assert.throws(() => jobFor(entry({ module: null })), /weder Bau-Modul noch Community-Bau/);
+    assert.throws(() => jobFor(entry({ module: null, structure: 'igloo__top.json' })), /weder Bau-Modul noch Community-Bau/);
+    // Community-Bau: nur ein Dateiname aus data/community/, ohne Maßstab
+    assert.deepEqual(jobFor(entry({ module: null, community: { file: 'qrafty-teehaus.nbt', format: 'nbt' } })), { source: { kind: 'community', file: 'qrafty-teehaus.nbt' }, scale: null });
+    assert.throws(() => jobFor(entry({ module: null, community: { file: '../game-data/blocks.json' } })), /ungültiger Community-Bau/);
+    assert.deepEqual(validateJob({ source: { kind: 'community', file: 'a-b.litematic', extra: 1 } }), { source: { kind: 'community', file: 'a-b.litematic' }, scale: null });
+    assert.throws(() => validateJob({ source: { kind: 'community', file: 'a/b.nbt' } }), /Ungültiger Community-Bau/);
+    assert.throws(() => validateJob({ source: { kind: 'community', file: 'ab.nbt' }, scale: 0.5 }), /keinen Maßstab/);
     assert.throws(() => validateJob({ source: { kind: 'module', path: '/etc/passwd.js' } }), /Ungültiger Modulpfad/);
     assert.throws(() => validateJob({ source: { kind: 'shape' } }), /Quelle/);
     assert.throws(() => validateJob({ source: { kind: 'structure', file: 'igloo__top.json' } }), /Quelle/);

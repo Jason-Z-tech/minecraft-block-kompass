@@ -1,0 +1,26 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/complementary-structures
+Beleg: Modrinth complementary-structures Version 1.5.1 (BuqZmdbc), Datei cs-1.5.1-neoforge_26.1.jar (sha1 c22d961c4f89322f066847ed4338e7b9b14e3fb7); META-INF/neoforge.mods.toml: „license="MIT License"“, „authors="ElAguilaMC623"“; Modrinth-Lizenzfeld: MIT
+Lizenz: MIT (https://opensource.org/license/mit)
+Betrifft: complementary-grosses-eichenhaus, complementary-grosses-schneehaus, complementary-taiga-haus, complementary-kleines-eichenhaus, complementary-kleines-dschungelhaus, complementary-kleines-wuestenhaus, complementary-end-turm, complementary-prismarin-turm, complementary-wirrhaus, complementary-schwarzstein-turm, complementary-fichten-wachturm, complementary-savannen-wachturm, complementary-steinturm-ruine, complementary-bibliotheksturm, complementary-illager-turm, complementary-illager-burg, complementary-illager-palast, complementary-illager-gefaengnis, complementary-geheime-waffenkammer, complementary-handelsposten, complementary-haendlerlager, complementary-strandhuette
+
+--- MIT License (Standardtext; Rechteinhaber laut Mod-Angaben) ---
+
+Copyright (c) ElAguilaMC623
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

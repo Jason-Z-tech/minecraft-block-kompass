@@ -1,5 +1,6 @@
-// Modul-Worker der 3D-Ansicht (ARCHITEKTUR §7.4): baut Bauten (Bau-Module, Formen, hochgeladene Dateien und
-// Testquellen) mit dem Builder und meshet sie chunkweise, damit der Hauptthread flüssig bleibt.
+// Modul-Worker der 3D-Ansicht (ARCHITEKTUR §7.4): baut Bauten (Bau-Module, Formen, hochgeladene Dateien,
+// Community-Bauten aus data/community/ und Testquellen) mit dem Builder und meshet sie chunkweise, damit der
+// Hauptthread flüssig bleibt.
 // Die Rechenlogik (Quellen prüfen, bauen, Kollisionsboxen, Galerie, Meshing) ist exportiert und in Node
 // testbar; die Nachrichten-Anbindung startet nur, wenn die Datei als Worker läuft.
 
@@ -14,6 +15,7 @@ import { meshChunk, meshStep, meshCap } from './mesher.js';
 import {
   loadGameBlockColors, loadGameBlocks, loadGameModels, onGameDataProgress, toGameDataError,
 } from '../data/game-data.js';
+import { COMMUNITY_DIR, COMMUNITY_MAX_FILE_BYTES, parseCommunityFile } from '../data/community.js';
 
 export class EngineError extends Error {
   // title: eigener Titel für die Anzeige (Spieldaten-Fehler, z. B. „Keine Verbindung zu GitHub“), sonst null
@@ -37,7 +39,7 @@ export function dataEngineError(error) {
 
 // ------------------------------------------------------------------ Quellen prüfen
 
-export const SOURCE_KINDS = Object.freeze(['module', 'shape', 'gallery', 'synthetic', 'upload']);
+export const SOURCE_KINDS = Object.freeze(['module', 'shape', 'gallery', 'synthetic', 'upload', 'community']);
 const MODULE_PATTERN = /^[a-z0-9\-/]+\.js$/;
 const MODULE_ROOTS = ['js/builds/', 'tests/fixtures/'];
 const SHAPE_PATTERN = /^[a-z0-9-]{1,40}$/;
@@ -102,6 +104,18 @@ export function checkUploadSource(source) {
   return { kind: 'upload', format: source.format, name, data, params: checkParams(source.params, 'Upload-Parameter') };
 }
 
+/**
+ * Community-Bau { kind:'community', file: '<id>.nbt' | '<id>.schem' | '<id>.litematic' } → { kind, file, format }.
+ * Nur ein Dateiname ohne Pfad (a–z, 0–9, -), damit nur Dateien aus data/community/ geladen werden.
+ */
+export function checkCommunitySource(source) {
+  const parsed = parseCommunityFile(source.file);
+  if (!parsed) {
+    throw new EngineError(`Ungültiger Community-Bau „${String(source.file).slice(0, 80)}“ – erlaubt ist nur ein Dateiname wie „name.nbt“, „name.schem“ oder „name.litematic“ (a–z, 0–9, -).`, { code: 'source' });
+  }
+  return { kind: 'community', file: source.file, format: parsed.format };
+}
+
 /** Prüft eine Quelle aus §7.4 (plus Testquellen) und gibt eine bereinigte Kopie zurück; wirft EngineError. */
 export function checkSource(source) {
   if (!isPlainObject(source) || !SOURCE_KINDS.includes(source.kind)) {
@@ -110,6 +124,7 @@ export function checkSource(source) {
   switch (source.kind) {
     case 'module': return { kind: 'module', path: checkModulePath(source.path) };
     case 'upload': return checkUploadSource(source);
+    case 'community': return checkCommunitySource(source);
     case 'shape': {
       if (typeof source.shape !== 'string' || !SHAPE_PATTERN.test(source.shape)) {
         throw new EngineError(`Ungültiger Formname „${String(source.shape).slice(0, 40)}“ (a–z, 0–9, -).`, { code: 'source' });
@@ -203,6 +218,48 @@ export async function buildUploadResult(uploader, source, hooks = {}) {
     if (error?.name === 'ImportError') throw new EngineError(error.message, { code: 'upload', detail: error.detail ?? `${error.code}` });
     throw wrapBuildError(`Die Datei „${source.name}“`, error);
   }
+}
+
+const COMMUNITY_FAILED = 'Die Datei dieses Baus konnte nicht geladen werden.';
+
+/**
+ * Lädt die Datei eines Community-Baus vom eigenen Server: <rootUrl>/data/community/<file> (gleicher Ursprung, die CSP
+ * bleibt unverändert; auf GitHub Pages auch unter /minecraft-block-kompass/). Höchstens 20 MB.
+ * → ArrayBuffer; Fehler als EngineError code 'community' (Netz, fehlt, zu groß).
+ */
+export async function fetchCommunityFile(file, { rootUrl, fetch: fetchImpl = globalThis.fetch } = {}) {
+  const { file: name } = checkCommunitySource({ file });
+  const url = new URL(`${COMMUNITY_DIR}${name}`, rootUrl);
+  let response;
+  try {
+    response = await fetchImpl(url, { credentials: 'same-origin', cache: 'default' });
+  } catch (error) {
+    throw new EngineError(`${COMMUNITY_FAILED} Prüfe die Internetverbindung und versuche es noch einmal.`, { code: 'community', detail: error?.message ?? String(error) });
+  }
+  if (response.status === 404) throw new EngineError('Die Datei dieses Baus fehlt auf der Seite.', { code: 'community', detail: `404 ${url.pathname}` });
+  if (!response.ok) throw new EngineError(`${COMMUNITY_FAILED} (Fehler ${response.status})`, { code: 'community', detail: `${response.status} ${url.pathname}` });
+  const tooLarge = () => new EngineError(`${COMMUNITY_FAILED} Sie ist größer als ${COMMUNITY_MAX_FILE_BYTES / 1024 / 1024} MB.`, { code: 'community' });
+  if (Number(response.headers?.get?.('content-length')) > COMMUNITY_MAX_FILE_BYTES) throw tooLarge();
+  let data;
+  try {
+    data = await response.arrayBuffer();
+  } catch (error) {
+    throw new EngineError(`${COMMUNITY_FAILED} Die Übertragung wurde abgebrochen.`, { code: 'community', detail: error?.message ?? String(error) });
+  }
+  if (data.byteLength > COMMUNITY_MAX_FILE_BYTES) throw tooLarge();
+  return data;
+}
+
+/**
+ * Community-Bau → BuildResult: Datei über loaders.loadCommunityFile(file) laden und mit derselben Import-Pipeline bauen
+ * wie einen Upload (Ebene für Ebene). result.upload enthält die Kennzahlen der Datei.
+ */
+export async function buildCommunityResult(source, loaders) {
+  if (typeof loaders?.loadCommunityFile !== 'function') throw new EngineError('Community-Bauten können hier nicht geladen werden.', { code: 'source' });
+  const data = await loaders.loadCommunityFile(source.file);
+  if (!(data instanceof ArrayBuffer)) throw new EngineError(COMMUNITY_FAILED, { code: 'community', detail: 'keine Binärdaten' });
+  const upload = checkUploadSource({ kind: 'upload', format: source.format, name: source.file, data, params: {} });
+  return buildUploadResult(await loaders.importUploader(), upload, loaders);
 }
 
 // ------------------------------------------------------------------ Testvolumen (Leistung)
@@ -817,7 +874,8 @@ export class Engine {
   /**
    * Baut eine Quelle (geprüft mit checkSource). loaders: { importModule(path) → Namensraum,
    * importShapes() → Namensraum von js/create/shape-generators.js,
-   * importUploader() → Namensraum von js/create/import/index.js, progress(message), loadBlockColors(), importVoxelizer() }.
+   * importUploader() → Namensraum von js/create/import/index.js, loadCommunityFile(file) → ArrayBuffer,
+   * progress(message), loadBlockColors(), importVoxelizer() }.
    * Verändert die Engine nicht – das Ergebnis erst mit use(result) übernehmen.
    */
   async build(source, params, loaders) {
@@ -829,6 +887,8 @@ export class Engine {
       result = buildShapeResult(await loaders.importShapes(), clean.shape, clean.params);
     } else if (clean.kind === 'upload') {
       result = await buildUploadResult(await loaders.importUploader(), clean, loaders);
+    } else if (clean.kind === 'community') {
+      result = await buildCommunityResult(clean, loaders);
     } else if (clean.kind === 'gallery') {
       result = buildGallery(clean.group, clean.page);
     } else {
@@ -965,6 +1025,10 @@ function startWorker(scope) {
       } catch (error) {
         throw new EngineError('Der Import von 3D-Modellen (.vox, .stl, .obj, .glb, .gltf) ist noch nicht verfügbar.', { code: 'upload', detail: error?.stack ?? String(error) });
       }
+    },
+    // Community-Bau: Datei aus data/community/ (gleicher Ursprung)
+    loadCommunityFile(file) {
+      return fetchCommunityFile(file, { rootUrl });
     },
     // Blockfarben für den Modell-Import: einmal laden, danach aus dem Speicher
     loadBlockColors() {

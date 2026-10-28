@@ -1,0 +1,10 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/qraftyfied
+Beleg: Modrinth qraftyfied Version 13.0.0-26.3+mod (cpRes8NL), Datei qraftyfied-13.0.0-26.3.jar (sha1 83147fa8dddbba7a5076f63c8681f4d0d8505ecc); fabric.mod.json: „"license": "CC-BY-NC-4.0"“, „"authors": ["NixyNebula", "qrafty", "Drqad"]“; Modrinth-Lizenzfeld: CC-BY-NC-4.0
+Lizenz: CC-BY-NC-4.0 (https://creativecommons.org/licenses/by-nc/4.0/)
+Betrifft: qrafty-fichtenhuette, qrafty-dschungelhuette, qrafty-tafelland-siedlung, qrafty-stelzenhaus, qrafty-akropolis, qrafty-maya-tempel, qrafty-sphinx, qrafty-grosses-dschungel-baumhaus, qrafty-eisfestung, qrafty-mausoleum, qrafty-blasseichen-kathedrale, qrafty-eispavillon, qrafty-himmelsposten, qrafty-burgturm, qrafty-steinturm, qrafty-schmiede, qrafty-fort, qrafty-blasseichen-wachturm, qrafty-mangroven-wachturm, qrafty-windmuehle, qrafty-kamelstall, qrafty-papageien-voliere, qrafty-saegewerk, qrafty-teehaus, qrafty-kirsch-baumhaus, qrafty-tulpen-windmuehle, qrafty-bahnstrecke, qrafty-kirschholz-bruecke
+
+--- CC-BY-NC-4.0 ---
+
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+Full text: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+Summary: https://creativecommons.org/licenses/by-nc/4.0/

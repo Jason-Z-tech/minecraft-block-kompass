@@ -795,6 +795,8 @@ viewer.dispose()
 - Änderung (2026-10-28): Die Quellenart `structure` (Original-Strukturen aus game-data/mcmeta) gibt es nicht mehr; der Worker
   lehnt sie wie jede unbekannte Quelle ab („Unbekannte Quelle“). Quellen: `module`, `shape`, `upload` (Datei-Import §12.2/§12.3,
   auch „Meine Bauten“, §8) sowie die Testquellen `gallery` und `synthetic`.
+- Änderung (2026-10-28, Community-Bauten): neue Quelle `{ kind: 'community', file }` (§9.2), `SOURCE_KINDS` =
+  `module, shape, gallery, synthetic, upload, community`; Lader `loadCommunityFile(file)` → ArrayBuffer.
 - Bauen und Meshen laufen im Modul-Worker `engine-worker.js` (Hauptthread bleibt flüssig).
   Der Hauptthread behält eine Kopie des Volumens für Picking und Ebenen-Plan.
 - Orbit: Ziehen = drehen, Rechtsziehen/zwei Finger = verschieben, Rad/Pinch = zoomen, Pfeiltasten.
@@ -827,6 +829,20 @@ viewer.dispose()
   abfangen: solange Strg gehalten wird, fragt ein `beforeunload`-Wächter nach; Sprinten geht auch per Doppeltipp W.
   Touch-Steuerung (`.walk-touch`, Knöpfe mit `.btn` und aria-label) erscheint nach der ersten Touch-Eingabe bzw. bei
   `(pointer: coarse)`; Knöpfe lösen beim Drücken aus.
+  Änderung (2026-10-28, Lauf-Modus hing): Ursache war Esc in der Zeigersperre – Chrome beendet die Sperre selbst, die Seite
+  sieht weder Esc noch das folgende keyup (Chrome verschluckt es), W blieb gedrückt. Jetzt: Esc lässt immer alle Tasten los
+  (beendet den Modus nur mit Fokus in der Ansicht). Ende der Zeigersperre, Vollbild-Wechsel, Ein- und Ausschalten
+  (`enabled`), Fokusverlust, Kontextmenü außerhalb der Ansicht und Alt/Cmd/Windows-Taste (auch deren keyup) lassen ebenfalls
+  alles los (Tasten, Einrast-Zustand, Joystick, Touch-Knöpfe, Ziehen). Strg und Umschalt folgen dem Zustand, den jedes
+  Tasten- und Mausereignis meldet; ein keyup ohne vorheriges Drücken ist harmlos. Im Lauf-Modus öffnet sich über der Ansicht
+  und der Touch-Steuerung kein Browser-Menü. Touch-Knöpfe gelten je Finger; ein pointerup irgendwo auf der Seite beendet
+  Joystick, Knopf oder Blick, und ohne Finger auf dem Bildschirm ist nichts Berührtes mehr gehalten. Ziehen mit der Maus
+  endet bei einer Mausbewegung ohne gedrückte Taste. Physik unverändert. Tests: `render-base-walk-input`,
+  `render-base-walk-browser` (echter Chrome), Klick-Tests `e2e.mjs`/`e2e-remote.mjs` (`walkStuckSteps`).
+  Änderung (2026-10-28, Prüfung): Auch die Orbit-Ansicht lässt keine Pfeiltaste hängen: Esc, Alt/Cmd/Windows-Taste (drücken
+  oder loslassen), Fokus- und Fensterwechsel, Ausschalten und `dispose` leeren alle Tasten; jedes keyup beendet seine Taste
+  (`render-base-orbit-input`). Auf dem Handy rückt der Block-Tooltip im Lauf-Modus unter den Lauf-Hinweis, solange der
+  sichtbar ist (beide liegen oben in der Mitte).
 - Änderung (render:viewer, Viewer umgesetzt – Ergänzungen zur API oben):
   ```js
   new Viewer(canvas, { onPick, onHover, onStatus, onProgress, onModeChange, overlayParent, antialias = 'auto' })
@@ -886,7 +902,7 @@ viewer.dispose()
 
 ## 8. Seiten (`js/ui/`)
 
-- `index.html` – Start, bewusst klein (Änderung 2026-10-28): Titel „Was willst du bauen?“, Suche/Freitext, die 7 Kategorien
+- `index.html` – Start, bewusst klein (Änderung 2026-10-28): Titel „Was willst du bauen?“, Suche/Freitext, die 6 Kategorien
   als kompakte Kacheln mit Anzahl, Links „Selber erstellen“ und „Meine Bauten“ – keine Bau-Reihen, kein Einleitungstext.
 - `kategorie.html?k=<slug>` – Liste mit Vorschaubild, Filter (Größe, Herkunft, Test), Sortierung.
 - `bau.html?id=<id>[&scale=<zahl>]` – 3D-Ansicht + Schritt-Player + Anleitung (Kapitel mit Titel, Schritte mit Nummer,
@@ -906,14 +922,17 @@ Kopf und Fuß sind auf allen Seiten gleich (Test).
 
 Kategorien (`slug` → Titel):
 `haeuser` Häuser & Wohnen · `wahrzeichen` Wahrzeichen & Riesenbauten · `fantasy` Fantasy, Anime & Film ·
-`mittelalter` Mittelalter & Burgen · `klein` Kleine Projekte & Deko ·
-`farmen` Farmen & Technik · `infrastruktur` Brücken, Bahnhöfe & Häfen
+`mittelalter` Mittelalter & Burgen · `klein` Kleine Projekte & Deko · `infrastruktur` Brücken, Bahnhöfe & Häfen
 Änderung (2026-10-28): Die Kategorie `redstone` gibt es nicht mehr (Bauten nicht prüfbar). Alte Adressen wie
 `kategorie.html?k=redstone` oder `bau.html?id=lauflicht` zeigen die normale Anzeige für Unbekanntes.
+Änderung (2026-10-28, später): Auch die Kategorie `farmen` gibt es nicht mehr (6 Kategorien); `kategorie.html?k=farmen` und
+`bau.html?id=kaktusfarm` zeigen die Anzeige für Unbekanntes. `meta.tested` bleibt als optionales Feld.
 
 Herkunft (`accuracy`):
-`original` Original aus dem Spiel · `massstab` Nach echten Maßen · `vorlage` Nach bekannter Vorlage ·
+`original` Original vom Ersteller · `massstab` Nach echten Maßen · `vorlage` Nach bekannter Vorlage ·
 `nachempfunden` Nachempfunden · `eigenes` Eigenes Design
+Änderung (2026-10-28, Community-Bauten): `original` hieß „Original aus dem Spiel“; Spiel-Bauten gibt es nicht mehr, jetzt
+steht es für die unveränderte Datei eines anderen Erstellers (§9.2) und heißt „Original vom Ersteller“.
 
 Änderung: `kategorie.html` ohne `k` zeigt die Übersicht aller Kategorien (Kacheln mit Anzahl); ein
 unbekanntes `k` zeigt einen Fehlerhinweis plus Übersicht. Die Suche der Startseite leitet auf
@@ -1012,7 +1031,7 @@ Seite nimmt die `.mtl` an und sagt das ehrlich.
 - Speicher `js/data/my-builds.js`: IndexedDB **`bk-mine`** (Version 1, getrennt vom Spieldaten-Speicher `block-kompass-data`) mit
   den Objektspeichern `meta` (keyPath `id`, Einträge ohne Daten, für die Liste) und `data` (ArrayBuffer je `id`). Eintrag:
   ```js
-  { id /* UUID v4, crypto.randomUUID */, title /* ≤ 120 Zeichen */, category /* eine der 7 Kategorien | null */,
+  { id /* UUID v4, crypto.randomUUID */, title /* ≤ 120 Zeichen */, category /* eine der 6 Kategorien | null */,
     format /* schem|litematic|nbt|vox|stl|obj|glb|gltf */, fileName, size, addedAt /* ISO */,
     source: { author, url /* nur https */, license } | null, params /* Modell-Optionen height, solid, palette, block, upAxis */ | null,
     data /* ArrayBuffer, nur bei get() */ }
@@ -1072,9 +1091,9 @@ export const meta = {
   accuracy: 'massstab',
   description: 'Kurzer Text (2–4 Sätze).',
   sources: [{ title: 'Wikipedia: Tokyo Skytree', url: 'https://…' }],
-  credits: null,                        // bei übernommenen Designs: { author, url, license }
+  credits: null,                        // bei übernommenen Designs: { author, url, license, licenseUrl? }
   scales: [1, 0.5, 0.25],               // optional (nur bei echten Maßen): erlaubte Maßstäbe, 1 = 1 Block pro Meter
-  tested: null,                         // Farmen: false = „nicht im Spiel getestet“
+  tested: null,                         // optional: false = „nicht im Spiel getestet“
 };
 export default function build(b, { scale = 1 } = {}) { … }
 ```
@@ -1111,9 +1130,10 @@ nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur 
   "counts": { "total": n, "byCategory": { "<slug>": n } }, "warnings": [],
   "builds": [ {
     "id", "title", "category", "subtitle", "tags": [], "aliases": [], "accuracy",
-    "description", "sources": [{ "title", "url" }], "credits": { "author", "url", "license" } | null,
+    "description", "sources": [{ "title", "url" }], "credits": { "author", "url", "license", "licenseUrl" } | null,
     "tested": true | false | null,
-    "module": "js/builds/<kategorie>/<id>.js",
+    "module": "js/builds/<kategorie>/<id>.js" | null,
+    "community": { "file": "<id>.nbt|schem|litematic", "format": "nbt|schem|litematic" } | null,   (§9.2)
     "scales": [1, 0.5] | null, "defaultScale": 1 | null,
     "size": [w, h, l], "blocks": n, "steps": n, "phases": n,   (beim defaultScale bzw. ohne Maßstab)
     "variants": { "1": { "size", "blocks", "steps" }, "0.5": { … } } | null,   (nur bei scales)
@@ -1124,12 +1144,80 @@ nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur 
 - `defaultScale` = 1, wenn erlaubt, sonst der erste Maßstab (wie check-build). Das Feld `structure` (Original-Strukturen) entfällt
   seit 2026-10-28; das Label `original` bleibt in der Liste der Herkunft, auch wenn es gerade kein Bau nutzt.
 - Änderung (2026-10-28): Der Katalog hat keine Felder `difficulty` und `facts` und keine Kategorie `redstone` mehr.
-- `counts.byCategory` nennt immer alle 7 Kategorien (auch 0). `builds` sortiert nach Kategorie (Reihenfolge §8), dann Titel.
+- `counts.byCategory` nennt immer alle Kategorien (seit 2026-10-28: 6, auch 0). `builds` sortiert nach Kategorie (Reihenfolge §8), dann Titel.
   `warnings`: Warnungen der Module (höchstens 20 je Eintrag), doppelte Titel, Einträge, die wegen Fehlern fehlen.
 - Die Datei hat einen Eintrag je Zeile (kompakt, gültiges JSON) und wird atomar geschrieben (Zwischendatei + Umbenennen).
 - Bau-Seite: `bau.html?id=<id>[&scale=<zahl>]`; Formen: `bau.html?form=<shape>&<param>=<wert>…`
 
 Änderung (2026-10-28): `js/builds/game-structures.js` (Auswahl der Original-Strukturen) ist gelöscht.
+Änderung (2026-10-28, Community-Bauten): Jeder Eintrag hat genau eines von `module` und `community` (das andere `null`);
+`credits.licenseUrl` (https oder `null`) ist neu, bei Bau-Modulen optional in `meta.credits`. `counts.byCategory` nennt die
+6 Kategorien.
+
+### 9.2 Community-Bauten (`data/community/`)
+
+Fertige Bauten anderer Ersteller mit offener Lizenz. Die Dateien liegen unverändert (Bytes wie in der Quelle) unter
+`data/community/<id>.<nbt|schem|litematic>` (keine alte `.schematic`), je Quelle ein Lizenztext unter
+`data/community/licenses/<quelle>.txt` (Beleg, Lizenz, betroffene IDs, Lizenzdatei der Quelle bzw. Standardtext), die
+Angaben in `data/community/builds.json` (Liste, ein Eintrag je Zeile):
+```json
+[ { "id", "title", "subtitle", "category", "file": "<id>.<format>", "format": "nbt|schem|litematic",
+    "author", "url": "https://… (Quelle)", "license": "<SPDX>", "licenseUrl": "https://…",
+    "commit": "<40 Hex> | modrinth:<version-id>/<version>/sha1:<40 Hex>", "tags": [],
+    "aliases"?: [klein geschrieben], "sourcePath"?: "Pfad in der Quelle", "sha256"?: "der Datei",
+    "licenseFile"?: "licenses/<quelle>.txt" } ]
+```
+- Gemeinsame Regeln in `js/data/community.js` (Browser, Worker, Node): `COMMUNITY_DIR = 'data/community/'`,
+  `COMMUNITY_FORMATS`, `COMMUNITY_MAX_FILE_BYTES` (20 MB), `COMMUNITY_MAX_TOTAL_BYTES` (200 MB), `COMMUNITY_MAX_BLOCKS`
+  (3 Mio. Blöcke je Datei; der Katalog prüft sie selbst, eine höhere Upload-Grenze `IMPORT_LIMITS` hebt sie nicht an),
+  `OPEN_LICENSES` (SPDX → `{ label, url }`: CC0-1.0, CC-BY-3.0/4.0, CC-BY-SA-3.0/4.0, CC-BY-NC-3.0/4.0, CC-BY-NC-SA-3.0/4.0,
+  MIT, Apache-2.0, Unlicense), `parseCommunityFile(file)` → `{ id, format } | null` (nur `<id>.<endung>`, a–z, 0–9, -, kein Pfad), `isCommunityFile`,
+  `licenseLabel`.
+- Prüfung in `scripts/lib/community.mjs` (`validateCommunityEntry`, `validateCommunityList`, `readCommunity`): unbekannte oder
+  fehlende Felder, IDs eindeutig und ohne Kollision mit Bau-Modulen, Kategorie aus §8, `file` = `<id>.<format>`, `url` und
+  `licenseUrl` https, Lizenz aus `OPEN_LICENSES`, Commit-Format, Tags (keine Schwierigkeit), Datei vorhanden, nicht leer,
+  ≤ 20 MB, `sha256` passt, Lizenztext vorhanden, Ordner ≤ 200 MB, keine Datei ohne Eintrag (Lizenztexte ohne Eintrag: Warnung).
+  Fehlerhafte Einträge fehlen im Katalog (Fehler, Exit-Code 1).
+- Katalog (`build-catalog.mjs`, `catalogCommunity`): jede Datei wird in Node mit `importFile` + `importToBuildResult`
+  gebaut (wie ein Upload: Kapitel = Regionen der Datei, Schritte Ebene für Ebene); daraus `size`, `blocks`, `steps`, `phases`,
+  `topMaterials`, `sizeClass`. Eintrag: `accuracy: 'original'`, `description: ''`, `module: null`,
+  `community: { file, format }`, `sources: [{ title: 'GitHub: owner/repo' | 'Modrinth: projekt' | Rechner, url }]`,
+  `credits: { author, url, license: Anzeige der Lizenz (z. B. „CC BY-NC 4.0“), licenseUrl }`, `tested: null`, keine Maßstäbe.
+  Der Fingerabdruck `inputs.code` enthält `scripts/lib/community.mjs` samt Import-Pipeline und jede Datei unter
+  `data/community/` (sha256 der Bytes). Standard ist `data/community` zu `js/builds`; mit eigenem `--modules-dir` nur über
+  `--community-dir <ordner>`, abschaltbar mit `--no-community` (`buildCatalog({ modulesDir, communityDir, dataDir })`).
+  Fehler statt Eintrag (`buildCommunityEntry`), wenn die Datei Blöcke enthält, die es in Minecraft 26.2 nicht gibt (z. B. aus
+  Mods: ohne sie wäre der Bau nicht das Original), oder mehr als `COMMUNITY_MAX_BLOCKS` Blöcke hat. Übrige Hinweise des Imports
+  (Objekte, umbenannte Blöcke) sind keine Katalog-Warnungen – die Datei bleibt unverändert –, sondern stehen nur in der Konsole
+  (`catalogCommunity` → `notes`, `buildCatalog` → `communityNotes`);
+  `warnings` bleibt für echte Probleme (Einträge, die wegen Fehlern fehlen, doppelte Titel, Warnungen der Module).
+- Worker (§7.4): Quelle `{ kind: 'community', file }` (`checkCommunitySource`: nur ein gültiger Dateiname). Der Worker lädt
+  `data/community/<file>` vom eigenen Ursprung relativ zur Website-Wurzel (`fetchCommunityFile`, auch unter
+  `/minecraft-block-kompass/`, höchstens 20 MB; Fehler als `EngineError` code `community`, „Erneut versuchen“ möglich) und baut
+  sie mit derselben Pipeline wie Uploads (`buildCommunityResult`; kaputte Datei → code `upload`). `result.source` =
+  `{ kind: 'community', file, format }`. Die CSP bleibt unverändert (`connect-src 'self'`).
+- Seite: `bau.html?id=<id>` wie bei Modulen (`sourceForEntry` → `{ kind: 'community', file }`; `module` hat Vorrang).
+  `data.js` übernimmt `community` (nur gültige Dateinamen, `cleanCommunity`) und `credits.licenseUrl`; der Infos-Tab zeigt unter
+  „Ersteller“ „Von <Ersteller als Link> · Lizenz: <Lizenz als Link>“ und die Quelle. Karten, Kategorien, Filter (Herkunft
+  „Original vom Ersteller“), Suche (Titel, Aliase wie „oak cottage“, Tags wie „Community“) und Sortierung behandeln
+  Community-Bauten wie Module. `make-thumbs` rendert sie auch (Hash mit sha1 der Datei); `serve.mjs` liefert `.nbt`,
+  `.schem` und `.litematic` als `application/octet-stream`.
+- Übernahme: nur Quellen, die automatische Abrufe erlauben (GitHub mit LICENSE-Datei, Modrinth-API), Lizenz mit Repo,
+  Commit, Pfad und Zitat belegt; keine Spielstrukturen, Redstone-Bauten, Farmen, Testmuster oder Gelände ohne Bau, auch keine
+  Neugestaltungen oder umgefärbten Kopien von Spielstrukturen (Wüsten- und Dschungelpyramide, Iglu, Dorfhäuser,
+  Plünderer-Außenposten, Schiffswrack, Hexenhütte, Ozeanmonument, Waldanwesen, Bastion, Antike Stadt, Prüfungskammern,
+  Ruinenportal; erkennbar an Name, Quelle oder Grundriss). Stand 2026-10-28: 106 Bauten aus 11 Quellen (4 GitHub-Repos,
+  7 Modrinth-Projekte, zusammen gut 5 MB; 100 `.nbt`, 6 `.litematic`). Abgelehnt u. a. Cinchs Villager Statues (die
+  .nbt-Dateien sind laut LICENSE „All Rights Reserved“); nach der Prüfung entfernt: Thun-bit (Spiel-Schiffswrack als eigene
+  Arbeit, Herkunft der übrigen nicht belegbar), big-mod (Plünderer-Turm), Muffin's Structures (umgefärbtes Dorfhaus,
+  Sumpfhütte), Panda Temple (Entwurf eines Dritten ohne Erlaubnis), Snowy Ruins (Ersteller will nur Modrinth als Quelle),
+  Valkyrien Pirates und Sohatuy (Mod-Blöcke fehlen), End-Haus (Dach aus der End-City), Große Wüstenpyramide,
+  Dschungelpyramide und Iglu-Dorf (Neugestaltungen von Spielstrukturen).
+- Lizenzregeln: Ins Repo kommt nur, was eine offene Lizenz aus `OPEN_LICENSES` hat (LICENSE-Datei der Quelle oder
+  Lizenzangabe des Modrinth-Projekts bzw. Mod-Jars) oder eine ausdrückliche schriftliche Erlaubnis zum Weitergeben; ohne Lizenz
+  oder mit „All rights reserved“ nie (solche Bauten fügt der User selbst über „Meine Bauten“ hinzu). Jeder Eintrag nennt
+  Ersteller, Link, Lizenz mit Link und Commit; die Seite zeigt sie unter „Infos“. CC BY-NC erlaubt nur nicht-kommerzielle
+  Nutzung (passt zum Eigengebrauch).
 
 ### 9.1 Hilfsbibliothek (`js/builds/lib/`)
 
@@ -1466,8 +1554,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   DOM-Zugriffen. Als Bibliothek: `checkBuild(pfad, { scale, dataDir })`, `validateMeta(meta, { fileId,
   folderCategory })`.
   Änderung (2026-10-28): `meta.difficulty` und `meta.facts` sind Fehler („… gibt es nicht mehr.“), die Warnung „Kapitel … hat
-  keinen Text“ entfällt (geprüft werden nur noch die Texte in meta), die Warnung zu `tested` gilt nur noch für `farmen`.
-  Leere Schritte nennen Nummer und Kapitel („Schritt 3 (Kapitel „Möbel“) setzt keine Blöcke.“). `CATEGORIES` (7 Kategorien)
+  keinen Text“ entfällt (geprüft werden nur noch die Texte in meta), die Warnung zu `tested` gilt nur noch für `farmen`
+  (Änderung 2026-10-28, später: mit der Kategorie `farmen` entfällt auch diese Warnung; `meta.credits.licenseUrl` ist optional, https).
+  Leere Schritte nennen Nummer und Kapitel („Schritt 3 (Kapitel „Möbel“) setzt keine Blöcke.“). `CATEGORIES` (seit 2026-10-28: 6 Kategorien)
   nutzen auch `build-catalog.mjs` und `start.mjs`. Tags, die eine Schwierigkeit nennen, sind Fehler (§9).
 - `node scripts/shot.mjs --module <pfad> [--views iso,front,top] [--out tmp/shots]` (`--structure` gibt es seit 2026-10-28 nicht mehr)
   – Screenshots über Chrome (für Sichtprüfungen).
@@ -1477,6 +1566,8 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `--gpu hardware|swiftshader` (Standard Grafikkarte, ohne WebGL2 dort Rückfall auf swiftshader), `--bench <s>` (Kamera dreht,
   FPS). Bilder unter `<out>/<name>/<ansicht>[-p50][-clip3][-ghost].png`; Ausgabe: Kennzahlen, Zeiten, Warnungen, fehlende
   Texturen, bei Galerien die Reihen. Exit-Code 1 bei Browser-Fehlern, 2 bei falschen Optionen.
+  Änderung (2026-10-28, Community-Bauten): Quelle `--community <datei>` (z. B. `qrafty-teehaus.nbt`, §9.2); die Testseite
+  `tests/visual/viewer.html` nimmt dafür `?community=<datei>`.
 - Änderung: Testseite `tests/visual/viewer.html` – `?module=<pfad>` | `?gallery=1` | `?gallery=<gruppe>`
   `[&page=n]` | `?synthetic=<anzahl>` (ohne Angabe das Beispielhaus aus `tests/fixtures/core/`), dazu `view`, `progress` (Prozent)
   oder `step` (Schritt-Kommazahl), `clip`, `ghost=1`, `highlight`, `mode=walk`, `scale`, `ui=0` (nur die 3D-Ansicht),
@@ -1496,6 +1587,8 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   Änderung (Webseite, Etappe 1): Standard für `--out` ist `data/catalog.json` (`DEFAULT_OUT`); `--thumbs` rendert nur noch die
   Bilder (der Katalog bekommt keine thumb-Felder). Neu: `codeFingerprint`, `dataFingerprint`, `catalogInputs`,
   `writeCatalogIfChanged`. `moduleSources` liegt jetzt in `scripts/lib/module-sources.mjs` (make-thumbs exportiert es weiter).
+  Änderung (2026-10-28, Community-Bauten): baut zusätzlich `data/community/` (§9.2; Optionen `--community-dir <ordner>`,
+  `--no-community`; `catalogCommunity`, `defaultCommunityDir`, `stats.community`), Ausgabe „davon Community-Bauten“.
 - `node scripts/make-thumbs.mjs [--force] [--only <id>]… [--catalog <datei>] [--out thumbs] [--data <ordner>]
   [--gpu hardware|swiftshader] [--prune]` (catalog) – Vorschaubilder: ein Chrome (Grafikkarte, sonst swiftshader) lädt
   `tests/visual/thumb.html` und rendert jeden Eintrag mit dem echten Viewer in doppelter Auflösung, verkleinert auf **WebP
@@ -1522,6 +1615,14 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   390 × 844), Kopf ohne Suche mit „Meine Bauten“ auf allen Seiten, alte Adresse `bau.html?id=spiel-…` → „Bau nicht gefunden“ und
   Ablauf `meine` (ZIP mit `manifest.json`, „Zu Meine Bauten“ auf erstellen.html, Liste, Suche/Filter, Öffnen, Neuladen mit Haken,
   Modell-Optionen, Umbenennen, Kategorie, Löschen mit Rückfrage); gemeinsame Teile mit `e2e-remote.mjs` in `tests/lib/e2e-common.mjs`.
+  Änderung (2026-10-28, später): statt der Farm ein Community-Bau komplett (`qrafty-teehaus`, .nbt: Schritte, Abspielen, Material,
+  Ebenen-Plan, Schnitt, Laufen, Infos mit Ersteller-, Lizenz- und Quellen-Link, `communityInfoSteps`) und einer im
+  Litematica-Format (`gidden-belvedere`); Chip „Nicht im Spiel getestet“ an `bahnhof-loren`; sechs Kacheln ohne Farmen,
+  Filter „Original vom Ersteller“ (nur Community-Bauten), alte Adressen `kategorie.html?k=farmen` („Diese Kategorie gibt es
+  nicht“) und `bau.html?id=kaktusfarm` („Bau nicht gefunden“); Lauf-Modus ohne hängende Tasten (`walkStuckSteps`: W halten,
+  dann Ende der Zeigersperre, Esc, Lauf-Modus per Knopf aus/an bzw. Kontextmenü → die Figur steht, auch nach dem
+  Wiedereintritt). `e2e-remote.mjs` prüft dasselbe im Pages-Nachbau; Community-Dateien kommen dort unter
+  `/minecraft-block-kompass/data/community/` als `application/octet-stream`.
   Ausgabe je Prüfung `OK`/`FEHLER`, Leistungswerte, Screenshots und `e2e-report.json` (Standard
   `tmp/integration/e2e/`); Exit-Code 1 bei Fehlern. Konsolenfehler zählen als Fehler (einzige Ausnahme: die absichtlich kaputte
   Upload-Datei, deren Ablehnung `renderer.js` mit `console.error` meldet).
@@ -1560,9 +1661,11 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `#1e2127`/`#272b32`), warmes Weiß `#ece8df`, Grasgrün `#5da33b`, Kupfer `#d0703c`,
   Oxidiert-Türkis `#4fa38b`, Gold `#f2c14e`, Redstone-Rot `#e0342f`, Diamant `#5de3d8`.
   Kategorie-Farben: Häuser Eiche `#b8945f`, Wahrzeichen Gold, Fantasy Amethyst `#9a5cc6`,
-  Mittelalter Stein `#9a9a9a`, Klein Blüte `#e57ca3`, Farmen Weizen `#d9b84a`,
+  Mittelalter Stein `#9a9a9a`, Klein Blüte `#e57ca3`,
   Infrastruktur Kupfer. Änderung (2026-10-28): Die Kategorie Redstone (`--cat-redstone`, Icon `cat-redstone`) ist weg;
-  `--c-redstone`, `--c-redstone-deep` und `--c-redstone-text` bleiben als Fehlerfarben.
+  `--c-redstone`, `--c-redstone-deep` und `--c-redstone-text` bleiben als Fehlerfarben. Später am selben Tag auch die
+  Kategorie Farmen (`--cat-farmen` Weizen `#d9b84a`, Icon `cat-farmen`); Startseite und Übersicht zeigen 6 Kacheln (ab 720 px
+  3 Spalten).
 - Schriften lokal (Google Fonts, OFL, heruntergeladen): Überschriften **Pixelify Sans**,
   Text **Atkinson Hyperlegible Next**, Zahlen/Koordinaten **Atkinson Hyperlegible Mono**.
   Änderung: Überschriften nutzen die zusammengesetzte Schrift „BK Display“ – Buchstaben aus Pixelify Sans,

@@ -1,5 +1,5 @@
 // Testseite der 3D-Ansicht (ARCHITEKTUR §7.4, §10).
-// Quelle: ?module=<pfad> | ?gallery=1 | ?gallery=<gruppe>[&page=n] | ?synthetic=<anzahl>
+// Quelle: ?module=<pfad> | ?community=<datei> | ?gallery=1 | ?gallery=<gruppe>[&page=n] | ?synthetic=<anzahl>
 // (ohne Angabe: tests/fixtures/core/example-house.js). Weitere Parameter: view=iso|top|front|side,
 // progress=<0 … 100 % der Schritte> oder step=<Schritt-Kommazahl>, clip=<Ebene y>, ghost=1, highlight=<Schritt>,
 // mode=walk, ui=0 (nur die 3D-Ansicht, für Screenshots), bench=<Sekunden> (Kamera dreht, FPS werden gezählt).
@@ -38,13 +38,17 @@ function numberParam(search, key, min, max) {
 
 // Adresse prüfen (Whitelist + Zahlengrenzen); die Quelle prüft der Worker zusätzlich.
 function parseParams(search) {
-  const sources = ['module', 'gallery', 'synthetic'].filter((key) => search.has(key));
-  if (sources.length > 1) throw new Error('Nur eine Quelle angeben: module, gallery oder synthetic.');
+  const sources = ['module', 'community', 'gallery', 'synthetic'].filter((key) => search.has(key));
+  if (sources.length > 1) throw new Error('Nur eine Quelle angeben: module, community, gallery oder synthetic.');
   let source = { kind: 'module', path: 'tests/fixtures/core/example-house.js' };
   if (search.has('module')) {
     const path = search.get('module');
     if (!/^[a-z0-9\-/]{1,150}\.js$/.test(path)) throw new Error('Parameter module: Pfad wie js/builds/haeuser/x.js erwartet.');
     source = { kind: 'module', path };
+  } else if (search.has('community')) {
+    const file = search.get('community');
+    if (!/^[a-z0-9-]{2,80}\.(nbt|schem|litematic)$/.test(file)) throw new Error('Parameter community: Dateiname wie qrafty-teehaus.nbt erwartet.');
+    source = { kind: 'community', file };
   } else if (search.has('gallery')) {
     const group = search.get('gallery') === '1' ? 'all' : search.get('gallery');
     if (!/^[a-z]{1,20}$/.test(group)) throw new Error('Parameter gallery: 1 oder ein Gruppenname erwartet.');

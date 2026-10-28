@@ -115,7 +115,7 @@ test('normalizeBuildDetails prüft jedes Feld', () => {
   assert.equal(Object.hasOwn(details, 'difficulty'), false, 'keine Schwierigkeit mehr');
   assert.equal(details.module, null, 'kein „..“ im Modulpfad');
   assert.deepEqual(details.sources, [{ title: 'Gut', url: 'https://example.org/a' }, { title: 'ohne-titel.de', url: 'https://ohne-titel.de/x' }]);
-  assert.deepEqual(details.credits, { author: 'Ann', url: null, license: 'CC BY 4.0' });
+  assert.deepEqual(details.credits, { author: 'Ann', url: null, license: 'CC BY 4.0', licenseUrl: null });
   assert.deepEqual(details.scales, [1, 0.5]);
   assert.equal(details.defaultScale, 0.5);
   assert.deepEqual(Object.keys(details.variants), ['1']);

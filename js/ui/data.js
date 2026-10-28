@@ -5,6 +5,7 @@
 import { SITE_ROOT, isSafeSitePath, isSafeUrl } from './dom.js';
 import { CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN, SIZE_CLASS_KEYS } from './shared.js';
 import { loadGameBlocks, loadGameNames, toGameDataError } from '../data/game-data.js';
+import { parseCommunityFile } from '../data/community.js';
 
 // Der Katalog liegt im Repo (nur Projekttexte, Größen und Zahlen, keine Spieldaten) und wird mit der Seite veröffentlicht.
 export const CATALOG_PATH = 'data/catalog.json';
@@ -160,7 +161,14 @@ function cleanSources(value) {
 function cleanCredits(value) {
   if (!isPlainObject(value)) return null;
   const author = cleanText(value.author, 120);
-  return author ? { author, url: cleanHttpsUrl(value.url), license: cleanText(value.license, 120) || null } : null;
+  return author ? { author, url: cleanHttpsUrl(value.url), license: cleanText(value.license, 120) || null, licenseUrl: cleanHttpsUrl(value.licenseUrl) } : null;
+}
+
+/** Community-Bau (§9.2): { file: '<id>.nbt|schem|litematic', format } – nur ein Dateiname ohne Pfad, sonst null */
+export function cleanCommunity(value) {
+  if (!isPlainObject(value)) return null;
+  const parsed = parseCommunityFile(value.file);
+  return parsed && (value.format === undefined || value.format === parsed.format) ? { file: value.file, format: parsed.format } : null;
 }
 
 /** variants: { "<maßstab>": { size, blocks, steps } } – nur gültige Maßstäbe als Schlüssel */
@@ -178,6 +186,7 @@ const EXTENDED_FIELDS = {
   description: (value) => cleanText(value, 2000),
   sources: cleanSources,
   credits: cleanCredits,
+  community: cleanCommunity,
   defaultScale: cleanScale,
   variants: cleanVariants,
   phases: (value) => cleanInteger(value, 0, 65534),

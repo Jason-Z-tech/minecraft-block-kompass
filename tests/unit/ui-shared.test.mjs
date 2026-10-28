@@ -54,9 +54,11 @@ test('findCategory, Herkunfts-Labels und keine Schwierigkeit mehr', () => {
   assert.equal(findCategory('infrastruktur').title, 'Brücken, Bahnhöfe & Häfen');
   for (const bad of ['x', '', null, '__proto__', 'Redstone', 'redstone', 'farmen', 'Farmen']) assert.equal(findCategory(bad), null, String(bad));
   assert.deepEqual(ACCURACY_LABELS, {
-    original: 'Original aus dem Spiel', massstab: 'Nach echten Maßen', vorlage: 'Nach bekannter Vorlage',
+    original: 'Original vom Ersteller', massstab: 'Nach echten Maßen', vorlage: 'Nach bekannter Vorlage',
     nachempfunden: 'Nachempfunden', eigenes: 'Eigenes Design',
   });
+  // Spiel-Bauten gibt es nicht mehr: „original“ heißt jetzt die unveränderte Datei eines anderen Erstellers (Community-Bauten)
+  assert.equal(accuracyLabel('original'), 'Original vom Ersteller');
   assert.equal(accuracyLabel('massstab'), 'Nach echten Maßen');
   assert.equal(accuracyLabel('toString'), null);
   assert.equal(accuracyLabel('unbekannt'), null);

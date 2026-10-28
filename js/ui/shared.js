@@ -19,7 +19,7 @@ export const CATEGORY_SLUGS = Object.freeze(CATEGORIES.map((category) => categor
 
 /** Herkunft eines Baus (accuracy) nach §8 */
 export const ACCURACY_LABELS = Object.freeze({
-  original: 'Original aus dem Spiel',
+  original: 'Original vom Ersteller',
   massstab: 'Nach echten Maßen',
   vorlage: 'Nach bekannter Vorlage',
   nachempfunden: 'Nachempfunden',

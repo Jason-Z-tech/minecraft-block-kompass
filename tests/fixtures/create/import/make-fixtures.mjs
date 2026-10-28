@@ -219,7 +219,7 @@ export function packBits(values, bits) {
 
 const vec = ([x, y, z]) => nbt.compound({ x: nbt.int(x), y: nbt.int(y), z: nbt.int(z) });
 
-function litematicRegion(position, size, palette, cells, bits) {
+export function litematicRegion(position, size, palette, cells, bits) {
   return nbt.compound({
     Position: vec(position),
     Size: vec(size),
@@ -232,7 +232,7 @@ function litematicRegion(position, size, palette, cells, bits) {
   });
 }
 
-function litematicFile(regions, { name = 'Test', enclosing = [1, 1, 1] } = {}) {
+export function litematicFile(regions, { name = 'Test', enclosing = [1, 1, 1] } = {}) {
   return encodeNbt('', nbt.compound({
     MinecraftDataVersion: nbt.int(4903),
     Version: nbt.int(6),

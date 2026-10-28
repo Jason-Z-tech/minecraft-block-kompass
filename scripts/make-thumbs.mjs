@@ -1,7 +1,7 @@
 // Vorschaubilder des Katalogs (ARCHITEKTUR §10): rendert jeden Eintrag mit der echten 3D-Ansicht in Chrome
 // (tests/visual/thumb.html) als WebP 640×400 nach thumbs/<id>.webp. Ein Browser für alle Bilder.
-// Neu gerendert wird nur, wenn sich Eintrag, Modul-Quelltext (samt lokaler Importe) oder Spieldaten-Version
-// geändert haben (Hash in thumbs/index.json).
+// Neu gerendert wird nur, wenn sich Eintrag, Modul-Quelltext (samt lokaler Importe) bzw. die Datei eines
+// Community-Baus (data/community/) oder die Spieldaten-Version geändert haben (Hash in thumbs/index.json).
 // Aufruf: node scripts/make-thumbs.mjs [--force] [--only <id>] [--catalog <datei>] [--out <ordner>] [--data <ordner>]
 //                                      [--gpu hardware|swiftshader] [--prune]
 
@@ -13,6 +13,7 @@ import { startServer } from './serve.mjs';
 import { launchBrowser } from '../tests/browser.mjs';
 import { writeFileAtomic } from './build-catalog.mjs';
 import { moduleSources } from './lib/module-sources.mjs';
+import { COMMUNITY_DIR, isCommunityFile } from '../js/data/community.js';
 
 // moduleSources wohnt jetzt in scripts/lib/module-sources.mjs (auch für den Katalog-Fingerabdruck); hier weiter exportiert.
 export { moduleSources };
@@ -99,6 +100,9 @@ export async function thumbHash(entry, { stamp, root = ROOT }) {
   const parts = [`style ${THUMB_STYLE}`, `size ${THUMB_SIZE.join('x')}`, `data ${stamp}`, JSON.stringify(rest)];
   if (entry.module) {
     for (const { file, text } of await moduleSources(path.join(root, entry.module), { root })) parts.push(`${file}\n${sha1(text)}`);
+  } else if (isCommunityFile(entry.community?.file)) {
+    const file = `${COMMUNITY_DIR}${entry.community.file}`;
+    parts.push(`${file}\n${sha1(await readFile(path.join(root, file)))}`);
   }
   return sha1(parts.join('\n'));
 }
@@ -109,7 +113,11 @@ export function jobFor(entry) {
     if (!MODULE_PATTERN.test(entry.module)) throw new Error(`ungültiger Modulpfad „${entry.module}“`);
     return { source: { kind: 'module', path: entry.module }, scale: entry.defaultScale ?? null };
   }
-  throw new Error('kein Bau-Modul gesetzt');
+  if (entry.community) {
+    if (!isCommunityFile(entry.community.file)) throw new Error(`ungültiger Community-Bau „${String(entry.community.file).slice(0, 80)}“`);
+    return { source: { kind: 'community', file: entry.community.file }, scale: null };
+  }
+  throw new Error('weder Bau-Modul noch Community-Bau gesetzt');
 }
 
 // ------------------------------------------------------------------ Index

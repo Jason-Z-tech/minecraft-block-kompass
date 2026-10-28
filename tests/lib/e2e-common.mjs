@@ -1,6 +1,7 @@
 // Gemeinsame Prüfungen der Klick-Tests tests/e2e.mjs (lokal mit game-data/) und tests/e2e-remote.mjs (Pages-Nachbau):
-// Startseite ohne Scrollen, Kopf ohne Suche mit „Meine Bauten“ und der Ablauf „Meine Bauten“ (Hinzufügen per ZIP mit
-// manifest.json und per „Zu Meine Bauten“ auf erstellen.html, Liste, Öffnen, Neuladen, Umbenennen, Löschen).
+// Startseite ohne Scrollen, Kopf ohne Suche mit „Meine Bauten“, der Ablauf „Meine Bauten“ (Hinzufügen per ZIP mit
+// manifest.json und per „Zu Meine Bauten“ auf erstellen.html, Liste, Öffnen, Neuladen, Umbenennen, Löschen), die Infos
+// eines Community-Baus (Ersteller, Lizenz) und der Lauf-Modus ohne hängende Tasten.
 // Nur Node-Bordmittel; das ZIP für den Test entsteht hier (Deflate über node:zlib, Prüfsumme aus js/data/zip.js).
 import { readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -331,4 +332,143 @@ export async function mineFlowSteps(page, { base, check, shot, checkConsole, imp
     await page.eval(`${STATUS_TITLE}.textContent`));
   await section('Meine Bauten (unbekannt)');
   return { house: house.id, model: modelId };
+}
+
+// ---------------------------------------------------------------- Bau-Seite: Community-Bau und Lauf-Modus
+
+// Infos eines Community-Baus: Herkunft „Original vom Ersteller“, Ersteller als Link (credits.url), Lizenz als Link
+// (credits.licenseUrl), Quelle als Link; kein Chip „Nicht im Spiel getestet“.
+export async function communityInfoSteps(page, build, { check, label }) {
+  await page.click('[data-tab="info"]');
+  await sleep(200);
+  const info = await page.eval(`(() => {
+    const credits = document.querySelector('.bv-info__credits');
+    // Linktext ohne den versteckten Zusatz „(öffnet in neuem Tab)“
+    const linkText = (a) => [...a.childNodes].filter((node) => !node.classList?.contains('visually-hidden')).map((node) => node.textContent).join('').trim();
+    const links = credits ? [...credits.querySelectorAll('a')].map((a) => ({ href: a.getAttribute('href'), text: linkText(a), rel: a.getAttribute('rel') ?? '' })) : [];
+    const heading = credits?.closest('section')?.querySelector('.bv-info__heading')?.textContent.trim() ?? '';
+    const sources = [...document.querySelectorAll('.bv-info__sources a')].map((a) => a.getAttribute('href'));
+    return { heading, links, text: credits?.textContent.replace(/\\s+/g, ' ').trim() ?? '', sources,
+      chips: document.getElementById('build-chips')?.textContent.replace(/\\s+/g, ' ').trim() ?? '',
+      info: document.querySelector('.bv-info')?.textContent ?? '' };
+  })()`);
+  const author = info.links.find((link) => link.href === build.credits.url);
+  const license = info.links.find((link) => link.href === build.credits.licenseUrl);
+  check(`${label}: Infos zeigen Ersteller mit Link und Lizenz mit Link`, info.heading === 'Ersteller' && author?.text === build.credits.author && license?.text === build.credits.license
+    && info.links.every((link) => /noopener/.test(link.rel)) && info.sources.includes(build.sources[0].url), info.text.slice(0, 200));
+  check(`${label}: Herkunft „Original vom Ersteller“, kein Chip „Nicht im Spiel getestet“`, /Original vom Ersteller/.test(info.chips + info.info) && !/Nicht im Spiel getestet/.test(info.chips + info.info), info.chips);
+}
+
+// Lauf-Modus ohne hängende Tasten (Fehler „läuft von allein weiter“): W halten, dann Zeigersperre beenden, Esc, Lauf-Modus
+// mit der Maus verlassen oder Kontextmenü – jedes Mal steht die Figur, auch nach dem Wiedereintritt. Das keyup von W kommt
+// dabei absichtlich nicht (Chrome verschluckt es nach Esc in der Zeigersperre bzw. beim Kontextmenü).
+export async function walkStuckSteps(page, { check, label, shot = null, shotName = 'bau-laufen-haengt-nicht' }) {
+  const W = { key: 'w', code: 'KeyW', windowsVirtualKeyCode: 87 };
+  const keyW = (type) => page.send('Input.dispatchKeyEvent', { type, ...W });
+  const escape = async () => {
+    await page.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  };
+  const canvasBox = () => page.eval("(() => { const r = document.querySelector('.bv-stage__canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()");
+  const mouse = (type, x, y, button = 'left') => page.send('Input.dispatchMouseEvent', { type, x, y, button, buttons: type === 'mousePressed' ? (button === 'right' ? 2 : 1) : 0, clickCount: 1 });
+  const setMode = async (mode) => {
+    if (await page.eval(`window.__buildView.viewer.mode === '${mode}'`)) return;
+    await page.click('.bv-walk-toggle');
+    await page.waitFor(`window.__buildView.viewer.mode === '${mode}'`, 5000);
+  };
+  // Strecke in 1 s (20 Ticks) nach 0,5 s Abbremsen bzw. Anlaufen. Die Ticks laufen hier von Hand in einem Stück (wie im
+  // Unit-Test), damit die Bildrate von swiftshader nichts verfälscht; im Lauf-Modus tickt die Bildschleife dazwischen weiter.
+  const moved = () => page.eval(`(() => {
+    const walk = window.__buildView.viewer.controls.walk;
+    if (!walk.enabled) return -1;
+    for (let i = 0; i < 10; i++) walk.update(50);
+    const x = walk.player.x, z = walk.player.z;
+    for (let i = 0; i < 20; i++) walk.update(50);
+    return Math.hypot(walk.player.x - x, walk.player.z - z);
+  })()`);
+  // Vor dem Bau auf den (virtuellen) Boden, Blick vom Bau weg nach Süden: W läuft ins Freie, keine Wand bremst
+  const reset = () => page.eval(`(() => {
+    const b = window.__buildView.viewer.bounds;
+    window.__buildView.viewer.controls.walk.teleport([b.center[0], b.min[1], b.max[2] + 3], { yaw: 0, pitch: 0, flying: false });
+  })()`);
+  const stands = (distance) => distance >= 0 && distance < 0.05;
+  const fmt = (distance) => (distance < 0 ? 'Lauf-Modus aus' : `${distance.toFixed(2)} Blöcke in 1 s`);
+  try {
+    await page.eval('window.scrollTo(0, 0)');
+    await setMode('walk');
+    await reset();
+    const box = await canvasBox();
+
+    // 1) Zeigersperre per Klick, W halten, Sperre endet (wie Esc im Browser, ohne keyup) → steht, auch nach erneutem Klick
+    await mouse('mouseMoved', box.x, box.y);
+    await mouse('mousePressed', box.x, box.y);
+    await mouse('mouseReleased', box.x, box.y);
+    await page.waitFor('document.pointerLockElement !== null', 5000);
+    await keyW('keyDown');
+    const walking = await moved();
+    await page.eval('new Promise((resolve) => { document.addEventListener("pointerlockchange", resolve, { once: true }); document.exitPointerLock(); })');
+    const afterLock = await moved();
+    await mouse('mousePressed', box.x, box.y);
+    await mouse('mouseReleased', box.x, box.y);
+    await page.waitFor('document.pointerLockElement !== null', 5000);
+    const relocked = await moved();
+    check(`${label}: W gehalten, Zeigersperre endet → die Figur steht (auch nach erneutem Klick)`, walking > 1 && stands(afterLock) && stands(relocked),
+      `mit W ${fmt(walking)}, danach ${fmt(afterLock)}, wieder im Bild ${fmt(relocked)}`);
+    // Ein spätes keyup ohne Drücken schadet nicht; W geht danach normal
+    await reset();
+    await keyW('keyUp');
+    await keyW('keyDown');
+    const again = await moved();
+    await keyW('keyUp');
+    const released = await moved();
+    check(`${label}: danach läuft W normal und hält beim Loslassen`, again > 1 && stands(released), `${fmt(again)} · losgelassen ${fmt(released)}`);
+    await page.eval('new Promise((resolve) => { if (!document.pointerLockElement) return resolve(); document.addEventListener("pointerlockchange", resolve, { once: true }); document.exitPointerLock(); })');
+
+    // 2) W halten, Esc (Fokus in der Ansicht) verlässt den Lauf-Modus; wieder rein → steht
+    await reset();
+    await page.eval("document.querySelector('.bv-stage__canvas').focus()");
+    await keyW('keyDown');
+    const walking2 = await moved();
+    await escape();
+    await page.waitFor("window.__buildView.viewer.mode === 'orbit'", 5000);
+    await setMode('walk');
+    const afterEscape = await moved();
+    check(`${label}: W gehalten, Esc beendet den Lauf-Modus, wieder rein → die Figur steht`, walking2 > 1 && stands(afterEscape), `mit W ${fmt(walking2)}, nach Esc und Wiedereintritt ${fmt(afterEscape)}`);
+    await keyW('keyUp');
+
+    // 3) W halten, Lauf-Modus mit der Maus aus- und wieder einschalten → steht
+    await reset();
+    await page.eval("document.querySelector('.bv-stage__canvas').focus()");
+    await keyW('keyDown');
+    const walking3 = await moved();
+    await setMode('orbit');
+    await setMode('walk');
+    const afterToggle = await moved();
+    check(`${label}: W gehalten, Lauf-Modus per Knopf aus und an → die Figur steht`, walking3 > 1 && stands(afterToggle), `mit W ${fmt(walking3)}, danach ${fmt(afterToggle)}`);
+    await keyW('keyUp');
+
+    // 4) W halten, Kontextmenü: über der Ansicht kein Browser-Menü (W bleibt gehalten), daneben lässt es alles los
+    await reset();
+    await page.eval("document.querySelector('.bv-stage__canvas').focus(); window.__e2eMenu = []; window.addEventListener('contextmenu', (e) => window.__e2eMenu.push(e.defaultPrevented), { once: false })");
+    await keyW('keyDown');
+    const walking4 = await moved();
+    await mouse('mousePressed', box.x, box.y, 'right');
+    await mouse('mouseReleased', box.x, box.y, 'right');
+    const inView = await moved();
+    // Rechtsklick daneben: in die Kopfzeile (oben, außerhalb der Ansicht)
+    const outside = await page.eval("(() => { const r = document.getElementById('site-header').getBoundingClientRect(); return { x: r.left + 12, y: r.top + r.height / 2 }; })()");
+    await mouse('mouseMoved', outside.x, outside.y);
+    await mouse('mousePressed', outside.x, outside.y, 'right');
+    await mouse('mouseReleased', outside.x, outside.y, 'right');
+    const afterMenu = await moved();
+    const menu = await page.eval('window.__e2eMenu');
+    check(`${label}: W gehalten, Kontextmenü → die Figur steht`, walking4 > 1 && inView > 1 && stands(afterMenu) && menu.join(',') === 'true,false',
+      `mit W ${fmt(walking4)}, Rechtsklick in die Ansicht (kein Menü) ${fmt(inView)}, Menü daneben ${fmt(afterMenu)} · verhindert: ${menu.join(', ')}`);
+    if (shot) await shot(page, shotName);
+    await keyW('keyUp');
+  } catch (error) {
+    check(`${label}: Lauf-Modus ohne hängende Tasten`, false, error.message.split('\n')[0]);
+  } finally {
+    await page.eval("window.__buildView.viewer.mode === 'walk' && window.__buildView.viewer.setMode('orbit')").catch(() => {});
+  }
 }

@@ -352,9 +352,13 @@ export class Stage {
     const parts = blockTooltipParts(hit.state, { step: hit.step, coords: positionText(hit.x, hit.y, hit.z) });
     if (viewer.mode === 'walk') {
       const box = this.#root.getBoundingClientRect();
-      // Mit Touch-Bedienung liegen unten Joystick und Knöpfe: dann oben in der Mitte zeigen (unter den Werkzeugen)
-      if (prefersCoarsePointer()) this.#tooltip.show(parts, box.left + box.width / 2 - 112, box.top + 48);
-      else this.#tooltip.show(parts, box.left + box.width / 2 + 12, box.top + box.height / 2 + 12);
+      // Mit Touch-Bedienung liegen unten Joystick und Knöpfe: dann oben in der Mitte zeigen (unter den Werkzeugen),
+      // solange dort der Lauf-Hinweis steht, unter dem Hinweis (show setzt die Oberkante 18 px unter y)
+      if (prefersCoarsePointer()) {
+        const help = this.#parts.walkHelp;
+        const below = help.hidden ? -Infinity : help.getBoundingClientRect().bottom - 10;
+        this.#tooltip.show(parts, box.left + box.width / 2 - 112, Math.max(box.top + 48, below));
+      } else this.#tooltip.show(parts, box.left + box.width / 2 + 12, box.top + box.height / 2 + 12);
       return;
     }
     if (this.#pointer && this.#pointer.type === 'mouse') this.#tooltip.show(parts, this.#pointer.x, this.#pointer.y);

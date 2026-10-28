@@ -137,9 +137,25 @@ describe('searchCatalog', () => {
     assert.equal(searchCatalog(catalog, '   ', { limit: 1000 }).length, catalog.builds.length);
   });
 
-  test('relative Grenze: ein genauer Titel verdrängt Teiltreffer', () => {
-    assert.deepEqual(ids(searchCatalog(catalog, 'Tokyo Tower', { relative: 0.7 })), ['tokyo-tower']);
+  test('relative Grenze: genaue Treffer zuerst, gute Teiltreffer folgen, schwache fallen weg', () => {
+    const tower = searchCatalog(catalog, 'Tokyo Tower', { relative: 0.7 });
+    assert.deepEqual(tower.map((r) => [r.entry.id, r.exact]), [['tokyo-tower', true], ['tokyo-skytree', false]]);
+    assert.ok(tower.every((r) => r.score >= tower[0].score * 0.7));
     assert.deepEqual(ids(searchCatalog(catalog, 'Tokyo', { relative: 0.7 })).sort(), ['tokyo-skytree', 'tokyo-tower']);
+    assert.deepEqual(ids(searchCatalog(catalog, 'Tokyo Skytree', { relative: 0.7 })), ['tokyo-skytree'], 'Tokyo Tower (nur halber Treffer) fällt weg');
+  });
+
+  test('genauer Treffer verdrängt keine anderen Bauten mit demselben Namen (z. B. Community-Bauten)', () => {
+    const builds = [
+      { id: 'windmuehle', title: 'Windmühle', subtitle: '', category: 'mittelalter', tags: [], aliases: [] },
+      { id: 'qrafty-windmuehle', title: 'Windmühle aus Eiche', subtitle: '', category: 'mittelalter', tags: ['Community'], aliases: ['windmill'] },
+      { id: 'qrafty-tulpen-windmuehle', title: 'Tulpen-Windmühle', subtitle: '', category: 'klein', tags: ['Community'], aliases: ['tulip windmill'] },
+      { id: 'leuchtturm', title: 'Leuchtturm', subtitle: '', category: 'infrastruktur', tags: [], aliases: [] },
+    ];
+    const hits = searchCatalog({ builds }, 'Windmühle', { relative: 0.7 });
+    assert.deepEqual(hits.map((r) => [r.entry.id, r.exact]).slice(0, 1), [['windmuehle', true]]);
+    assert.deepEqual(ids(hits).sort(), ['qrafty-tulpen-windmuehle', 'qrafty-windmuehle', 'windmuehle']);
+    assert.ok(hits.slice(1).every((r) => r.exact === false));
   });
 
   test('niedrigere Schwelle für Vorschläge', () => {

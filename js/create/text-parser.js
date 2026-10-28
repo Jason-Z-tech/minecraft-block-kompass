@@ -542,7 +542,8 @@ function emptyNone(query, truncated, reason) {
 
 /**
  * Versteht eine Bau-Anfrage. Liefert genau eines von:
- *   { kind: 'build', query, matches: [{ entry, score, scale }], scale, scaleText, notes, alternative, truncated }
+ *   { kind: 'build', query, matches: [{ entry, score, exact, scale }], scale, scaleText, notes, alternative, truncated }
+ *     (exact: Titel, Alias oder ID entspricht der ganzen Anfrage; solche Treffer stehen vorn)
  *   { kind: 'shape', query, shape, title, params, understood, defaults, warnings, errors, ok, estimate, queryString, truncated }
  *   { kind: 'none', query, suggestions: [{ entry, score }], reason, hints, truncated }
  * Optionen: catalog (catalog.json), names (names.json), blocks (blocks.json).
@@ -601,9 +602,9 @@ export function parseRequest(text, { catalog = null, names = null, blocks = null
 function buildResult(results, scaleInfo, query, truncated, alternative) {
   const notes = [];
   if (scaleInfo.conflict) notes.push(`Du hast mehrere Maßstäbe angegeben – ich nehme ${scaleInfo.scaleText}.`);
-  const matches = results.map(({ entry, score }) => {
+  const matches = results.map(({ entry, score, exact }) => {
     const choice = chooseScale(entry, scaleInfo.scale);
-    return { entry, score, scale: choice.scale, note: choice.note };
+    return { entry, score, exact: exact === true, scale: choice.scale, note: choice.note };
   });
   if (matches[0].note) notes.push(matches[0].note);
   if (truncated) notes.push(`Deine Eingabe war länger als ${MAX_REQUEST_LENGTH} Zeichen; ich habe nur den Anfang gelesen.`);
@@ -611,7 +612,7 @@ function buildResult(results, scaleInfo, query, truncated, alternative) {
   return {
     kind: 'build',
     query,
-    matches: matches.map(({ entry, score, scale: s }) => ({ entry, score, scale: s })),
+    matches: matches.map(({ entry, score, exact, scale: s }) => ({ entry, score, exact, scale: s })),
     scale,
     scaleText: scale === null ? null : formatScale(scale),
     notes,

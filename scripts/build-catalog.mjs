@@ -1,18 +1,22 @@
 // Katalog der Bauten (ARCHITEKTUR §9): prüft alle Bau-Module js/builds/<kategorie>/<id>.js mit checkBuild (für jeden
-// Maßstab) und schreibt data/catalog.json atomar.
+// Maßstab), dazu die Community-Bauten aus data/community/ (§9.2, gebaut wie ein Upload), und schreibt data/catalog.json atomar.
 // Der Katalog liegt im Repo und wird mit der Webseite veröffentlicht: Er enthält nur Projekttexte, Größen, Zahlen und
 // Block-IDs, keine Spieldaten und keine Vorschaubilder (die liegen nur lokal in thumbs/, siehe thumbs/index.json).
-// „inputs“ hält einen Fingerabdruck der Eingaben (Quelltext und Spieldaten); passt er nicht mehr, ist der Katalog veraltet.
-// Aufruf: node scripts/build-catalog.mjs [--thumbs [--force]] [--modules-dir <ordner>] [--data <ordner>] [--out <datei>]
-//                                        [--thumbs-dir <ordner>]
+// „inputs“ hält einen Fingerabdruck der Eingaben (Quelltext, Community-Dateien und Spieldaten); passt er nicht mehr, ist
+// der Katalog veraltet.
+// Aufruf: node scripts/build-catalog.mjs [--thumbs [--force]] [--modules-dir <ordner>] [--community-dir <ordner> | --no-community]
+//                                        [--data <ordner>] [--out <datei>] [--thumbs-dir <ordner>]
 // Fehlerhafte Einträge fehlen im Katalog (Hinweis unter „warnings“); alle Fehler stehen am Ende, Exit-Code 1.
 
 import { readFile, readdir, rename, writeFile, unlink, mkdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { checkBuild, CATEGORIES } from './check-build.mjs';
+import { checkBuild, loadGameData, CATEGORIES } from './check-build.mjs';
 import { moduleSources } from './lib/module-sources.mjs';
+import {
+  DEFAULT_COMMUNITY_DIR, readCommunity, buildCommunityEntry, communityCredits, communityFingerprintParts,
+} from './lib/community.mjs';
 import { CATEGORIES as CATEGORY_INFO } from '../js/ui/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -20,9 +24,13 @@ export const DEFAULT_MODULES_DIR = path.join(ROOT, 'js', 'builds');
 export const DEFAULT_DATA_DIR = path.join(ROOT, 'game-data');
 export const DEFAULT_THUMBS_DIR = path.join(ROOT, 'thumbs');
 export const DEFAULT_OUT = path.join(ROOT, 'data', 'catalog.json');
+export { DEFAULT_COMMUNITY_DIR };
 const SELF_FILE = fileURLToPath(import.meta.url);
-// Einstiegspunkte des Fingerabdrucks (samt aller relativ importierten Dateien), dazu jedes Bau-Modul
-const FINGERPRINT_ENTRIES = [path.join(ROOT, 'scripts', 'check-build.mjs'), path.join(ROOT, 'js', 'core', 'materials.js')];
+// Einstiegspunkte des Fingerabdrucks (samt aller relativ importierten Dateien), dazu jedes Bau-Modul.
+// scripts/lib/community.mjs bringt die Import-Pipeline (js/create/import/) mit, mit der die Community-Bauten gebaut werden.
+const FINGERPRINT_ENTRIES = [
+  path.join(ROOT, 'scripts', 'check-build.mjs'), path.join(ROOT, 'js', 'core', 'materials.js'), path.join(ROOT, 'scripts', 'lib', 'community.mjs'),
+];
 
 export const TOP_MATERIALS = 8;
 export const SIZE_CLASSES = Object.freeze([['klein', 1_000], ['mittel', 10_000], ['gross', 100_000], ['riesig', Infinity]]);
@@ -34,6 +42,9 @@ const USAGE = `Aufruf: node scripts/build-catalog.mjs [Optionen]
   --thumbs                 danach Vorschaubilder erzeugen (scripts/make-thumbs.mjs) und eintragen
   --force                  mit --thumbs: alle Vorschaubilder neu rendern
   --modules-dir <ordner>   Bau-Module (<ordner>/<kategorie>/<id>.js), Standard js/builds
+  --community-dir <ordner> Community-Bauten (builds.json und Dateien), Standard data/community
+                           (mit eigenem --modules-dir nur, wenn angegeben)
+  --no-community           ohne Community-Bauten
   --data <ordner>          Spieldaten, Standard game-data
   --out <datei>            Ziel, Standard data/catalog.json
   --thumbs-dir <ordner>    Ordner der Vorschaubilder, Standard thumbs`;
@@ -47,7 +58,8 @@ export class UsageError extends Error {
 
 export function parseArgs(argv) {
   const options = {
-    modulesDir: DEFAULT_MODULES_DIR, dataDir: DEFAULT_DATA_DIR, out: null, thumbsDir: DEFAULT_THUMBS_DIR, thumbs: false, force: false, help: false,
+    modulesDir: DEFAULT_MODULES_DIR, communityDir: undefined, dataDir: DEFAULT_DATA_DIR, out: null, thumbsDir: DEFAULT_THUMBS_DIR, thumbs: false,
+    force: false, help: false,
   };
   const take = (i) => {
     const value = argv[i + 1];
@@ -60,6 +72,14 @@ export function parseArgs(argv) {
       case '--thumbs': options.thumbs = true; break;
       case '--force': options.force = true; break;
       case '--modules-dir': options.modulesDir = path.resolve(take(i++)); break;
+      case '--community-dir':
+        if (options.communityDir === null) throw new UsageError('--community-dir und --no-community schließen sich aus.');
+        options.communityDir = path.resolve(take(i++));
+        break;
+      case '--no-community':
+        if (typeof options.communityDir === 'string') throw new UsageError('--community-dir und --no-community schließen sich aus.');
+        options.communityDir = null;
+        break;
       case '--data': options.dataDir = path.resolve(take(i++)); break;
       case '--out': options.out = path.resolve(take(i++)); break;
       case '--thumbs-dir': options.thumbsDir = path.resolve(take(i++)); break;
@@ -68,9 +88,15 @@ export function parseArgs(argv) {
     }
   }
   if (options.force && !options.thumbs) throw new UsageError('--force gibt es nur zusammen mit --thumbs.');
+  if (options.communityDir === undefined) options.communityDir = defaultCommunityDir(options.modulesDir);
   // Mit eigenen Spieldaten (--data) nicht den veröffentlichten Katalog im Repo überschreiben
   options.out ??= options.dataDir === DEFAULT_DATA_DIR ? DEFAULT_OUT : path.join(options.dataDir, 'catalog.json');
   return options;
+}
+
+/** Community-Ordner, wenn keiner angegeben ist: der echte zu den echten Bau-Modulen, sonst keiner (Tests, Versuche). */
+export function defaultCommunityDir(modulesDir) {
+  return path.resolve(modulesDir) === DEFAULT_MODULES_DIR ? DEFAULT_COMMUNITY_DIR : null;
 }
 
 // ------------------------------------------------------------------ Hilfen
@@ -103,11 +129,12 @@ const textHash = (text) => sha256(text.replace(/\r\n/g, '\n'));
 const byName = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
- * Fingerabdruck des Quelltexts, der den Katalog bestimmt: dieses Skript, scripts/check-build.mjs, js/core/materials.js
- * und alle Bau-Module, jeweils samt aller relativ importierten Dateien (Hilfsbibliothek, Kern, …).
- * Die Oberfläche (js/ui/) zählt nicht. → sha256 als Hex-Text
+ * Fingerabdruck des Quelltexts, der den Katalog bestimmt: dieses Skript, scripts/check-build.mjs, js/core/materials.js,
+ * scripts/lib/community.mjs (mit der Import-Pipeline) und alle Bau-Module, jeweils samt aller relativ importierten Dateien
+ * (Hilfsbibliothek, Kern, …), dazu jede Datei unter data/community/ (Bytes, ohne Umwandlung). Die Oberfläche (js/ui/)
+ * zählt nicht. communityDir null = ohne Community-Bauten. → sha256 als Hex-Text
  */
-export async function codeFingerprint({ modulesDir = DEFAULT_MODULES_DIR, root = ROOT } = {}) {
+export async function codeFingerprint({ modulesDir = DEFAULT_MODULES_DIR, communityDir = defaultCommunityDir(modulesDir), root = ROOT } = {}) {
   const { modules } = await findModules(modulesDir);
   const entries = [...FINGERPRINT_ENTRIES, ...modules.map((mod) => mod.file)];
   const files = new Map();
@@ -122,7 +149,10 @@ export async function codeFingerprint({ modulesDir = DEFAULT_MODULES_DIR, root =
   }
   // Das Skript selbst nur als Datei: seine Importe für die Konsolen-Ausgabe (js/ui/shared.js) ändern den Katalog nicht
   files.set(toPosix(path.relative(root, SELF_FILE)), await readFile(SELF_FILE, 'utf8'));
-  return sha256([...files].sort(byName).map(([file, text]) => `${file} ${textHash(text)}`).join('\n'));
+  const lines = [...files].sort(byName).map(([file, text]) => `${file} ${textHash(text)}`);
+  const community = communityDir ? await communityFingerprintParts(communityDir, root) : [['data/community (ohne)', '-']];
+  lines.push(...community.map(([file, hash]) => `${file} ${hash}`));
+  return sha256(lines.join('\n'));
 }
 
 /**
@@ -148,8 +178,10 @@ export async function dataFingerprint(dataDir = DEFAULT_DATA_DIR) {
 }
 
 /** Beide Fingerabdrücke für das Feld „inputs“ des Katalogs. */
-export async function catalogInputs({ modulesDir = DEFAULT_MODULES_DIR, dataDir = DEFAULT_DATA_DIR, root = ROOT } = {}) {
-  return { code: await codeFingerprint({ modulesDir, root }), data: await dataFingerprint(dataDir) };
+export async function catalogInputs({
+  modulesDir = DEFAULT_MODULES_DIR, communityDir = defaultCommunityDir(modulesDir), dataDir = DEFAULT_DATA_DIR, root = ROOT,
+} = {}) {
+  return { code: await codeFingerprint({ modulesDir, communityDir, root }), data: await dataFingerprint(dataDir) };
 }
 
 /** Größenklasse nach Blockzahl: klein < 1 000 ≤ mittel < 10 000 ≤ gross < 100 000 ≤ riesig. */
@@ -264,9 +296,12 @@ export async function catalogModule({ file, folder, fileId }, { dataDir = DEFAUL
     accuracy: meta.accuracy,
     description: meta.description,
     sources: meta.sources.map((s) => ({ title: s.title, url: s.url })),
-    credits: meta.credits ? { author: meta.credits.author, url: meta.credits.url, license: meta.credits.license } : null,
+    credits: meta.credits
+      ? { author: meta.credits.author, url: meta.credits.url, license: meta.credits.license, licenseUrl: meta.credits.licenseUrl ?? null }
+      : null,
     tested: typeof meta.tested === 'boolean' ? meta.tested : null,
     module: projectPath(file),
+    community: null,
     scales: scales ? [...scales] : null,
     defaultScale,
     size: main.size,
@@ -279,6 +314,50 @@ export async function catalogModule({ file, folder, fileId }, { dataDir = DEFAUL
     thumb: null,
   };
   return { entry, errors: [], warnings };
+}
+
+// ------------------------------------------------------------------ Community-Bauten
+
+/**
+ * Baut einen geprüften Community-Bau (aus readCommunity, mit bytes) und den Katalog-Eintrag: Blöcke, Größe, Schritte
+ * (Ebene für Ebene wie beim Upload), Kapitel und Material kommen aus der Datei; Herkunft immer „original“.
+ * Fehlen Blöcke in Minecraft 26.2 (z. B. aus Mods) oder sind es zu viele, ist das ein Fehler (buildCommunityEntry):
+ * ohne sie wäre der Bau nicht das Original.
+ * notes: übrige Hinweise des Imports (Objekte, umbenannte Blöcke, angepasste Zustände). Die Datei bleibt unverändert,
+ * darum sind das keine Warnungen des Katalogs, sondern nur Hinweise für die Konsole.
+ * Die Blockdaten müssen geladen sein (loadGameData). → { entry | null, errors: [Text], notes: [Text] }
+ */
+export async function catalogCommunity(item) {
+  const { result, errors } = await buildCommunityEntry(item);
+  if (!result) return { entry: null, errors, notes: [] };
+  const notes = limitWarnings(item.id, result.warnings);
+  const { sources, credits } = communityCredits(item);
+  const entry = {
+    id: item.id,
+    title: item.title,
+    category: item.category,
+    subtitle: item.subtitle,
+    tags: [...item.tags],
+    aliases: [...(item.aliases ?? [])],
+    accuracy: 'original',
+    description: '',
+    sources,
+    credits,
+    tested: null,
+    module: null,
+    community: { file: item.file, format: item.format },
+    scales: null,
+    defaultScale: null,
+    size: [...result.size],
+    blocks: result.blockCount,
+    steps: result.steps.length,
+    phases: result.phases.length,
+    variants: null,
+    topMaterials: topMaterialsOf(result.materials),
+    sizeClass: sizeClass(result.blockCount),
+    thumb: null,
+  };
+  return { entry, errors: [], notes };
 }
 
 // ------------------------------------------------------------------ Katalog
@@ -345,14 +424,18 @@ export function countBuilds(builds) {
 }
 
 /**
- * Baut den Katalog im Speicher. → { catalog, errors, notes, stats }
- * errors: Fehler (Einträge fehlen im Katalog); notes: Hinweise für die Konsole.
+ * Baut den Katalog im Speicher. → { catalog, errors, notes, communityNotes, stats }
+ * errors: Fehler (Einträge fehlen im Katalog); notes: Hinweise für die Konsole; communityNotes: Hinweise des Imports zu den
+ * unverändert übernommenen Community-Dateien (nur Konsole, nicht unter warnings).
+ * communityDir: Ordner der Community-Bauten (Standard: data/community zu js/builds, sonst keiner); null = ohne.
  */
-export async function buildCatalog({ modulesDir = DEFAULT_MODULES_DIR, dataDir = DEFAULT_DATA_DIR, onProgress = null } = {}) {
+export async function buildCatalog({
+  modulesDir = DEFAULT_MODULES_DIR, communityDir = defaultCommunityDir(modulesDir), dataDir = DEFAULT_DATA_DIR, onProgress = null,
+} = {}) {
   const started = performance.now();
   const version = await readGameDataVersion(dataDir);
   // Fingerabdruck vor dem Bauen: ändert sich eine Eingabe während des Laufs, gilt der Katalog danach als veraltet
-  const inputs = await catalogInputs({ modulesDir, dataDir });
+  const inputs = await catalogInputs({ modulesDir, communityDir, dataDir });
   const errors = [];
   const warnings = [];
   const notes = [];
@@ -369,6 +452,26 @@ export async function buildCatalog({ modulesDir = DEFAULT_MODULES_DIR, dataDir =
     else warnings.push(`${projectPath(mod.file)}: wegen Fehlern nicht im Katalog.`);
   }
 
+  let communityCount = 0;
+  const communityNotes = [];
+  if (communityDir) {
+    const moduleIds = new Set([...modules.map((mod) => mod.fileId), ...collected.map((item) => item.entry.id)]);
+    const community = await readCommunity({ dir: communityDir, moduleIds });
+    errors.push(...community.errors);
+    warnings.push(...community.warnings);
+    if (community.entries.length) await loadGameData(dataDir);
+    for (const [i, item] of community.entries.entries()) {
+      onProgress?.({ kind: 'community', index: i, total: community.entries.length, file: item.file });
+      const result = await catalogCommunity(item);
+      errors.push(...result.errors);
+      communityNotes.push(...result.notes);
+      if (result.entry) {
+        collected.push({ entry: result.entry, source: `data/community/${item.file}` });
+        communityCount++;
+      } else warnings.push(`data/community/${item.file}: wegen Fehlern nicht im Katalog.`);
+    }
+  }
+
   const builds = sortBuilds(removeDuplicateIds(collected, errors, warnings));
   warnDuplicateTitles(builds, warnings);
   const catalog = {
@@ -383,7 +486,8 @@ export async function buildCatalog({ modulesDir = DEFAULT_MODULES_DIR, dataDir =
     catalog,
     errors,
     notes,
-    stats: { modules: modules.length, durationMs: Math.round(performance.now() - started) },
+    communityNotes,
+    stats: { modules: modules.length, community: communityCount, durationMs: Math.round(performance.now() - started) },
   };
 }
 
@@ -492,13 +596,14 @@ export async function main(argv = process.argv.slice(2)) {
       ...options,
       onProgress: (p) => {
         if (p.kind === 'module' && p.total > 0 && (p.index % 10 === 0 || p.index === p.total - 1)) console.log(`Prüfe Bau-Module … ${p.index + 1}/${p.total}`);
+        if (p.kind === 'community' && p.total > 0 && (p.index % 20 === 0 || p.index === p.total - 1)) console.log(`Baue Community-Bauten … ${p.index + 1}/${p.total}`);
       },
     });
   } catch (error) {
     console.error(`Katalog nicht erzeugt: ${error.message}`);
     return 1;
   }
-  const { catalog, errors, notes } = built;
+  const { catalog, errors, notes, communityNotes, stats } = built;
   const written = await writeCatalogIfChanged(options.out, catalog);
   if (options.thumbs) {
     const thumbs = await runThumbs(catalog, options);
@@ -506,10 +611,15 @@ export async function main(argv = process.argv.slice(2)) {
   }
   console.log(`\nBlock-Kompass · Katalog für Minecraft ${catalog.version}`);
   console.log(summaryTable(catalog));
+  if (options.communityDir) console.log(`davon Community-Bauten (data/community/): ${stats.community}`);
   const withThumbs = await countThumbs(catalog.builds, options.thumbsDir);
   console.log(`Vorschaubilder (nur lokal, thumbs/): ${withThumbs} von ${catalog.builds.length}${withThumbs < catalog.builds.length && !options.thumbs ? ' (fehlende erzeugen: node scripts/build-catalog.mjs --thumbs)' : ''}`);
   if (!written) console.log('Katalog inhaltlich unverändert – Datei nicht neu geschrieben.');
   for (const note of notes) console.log(`Hinweis: ${note}`);
+  if (communityNotes.length) {
+    console.log(`Hinweise zu den Community-Dateien (unverändert übernommen, ${communityNotes.length}):`);
+    for (const note of communityNotes) console.log(`  · ${note}`);
+  }
   if (catalog.warnings.length) {
     console.log(`Warnungen (${catalog.warnings.length}):`);
     for (const warning of catalog.warnings) console.log(`  ! ${warning}`);

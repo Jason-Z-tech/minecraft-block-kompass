@@ -130,8 +130,9 @@ function checkSources(meta, errors) {
 function checkCredits(meta, errors) {
   if (meta.credits === null || meta.credits === undefined) return;
   const c = meta.credits;
-  if (typeof c !== 'object' || !isNonEmptyText(c.author) || !isNonEmptyText(c.license) || !checkHttps(c.url)) {
-    errors.push('meta.credits muss null oder { author, url (https), license } sein.');
+  if (typeof c !== 'object' || !isNonEmptyText(c.author) || !isNonEmptyText(c.license) || !checkHttps(c.url)
+    || (c.licenseUrl !== undefined && c.licenseUrl !== null && !checkHttps(c.licenseUrl))) {
+    errors.push('meta.credits muss null oder { author, url (https), license, licenseUrl (https, optional) } sein.');
   }
 }
 

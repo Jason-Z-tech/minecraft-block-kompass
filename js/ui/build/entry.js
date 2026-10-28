@@ -2,7 +2,7 @@
 // Quellen, Credits, Maßstäbe, Varianten …), Maßstab aus der Adresse auflösen, Quelle für den Viewer.
 // Alte Felder (z. B. difficulty, facts) werden nicht übernommen.
 // Ohne DOM-Zugriff beim Laden, daher in Node testbar.
-import { loadJson, loadLocalThumbIds, applyThumbs, normalizeCatalog, findBuild, CATALOG_PATH } from '../data.js';
+import { loadJson, loadLocalThumbIds, applyThumbs, normalizeCatalog, findBuild, cleanCommunity, CATALOG_PATH } from '../data.js';
 import { isSafeUrl, isSafeSitePath } from '../dom.js';
 import { formatNumber, parseBuildParams, CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN } from '../shared.js';
 import { isMyBuildId } from '../../data/my-builds.js';
@@ -61,6 +61,7 @@ function cleanCredits(value) {
     author,
     url: isHttpsUrl(value.url) ? value.url.trim() : null,
     license: cleanText(value.license, 120) || null,
+    licenseUrl: isHttpsUrl(value.licenseUrl) ? value.licenseUrl.trim() : null,
   };
 }
 
@@ -99,6 +100,7 @@ export function normalizeBuildDetails(raw) {
     sources: cleanSources(raw.sources),
     credits: cleanCredits(raw.credits),
     module: typeof raw.module === 'string' && MODULE_PATH_PATTERN.test(raw.module) ? raw.module : null,
+    community: cleanCommunity(raw.community),
     scales,
     defaultScale,
     variants: cleanVariants(raw.variants, scales),
@@ -169,9 +171,11 @@ export function progressKeyFor(id, scale = null) {
   return scale === null || scale === undefined ? `bk:progress:${id}` : `bk:progress:${id}@${scaleToken(scale)}`;
 }
 
-/** Quelle für viewer.load oder null, wenn der Eintrag kein Bau-Modul hat. */
+/** Quelle für viewer.load: Bau-Modul oder Community-Bau (data/community/<datei>); null, wenn der Eintrag keins hat. */
 export function sourceForEntry(entry) {
   if (entry?.module) return { kind: 'module', path: entry.module };
+  const community = cleanCommunity(entry?.community);
+  if (community) return { kind: 'community', file: community.file };
   return null;
 }
 

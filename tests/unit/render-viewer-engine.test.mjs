@@ -22,7 +22,7 @@ test('Quellen: nur erlaubte Modulpfade und Parameter; Original-Strukturen gibt e
     'https://example.com/js/builds/x.js', 'js/builds/x.mjs', 'js/builds/.hidden/x.js', 42, null]) {
     rejects(() => checkModulePath(bad), /Ungültiger Modulpfad/);
   }
-  assert.deepEqual(SOURCE_KINDS, ['module', 'shape', 'gallery', 'synthetic', 'upload']);
+  assert.deepEqual(SOURCE_KINDS, ['module', 'shape', 'gallery', 'synthetic', 'upload', 'community']);
   rejects(() => checkSource({ kind: 'structure', file: 'igloo__top.json' }), /Unbekannte Quelle/);
   for (const name of ['checkStructureFile', 'buildStructure']) assert.equal(name in engineWorker, false, name);
   assert.deepEqual(checkSource({ kind: 'gallery' }), { kind: 'gallery', group: 'all', page: 0 });

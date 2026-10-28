@@ -1,5 +1,5 @@
 // Screenshots der 3D-Ansicht über Chrome (Sichtprüfung, ARCHITEKTUR §10). Nur Node-Bordmittel.
-// node scripts/shot.mjs --module <pfad> | --gallery <gruppe|all> | --synthetic <anzahl>
+// node scripts/shot.mjs --module <pfad> | --community <datei> | --gallery <gruppe|all> | --synthetic <anzahl>
 //   [--views iso,front,top,side] [--progress 25,50,75] [--clip <ebene y>] [--ghost] [--highlight <schritt>]
 //   [--size 1280x800] [--page <n>] [--out tmp/shots] [--gpu hardware|swiftshader] [--bench <sekunden>]
 // Startet den lokalen Server (freier Port) und Chrome (Grafikkarte, Rückfall Software-WebGL), wartet auf das
@@ -10,13 +10,15 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
 import { launchBrowser } from '../tests/browser.mjs';
+import { parseCommunityFile } from '../js/data/community.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VIEWS = ['iso', 'top', 'front', 'side'];
 const GALLERY_PAGE_SIZE = 100;
 const READY = 'window.__viewerTest && (window.__viewerTest.ready || window.__viewerTest.error)';
 
-const USAGE = `Aufruf: node scripts/shot.mjs --module <pfad> | --gallery <gruppe|all> | --synthetic <anzahl>
+const USAGE = `Aufruf: node scripts/shot.mjs --module <pfad> | --community <datei> | --gallery <gruppe|all> | --synthetic <anzahl>
+  --community <datei>          Community-Bau aus data/community/, z. B. qrafty-teehaus.nbt
   --views iso,front,top,side   Ansichten (Standard: iso,front,top)
   --progress 25,50,75          zusätzlich Bilder bei diesen Prozent der Schritte
   --clip <y>                   Schnittansicht bis Ebene y (Block-y, 0 = unterste Ebene)
@@ -67,6 +69,13 @@ export function parseArgs(argv) {
         const value = take(i++);
         if (!/^[a-z0-9\-/]+\.js$/.test(value)) fail(`Ungültiger Modulpfad: ${value}`);
         setSource({ key: 'module', value, name: path.basename(value, '.js') });
+        break;
+      }
+      case '--community': {
+        const value = take(i++);
+        const parsed = parseCommunityFile(value);
+        if (!parsed) fail(`Ungültiger Community-Bau: ${value} (Dateiname wie qrafty-teehaus.nbt)`);
+        setSource({ key: 'community', value, name: parsed.id });
         break;
       }
       case '--gallery': {
@@ -134,7 +143,7 @@ export function parseArgs(argv) {
       default: fail(`Unbekannte Option: ${arg}`);
     }
   }
-  if (!options.source && !options.help) fail('Es fehlt die Quelle (--module, --gallery oder --synthetic).');
+  if (!options.source && !options.help) fail('Es fehlt die Quelle (--module, --community, --gallery oder --synthetic).');
   return options;
 }
 

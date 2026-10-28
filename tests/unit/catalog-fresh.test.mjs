@@ -38,8 +38,31 @@ test('data/catalog.json ist vollständig gültig, ohne Vorschaubilder (online gi
     assert.notEqual(build.category, 'redstone', build.id);
     assert.notEqual(build.category, 'farmen', build.id);
     assert.equal('structure' in build, false, `${build.id}: structure`);
-    assert.ok(typeof build.module === 'string' && build.module.startsWith('js/builds/'), `${build.id}: jeder Bau ist ein Bau-Modul`);
+    // Jeder Bau ist ein Bau-Modul oder ein Community-Bau mit Datei unter data/community/
+    if (build.community) {
+      assert.equal(build.module, null, build.id);
+      assert.ok(existsSync(path.join(ROOT, 'data', 'community', build.community.file)), `${build.id}: Datei fehlt`);
+    } else {
+      assert.ok(typeof build.module === 'string' && build.module.startsWith('js/builds/'), `${build.id}: Bau-Modul`);
+    }
   }
+});
+
+test('data/catalog.json ohne Warnungen, mit jedem Community-Bau aus data/community/builds.json samt Ersteller und Lizenz', () => {
+  assert.deepEqual(catalog.warnings, [], 'Warnungen im Katalog – node scripts/build-catalog.mjs zeigt sie');
+  const listed = JSON.parse(readFileSync(path.join(ROOT, 'data', 'community', 'builds.json'), 'utf8'));
+  const byId = new Map(catalog.builds.map((build) => [build.id, build]));
+  for (const item of listed) {
+    const build = byId.get(item.id);
+    assert.ok(build, `${item.id}: fehlt im Katalog`);
+    assert.deepEqual(build.community, { file: item.file, format: item.format }, item.id);
+    assert.equal(build.accuracy, 'original', item.id);
+    assert.equal(build.credits.author, item.author, item.id);
+    assert.equal(build.credits.url, item.url, item.id);
+    assert.match(build.credits.licenseUrl, /^https:\/\//, item.id);
+    assert.ok(build.credits.license, item.id);
+  }
+  assert.equal(catalog.builds.filter((build) => build.community).length, listed.length, 'keine Community-Bauten ohne Eintrag');
 });
 
 test('data/catalog.json enthält jedes Bau-Modul (ein Modul mit Fehlern fehlt sonst online, obwohl der Fingerabdruck passt)', async () => {

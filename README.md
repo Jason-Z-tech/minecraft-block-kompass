@@ -4,7 +4,7 @@ Webseite mit Minecraft-Bauten (Java Edition 26.2). Jeder Bau hat eine 3D-Schritt
 
 Für den Eigengebrauch. **Online als Webseite, auch auf dem Handy, ohne etwas zu installieren:** https://jason-z-tech.github.io/minecraft-block-kompass/ (GitHub Pages, Branch `main`, iOS ab 16.4, aktuelles Chrome/Android).
 
-Texturen, Modelle und Namen stammen original aus Minecraft 26.2. Mojang-Dateien liegen nie im Repo oder auf der Seite (`game-data/`, `thumbs/` sind gitignored): Der Browser lädt sie beim ersten Besuch selbst aus [misode/mcmeta](https://github.com/misode/mcmeta) auf GitHub (feste Commits, ≈ 2 MB, gut 1 s), wandelt sie um und speichert sie im Browser (IndexedDB); danach geht es ohne Download. Im Repo liegt nur der Katalog der Bauten (`data/catalog.json`: Projekttexte, Größen, Zahlen und Block-IDs). Online zeigen die Karten Kategorie-Icons statt Vorschaubildern.
+Texturen, Modelle und Namen stammen original aus Minecraft 26.2. Mojang-Dateien liegen nie im Repo oder auf der Seite (`game-data/`, `thumbs/` sind gitignored): Der Browser lädt sie beim ersten Besuch selbst aus [misode/mcmeta](https://github.com/misode/mcmeta) auf GitHub (feste Commits, ≈ 2 MB, gut 1 s), wandelt sie um und speichert sie im Browser (IndexedDB); danach geht es ohne Download. Im Repo liegen nur der Katalog der Bauten (`data/catalog.json`: Projekttexte, Größen, Zahlen und Block-IDs) und die Community-Bauten (`data/community/`, siehe unten). Online zeigen die Karten Kategorie-Icons statt Vorschaubildern.
 
 ## Voraussetzungen (nur zum Entwickeln)
 - **Node.js 24** (nur Bordmittel, keine npm-Pakete)
@@ -40,7 +40,7 @@ node scripts/build-catalog.mjs
 Vorschaubilder (`node scripts/build-catalog.mjs --thumbs`) gibt es nur lokal: Die Seite zeigt sie auf 127.0.0.1/localhost (Liste in `thumbs/index.json`), online zeigen die Karten das Kategorie-Icon.
 
 ## Seiten
-- `index.html`: Start, bewusst klein: Titel, Suche (führt zu „Selber erstellen“), die 7 Kategorien als Kacheln mit Anzahl und Links zu „Selber erstellen“ und „Meine Bauten“
+- `index.html`: Start, bewusst klein: Titel, Suche (führt zu „Selber erstellen“), die 6 Kategorien als Kacheln mit Anzahl und Links zu „Selber erstellen“ und „Meine Bauten“
 - `kategorie.html?k=<kategorie>`: Liste mit Filtern (Größe, Herkunft, im Spiel getestet) und Sortierung
 - `bau.html?id=<bau>[&scale=<maßstab>]`: 3D-Ansicht, Schritt-Player, Anleitung (Kapitel mit Titel, Schritte mit Blockzahl und Ebene, ohne Anleitungstexte), Material, Ebenen-Plan, Infos und Quellen; der Fortschritt bleibt im Browser gespeichert
 - `erstellen.html`: Freitext („Tokyo Skytree 1:1“, „hohle Kugel Radius 12 aus Glas“), Formen-Generator und Datei-Import; nach einem Upload „Zu Meine Bauten“
@@ -48,6 +48,17 @@ Vorschaubilder (`node scripts/build-catalog.mjs --thumbs`) gibt es nur lokal: Di
 - `bau.html?meine=<id>`: ein eigener Bau, gebaut wie ein Upload (Schritte Ebene für Ebene, Material, Ebenen-Plan, Abhaken)
 
 Die Kopfzeile aller Seiten: Start · Kategorien · Selber erstellen · Meine Bauten (ohne Suchfeld; gesucht wird auf der Startseite).
+
+## Community-Bauten
+- Fertige Bauten anderer Ersteller, nur mit offener Lizenz (CC0, CC BY, CC BY-SA, CC BY-NC, CC BY-NC-SA, MIT, Apache 2.0, Unlicense). Die Dateien (`.nbt`, `.schem`, `.litematic`) liegen unverändert unter `data/community/`, die Angaben (Titel, Kategorie, Ersteller, Link, Lizenz, Commit bzw. Modrinth-Version, Prüfsumme) in `data/community/builds.json`, je Quelle der Lizenztext unter `data/community/licenses/`.
+- Der Katalog baut jede Datei wie einen Upload (Ebene für Ebene); die Bau-Seite öffnet sie wie die eigenen Bauten unter `bau.html?id=<bau>` und zeigt unter „Infos“ Ersteller, Link und Lizenz. Herkunft: „Original vom Ersteller“.
+- Neue Bauten: Datei nach `data/community/<id>.<endung>`, Eintrag in `builds.json`, dann `node scripts/build-catalog.mjs`. Geprüft werden Felder, Lizenz, Dateigröße (höchstens 20 MB, Ordner höchstens 200 MB) und Prüfsumme; Fehler stehen am Ende der Ausgabe.
+- Sichtprüfung: `node scripts/shot.mjs --community <id>.<endung>`.
+- Stand 2026-10-28: 106 Community-Bauten aus 11 Quellen (4 GitHub-Repos, 7 Modrinth-Projekte), zusammen gut 5 MB; dazu 59 eigene Bau-Module, also 165 Bauten in 6 Kategorien. Keine Spielstrukturen und keine Neugestaltungen davon (z. B. Wüstenpyramide, Iglu, Dorfhaus, Schiffswrack). Enthält eine Datei Blöcke, die es in Minecraft 26.2 nicht gibt (z. B. aus Mods), oder mehr als 3 Mio. Blöcke, fehlt der Bau mit Fehler im Katalog; übrige Hinweise des Imports (Objekte, umbenannte Blöcke) zeigt `build-catalog.mjs` nur in der Konsole, die Dateien bleiben unverändert.
+
+## Lauf-Modus
+- W A S D laufen, Maus oder Pfeiltasten blicken (Klick ins Bild sperrt den Zeiger), Leertaste springen (doppelt: fliegen), Umschalt schleichen bzw. runter, Strg sprinten, Esc beendet. Auf dem Handy Joystick und Knöpfe.
+- Nichts läuft von allein weiter: Esc lässt immer alle Tasten los. Ende der Zeigersperre, Vollbild-Wechsel, Ein- und Ausschalten, Kontextmenü außerhalb der Ansicht und Alt/Cmd/Windows-Taste lassen ebenfalls los; ohne Finger auf dem Bildschirm ist nichts Berührtes mehr gehalten.
 
 ## Meine Bauten
 - Gespeichert wird nur in diesem Browser (IndexedDB `bk-mine`, getrennt vom Spieldaten-Speicher), nichts geht ins Netz. Anderer Browser oder anderes Gerät = eigene Liste.
@@ -64,11 +75,11 @@ Die Kopfzeile aller Seiten: Start · Kategorien · Selber erstellen · Meine Bau
 - `js/ui/`: Seitenlogik (`browse/` Kategorien, `build/` Bau-Seite, `create/` „Selber erstellen“, `mine/` Meine Bauten)
 - `js/data/`: Spieldaten im Browser (Download aus misode/mcmeta, Umwandlung, Speicher), Meine Bauten (`my-builds.js`) und ZIP-Leser (`zip.js`)
 - `js/create/`: Freitext-Suche, Formen-Generatoren, Datei-Import (`import/`) und Modell-Umwandlung (`voxelize/`)
-- `js/builds/<kategorie>/`: die Bau-Module in 7 Kategorien (Häuser, Wahrzeichen, Fantasy, Mittelalter, Kleine Projekte, Farmen, Infrastruktur); `js/builds/lib/`: Hilfsbibliothek (Fenster, Türen, Dächer, Möbel, Licht, Bäume, Gelände)
+- `js/builds/<kategorie>/`: die Bau-Module in 6 Kategorien (Häuser, Wahrzeichen, Fantasy, Mittelalter, Kleine Projekte, Infrastruktur); `js/builds/lib/`: Hilfsbibliothek (Fenster, Türen, Dächer, Möbel, Licht, Bäume, Gelände)
 - `scripts/`: Start, Server, Spieldaten-Extraktion, Katalog, Vorschaubilder, Prüf- und Screenshot-Werkzeuge
 - `tests/`: Unit-Tests (`unit/`), Klick-Test (`e2e.mjs`), Testseiten und Sichtprüfungen (`visual/`), Testdaten (`fixtures/`), Chrome-Steuerung (`browser.mjs`)
 - `docs/ARCHITEKTUR.md`: verbindliche Spezifikation mit allen Schnittstellen; `docs/recherche/`: Maße und Quellen der echten Bauwerke
-- `data/catalog.json`: Katalog der Bauten (erzeugt, aber im Repo); `.nojekyll`: GitHub Pages liefert alles unverändert aus
+- `data/catalog.json`: Katalog der Bauten (erzeugt, aber im Repo); `data/community/`: Community-Bauten mit Angaben und Lizenztexten; `.nojekyll`: GitHub Pages liefert alles unverändert aus
 - Erzeugt und nicht im Repo: `game-data/` (Spieldaten), `thumbs/` (Vorschaubilder), `tmp/` (Screenshots, Testreste)
 
 ## Testen
@@ -80,7 +91,7 @@ node scripts/check-build.mjs <modulpfad> [--scale <zahl>] [--json]   # einen Bau
 node scripts/shot.mjs --module <modulpfad>                           # Screenshots der 3D-Ansicht
 ```
 - `node tests/e2e-remote.mjs [--live]`: Klick-Test wie auf GitHub Pages (eigener statischer Server auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`). Ohne `--live` aus dem Spiegel `tmp/mcmeta-mirror/` (erzeugen mit `node scripts/mirror-mcmeta.mjs`), mit `--live` gegen das echte raw.githubusercontent.com.
-- Der Klick-Test geht Start (ohne Scrollen bei 1280 × 800 und 390 × 844, Kopf ohne Suche) → Kategorie (Filter, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Haus mit Bett und Truhe, eine Farm, alte Adresse `spiel-…`) → „Selber erstellen“ (Freitext, Upload je Dateiformat) → Meine Bauten (ZIP mit Manifest, „Zu Meine Bauten“, Liste, Öffnen, Neuladen, Löschen) → Handy-Ansicht durch, misst Ladezeiten und Bildrate und legt Screenshots nach `tmp/integration/e2e/`. Optionen: `--only start,bau,erstellen,meine,handy`, `--gpu swiftshader`, `--out <ordner>`.
+- Der Klick-Test geht Start (sechs Kategorien, ohne Scrollen bei 1280 × 800 und 390 × 844, Kopf ohne Suche) → Kategorie (Filter samt „Original vom Ersteller“, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Haus mit Bett und Truhe, Community-Bauten mit Ersteller und Lizenz, Lauf-Modus ohne hängende Tasten, alte Adressen `spiel-…`, Redstone und Farmen) → „Selber erstellen“ (Freitext, Upload je Dateiformat) → Meine Bauten (ZIP mit Manifest, „Zu Meine Bauten“, Liste, Öffnen, Neuladen, Löschen) → Handy-Ansicht durch, misst Ladezeiten und Bildrate und legt Screenshots nach `tmp/integration/e2e/`. Optionen: `--only start,bau,erstellen,meine,handy`, `--gpu swiftshader`, `--out <ordner>`. Der Online-Test lädt Community-Bauten wie auf Pages aus `/minecraft-block-kompass/data/community/`.
 - Ausführlichere Sichtprüfungen einzelner Seiten: `node tests/visual/build-page-check.mjs`, `node tests/visual/create-page-check.mjs`.
 
 ## In der Cloud

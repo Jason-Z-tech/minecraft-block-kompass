@@ -684,8 +684,8 @@ export class Viewer {
   }
 
   #onWorkerError(message) {
-    // Fehlende oder nicht ladbare Spieldaten sind erwartbar (z. B. offline): Warnung statt Fehler
-    if (message.code === 'data') console.warn(`3D-Worker (${message.request}): ${message.message}`, message.detail ?? '');
+    // Fehlende oder nicht ladbare Spieldaten bzw. Community-Dateien sind erwartbar (z. B. offline): Warnung statt Fehler
+    if (message.code === 'data' || message.code === 'community') console.warn(`3D-Worker (${message.request}): ${message.message}`, message.detail ?? '');
     else console.error(`3D-Worker (${message.request}): ${message.message}`, message.detail ?? '');
     if (message.request === 'step' || message.request === 'cap') {
       // Nicht endlos neu anfragen: fehlgeschlagene Meshes merken

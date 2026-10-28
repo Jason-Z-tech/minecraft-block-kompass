@@ -24,7 +24,7 @@ import { launchBrowser } from './browser.mjs';
 import { MIRROR_PREFIX, mirrorOverrides, mirrorStatus } from './lib/mcmeta-mirror.mjs';
 import { MCMETA_COMMITS, LANG_FILES } from '../js/data/sources.js';
 import { CATEGORY_SLUGS } from '../js/ui/shared.js';
-import { HOME_READY, MINE_READY, homeFits, checkHeader, mineFlowSteps } from './lib/e2e-common.mjs';
+import { HOME_READY, MINE_READY, homeFits, checkHeader, mineFlowSteps, communityInfoSteps, walkStuckSteps } from './lib/e2e-common.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CATALOG_FILE = path.join(ROOT, 'data', 'catalog.json');
@@ -85,14 +85,19 @@ const byId = new Map(catalog.builds.map((build) => [build.id, build]));
 function pickBuild(preferred, fits) {
   return preferred.find((id) => byId.has(id) && fits(byId.get(id))) ?? catalog.builds.find(fits)?.id ?? null;
 }
-// Alle Bauten sind eigene Bau-Module (Original-Strukturen aus dem Spiel gibt es nicht mehr)
+// Jeder Bau ist ein eigenes Bau-Modul oder ein Community-Bau (Datei unter data/community/, b.community.file);
+// Original-Strukturen aus dem Spiel gibt es nicht mehr
 const isModule = (b) => typeof b.module === 'string' && b.module !== '';
+const isCommunity = (b) => typeof b.community?.file === 'string' && b.community.file !== '' && !isModule(b);
 const MODULE_ID = pickBuild(['fachwerkhaus'], (b) => b.category === 'haeuser' && isModule(b));
 // Zweiter Bau aus einer anderen Kategorie, wenn die Spieldaten schon im Browser liegen (auch Fehlerfall „Netz weg“)
 const SECOND_ID = pickBuild(['dorfbrunnen'], (b) => b.category !== 'haeuser' && isModule(b) && b.blocks < 5000);
 // Häuser mit Bett und Banner bzw. Bett und Truhe: Blöcke mit Texturen aus dem Entity-Atlas
 const ENTITY_ID = pickBuild(['japanisches-wohnhaus'], (b) => b.category === 'haeuser' && isModule(b) && b.id !== MODULE_ID);
 const MOBILE_ID = pickBuild(['starterhaus-eiche'], (b) => b.category === 'haeuser' && isModule(b) && b.id !== ENTITY_ID && b.id !== MODULE_ID);
+// Ein kleiner Community-Bau (.nbt) und einer im Litematica-Format
+const COMMUNITY_ID = pickBuild(['qrafty-teehaus'], (b) => isCommunity(b) && b.community.format === 'nbt' && b.blocks < 5000);
+const COMMUNITY_LITEMATIC_ID = pickBuild(['gidden-belvedere'], (b) => isCommunity(b) && b.community.format === 'litematic' && b.blocks < 5000);
 const ENTITY_ITEM = /(?:^|_)bed$|^(?:trapped_)?chest$|_sign$|_banner$/;
 
 // ---------------------------------------------------------------- Ergebnisse
@@ -168,6 +173,7 @@ function startPagesServer({ files, live }) {
     state.log.push(entry);
     const send = (status, body, headers = {}) => {
       entry.status = status;
+      entry.type = headers['Content-Type'] ?? null;
       res.writeHead(status, { 'Content-Length': body.length, ...headers });
       res.end(req.method === 'HEAD' ? undefined : body);
     };
@@ -371,6 +377,7 @@ async function attachMonitor(profileParent) {
         const entry = byRequest.get(p.requestId);
         if (entry) {
           entry.status = p.response.status;
+          entry.mimeType = p.response.mimeType ?? null;
           if (p.response.fromDiskCache || p.response.fromPrefetchCache) entry.fromCache = true;
         }
         break;
@@ -839,6 +846,15 @@ async function startFlow() {
   await page.goto(`${SERVER.base}kategorie.html`);
   await page.waitFor(`document.querySelectorAll('#category-overview-list .category-tile').length === ${CATEGORY_SLUGS.length}`, 10000)
     .then(() => check('Übersicht aller Kategorien', true), (error) => check('Übersicht aller Kategorien', false, error.message));
+  check('Sechs Kategorien, keine Farmen und kein Redstone', CATEGORY_SLUGS.length === 6 && Object.keys(home.byCategory).length === 6
+    && !['farmen', 'redstone'].some((slug) => slug in home.byCategory || slug in catalog.counts.byCategory)
+    && await page.eval("!document.querySelector('#category-overview-list [data-category=\"farmen\"], #category-overview-list [data-category=\"redstone\"]')"),
+  Object.keys(home.byCategory).join(', '));
+  // Alte Adresse der Kategorie Farmen: „Diese Kategorie gibt es nicht“
+  await page.goto(`${SERVER.base}kategorie.html?k=farmen`);
+  await page.waitFor("document.querySelector('#category-status .state--error')", 10000);
+  check('Alte Adresse kategorie.html?k=farmen zeigt „unbekannt“', await page.eval("document.querySelector('#category-status .state__title')?.textContent.trim() === 'Diese Kategorie gibt es nicht'"),
+    await page.eval("document.querySelector('#category-status').textContent.replace(/\\s+/g, ' ').trim().slice(0, 100)"));
   const mc = countMcmeta(page, from);
   info(`Start und Kategorie: ${mc.cdp} Anfragen an mcmeta (erwartet 0: Start und Kategorie brauchen keine Spieldaten)`);
   check('Start und Kategorie: keine Spieldaten-Downloads', mc.cdp === 0, `${mc.cdp} mcmeta-Anfragen`);
@@ -882,6 +898,40 @@ async function buildPagesFlow() {
       keys ? keys.filter((key) => /atlas:/.test(key)).map((key) => key.split('|').pop()).join(', ') : 'Datenbank fehlt');
   }
   checkConsole(page, `Haus ${ENTITY_ID}`);
+  // Lauf-Modus: W halten, dann Ende der Zeigersperre, Esc, Lauf-Modus aus/an oder Kontextmenü → die Figur steht
+  if (entity) {
+    await walkStuckSteps(page, { check, shot, label: `Laufen ${ENTITY_ID}`, shotName: `bau-${ENTITY_ID}-laufen` });
+    checkConsole(page, `Laufen ${ENTITY_ID}`);
+  }
+
+  // Community-Bauten: Datei unverändert aus data/community/ unter dem Unterpfad (wie Pages: application/octet-stream),
+  // gebaut wie ein Upload; Schritte, Material, Ebenen-Plan, Infos mit Ersteller und Lizenz
+  for (const [id, steps] of [[COMMUNITY_ID, true], [COMMUNITY_LITEMATIC_ID, false]]) {
+    if (!id) continue;
+    const build = byId.get(id);
+    const label = `Community ${id} (.${build.community.format})`;
+    const fileFrom = mark(page);
+    const visited = await buildVisit(page, { id, label, visit: 'weiter', shotName: `bau-${id}`, steps, plan: steps });
+    if (visited) {
+      const filePath = `${SITE_PREFIX}data/community/${build.community.file}`;
+      const { cdp, server } = since(page, fileFrom);
+      const served = server.filter((entry) => entry.path === filePath);
+      const fetched = cdp.filter((entry) => entry.url === `${SERVER.origin}${filePath}`);
+      check(`${label}: Datei von Pages unter ${SITE_PREFIX}data/community/ geladen`, FILES.has(`data/community/${build.community.file}`) && served.length > 0
+        && served.every((entry) => (entry.status === 200 || entry.status === 304) && (entry.status === 304 || entry.type === 'application/octet-stream'))
+        && fetched.some((entry) => entry.status === 200 || entry.status === 304 || entry.fromCache),
+        `${served.map((entry) => `${entry.status} ${entry.type ?? ''}`).join(', ')} · Browser: ${fetched.map((entry) => `${entry.where} ${entry.status}`).join(', ')}`);
+      await communityInfoSteps(page, build, { check, label });
+      await shot(page, `bau-${id}-ersteller`);
+    }
+    checkConsole(page, label);
+  }
+
+  // Alte Adresse einer Farm: „Bau nicht gefunden“
+  await page.goto(`${SERVER.base}bau.html?id=kaktusfarm`);
+  await page.waitFor("document.querySelector('#build-status .state__title')", 30000);
+  check('Alte Adresse bau.html?id=kaktusfarm zeigt „unbekannt“', !byId.has('kaktusfarm')
+    && await page.eval("document.querySelector('#build-status .state__title').textContent === 'Bau nicht gefunden' && document.getElementById('build-layout').hidden"));
 
   // Alte Adresse einer Spiel-Struktur: „Bau nicht gefunden“ wie jede unbekannte ID, ohne Spieldaten-Download
   const oldFrom = mark(page);
@@ -1221,10 +1271,13 @@ try {
 }
 await mkdir(OUT, { recursive: true });
 console.log(`Pages-Nachbau: ${SERVER.base} · ${FILES.size} Dateien · Spieldaten: ${OPTIONS.live ? LIVE_BASE : `Spiegel unter ${MIRROR_PREFIX}`}`);
-console.log(`Bauten: Modul ${MODULE_ID}, zweites Modul ${SECOND_ID}, Entity-Texturen ${ENTITY_ID}, Handy ${MOBILE_ID}`);
-check('Katalog: nur eigene Bau-Module, keine Spiel-Strukturen', catalog.builds.length > 0 && catalog.builds.every((b) => isModule(b) && !('structure' in b) && !b.id.startsWith('spiel-')),
-  `${catalog.builds.length} Bauten`);
-for (const [name, id] of Object.entries({ MODULE_ID, SECOND_ID, ENTITY_ID, MOBILE_ID })) {
+console.log(`Bauten: Modul ${MODULE_ID}, zweites Modul ${SECOND_ID}, Entity-Texturen ${ENTITY_ID}, Handy ${MOBILE_ID}, Community ${COMMUNITY_ID} und ${COMMUNITY_LITEMATIC_ID}`);
+// Jeder Eintrag: Modul oder Community-Bau (b.community.file, Datei unter data/community/ auf Pages), nie beides
+const badSource = catalog.builds.filter((b) => isModule(b) === Boolean(b.community?.file) || (isCommunity(b) && !FILES.has(`data/community/${b.community.file}`)));
+check('Katalog: Modul oder Community-Bau (Datei unter data/community/), keine Spiel-Strukturen, keine Farmen',
+  catalog.builds.length > 0 && badSource.length === 0 && catalog.builds.every((b) => !('structure' in b) && !b.id.startsWith('spiel-') && b.category !== 'farmen'),
+  `${catalog.builds.length} Bauten: ${catalog.builds.filter(isModule).length} Module, ${catalog.builds.filter(isCommunity).length} Community-Bauten${badSource.length ? `, ohne Quelle: ${badSource.slice(0, 3).map((b) => b.id).join(', ')}` : ''}`);
+for (const [name, id] of Object.entries({ MODULE_ID, SECOND_ID, ENTITY_ID, MOBILE_ID, COMMUNITY_ID, COMMUNITY_LITEMATIC_ID })) {
   if (!id) check(`Katalog: Bau für ${name}`, false, 'kein passender Bau gefunden');
 }
 const flows = { start: startFlow, bau: buildPagesFlow, erstellen: createFlow, meine: mineFlow, handy: mobileFlow, fehler: failureFlow };
@@ -1262,7 +1315,7 @@ const failed = results.filter((result) => !result.ok);
 const seconds = (Date.now() - startedAt) / 1000;
 await writeFile(path.join(OUT, 'e2e-remote-report.json'), `${JSON.stringify({
   when: new Date().toISOString(), mode: MODE, base: SERVER.base, gpu: usedGpu, seconds, files: FILES.size,
-  builds: { module: MODULE_ID, second: SECOND_ID, entity: ENTITY_ID, mobile: MOBILE_ID },
+  builds: { module: MODULE_ID, second: SECOND_ID, entity: ENTITY_ID, mobile: MOBILE_ID, community: COMMUNITY_ID, communityLitematic: COMMUNITY_LITEMATIC_ID },
   results, perf, notes,
 }, null, 2)}\n`);
 console.log(`\n${results.length - failed.length} von ${results.length} Prüfungen OK, ${failed.length} FEHLER · ${seconds.toFixed(0)} s · Screenshots und Bericht: ${path.relative(ROOT, OUT)}`);

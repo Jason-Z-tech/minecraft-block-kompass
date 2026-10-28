@@ -545,10 +545,15 @@ const ORBIT_KEYS = {
   ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
   PageUp: 'in', PageDown: 'out', NumpadAdd: 'in', NumpadSubtract: 'out', Equal: 'in', Minus: 'out',
 };
+// Alt, Cmd und Windows-Taste gehören System und Browser: Solange sie gehalten werden, kann das keyup anderer Tasten
+// fehlen (macOS meldet bei gehaltener Cmd-Taste kein keyup, Alt und Windows-Taste öffnen Menüs).
+const SYSTEM_KEYS = new Set(['AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'OSLeft', 'OSRight']);
 
 /**
  * Orbit: Ziehen = drehen, Rechtsziehen/Mittelziehen/Umschalt+Ziehen/zwei Finger = verschieben,
  * Rad/Pinch = zoomen, Pfeiltasten drehen (mit Umschalt verschieben), +/− und Bild↑/↓ zoomen, Pos1 = Startansicht.
+ * Keine Taste bleibt hängen: Esc, Alt/Cmd/Windows-Taste (drücken oder loslassen), Fokus- und Fensterwechsel lassen alle
+ * Tasten los; jedes keyup beendet seine Taste.
  * options: { target, distance, yaw, pitch (Bogenmaß), minDistance, maxDistance, fovY, onChange(orbit), onTap({ x, y, button, pointerType }) }
  */
 export class OrbitControls {
@@ -590,6 +595,8 @@ export class OrbitControls {
       listen(element, 'keyup', (e) => this.#keyUp(e)),
       listen(element, 'blur', () => this.#keys.clear()),
     );
+    const win = element.ownerDocument?.defaultView;
+    if (win && typeof win.addEventListener === 'function') this.#offs.push(listen(win, 'blur', () => this.#keys.clear()));
   }
 
   get enabled() { return this.#enabled; }
@@ -729,7 +736,12 @@ export class OrbitControls {
 
   #keyDown(event) {
     this.#shift = event.shiftKey;
-    if (!this.#enabled || event.altKey || event.metaKey || event.ctrlKey || isTypingTarget(event.target)) return;
+    // Esc und Systemtasten lassen alles los (macOS schickt bei gehaltener Cmd-Taste kein keyup der anderen Tasten)
+    if (event.code === 'Escape' || event.altKey || event.metaKey || SYSTEM_KEYS.has(event.code)) {
+      this.#keys.clear();
+      return;
+    }
+    if (!this.#enabled || event.ctrlKey || isTypingTarget(event.target)) return;
     if (event.code === 'Home') {
       this.setView(this.#home);
       event.preventDefault();
@@ -741,9 +753,11 @@ export class OrbitControls {
     event.preventDefault();
   }
 
+  // Loslassen braucht kein vorheriges Drücken: jedes keyup beendet seine Taste, Systemtasten lassen alles los
   #keyUp(event) {
     this.#shift = event.shiftKey;
-    this.#keys.delete(event.code);
+    if (SYSTEM_KEYS.has(event.code)) this.#keys.clear();
+    else this.#keys.delete(event.code);
   }
 
   #applyKeys(seconds) {
@@ -778,9 +792,6 @@ const WALK_KEYS = {
 const KEY_TURN_DEGREES_PER_SECOND = 120;
 const TOUCH_LOOK_DEGREES_PER_PIXEL = 0.28;
 const JOYSTICK_RADIUS = 48;
-// Alt, Cmd und Windows-Taste gehören System und Browser: Solange sie gehalten werden, kann das keyup anderer Tasten
-// fehlen (macOS meldet bei gehaltener Cmd-Taste kein keyup, Alt und Windows-Taste öffnen Menüs).
-const SYSTEM_KEYS = new Set(['AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'OSLeft', 'OSRight']);
 
 function safeCapture(element, pointerId, capture) {
   try {

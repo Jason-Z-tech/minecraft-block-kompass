@@ -47,7 +47,7 @@ test('Bau-Seite: eigener Bau wird wie ein Upload geladen, unbekannt → null', a
   // Die Bau-Ansicht übernimmt Titel, Kategorie und Credits (Infos-Tab)
   const shown = viewEntry(view.entry);
   assert.equal(shown.category, 'haeuser');
-  assert.deepEqual(shown.credits, { author: 'Erika', url: 'https://example.org/haus', license: 'CC BY 4.0' });
+  assert.deepEqual(shown.credits, { author: 'Erika', url: 'https://example.org/haus', license: 'CC BY 4.0', licenseUrl: null });
   // Modelle bekommen ihre gespeicherten Einstellungen
   const model = await store.add({ fileName: 'cube.stl', data: stl, params: { height: 12, palette: 'wolle', solid: false, upAxis: 'auto' } });
   assert.deepEqual((await loadMineView(model.id, store)).source.params, { height: 12, palette: 'wolle', solid: false, upAxis: 'auto' });

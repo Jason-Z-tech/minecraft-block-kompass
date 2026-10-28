@@ -105,7 +105,7 @@ async function startBuild(params) {
     showPageState({
       kind: 'error',
       title: 'Keine 3D-Daten',
-      text: `Für „${entry.title}“ fehlt im Katalog das Bau-Modul.`,
+      text: `Für „${entry.title}“ fehlen im Katalog die Bau-Daten.`,
       actions: [linkButton('Zu den Kategorien', 'kategorie.html', { iconName: 'grid' })],
     });
     return;

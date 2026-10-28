@@ -19,7 +19,7 @@ const EXAMPLE_HOUSE = path.join(ROOT, 'tests', 'fixtures', 'core', 'example-hous
 const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'infrastruktur'];
 const ACCURACIES = ['original', 'massstab', 'vorlage', 'nachempfunden', 'eigenes'];
 const ENTRY_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources',
-  'credits', 'tested', 'module', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials',
+  'credits', 'tested', 'module', 'community', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials',
   'sizeClass', 'thumb'];
 
 let workDir;
@@ -49,17 +49,32 @@ const houseVariant = (source, id) => source.replace("id: 'example-house'", `id: 
 function assertEntrySchema(entry) {
   assert.deepEqual(Object.keys(entry).sort(), [...ENTRY_KEYS].sort(), `Felder von ${entry.id}`);
   assert.match(entry.id, /^[a-z0-9-]{2,80}$/);
-  for (const key of ['title', 'subtitle', 'description']) assert.ok(typeof entry[key] === 'string' && entry[key].trim(), `${entry.id}.${key}`);
+  for (const key of ['title', 'subtitle']) assert.ok(typeof entry[key] === 'string' && entry[key].trim(), `${entry.id}.${key}`);
+  // Bau-Module haben eine Beschreibung; Community-Bauten (Datei eines anderen Erstellers) keine erfundene
+  if (entry.community) assert.equal(entry.description, '', `${entry.id}.description`);
+  else assert.ok(typeof entry.description === 'string' && entry.description.trim(), `${entry.id}.description`);
   assert.ok(CATEGORIES.includes(entry.category));
   assert.ok(ACCURACIES.includes(entry.accuracy));
   assert.equal('difficulty' in entry, false, `${entry.id}: keine Schwierigkeit`);
   assert.equal('facts' in entry, false, `${entry.id}: kein Wissenswertes`);
   for (const key of ['tags', 'aliases']) assert.ok(Array.isArray(entry[key]) && entry[key].every((v) => typeof v === 'string'));
   assert.ok(Array.isArray(entry.sources) && entry.sources.every((s) => Object.keys(s).sort().join() === 'title,url'));
-  assert.ok(entry.credits === null || Object.keys(entry.credits).sort().join() === 'author,license,url');
+  assert.ok(entry.credits === null || Object.keys(entry.credits).sort().join() === 'author,license,licenseUrl,url');
   assert.ok(entry.tested === null || typeof entry.tested === 'boolean');
   assert.equal('structure' in entry, false, `${entry.id}: Original-Strukturen gibt es nicht mehr`);
-  assert.match(entry.module, /\.js$/, `${entry.id}: jeder Eintrag ist ein Bau-Modul`);
+  // Jeder Eintrag ist entweder ein Bau-Modul oder ein Community-Bau (Datei unter data/community/, Herkunft „original“)
+  if (entry.community) {
+    assert.equal(entry.module, null, `${entry.id}: Community-Bau ohne Modul`);
+    assert.deepEqual(Object.keys(entry.community), ['file', 'format']);
+    assert.match(entry.community.file, /^[a-z0-9-]{2,80}\.(nbt|schem|litematic)$/);
+    assert.equal(entry.community.file, `${entry.id}.${entry.community.format}`);
+    assert.equal(entry.accuracy, 'original');
+    assert.ok(entry.credits && entry.credits.licenseUrl.startsWith('https://'), `${entry.id}: Ersteller, Link und Lizenz`);
+    assert.deepEqual(entry.sources.map((s) => s.url), [entry.credits.url]);
+  } else {
+    assert.match(entry.module, /\.js$/, `${entry.id}: Bau-Modul`);
+    assert.equal(entry.community, null, `${entry.id}: Bau-Modul ohne Community-Datei`);
+  }
   assert.ok(entry.size.length === 3 && entry.size.every((v) => Number.isInteger(v) && v > 0));
   for (const key of ['blocks', 'steps', 'phases']) assert.ok(Number.isInteger(entry[key]) && entry[key] > 0, `${entry.id}.${key}`);
   if (entry.scales) {

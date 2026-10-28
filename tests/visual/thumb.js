@@ -3,6 +3,7 @@
 // Die Kamera-Helfer sind rein und in Node testbar; der DOM-Teil startet nur im Browser.
 
 import { Viewer, ORBIT_FOV, fitOrbitDistance } from '../../js/render/renderer.js';
+import { isCommunityFile } from '../../js/data/community.js';
 
 export const THUMB_WIDTH = 640;
 export const THUMB_HEIGHT = 400;
@@ -134,13 +135,18 @@ export function thumbOrbit(bounds, aspect, { fovY = ORBIT_FOV, margin = 0.07, sc
 export function validateJob(job) {
   if (!job || typeof job !== 'object') throw new Error('Auftrag fehlt.');
   const { source, scale = null } = job;
+  if (scale !== null && !(typeof scale === 'number' && Number.isFinite(scale) && scale > 0)) throw new Error('Ungültiger Maßstab.');
   if (source?.kind === 'module') {
     if (typeof source.path !== 'string' || !/^(js\/builds|tests\/fixtures)\/[a-z0-9/-]+\.js$/.test(source.path)) throw new Error(`Ungültiger Modulpfad „${String(source.path).slice(0, 80)}“.`);
-  } else {
-    throw new Error('Quelle muss { kind: "module", path } sein.');
+    return { source: { kind: 'module', path: source.path }, scale };
   }
-  if (scale !== null && !(typeof scale === 'number' && Number.isFinite(scale) && scale > 0)) throw new Error('Ungültiger Maßstab.');
-  return { source: { kind: 'module', path: source.path }, scale };
+  // Community-Bau (data/community/<datei>): nur ein Dateiname, ohne Maßstab
+  if (source?.kind === 'community') {
+    if (!isCommunityFile(source.file)) throw new Error(`Ungültiger Community-Bau „${String(source.file).slice(0, 80)}“.`);
+    if (scale !== null) throw new Error('Community-Bauten haben keinen Maßstab.');
+    return { source: { kind: 'community', file: source.file }, scale };
+  }
+  throw new Error('Quelle muss { kind: "module", path } oder { kind: "community", file } sein.');
 }
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));

@@ -140,6 +140,67 @@ test('Lauf-Modus im Browser: Sperre endet, Kontextmenü, Touch – nichts läuft
     await touch(page, 'touchEnd');
     assert.ok((await page.eval('window.__moved()')).horizontal < 0.01);
 
+    // Fliegen angetippt, Lauf-Modus aus und wieder an, bevor ein Tick lief: danach wird nicht umgeschaltet
+    await page.eval('window.__walk.teleport([0.5, 0, 0.5], { flying: false })');
+    const [fx, fy] = await center(page, '.walk-touch button[aria-label="Fliegen ein- oder ausschalten"]');
+    await touch(page, 'touchStart', [{ x: fx, y: fy, id: 7 }]);
+    await touch(page, 'touchEnd');
+    await page.eval('(() => { window.__walk.enabled = false; window.__walk.enabled = true; for (let i = 0; i < 5; i++) window.__walk.update(50); })()');
+    assert.equal(await page.eval('window.__walk.player.flying'), false, 'der Tipp vor dem Ausschalten zählt nicht');
+
+    // Zwei Finger: Springen (A) und Joystick (B); jeder Finger beendet nur seine eigene Aktion
+    await page.eval(`(() => {
+      window.__ids = {};
+      document.querySelector('.walk-touch button[aria-label="Springen"]').addEventListener('pointerdown', (e) => { window.__ids.jump = e.pointerId; });
+      document.querySelector('.walk-touch__stick').addEventListener('pointerdown', (e) => { window.__ids.stick = e.pointerId; });
+      document.querySelector('canvas').addEventListener('pointerdown', (e) => { window.__ids.look = e.pointerId; });
+      // Höhenunterschied in 1,5 s, nachdem eine laufende Bewegung 1 s ausklingen konnte (springt die Figur noch?)
+      window.__bounce = () => {
+        const w = window.__walk;
+        for (let i = 0; i < 20; i++) w.update(50);
+        let lo = Infinity, hi = -Infinity;
+        for (let i = 0; i < 30; i++) { w.update(50); lo = Math.min(lo, w.player.y); hi = Math.max(hi, w.player.y); }
+        return hi - lo;
+      };
+    })()`);
+    const [ax, ay] = await center(page, '.walk-touch button[aria-label="Springen"]');
+    const both = async () => {
+      await touch(page, 'touchStart', [{ x: ax, y: ay, id: 8 }]);
+      await touch(page, 'touchStart', [{ x: ax, y: ay, id: 8 }, { x: sx, y: sy, id: 9 }]);
+      await touch(page, 'touchMove', [{ x: ax, y: ay, id: 8 }, { x: sx, y: sy - 45, id: 9 }]);
+      assert.ok((await page.eval('window.__bounce()')) > 0.5, 'springt');
+      assert.ok((await page.eval('window.__moved()')).horizontal > 2, 'läuft');
+    };
+    await both();
+    // Chrome (CDP): touchEnd mit Punkten hebt nur diese Finger ab
+    await touch(page, 'touchEnd', [{ x: sx, y: sy - 45, id: 9 }]);
+    assert.equal(await page.eval('document.querySelector(".walk-touch__knob").style.transform'), '', 'Joystick frei');
+    // Erst ausklingen lassen: Beim Springen trägt der Schwung in der Luft noch ein Stück weit
+    assert.ok((await page.eval('window.__bounce()')) > 0.5, 'Springen-Finger liegt noch: springt weiter');
+    assert.ok((await page.eval('window.__moved()')).horizontal < 0.01, 'Joystick-Finger gehoben: steht');
+    await touch(page, 'touchEnd');
+    assert.ok((await page.eval('window.__bounce()')) < 0.01, 'alle Finger gehoben: springt nicht mehr');
+
+    // pointerup außerhalb (das Fangen ging verloren, der Knopf sieht das Ende nicht): nur dieser Finger endet
+    await both();
+    const outsideUp = (key) => page.eval(`document.body.dispatchEvent(new PointerEvent('pointerup', { pointerId: window.__ids.${key}, pointerType: 'touch', bubbles: true }))`);
+    await outsideUp('jump');
+    assert.ok((await page.eval('window.__bounce()')) < 0.01, 'Springen endet');
+    assert.ok((await page.eval('window.__moved()')).horizontal > 2, 'Joystick läuft weiter');
+    await outsideUp('stick');
+    assert.ok((await page.eval('window.__moved()')).horizontal < 0.01, 'Joystick endet');
+    assert.equal(await page.eval('document.querySelector(".walk-touch__knob").style.transform'), '', 'Knopf mittig');
+    await touch(page, 'touchEnd');
+
+    // Blick-Ziehen auf der Ansicht: verliert die Ansicht das Fangen, endet das Ziehen
+    await touch(page, 'touchStart', [{ x: 250, y: 100, id: 10 }]);
+    await touch(page, 'touchMove', [{ x: 262, y: 100, id: 10 }]);
+    const lookYaw = await page.eval('window.__walk.player.yaw');
+    await page.eval('document.querySelector("canvas").releasePointerCapture(window.__ids.look)');
+    await touch(page, 'touchMove', [{ x: 300, y: 100, id: 10 }]);
+    assert.equal(await page.eval('window.__walk.player.yaw'), lookYaw, 'kein Drehen nach verlorenem Fangen');
+    await touch(page, 'touchEnd');
+
     await page.eval('window.__walk.dispose()');
     assert.deepEqual(page.errors.filter((e) => !/404 \(Not Found\) http:\/\/127\.0\.0\.1:\d+\/favicon\.ico$/.test(e)), [], 'Konsolenfehler');
   } finally {

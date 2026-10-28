@@ -26,6 +26,10 @@ const MIME_TYPES = {
   '.txt': 'text/plain; charset=utf-8',
   '.md': 'text/plain; charset=utf-8',
   '.bin': 'application/octet-stream',
+  // Community-Bauten (data/community/, §9.2): Baupläne aus Minecraft
+  '.nbt': 'application/octet-stream',
+  '.schem': 'application/octet-stream',
+  '.litematic': 'application/octet-stream',
 };
 
 // Gleiche Regeln wie das <meta>-CSP in den Seiten.

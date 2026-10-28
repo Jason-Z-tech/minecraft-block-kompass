@@ -136,9 +136,9 @@ describe('mehrdeutig → mehrere Treffer statt raten', () => {
     assert.ok(got.includes('golden-gate-bridge') && got.includes('steinbruecke'), got.join(', '));
   });
 
-  test('„Tokyo Tower“: Bau statt Turm-Form, keine Alternative', () => {
+  test('„Tokyo Tower“: Bau statt Turm-Form, keine Alternative; der genaue Treffer steht vorn', () => {
     const r = parse('Tokyo Tower');
-    assert.equal(r.matches.length, 1);
+    assert.deepEqual(r.matches.map((m) => [m.entry.id, m.exact]), [['tokyo-tower', true], ['tokyo-skytree', false]]);
     assert.equal(r.alternative, null);
   });
 });

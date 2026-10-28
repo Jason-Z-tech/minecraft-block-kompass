@@ -232,6 +232,41 @@ test('Strg und Umschalt folgen dem gemeldeten Zustand: verlorenes keyup heilt be
   t.key('keyup', 'ShiftLeft');
 });
 
+test('Strg gehalten, dann Esc, Fensterwechsel oder Ausschalten: keine Schließen-Rückfrage bleibt zurück', () => {
+  for (const [label, release] of [
+    ['Esc', (t) => t.key('keydown', 'Escape', { ctrlKey: true })],
+    ['Fensterwechsel', (t) => t.win.dispatchEvent(new FakeEvent('blur'))],
+    ['Ausschalten', (t) => { t.walk.enabled = false; }],
+    ['Cmd', (t) => t.key('keydown', 'MetaLeft', { ctrlKey: true, metaKey: true })],
+  ]) {
+    const t = setup();
+    const guarded = () => {
+      const event = new FakeEvent('beforeunload');
+      t.win.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    t.key('keydown', 'ControlLeft', { ctrlKey: true });
+    assert.equal(guarded(), true, `${label}: Rückfrage solange Strg gehalten`);
+    release(t);
+    // Das keyup von Strg kommt nie an (z. B. losgelassen, während das Fenster im Hintergrund war)
+    assert.equal(guarded(), false, `${label}: Rückfrage aufgehoben`);
+    t.walk.enabled = true;
+    assert.equal(guarded(), false, `${label}: auch nach dem Wiedereintritt`);
+  }
+});
+
+test('keyup von Alt, Cmd oder Windows-Taste ohne vorheriges keydown lässt alles los', () => {
+  for (const code of ['AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'OSLeft', 'OSRight']) {
+    const t = setup();
+    t.key('keydown', 'KeyW');
+    t.key('keydown', 'KeyD');
+    assert.ok(moved(t.walk) > WALKING, `${code}: läuft`);
+    // Das keydown sah die Seite nicht (z. B. gedrückt, während der Fokus woanders lag)
+    t.key('keyup', code);
+    assert.ok(moved(t.walk) < STANDING, `${code}: steht`);
+  }
+});
+
 test('Jedes keyup beendet seine Taste, auch wenn der Fokus inzwischen woanders liegt', () => {
   const t = setup();
   t.key('keydown', 'KeyW');

@@ -1,8 +1,9 @@
 // Klick-Test der ganzen Seite im echten Chrome gegen den echten Katalog (data/catalog.json):
 //   node tests/e2e.mjs [--gpu hardware|swiftshader] [--out tmp/integration/e2e] [--only start,bau,erstellen,meine,handy]
-// Start (ohne Scrollen bis zur letzten Kachel, Kopf ohne Suche, Navigation mit „Meine Bauten“) → Kategorie (Filter,
-// Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Haus mit Bett und Truhe, eine Farm:
-// Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Maßstab; alte Adresse spiel-… → unbekannt)
+// Start (sechs Kategorien, ohne Scrollen bis zur letzten Kachel, Kopf ohne Suche, Navigation mit „Meine Bauten“) →
+// Kategorie (Filter samt „Original vom Ersteller“, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle,
+// ein Haus mit Bett und Truhe, ein Community-Bau mit Ersteller und Lizenz: Schritte, Abspielen, Tabs, Abhaken + Neuladen,
+// Ebenen-Plan, Schnitt, Laufen, Maßstab; Lauf-Modus ohne hängende Tasten; alte Adressen spiel-…, Redstone, Farmen → unbekannt)
 // → „Selber erstellen“ (Freitext, Upload je Fixture-Format) → „Meine Bauten“ (Upload → speichern → Liste → öffnen →
 // neu laden → löschen, ZIP mit manifest.json) → Handy 390 × 844. Screenshots nach --out, Leistungswerte (Ladezeit,
 // Bildrate beim Drehen) am Ende. Konsolenfehler zählen als Fehler. Exit-Code 1, wenn eine Prüfung fehlschlägt,
@@ -14,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { startServer } from '../scripts/serve.mjs';
 import { CATEGORY_SLUGS } from '../js/ui/shared.js';
 import { launchBrowser } from './browser.mjs';
-import { HOME_READY, MINE_READY, homeFits, checkHeader, mineFlowSteps } from './lib/e2e-common.mjs';
+import { HOME_READY, MINE_READY, homeFits, checkHeader, mineFlowSteps, communityInfoSteps, walkStuckSteps } from './lib/e2e-common.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CATALOG_FILE = path.join(ROOT, 'data', 'catalog.json');
@@ -233,8 +234,11 @@ async function startFlow(server) {
     check('Start: Gesamtzahl der Bauten (Summe der Kacheln)', home.total === catalog.counts.total && catalog.builds.length === catalog.counts.total, `${home.total} Bauten, Katalog ${catalog.counts.total}`);
     const wrongTiles = Object.entries(catalog.counts.byCategory).filter(([slug, n]) => home.byCategory[slug] !== String(n));
     check('Start: Anzahl je Kategorie-Kachel', wrongTiles.length === 0, wrongTiles.map(([slug, n]) => `${slug} ${home.byCategory[slug]} statt ${n}`).join(', ') || `${CATEGORY_SLUGS.length} Kacheln`);
-    check('Start: sieben Kategorien, keine Kategorie Redstone', Object.keys(home.byCategory).join(',') === CATEGORY_SLUGS.join(',') && !('redstone' in catalog.counts.byCategory)
-      && catalog.builds.every((build) => build.category !== 'redstone'), Object.keys(home.byCategory).join(', '));
+    check('Start: sechs Kategorien, ohne Redstone und Farmen', CATEGORY_SLUGS.length === 6 && Object.keys(home.byCategory).join(',') === CATEGORY_SLUGS.join(',')
+      && !('redstone' in catalog.counts.byCategory) && !('farmen' in catalog.counts.byCategory)
+      && catalog.builds.every((build) => build.category !== 'redstone' && build.category !== 'farmen')
+      && await page.eval("document.querySelectorAll('#home-categories .category-tile').length === 6 && !document.querySelector('#home-categories [data-category=\"farmen\"], #home-categories [data-category=\"redstone\"]')"),
+      Object.keys(home.byCategory).join(', '));
     check('Start 1280 × 800: bis zur letzten Kachel und den Links ohne Scrollen', home.ok, `Kacheln bis ${home.tiles} px, Links bis ${home.links} px, Fenster ${home.height} px`);
     const simple = await page.eval(`({
       cards: document.querySelectorAll('main .build-card, main img.build-card__img, .shelf, .how, .hero-stats, .eyebrow, #home-sections, #home-total').length,
@@ -274,8 +278,11 @@ async function startFlow(server) {
     check('Kategorie: weder Filter noch Sortierung nach Schwierigkeit', !sorts.some((key) => key.startsWith('schwierigkeit')) && !filterNames.includes('schwierigkeit'), `${sorts.join(', ')} · ${filterNames.join(', ')}`);
     await fullShot(page, 'desktop-02-kategorie', { lazy: false });
 
-    // Filter Herkunft „Nachempfunden“ (Häuser haben keine Bauten „Original aus dem Spiel“ mehr: diese Option fehlt)
-    check('Filter: keine Option „Original aus dem Spiel“ ohne passende Bauten', await page.eval("!document.querySelector('#category-filters input[name=\"herkunft\"][value=\"original\"]')"));
+    // Herkunft „original“ heißt jetzt „Original vom Ersteller“ (Community-Bauten); unter Häuser gibt es solche Bauten
+    const originals = houses.filter((build) => build.accuracy === 'original');
+    const originalLabel = await page.eval("document.querySelector('#category-filters label.filter-option:has(input[name=\"herkunft\"][value=\"original\"])')?.textContent.replace(/\\s+/g, ' ').trim() ?? null");
+    check('Filter: Option „Original vom Ersteller“ für die Community-Bauten', originals.length > 0 && originals.every((build) => build.community) && /Original vom Ersteller/.test(originalLabel ?? '')
+      && !/Original aus dem Spiel/.test(await page.eval("document.getElementById('category-filters').textContent")), `${originals.length} Community-Häuser · „${originalLabel}“`);
     const filterVisible = await page.eval("(() => { const box = document.querySelector('#category-filters input[name=\"herkunft\"][value=\"nachempfunden\"]'); const label = box && box.closest('label'); return Boolean(label && label.getBoundingClientRect().width > 0); })()");
     if (!filterVisible) await page.click('#category-filter-toggle');
     await page.click('#category-filters label.filter-option:has(input[name="herkunft"][value="nachempfunden"])');
@@ -302,6 +309,23 @@ async function startFlow(server) {
     const backCount = await page.eval("document.getElementById('category-result-count').textContent");
     check('Zurück: Filter zurückgenommen', backCount.replace(/\D/g, '').startsWith(String(houses.length)) && !(await page.eval("document.querySelector('#category-filters input[value=\"nachempfunden\"]').checked")), backCount.trim());
 
+    // Filter „Original vom Ersteller“: nur die Community-Bauten, jede Karte mit diesem Herkunft-Chip
+    if (!(await page.eval("(() => { const box = document.querySelector('#category-filters input[name=\"herkunft\"][value=\"original\"]'); const label = box && box.closest('label'); return Boolean(label && label.getBoundingClientRect().width > 0); })()"))) await page.click('#category-filter-toggle');
+    // Echter Klick auf die Option; landet er noch im Nachlauf des Zurück (Liste wird neu gezeichnet), ein zweiter Versuch
+    let originalClicks = 0;
+    for (; originalClicks < 3; originalClicks++) {
+      await sleep(300);
+      await page.click('#category-filters label.filter-option:has(input[name="herkunft"][value="original"])');
+      if (await page.waitFor("location.search.includes('herkunft=original')", 4000).then(() => true, () => false)) break;
+    }
+    const originalCount = await page.eval("document.getElementById('category-result-count').textContent");
+    const originalCards = await page.eval("[...document.querySelectorAll('#category-list .build-card')].map((card) => ({ id: card.querySelector('.build-card__link')?.getAttribute('href') ?? '', original: /Original vom Ersteller/.test(card.textContent) }))");
+    check('Filter „Original vom Ersteller“: nur Community-Bauten', originalCount.replace(/\D/g, '').startsWith(String(originals.length)) && originalCards.length > 0
+      && originalCards.every((card) => card.original && originals.some((build) => card.id.endsWith(`id=${build.id}`))), `${originalCount.trim()} · ${originalCards.length} Karten sichtbar · ${originalClicks + 1}. Klick`);
+    await fullShot(page, 'desktop-03b-kategorie-original', { lazy: false });
+    await page.eval('history.back()');
+    await page.waitFor("!location.search.includes('herkunft=')", 5000);
+
     // Karte öffnet die Bau-Seite
     const href = await page.eval("document.querySelector('#category-list .build-card__link').getAttribute('href')");
     await page.click('#category-list .build-card__link');
@@ -321,6 +345,11 @@ async function startFlow(server) {
     await page.goto(`${server.url}/kategorie.html?k=redstone`);
     await page.waitFor("document.querySelector('#category-status .state--error')", 10000);
     check('Kategorie Redstone gibt es nicht mehr: Hinweis „unbekannt“', await page.eval("/gibt es nicht/.test(document.querySelector('#category-status').textContent)"));
+    // Alte Adresse der Kategorie Farmen: ebenso „Diese Kategorie gibt es nicht“
+    await page.goto(`${server.url}/kategorie.html?k=farmen`);
+    await page.waitFor("document.querySelector('#category-status .state--error')", 10000);
+    check('Kategorie Farmen gibt es nicht mehr: „Diese Kategorie gibt es nicht“', await page.eval("document.querySelector('#category-status .state__title')?.textContent.trim() === 'Diese Kategorie gibt es nicht' && document.querySelectorAll('#category-list .build-card').length === 0"),
+      await page.eval("document.querySelector('#category-status').textContent.replace(/\\s+/g, ' ').trim().slice(0, 100)"));
     // Alte Adresse mit Schwierigkeit: still auf den Standard zurück
     await page.goto(`${server.url}/kategorie.html?k=haeuser&schwierigkeit=2&sort=schwierigkeit-auf`);
     await page.waitFor("document.querySelectorAll('#category-list .build-card').length > 0", 20000);
@@ -337,9 +366,14 @@ async function startFlow(server) {
 // Ein kleines Haus mit Bett und Truhe (Blöcke mit Entity-Texturen), sonst das kleinste Haus
 const HAUS_ID = byId.get('starterhaus-eiche')?.module ? 'starterhaus-eiche'
   : [...catalog.builds].filter((build) => build.category === 'haeuser' && build.module).sort((a, b) => a.blocks - b.blocks)[0]?.id;
-// Eine Farm mit eigenem Modul (nicht im Spiel getestet, tested: false)
-const FARM_ID = byId.get('kaktusfarm')?.tested === false ? 'kaktusfarm'
-  : catalog.builds.find((build) => build.category === 'farmen' && build.module && build.tested === false)?.id;
+// Ein Bau mit tested: false (seit Farmen weg sind nur noch bahnhof-loren); der Chip „Nicht im Spiel getestet“ erscheint dort
+const UNTESTED_ID = byId.get('bahnhof-loren')?.tested === false ? 'bahnhof-loren' : catalog.builds.find((build) => build.tested === false)?.id ?? null;
+// Community-Bauten (data/community/): ein kleiner .nbt-Bau für den ganzen Ablauf, ein .litematic-Bau zum Laden
+const isCommunity = (build) => Boolean(build?.community?.file) && !build.module;
+const COMMUNITY_ID = isCommunity(byId.get('qrafty-teehaus')) ? 'qrafty-teehaus'
+  : [...catalog.builds].filter((build) => isCommunity(build) && build.community.format === 'nbt').sort((a, b) => a.blocks - b.blocks)[0]?.id;
+const COMMUNITY_LITEMATIC_ID = isCommunity(byId.get('gidden-belvedere')) ? 'gidden-belvedere'
+  : [...catalog.builds].filter((build) => isCommunity(build) && build.community.format === 'litematic').sort((a, b) => a.blocks - b.blocks)[0]?.id;
 
 // Anleitung und Player nach dem Aufräumen: Kapitel mit Nummer und Titel, Schritte nur mit Nummer, Blockzahl und Ebene –
 // keine Schritt-Namen, Schritt-Texte, Tipps, Notizen oder Schwierigkeit.
@@ -513,15 +547,44 @@ async function buildPagesFlow(server) {
     await buildFlow(page, server, { id: 'tokyo-skytree', scale: 1, label: 'Tokyo Skytree 1:1', measureFps: true, scaleSwitch: 0.5 });
     await buildFlow(page, server, { id: 'infinity-castle', label: 'Infinity Castle', measureFps: true });
     await buildFlow(page, server, { id: HAUS_ID, label: `Haus ${HAUS_ID}` });
-    await buildFlow(page, server, { id: FARM_ID, label: `Farm ${FARM_ID}` });
-    await page.goto(`${server.url}/bau.html?id=${FARM_ID}`);
-    await page.waitFor(BUILD_READY, 60000);
-    check('Farm: Chip „Nicht im Spiel getestet“', byId.get(FARM_ID)?.tested === false
-      && await page.eval("/Nicht im Spiel getestet/.test(document.getElementById('build-chips').textContent)"));
+    await walkStuckSteps(page, { check, shot, label: `Laufen ${HAUS_ID}` });
+    checkConsole(page, `Laufen ${HAUS_ID}`);
+
+    // Community-Bau komplett (Datei aus data/community/, gebaut wie ein Upload) samt Ersteller und Lizenz
+    if (COMMUNITY_ID) {
+      await buildFlow(page, server, { id: COMMUNITY_ID, label: `Community ${COMMUNITY_ID}` });
+      await communityInfoSteps(page, byId.get(COMMUNITY_ID), { check, label: `Community ${COMMUNITY_ID}` });
+      await shot(page, `bau-${COMMUNITY_ID}-10-ersteller`);
+      checkConsole(page, `Community ${COMMUNITY_ID} (Infos)`);
+    } else check('Katalog: Community-Bau (.nbt)', false, 'keiner gefunden');
+    if (COMMUNITY_LITEMATIC_ID) {
+      const lite = byId.get(COMMUNITY_LITEMATIC_ID);
+      await page.goto(`${server.url}/bau.html?id=${COMMUNITY_LITEMATIC_ID}`);
+      await page.waitFor(BUILD_READY, 120000, 200);
+      await waitIdle(page);
+      check(`Community ${COMMUNITY_LITEMATIC_ID} (.litematic): geladen`, await page.eval(`window.__buildView.result.blockCount === ${lite.blocks} && window.__buildView.result.steps.length === ${lite.steps}`),
+        `${lite.blocks} Blöcke, ${lite.steps} Schritte erwartet`);
+      await communityInfoSteps(page, lite, { check, label: `Community ${COMMUNITY_LITEMATIC_ID}` });
+      await shot(page, `bau-${COMMUNITY_LITEMATIC_ID}-ersteller`);
+      checkConsole(page, `Community ${COMMUNITY_LITEMATIC_ID}`);
+    } else check('Katalog: Community-Bau (.litematic)', false, 'keiner gefunden');
+
+    // Der einzige Bau mit tested: false zeigt den Chip „Nicht im Spiel getestet“
+    if (UNTESTED_ID) {
+      await page.goto(`${server.url}/bau.html?id=${UNTESTED_ID}`);
+      await page.waitFor(BUILD_READY, 60000);
+      check(`Ungetestet ${UNTESTED_ID}: Chip „Nicht im Spiel getestet“`, await page.eval("/Nicht im Spiel getestet/.test(document.getElementById('build-chips').textContent)"));
+      checkConsole(page, `Ungetestet ${UNTESTED_ID}`);
+    }
     // Ein alter Link auf einen Redstone-Bau zeigt den Hinweis „nicht gefunden“
     await page.goto(`${server.url}/bau.html?id=lauflicht`);
     await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
     check('Alter Redstone-Bau (lauflicht): Fehlerzustand', !byId.has('lauflicht'));
+    // Alte Farm (kaktusfarm): „Bau nicht gefunden“
+    await page.goto(`${server.url}/bau.html?id=kaktusfarm`);
+    await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
+    check('Alte Farm bau.html?id=kaktusfarm: „Bau nicht gefunden“', !byId.has('kaktusfarm')
+      && await page.eval("document.querySelector('#build-status .state__title').textContent === 'Bau nicht gefunden' && document.getElementById('build-layout').hidden"));
     await page.goto(`${server.url}/bau.html?id=gibt-es-nicht`);
     await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
     check('Unbekannte Bau-ID: Fehlerzustand', true);
@@ -666,7 +729,7 @@ async function mobileFlow(server) {
     await shot(page, 'handy-01-start');
     await fullShot(page, 'handy-01-start-ganz');
 
-    await page.goto(`${server.url}/kategorie.html?k=farmen`);
+    await page.goto(`${server.url}/kategorie.html?k=infrastruktur`);
     await page.waitFor("document.querySelectorAll('#category-list .build-card').length > 0", 20000);
     check('Handy Kategorie: kein waagrechtes Scrollen', await noHorizontalScroll(page));
     await fullShot(page, 'handy-02-kategorie', { lazy: false });
@@ -674,12 +737,14 @@ async function mobileFlow(server) {
     await sleep(300);
     check('Handy: Filter klappen auf', await page.eval("document.getElementById('category-filter-toggle').getAttribute('aria-expanded') === 'true'"));
     await shot(page, 'handy-03-filter');
-    // Farmen sind alle „nicht im Spiel getestet“ – die Gruppe „Test“ erscheint dort nicht (nur bei ≥ 2 Werten); Herkunft schon
-    await page.click('#category-filters label.filter-option:has(input[name="herkunft"][value="vorlage"])');
-    await page.waitFor("location.search.includes('herkunft=vorlage')", 5000);
+    // Infrastruktur hat eigene Bauten und Community-Bauten: Filter „Original vom Ersteller“
+    await page.click('#category-filters label.filter-option:has(input[name="herkunft"][value="original"])');
+    await page.waitFor("location.search.includes('herkunft=original')", 5000);
     await page.click('#category-filters-done');
     await sleep(300);
-    check('Handy: Filter wirkt, „Bauten anzeigen“ klappt zu', await page.eval("document.getElementById('category-filter-toggle').getAttribute('aria-expanded') === 'false'"));
+    const infraOriginals = catalog.builds.filter((build) => build.category === 'infrastruktur' && build.accuracy === 'original').length;
+    check('Handy: Filter wirkt, „Bauten anzeigen“ klappt zu', await page.eval("document.getElementById('category-filter-toggle').getAttribute('aria-expanded') === 'false'")
+      && (await page.eval("document.getElementById('category-result-count').textContent")).replace(/\D/g, '').startsWith(String(infraOriginals)), `${infraOriginals} Community-Bauten erwartet`);
 
     await page.goto(`${server.url}/bau.html?id=${HAUS_ID}`);
     await page.waitFor(BUILD_READY, 60000);
@@ -702,6 +767,21 @@ async function mobileFlow(server) {
     await page.waitFor("window.__buildView.viewer.mode === 'walk'", 5000);
     await sleep(300);
     check('Handy Laufmodus: Touch-Steuerung sichtbar', await page.eval("(() => { const t = document.querySelector('.walk-touch'); return Boolean(t && t.getBoundingClientRect().width > 0); })()"));
+    // Block-Tooltip (Fadenkreuz) und Lauf-Hinweis liegen beide oben: der Tooltip rückt unter den Hinweis
+    const tipAndHelp = await page.eval(`new Promise((resolve) => {
+      const started = performance.now();
+      const tick = () => {
+        const tip = document.querySelector('.bv-tooltip');
+        const help = document.querySelector('.bv-walkhelp');
+        if (tip && help && !help.hidden) {
+          const a = tip.getBoundingClientRect(), b = help.getBoundingClientRect();
+          resolve({ overlap: a.top < b.bottom && b.top < a.bottom && a.left < b.right && b.left < a.right, tip: Math.round(a.top), help: Math.round(b.bottom) });
+        } else if (performance.now() - started > 6000) resolve({ missing: tip ? 'Hinweis' : 'Tooltip' });
+        else requestAnimationFrame(tick);
+      };
+      tick();
+    })`);
+    check('Handy Laufmodus: Block-Tooltip verdeckt den Lauf-Hinweis nicht', tipAndHelp.overlap === false, JSON.stringify(tipAndHelp));
     await shot(page, 'handy-07-laufen');
     await page.click('.bv-walk-toggle');
     checkConsole(page, 'Handy Start/Kategorie/Bau');
