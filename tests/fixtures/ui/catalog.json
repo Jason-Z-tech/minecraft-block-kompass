@@ -7,7 +7,7 @@
       "haeuser": 1,
       "wahrzeichen": 1,
       "mittelalter": 0,
-      "farmen": 1
+      "infrastruktur": 1
     }
   },
   "warnings": [],
@@ -209,7 +209,7 @@
     {
       "id": "beispiel-ungetestet",
       "title": "Beispiel ungetestet",
-      "category": "farmen",
+      "category": "infrastruktur",
       "subtitle": "Testeintrag mit tested: false und Credits",
       "tags": [
         "Holz",

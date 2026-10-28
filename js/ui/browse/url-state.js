@@ -62,7 +62,7 @@ export function browseSearch(slug, { query = '', filters = emptyFilters(), sort 
   return text ? `?${text}` : '';
 }
 
-/** Seitenpfad der Kategorie-Seite mit Zustand, z. B. „kategorie.html?k=farmen&sort=bloecke-ab“ */
+/** Seitenpfad der Kategorie-Seite mit Zustand, z. B. „kategorie.html?k=klein&sort=bloecke-ab“ */
 export function browseHref(slug, state = {}) {
   return `kategorie.html${browseSearch(slug, state)}`;
 }

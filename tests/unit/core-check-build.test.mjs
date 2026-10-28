@@ -77,19 +77,24 @@ test('meta-Prüfung nach §9', () => {
   assert.match(check({ credits: { author: 'X', url: 'ftp://a', license: 'CC' } }).errors[0], /credits/);
   assert.match(check({ tested: 'ja' }).errors[0], /tested/);
   assert.match(check({ farbe: 'rot' }).warnings[0], /unbekannt/);
-  assert.match(check({ category: 'farmen' }).warnings[0], /^Farmen: meta.tested sollte false sein/);
-  assert.deepEqual(check({ category: 'farmen', tested: false }), { errors: [], warnings: [] });
-  assert.deepEqual(check({ category: 'haeuser' }).warnings, [], 'tested-Warnung nur bei farmen');
+  // meta.tested bleibt optional (null, true oder false) – ohne Warnung, auch nicht für eine bestimmte Kategorie
+  for (const tested of [null, true, false, undefined]) {
+    for (const category of CATEGORIES) assert.deepEqual(check({ category, tested }, category), { errors: [], warnings: [] }, `${category}/${tested}`);
+  }
   assert.match(validateMeta(undefined, { fileId: 'x' }).errors[0], /kein meta-Objekt/);
 });
 
-test('Kategorien: sieben, ohne redstone', () => {
-  assert.deepEqual(CATEGORIES, ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur']);
+test('Kategorien: sechs, ohne redstone und farmen', () => {
+  assert.deepEqual(CATEGORIES, ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'infrastruktur']);
   const check = (patch) => validateMeta({ ...goodMeta(), ...patch }, { fileId: 'turm' });
-  const redstone = check({ category: 'redstone' });
-  assert.deepEqual(redstone.errors, ['meta.category muss eine von haeuser, wahrzeichen, fantasy, mittelalter, klein, farmen, infrastruktur sein.']);
-  assert.deepEqual(redstone.warnings, []);
-  assert.match(validateMeta({ ...goodMeta(), category: 'redstone' }, { fileId: 'turm', folderCategory: 'redstone' }).errors[0], /meta.category muss eine von/);
+  for (const old of ['redstone', 'farmen']) {
+    const result = check({ category: old });
+    assert.deepEqual(result.errors, ['meta.category muss eine von haeuser, wahrzeichen, fantasy, mittelalter, klein, infrastruktur sein.'], old);
+    assert.deepEqual(result.warnings, [], old);
+    assert.match(validateMeta({ ...goodMeta(), category: old }, { fileId: 'turm', folderCategory: old }).errors[0], /meta.category muss eine von/, old);
+  }
+  // Eine Farm mit tested: false ist kein gültiger Bau mehr (die Kategorie fehlt), auch nicht still als Warnung
+  assert.deepEqual(check({ category: 'farmen', tested: false }).errors, ['meta.category muss eine von haeuser, wahrzeichen, fantasy, mittelalter, klein, infrastruktur sein.']);
 });
 
 test('Schwierigkeit und Wissenswertes gibt es nicht mehr: meta.difficulty und meta.facts sind Fehler', () => {

@@ -150,15 +150,15 @@ test('normalizeCatalog: überspringt ungültige und doppelte Einträge und melde
   await quietly((warnings) => {
     const catalog = normalizeCatalog({
       generatedAt: '2026-10-22T12:00:00Z', version: '26.2',
-      builds: [VALID_BUILD, { id: 'x' }, { ...VALID_BUILD }, { ...VALID_BUILD, id: 'zweiter-bau', category: 'farmen' },
-        { ...VALID_BUILD, id: 'kolben-tuer', category: 'redstone' }],
+      builds: [VALID_BUILD, { id: 'x' }, { ...VALID_BUILD }, { ...VALID_BUILD, id: 'zweiter-bau', category: 'klein' },
+        { ...VALID_BUILD, id: 'kolben-tuer', category: 'redstone' }, { ...VALID_BUILD, id: 'kaktusfarm', category: 'farmen' }],
     });
     assert.deepEqual(catalog.builds.map((build) => build.id), ['tokyo-skytree', 'zweiter-bau']);
-    assert.equal(catalog.skipped, 3, 'die Kategorie Redstone gibt es nicht mehr');
+    assert.equal(catalog.skipped, 4, 'die Kategorien Redstone und Farmen gibt es nicht mehr');
     assert.equal(catalog.version, '26.2');
     assert.equal(catalog.generatedAt, '2026-10-22T12:00:00Z');
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /3 Einträge/);
+    assert.match(warnings[0], /4 Einträge/);
   });
   assert.throws(() => normalizeCatalog([]), { kind: 'format' });
   assert.throws(() => normalizeCatalog({ builds: {} }), { kind: 'format', title: 'Katalog unvollständig' });
@@ -209,20 +209,21 @@ test('Lokale Vorschaubilder: nur auf dem eigenen Rechner aus thumbs/index.json, 
 });
 
 test('loadCatalog ergänzt lokale Vorschaubilder nur auf dem eigenen Rechner', async () => {
-  const body = { version: '26.2', builds: [{ ...VALID_BUILD, thumb: null }, { ...VALID_BUILD, id: 'kaktusfarm', category: 'farmen', thumb: null }] };
-  const respond = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json({ version: 1, entries: { kaktusfarm: {} } }) : json(body));
+  const body = { version: '26.2', builds: [{ ...VALID_BUILD, thumb: null }, { ...VALID_BUILD, id: 'dorfbrunnen', category: 'klein', thumb: null }] };
+  const respond = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json({ version: 1, entries: { dorfbrunnen: {} } }) : json(body));
   const local = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: '127.0.0.1' } });
-  assert.deepEqual(local.builds.map((build) => build.thumb), [null, 'thumbs/kaktusfarm.webp']);
+  assert.deepEqual(local.builds.map((build) => build.thumb), [null, 'thumbs/dorfbrunnen.webp']);
   const online = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } });
   assert.deepEqual(online.builds.map((build) => build.thumb), [null, null]);
 });
 
 test('loadCatalog, findBuild und countByCategory', async () => {
-  const { fetch } = fakeFetch(() => json({ version: '26.2', builds: [VALID_BUILD, { ...VALID_BUILD, id: 'kaktusfarm', category: 'farmen' }] }));
-  const catalog = await loadCatalog({ fetch, root: ROOT });
-  assert.equal(findBuild(catalog, 'kaktusfarm').category, 'farmen');
+  const builds = [VALID_BUILD, { ...VALID_BUILD, id: 'dorfbrunnen', category: 'klein' }, { ...VALID_BUILD, id: 'kaktusfarm', category: 'farmen' }];
+  const catalog = await quietly(() => loadCatalog({ fetch: fakeFetch(() => json({ version: '26.2', builds })).fetch, root: ROOT }));
+  assert.equal(findBuild(catalog, 'dorfbrunnen').category, 'klein');
   assert.equal(findBuild(catalog, 'gibt-es-nicht'), null);
-  assert.deepEqual(countByCategory(catalog), { haeuser: 0, wahrzeichen: 1, fantasy: 0, mittelalter: 0, klein: 0, farmen: 1, infrastruktur: 0 });
+  assert.equal(findBuild(catalog, 'kaktusfarm'), null, 'alte Farm: unbekannt');
+  assert.deepEqual(countByCategory(catalog), { haeuser: 0, wahrzeichen: 1, fantasy: 0, mittelalter: 0, klein: 1, infrastruktur: 0 });
 });
 
 // Spieldaten kommen über js/data/game-data.js; hier ein lokaler Zugang mit Fake-fetch (game-data/ auf 127.0.0.1)

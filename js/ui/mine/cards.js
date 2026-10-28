@@ -8,7 +8,7 @@ import { cardMeta } from './model.js';
 
 let cardCounter = 0;
 
-/** Auswahlliste der Kategorien („Ohne Kategorie“ + die sieben) */
+/** Auswahlliste der Kategorien („Ohne Kategorie“ + alle aus CATEGORIES) */
 export function categorySelect({ id, value = null, extra = [] }) {
   const select = el('select', { class: 'field__input', id },
     extra.map(([optionValue, label]) => el('option', { value: optionValue }, label)),

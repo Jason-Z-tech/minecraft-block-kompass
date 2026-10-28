@@ -321,6 +321,7 @@ export function findBuild(catalog, id) {
 /** Anzahl Bauten je Kategorie-Slug */
 export function countByCategory(catalog) {
   const counts = Object.fromEntries(CATEGORY_SLUGS.map((slug) => [slug, 0]));
-  for (const build of catalog.builds) counts[build.category] += 1;
+  // Unbekannte Kategorien (z. B. alte Einträge) zählen nirgends mit
+  for (const build of catalog.builds) if (Object.hasOwn(counts, build.category)) counts[build.category] += 1;
   return counts;
 }

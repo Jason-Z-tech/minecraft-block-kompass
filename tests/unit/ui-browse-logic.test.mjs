@@ -113,8 +113,8 @@ test('Sortierung: alle Schlüssel, fehlende Werte am Ende, Gleichstand nach Name
 });
 
 test('Adresse: nur erlaubte Werte, Mehrfachwerte, feste Reihenfolge', () => {
-  const state = parseBrowseState('?k=farmen&q=  Kaktus%20%20Farm  &groesse=riesig&groesse=klein,mittel&groesse=klein&groesse=winzig&herkunft=original&test=ungetestet&sort=bloecke-ab&foo=1');
-  assert.equal(state.query, 'Kaktus Farm');
+  const state = parseBrowseState('?k=infrastruktur&q=  Bahnhof%20%20Loren  &groesse=riesig&groesse=klein,mittel&groesse=klein&groesse=winzig&herkunft=original&test=ungetestet&sort=bloecke-ab&foo=1');
+  assert.equal(state.query, 'Bahnhof Loren');
   assert.deepEqual(state.filters, { groesse: ['klein', 'mittel', 'riesig'], herkunft: ['original'], test: ['ungetestet'] });
   assert.equal(state.sort, 'bloecke-ab');
   assert.deepEqual(state.ignored, ['groesse=winzig']);
@@ -147,7 +147,7 @@ test('Adresse: Schreiben und Lesen ergeben denselben Zustand, Standardwerte fehl
   assert.equal(browseSearch('klein', { query: '', filters: emptyFilters(), sort: 'name' }), '?k=klein');
   assert.equal(browseSearch('klein', { query: 'x', filters: emptyFilters(), sort: 'relevanz' }), '?k=klein&q=x');
   assert.equal(browseSearch('klein', { query: '', filters: emptyFilters(), sort: 'relevanz' }), '?k=klein', 'unpassende Sortierung fällt weg');
-  assert.equal(browseHref('farmen', { sort: 'bloecke-ab' }), 'kategorie.html?k=farmen&sort=bloecke-ab');
+  assert.equal(browseHref('infrastruktur', { sort: 'bloecke-ab' }), 'kategorie.html?k=infrastruktur&sort=bloecke-ab');
   assert.equal(browseSearch(null, {}), '');
   assert.deepEqual(categoryParam('?k=haeuser'), { kind: 'category', slug: 'haeuser' });
   assert.deepEqual(categoryParam('?k='), { kind: 'overview' });

@@ -66,19 +66,23 @@ async function measureHome(page) {
       innerHeight, innerWidth, scrollWidth: document.documentElement.scrollWidth,
       linksBottom: links.bottom,
       tilesInside: tiles.every((tile) => { const box = tile.getBoundingClientRect(); return [...tile.querySelectorAll('span')].every((s) => s.getBoundingClientRect().right <= box.right + 0.5); }),
+      // Kacheln je Reihe (nach Oberkante) sowie alle Breiten und Höhen – für ein ordentliches Raster
+      rows: Object.values(tiles.reduce((rows, tile) => { const top = Math.round(tile.getBoundingClientRect().top); (rows[top] ??= []).push(tile.dataset.category); return rows; }, {})).map((row) => row.length),
+      widths: [...new Set(tiles.map((tile) => Math.round(tile.getBoundingClientRect().width)))],
+      heights: [...new Set(tiles.map((tile) => Math.round(tile.getBoundingClientRect().height)))],
     };
   })()`);
 }
 
-test('Startseite: Titel, Suche, sieben kompakte Kategorien mit Anzahl, zwei Links – ohne Bau-Reihen und ohne Scrollen', async (t) => {
+test('Startseite: Titel, Suche, sechs kompakte Kategorien mit Anzahl, zwei Links – ohne Bau-Reihen und ohne Scrollen', async (t) => {
   const page = await open(t, { width: 1280, height: 800 });
   if (!page) return;
   await page.goto(`${server.url}/index.html`);
   await page.waitFor('document.querySelector("#home-categories .category-tile") && !document.querySelector("#home-categories .is-loading")');
   await page.eval('document.fonts.ready.then(() => true)');
-  // Sieben Kategorien (keine Redstone-Kachel) mit Name und Anzahl aus dem Katalog, Link wie bisher
+  // Sechs Kategorien (keine Redstone- und keine Farmen-Kachel) mit Name und Anzahl aus dem Katalog, Link wie bisher
   const tiles = await page.eval('[...document.querySelectorAll("#home-categories .category-tile")].map((t) => [t.dataset.category, t.querySelector(".category-tile__title").innerText.trim(), t.querySelector(".category-tile__count").textContent, t.getAttribute("href")])');
-  assert.deepEqual(tiles.map(([slug]) => slug), ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur']);
+  assert.deepEqual(tiles.map(([slug]) => slug), ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'infrastruktur']);
   for (const [slug, title, countText, href] of tiles) {
     const expected = fixture.builds.filter((build) => build.category === slug).length;
     assert.equal(countText, `${expected} ${expected === 1 ? 'Bau' : 'Bauten'}`, slug);
@@ -104,6 +108,9 @@ test('Startseite: Titel, Suche, sieben kompakte Kategorien mit Anzahl, zwei Link
   assert.ok(desktop.linksBottom < desktop.innerHeight, `Desktop: Links enden bei ${desktop.linksBottom} px (Fenster ${desktop.innerHeight} px)`);
   assert.equal(desktop.scrollWidth, 1280, 'kein waagrechtes Scrollen');
   assert.ok(desktop.tilesInside, 'Kachel-Texte bleiben in der Kachel');
+  assert.deepEqual(desktop.rows, [3, 3], 'Desktop: zwei volle Reihen mit je drei Kacheln');
+  assert.equal(desktop.widths.length, 1, `gleich breite Kacheln: ${desktop.widths}`);
+  assert.equal(desktop.heights.length, 1, `gleich hohe Kacheln: ${desktop.heights}`);
   // Leere Suche bleibt auf der Seite, eine Suche leitet auf erstellen.html?q=…
   await page.click('#home-search-form button[type="submit"]');
   assert.equal(await page.eval('location.pathname'), '/index.html');
@@ -128,11 +135,14 @@ test('Startseite auf dem Handy: Kurznamen, alles ohne Scrollen, Nav mit vier Pun
   assert.equal(await text(page, '#home-categories [data-category="haeuser"] .category-tile__count'), '12.345 Bauten');
   assert.equal(await text(page, '#home-categories [data-category="infrastruktur"] .category-tile__count'), 'Noch keine Bauten');
   assert.deepEqual(await page.eval('[...document.querySelectorAll("#home-categories .category-tile__title")].map((t) => t.innerText.trim())'),
-    ['Häuser', 'Wahrzeichen', 'Fantasy', 'Mittelalter', 'Klein & Deko', 'Farmen', 'Infrastruktur']);
+    ['Häuser', 'Wahrzeichen', 'Fantasy', 'Mittelalter', 'Klein & Deko', 'Infrastruktur']);
   const phone = await measureHome(page);
   assert.ok(phone.linksBottom < phone.innerHeight, `Handy: Links enden bei ${phone.linksBottom} px (Fenster ${phone.innerHeight} px)`);
   assert.equal(phone.scrollWidth, 390, 'kein waagrechtes Scrollen');
   assert.ok(phone.tilesInside, 'Kachel-Texte bleiben in der Kachel');
+  // Auch mit extremen Zahlen drei volle Reihen gleich breiter Kacheln („Noch keine Bauten“ darf umbrechen)
+  assert.deepEqual(phone.rows, [2, 2, 2], 'Handy: drei volle Reihen mit je zwei Kacheln');
+  assert.equal(phone.widths.length, 1, `gleich breite Kacheln: ${phone.widths}`);
   // Navigation: vier Punkte nebeneinander mit Kurzformen, Beschriftung bleibt im Slot
   const nav = await page.eval(`[...document.querySelectorAll('#site-header .hotbar__slot')].map((slot) => {
     const box = slot.getBoundingClientRect();
@@ -144,6 +154,24 @@ test('Startseite auf dem Handy: Kurznamen, alles ohne Scrollen, Nav mit vier Pun
   assert.equal(new Set(nav.map((slot) => slot.top)).size, 1, 'eine Zeile');
   assert.ok(nav.every((slot) => slot.inside), JSON.stringify(nav));
   assert.deepEqual(page.errors, []);
+});
+
+test('Startseite auf dem Handy: sechs Kacheln als ordentliches 2 × 3-Raster, auch auf schmalen Geräten', async (t) => {
+  for (const [width, height] of [[390, 844], [360, 640]]) {
+    const page = await open(t, { width, height });
+    if (!page) return;
+    await page.goto(`${server.url}/index.html`);
+    await page.waitFor('document.querySelector("#home-categories .category-tile") && !document.querySelector("#home-categories .is-loading")');
+    await page.eval('document.fonts.ready.then(() => true)');
+    const phone = await measureHome(page);
+    assert.deepEqual(phone.rows, [2, 2, 2], `${width} px: drei volle Reihen`);
+    assert.equal(phone.widths.length, 1, `${width} px: gleich breite Kacheln ${phone.widths}`);
+    assert.equal(phone.heights.length, 1, `${width} px: gleich hohe Kacheln ${phone.heights} (auch „Infrastruktur“ in einer Zeile)`);
+    assert.ok(phone.tilesInside, `${width} px: Kachel-Texte bleiben in der Kachel`);
+    assert.ok(phone.linksBottom < phone.innerHeight, `${width} px: Links enden bei ${phone.linksBottom} px (Fenster ${phone.innerHeight} px)`);
+    assert.equal(phone.scrollWidth, width, `${width} px: kein waagrechtes Scrollen`);
+    assert.deepEqual(page.errors, []);
+  }
 });
 
 test('Startseite: Fehler beim Laden des Katalogs, erneut versuchen füllt die Anzahlen', async (t) => {
@@ -231,11 +259,11 @@ test('Kategorie: Filter, Sortierung und Textfilter in der Adresse, Zurück-Taste
 test('Kategorie: ungültige Angaben in der Adresse fallen weg, Text erscheint nie als HTML', async (t) => {
   const page = await open(t);
   if (!page) return;
-  await page.goto(`${server.url}/kategorie.html?k=farmen&q=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E&groesse=gigantisch&sort=zufall&test=ungetestet`);
+  await page.goto(`${server.url}/kategorie.html?k=infrastruktur&q=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E&groesse=gigantisch&sort=zufall&test=ungetestet`);
   await page.waitFor('document.querySelector("#category-empty .state")');
-  assert.equal(await search(page), '?k=farmen&q=%3Cimg+src%3Dx+onerror%3Dalert%281%29%3E&test=ungetestet');
+  assert.equal(await search(page), '?k=infrastruktur&q=%3Cimg+src%3Dx+onerror%3Dalert%281%29%3E&test=ungetestet');
   assert.equal(await page.eval('document.querySelectorAll("main img[src=x]").length'), 0);
-  assert.match(await text(page, '#category-result-count'), /^Keiner von 17 Bauten passt zu „<img src=x onerror=alert\(1\)>“ und deinen Filtern$/);
+  assert.match(await text(page, '#category-result-count'), /^Keiner von 14 Bauten passt zu „<img src=x onerror=alert\(1\)>“ und deinen Filtern$/);
   assert.ok(page.logs.some((line) => /ignoriert/.test(line) && /gigantisch/.test(line)));
   // Alte Adresse mit Schwierigkeit: Filter und Sortierung fallen still weg, die Adresse wird bereinigt
   await page.goto(`${server.url}/kategorie.html?k=klein&schwierigkeit=2&sort=schwierigkeit-auf`);
@@ -282,23 +310,28 @@ test('Kategorie: 400 Einträge werden schrittweise geladen, Zurück vom Bau stel
 });
 
 test('Kategorie: Fehler beim Laden, leere und unbekannte Kategorie, Übersicht', async (t) => {
-  const empty = { ...fixture, builds: fixture.builds.filter((build) => build.category !== 'farmen') };
+  const empty = { ...fixture, builds: fixture.builds.filter((build) => build.category !== 'infrastruktur') };
   const page = await open(t, { catalogBody: JSON.stringify(empty) });
   if (!page) return;
-  await page.goto(`${server.url}/kategorie.html?k=farmen`);
+  await page.goto(`${server.url}/kategorie.html?k=infrastruktur`);
   await page.waitFor('document.querySelector("#category-status .state--empty")');
   assert.equal(await page.eval('document.querySelector("#category-browse").hidden'), true);
   await page.goto(`${server.url}/kategorie.html?k=gibtsnicht`);
   await page.waitFor('document.querySelector("#category-overview-list .category-tile__count:not(.is-loading)")');
   assert.equal(await text(page, '#category-status .state__title'), 'Diese Kategorie gibt es nicht');
-  // Die Kategorie Redstone gibt es nicht mehr: alte Adressen zeigen denselben Hinweis
-  await page.goto(`${server.url}/kategorie.html?k=redstone`);
-  await page.waitFor('document.querySelector("#category-overview-list .category-tile__count:not(.is-loading)")');
-  assert.equal(await text(page, '#category-status .state__title'), 'Diese Kategorie gibt es nicht');
-  assert.equal(await page.eval('document.querySelectorAll("#category-overview-list [data-category=redstone]").length'), 0);
+  // Die Kategorien Redstone und Farmen gibt es nicht mehr: alte Adressen zeigen denselben Hinweis
+  for (const old of ['redstone', 'farmen']) {
+    await page.goto(`${server.url}/kategorie.html?k=${old}`);
+    await page.waitFor('document.querySelector("#category-overview-list .category-tile__count:not(.is-loading)")');
+    assert.equal(await text(page, '#category-status .state__title'), 'Diese Kategorie gibt es nicht', old);
+    assert.equal(await page.eval(`document.querySelectorAll("#category-overview-list [data-category=${old}]").length`), 0, old);
+  }
   await page.goto(`${server.url}/kategorie.html`);
   await page.waitFor('document.querySelector("#category-count").textContent');
-  assert.equal(await text(page, '#category-count'), '138 Bauten in 7 Kategorien');
+  assert.equal(await text(page, '#category-count'), '124 Bauten in 6 Kategorien');
+  // Übersicht: sechs Kacheln in zwei vollen Reihen zu je drei
+  const overviewRows = await page.eval('Object.values([...document.querySelectorAll("#category-overview-list .category-tile")].reduce((rows, tile) => { const top = Math.round(tile.getBoundingClientRect().top); (rows[top] ??= []).push(tile.dataset.category); return rows; }, {})).map((row) => row.length)');
+  assert.deepEqual(overviewRows, [3, 3]);
   await page.unroute('data/catalog.json');
   await page.route('data/catalog.json', { body: 'kaputt', status: 500, contentType: 'text/plain' });
   await page.goto(`${server.url}/kategorie.html?k=haeuser`);
@@ -331,19 +364,23 @@ test('Fehlendes Vorschaubild: Ersatz aus Kategorie-Farbe und Icon statt kaputtem
 test('Handy: Filter klappen auf und zu, Karten kompakt im 16:10-Rahmen', async (t) => {
   const page = await open(t, { width: 390, height: 844 });
   if (!page) return;
-  await page.goto(`${server.url}/kategorie.html?k=farmen`);
+  await page.goto(`${server.url}/kategorie.html?k=infrastruktur`);
   await page.waitFor(`document.querySelector(${JSON.stringify(CARDS)})`);
   const display = () => page.eval('getComputedStyle(document.querySelector("#category-filters")).display');
   assert.equal(await display(), 'none');
   await page.click('#category-filter-toggle');
   assert.equal(await display(), 'grid');
   assert.equal(await page.eval('document.querySelector("#category-filter-toggle").getAttribute("aria-expanded")'), 'true');
+  // „Test im Spiel“ nur mit den Werten, die es gibt: ein ungetesteter Bau (wie bahnhof-loren), der Rest ohne Test
+  assert.deepEqual(await page.eval('[...document.querySelectorAll("#category-filters input[name=test]")].map((i) => i.value)'), ['ungetestet', 'ohne']);
+  assert.equal(await page.eval('document.querySelectorAll("#category-list .chip--warning").length'), 1, 'Chip nur am ungetesteten Bau');
   await page.click('#category-filters input[name="test"][value="ohne"]');
-  assert.equal(await text(page, '#category-filters-done'), '4 Bauten anzeigen');
+  assert.equal(await text(page, '#category-filters-done'), '13 Bauten anzeigen');
   assert.equal(await text(page, '#category-filter-toggle .browse__toggle-count'), '1');
   await page.click('#category-filters-done');
   assert.equal(await display(), 'none');
-  assert.equal(await count(page), 4);
+  assert.equal(await count(page), 13);
+  assert.equal(await page.eval('document.querySelectorAll("#category-list .chip--warning").length'), 0);
   const ratio = await page.eval('(() => { const r = document.querySelector("#category-list .build-card__media").getBoundingClientRect(); return r.width / r.height; })()');
   assert.ok(Math.abs(ratio - 1.6) < 0.02, `16:10-Rahmen: ${ratio}`);
   assert.equal(await page.eval('document.documentElement.scrollWidth'), 390, 'kein waagrechtes Scrollen');

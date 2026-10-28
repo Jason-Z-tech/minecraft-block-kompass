@@ -79,7 +79,7 @@ describe('Bauten aus dem Katalog', () => {
     ['Schloss Neuschwanstein', 'neuschwanstein', null],
     ['Leuchtturm', 'leuchtturm', null],
     ['Hobbit Höhle', 'hobbit-hoehle', null],
-    ['iron farm', 'eisenfarm', null],
+    ['wizard tower', 'zaubererturm', null],
     ['Sakura', 'kirschbluetenbaum', null],
     ['Windmühle', 'windmuehle', null],
     ['Pyramide von Gizeh', 'cheops-pyramide', 0.25],
@@ -277,6 +277,15 @@ describe('nicht gefunden – ehrlich', () => {
     const r = parse('kolbentür');
     assert.equal(r.kind, 'none');
     assert.equal(r.reason, 'Für „kolbentür“ gibt es noch keinen geprüften Bauplan.');
+  });
+
+  test('Farmen gibt es nicht mehr: „Eisenfarm“, „iron farm“, „Weizenfarm“ → none', () => {
+    assert.ok(catalog.builds.every((b) => b.category !== 'farmen'), 'Fixture ohne Kategorie farmen');
+    for (const text of ['Eisenfarm', 'iron farm', 'Weizenfarm']) {
+      const r = parse(text);
+      assert.equal(r.kind, 'none', text);
+      assert.equal(r.reason, `Für „${text}“ gibt es noch keinen geprüften Bauplan.`);
+    }
   });
 
   test('ohne Katalog: Formen gehen, Bauten nicht', () => {

@@ -48,7 +48,9 @@ test('Test-Katalog hat das Format von Runde 2 und zeigt auf vorhandene Dateien',
   const normalized = normalizeCatalog(CATALOG);
   assert.equal(normalized.builds.length, CATALOG.builds.length, 'kein Eintrag wird verworfen');
   assert.ok(CATALOG.builds.some((b) => b.scales?.length === 2 && b.variants), 'ein Eintrag mit Maßstäben');
-  assert.ok(CATALOG.builds.some((b) => b.tested === false && b.credits && b.category === 'farmen'), 'eine Farm mit tested: false und Credits');
+  // tested bleibt ein optionales Feld (wie bahnhof-loren im echten Katalog); Farmen gibt es nicht mehr
+  assert.ok(CATALOG.builds.some((b) => b.tested === false && b.credits && b.category === 'infrastruktur'), 'ein Eintrag mit tested: false und Credits');
+  assert.ok(CATALOG.builds.every((b) => b.category !== 'farmen'), 'keine Kategorie Farmen');
 });
 
 test('loadBuildEntry: Eintrag mit allen Feldern, Testmodule erlaubt, unbekannt → null', async () => {
@@ -64,6 +66,15 @@ test('loadBuildEntry: Eintrag mit allen Feldern, Testmodule erlaubt, unbekannt �
   assert.equal(await loadBuildEntry('gibt-es-nicht', { fetch, root: SITE }), null);
   // Alte Adressen der Original-Strukturen: unbekannt wie jede andere ID
   assert.equal(await loadBuildEntry('spiel-plains-small-house-1', { fetch, root: SITE }), null);
+  // Alte Farm (bau.html?id=kaktusfarm): auch wenn ein alter Katalog sie noch enthält, ist sie unbekannt
+  const farmCatalog = { ...CATALOG, builds: [...CATALOG.builds, { ...CATALOG.builds[0], id: 'kaktusfarm', category: 'farmen', module: 'js/builds/farmen/kaktusfarm.js' }] };
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    assert.equal(await loadBuildEntry('kaktusfarm', { fetch: catalogFetch(farmCatalog), root: SITE }), null);
+  } finally {
+    console.warn = warn;
+  }
   // Ein alter Katalog mit Struktur-Eintrag: kein Modul → keine Quelle für die 3D-Ansicht
   const oldCatalog = { ...CATALOG, builds: [...CATALOG.builds, { ...CATALOG.builds[0], id: 'spiel-iglu', module: null, structure: 'igloo__top.json' }] };
   const old = await loadBuildEntry('spiel-iglu', { fetch: catalogFetch(oldCatalog), root: SITE });

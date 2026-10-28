@@ -84,7 +84,9 @@ dataTest('Alle Zustände der Bau-Module ergeben Quads', { timeout: 120_000 }, as
     }
   }
   t.diagnostic(`${modules} Bau-Module, ${states.size} verschiedene Zustände`);
-  assert.ok(modules >= 69, `nur ${modules} Bau-Module`);
+  // 69 Module bis Oktober 2026, davon 10 Farmen (entfernt): 59 bleiben
+  assert.ok(modules >= 59, `nur ${modules} Bau-Module`);
+  assert.equal(fs.existsSync(path.join(ROOT, 'js', 'builds', 'farmen')), false, 'keine Farm-Module mehr');
   const models = createModels();
   const map = await textureMap(models.textureNames(states));
   models.bindTextures(map);

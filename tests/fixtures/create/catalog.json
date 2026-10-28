@@ -2,15 +2,14 @@
  "generatedAt": "2026-10-23T08:00:00.000Z",
  "version": "26.2",
  "counts": {
-  "total": 24,
+  "total": 22,
   "byCategory": {
    "wahrzeichen": 6,
    "fantasy": 3,
    "infrastruktur": 4,
    "haeuser": 3,
    "mittelalter": 4,
-   "klein": 2,
-   "farmen": 2
+   "klein": 2
   }
  },
  "warnings": [],
@@ -1158,93 +1157,6 @@
     [
      "oak_planks",
      16
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "eisenfarm",
-   "title": "Eisenfarm",
-   "category": "farmen",
-   "subtitle": "Eisengolem-Farm mit Dorfbewohnern und Zombie",
-   "tags": [
-    "Farm",
-    "Eisen",
-    "Golem"
-   ],
-   "aliases": [
-    "iron farm",
-    "golemfarm"
-   ],
-   "accuracy": "eigenes",
-   "description": "Eisengolem-Farm mit Dorfbewohnern und Zombie.",
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/farmen/eisenfarm.js",
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    12,
-    10,
-    12
-   ],
-   "blocks": 2600,
-   "steps": 20,
-   "phases": 3,
-   "variants": null,
-   "topMaterials": [
-    [
-     "stone_bricks",
-     1560
-    ],
-    [
-     "oak_planks",
-     520
-    ]
-   ],
-   "sizeClass": "mittel",
-   "thumb": null
-  },
-  {
-   "id": "weizenfarm-automatisch",
-   "title": "Automatische Weizenfarm",
-   "category": "farmen",
-   "subtitle": "Weizen ernten per Wasser und Beobachter",
-   "tags": [
-    "Farm",
-    "Weizen",
-    "Redstone"
-   ],
-   "aliases": [
-    "wheat farm"
-   ],
-   "accuracy": "eigenes",
-   "description": "Weizen ernten per Wasser und Beobachter.",
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/farmen/weizenfarm-automatisch.js",
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    12,
-    10,
-    12
-   ],
-   "blocks": 900,
-   "steps": 20,
-   "phases": 3,
-   "variants": null,
-   "topMaterials": [
-    [
-     "stone_bricks",
-     540
-    ],
-    [
-     "oak_planks",
-     180
     ]
    ],
    "sizeClass": "klein",

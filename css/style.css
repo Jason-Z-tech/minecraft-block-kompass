@@ -128,7 +128,6 @@
   --cat-fantasy: #9a5cc6;
   --cat-mittelalter: #9a9a9a;
   --cat-klein: #e57ca3;
-  --cat-farmen: #d9b84a;
   --cat-infrastruktur: #d0703c;
 
   /* Herkunft */
@@ -221,7 +220,6 @@
 [data-category='fantasy'] { --cat: var(--cat-fantasy); }
 [data-category='mittelalter'] { --cat: var(--cat-mittelalter); }
 [data-category='klein'] { --cat: var(--cat-klein); }
-[data-category='farmen'] { --cat: var(--cat-farmen); }
 [data-category='infrastruktur'] { --cat: var(--cat-infrastruktur); }
 [data-accuracy='original'] { --acc: var(--acc-original); }
 [data-accuracy='massstab'] { --acc: var(--acc-massstab); }
@@ -1389,8 +1387,9 @@ ol.cluster {
 }
 
 @media (min-width: 720px) {
+  /* Sechs Kategorien: drei Spalten, zwei volle Reihen */
   .category-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-4);
   }
 
@@ -1404,12 +1403,16 @@ ol.cluster {
   }
 }
 
-/* Kompakte Kachel (Startseite): Icon links, Name und Anzahl rechts; ungerade Reste mittig */
+/* Kompakte Kachel (Startseite): Icon links, Name und Anzahl rechts; sechs Kacheln in 3 × 2 (Handy) oder 2 × 3,
+   ungerade Reste mittig. Auf breiten Schirmen nicht breiter als 960 px, damit die Kacheln kompakt bleiben. */
 .category-grid--compact {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-2);
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
 }
 
 .category-grid--compact > li {
@@ -1448,6 +1451,20 @@ ol.cluster {
 .category-tile--compact .category-tile__count {
   align-self: start;
   font-size: 0.8125rem;
+}
+
+/* Schmale Handys (z. B. 360 px): kleineres Icon und weniger Rand, damit auch „Infrastruktur“ in eine Zeile passt
+   und alle drei Reihen gleich hoch bleiben */
+@media (max-width: 379px) {
+  .category-tile--compact {
+    gap: 2px 6px;
+    padding-inline: 6px;
+  }
+
+  .category-tile--compact .category-tile__icon {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 @media (min-width: 560px) {
@@ -1490,12 +1507,6 @@ ol.cluster {
   .category-tile--compact {
     grid-template-rows: auto auto;
     min-height: 80px;
-  }
-}
-
-@media (min-width: 1100px) {
-  .category-grid--compact > li {
-    flex-basis: calc((100% - 3 * var(--space-4)) / 4);
   }
 }
 

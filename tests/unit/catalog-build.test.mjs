@@ -16,7 +16,7 @@ const DATA_DIR = path.join(ROOT, 'game-data');
 const HAS_GAME_DATA = existsSync(path.join(DATA_DIR, 'meta.json')) && existsSync(path.join(DATA_DIR, 'blocks.json'));
 const NO_DATA = HAS_GAME_DATA ? false : 'game-data/ fehlt (node scripts/extract-game-data.mjs)';
 const EXAMPLE_HOUSE = path.join(ROOT, 'tests', 'fixtures', 'core', 'example-house.js');
-const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur'];
+const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'infrastruktur'];
 const ACCURACIES = ['original', 'massstab', 'vorlage', 'nachempfunden', 'eigenes'];
 const ENTRY_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources',
   'credits', 'tested', 'module', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials',
@@ -135,12 +135,15 @@ describe('Hilfsfunktionen', () => {
   test('findModules nimmt nur Kategorie-Ordner und überspringt lib/', async () => {
     const dir = await moduleDir('find', {
       'haeuser/a.js': 'export const meta = {};', 'lib/helper.js': '', 'entwurf/b.js': '', 'klein/readme.txt': '', 'redstone/c.js': 'export const meta = {};',
+      'farmen/kaktusfarm.js': 'export const meta = {};',
     });
     const { modules, notes } = await findModules(dir);
     assert.deepEqual(modules.map((m) => `${m.folder}/${m.fileId}`), ['haeuser/a']);
-    assert.equal(notes.length, 2);
+    assert.equal(notes.length, 3);
     assert.match(notes[0], /entwurf.*keine Kategorie/);
-    assert.match(notes[1], /redstone.*keine Kategorie/, 'Redstone ist keine Kategorie mehr');
+    assert.match(notes[1], /farmen.*keine Kategorie/, 'Farmen ist keine Kategorie mehr');
+    assert.match(notes[2], /redstone.*keine Kategorie/, 'Redstone ist keine Kategorie mehr');
+    assert.equal(existsSync(path.join(ROOT, 'js', 'builds', 'farmen')), false, 'Farm-Module gelöscht');
     const missing = await findModules(path.join(dir, 'gibt-es-nicht'));
     assert.deepEqual(missing.modules, []);
   });

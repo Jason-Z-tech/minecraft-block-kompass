@@ -11,7 +11,7 @@ import { Builder } from '../js/core/builder.js';
 import { formatAmount, stackSize } from '../js/core/materials.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur'];
+export const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'infrastruktur'];
 export const ACCURACIES = ['original', 'massstab', 'vorlage', 'nachempfunden', 'eigenes'];
 const META_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources', 'credits', 'scales', 'tested'];
 // Felder, die es früher gab: stehen sie noch im Modul, ist das ein Fehler.
@@ -111,7 +111,6 @@ export function validateMeta(meta, { fileId, folderCategory = null }) {
   checkCredits(meta, errors);
   checkScales(meta, errors);
   if (meta.tested !== null && meta.tested !== undefined && typeof meta.tested !== 'boolean') errors.push('meta.tested muss null, true oder false sein.');
-  if (meta.category === 'farmen' && typeof meta.tested !== 'boolean') warnings.push('Farmen: meta.tested sollte false sein („nicht im Spiel getestet“), solange es niemand im Spiel geprüft hat.');
   if (isNonEmptyText(meta.description) && meta.description.length > 700) warnings.push('meta.description ist lang – gedacht sind 2–4 Sätze.');
   return { errors, warnings };
 }

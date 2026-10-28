@@ -229,8 +229,8 @@ test('3D-Ansicht: laden, Fortschritt, Schnitt, Geist, Hervorhebung, Picking, Lau
   }
 });
 
-// Früher: Original-Strukturen (die gibt es nicht mehr). Jetzt echte kleine Bau-Module aus drei Kategorien.
-test('3D-Ansicht: echte Bau-Module (Brunnen, Starterhaus, Wasseraufzug) vollständig und ohne fehlende Texturen', { timeout: 180000 }, async (t) => {
+// Früher: Original-Strukturen (die gibt es nicht mehr). Jetzt echte Bau-Module aus drei Kategorien; der Hafen-Leuchtturm bringt Wasser, Seegras und Seetang mit.
+test('3D-Ansicht: echte Bau-Module (Brunnen, Starterhaus, Hafen-Leuchtturm) vollständig und ohne fehlende Texturen', { timeout: 180000 }, async (t) => {
   if (!hasGameData) return t.skip('game-data/ fehlt');
   const [{ setBlockData }, { Builder }] = await Promise.all([import('../../js/core/block-data.js'), import('../../js/core/builder.js')]);
   setBlockData(JSON.parse(fs.readFileSync(path.join(ROOT, 'game-data', 'blocks.json'), 'utf8')));
@@ -241,7 +241,7 @@ test('3D-Ansicht: echte Bau-Module (Brunnen, Starterhaus, Wasseraufzug) vollstä
     return;
   }
   try {
-    for (const modulePath of ['js/builds/klein/dorfbrunnen.js', 'js/builds/haeuser/starterhaus-eiche.js', 'js/builds/farmen/wasser-aufzug.js']) {
+    for (const modulePath of ['js/builds/klein/dorfbrunnen.js', 'js/builds/haeuser/starterhaus-eiche.js', 'js/builds/infrastruktur/hafen-leuchtturm.js']) {
       const mod = await import(`../../${modulePath}`);
       const b = new Builder();
       mod.default(b, {});

@@ -26,9 +26,10 @@ test('Test-Katalog: gültiges Format von Runde 2, alle Einträge übernommen', (
   assert.equal(raw.version, '26.2');
   assert.equal(catalog.skipped, 0);
   assert.equal(catalog.builds.length, raw.counts.total);
-  assert.ok(catalog.builds.length >= 150);
+  assert.equal(catalog.builds.length, 138);
   for (const slug of CATEGORY_SLUGS) assert.equal(inCategory(slug).length, raw.counts.byCategory[slug], slug);
-  assert.deepEqual(Object.keys(raw.counts.byCategory).sort(), [...CATEGORY_SLUGS].sort(), 'keine Kategorie Redstone mehr');
+  assert.deepEqual(Object.keys(raw.counts.byCategory).sort(), [...CATEGORY_SLUGS].sort(), 'keine Kategorie Redstone oder Farmen mehr');
+  assert.ok(catalog.builds.every((build) => build.category !== 'farmen' && !build.module.includes('/farmen/')), 'keine Farmen mehr');
   for (const build of raw.builds) {
     assert.ok(!Object.hasOwn(build, 'difficulty') && !Object.hasOwn(build, 'facts'), `${build.id}: keine Schwierigkeit, kein Wissenswertes`);
     assert.equal(build.sizeClass, sizeClassForBlocks(build.blocks), `${build.id}: Größenklasse`);
@@ -41,9 +42,10 @@ test('Test-Katalog: gültiges Format von Runde 2, alle Einträge übernommen', (
     if (build.scales) assert.deepEqual(Object.keys(build.variants), build.scales.map(String));
   }
   assert.ok(catalog.builds.some((build) => build.thumb) && catalog.builds.some((build) => !build.thumb), 'mit und ohne Vorschaubild');
-  // tested: true hatten nur die Redstone-Bauten; „getestet“ prüfen die Logik-Tests (ui-browse-logic) mit eigenen Einträgen
-  assert.ok(catalog.builds.some((build) => build.tested === false) && catalog.builds.some((build) => build.tested === null));
-  assert.ok(catalog.builds.filter((build) => build.tested === false).every((build) => build.category === 'farmen'), 'ungetestet sind nur Farmen');
+  // tested: true hatten nur die Redstone-Bauten; „getestet“ prüfen die Logik-Tests (ui-browse-logic) mit eigenen Einträgen.
+  // Ungetestet ist nur noch der Bahnhof (wie bahnhof-loren im echten Katalog), alle anderen brauchen keinen Test.
+  assert.deepEqual(catalog.builds.filter((build) => build.tested === false).map((build) => build.id), ['bahnhof']);
+  assert.ok(catalog.builds.every((build) => build.tested === false || build.tested === null));
   // data.js übernimmt die neuen Felder
   const skytree = catalog.builds.find((build) => build.id === 'tokyo-skytree');
   assert.equal(skytree.sizeClass, 'riesig');
@@ -87,15 +89,15 @@ test('Ansicht: Suche → Filter → Sortierung, Zählung je Option', () => {
 });
 
 test('Ansicht: fremde Suchfunktion nach dem Vertrag von searchCatalog wird genutzt und geprüft', () => {
-  const builds = inCategory('farmen');
+  const builds = inCategory('infrastruktur');
   const index = createBrowseIndex(builds);
   const calls = [];
   const fake = (cat, query, options) => {
     calls.push({ count: cat.builds.length, query, options });
     return [{ entry: builds[3], score: 2 }, { entry: { id: 'fremd' }, score: 9 }, { entry: builds[1], score: 5 }, { entry: builds[1], score: 1 }];
   };
-  const view = computeView(index, state('?q=irgendwas'), { search: fake, category: 'farmen' });
-  assert.deepEqual(calls, [{ count: builds.length, query: 'irgendwas', options: { limit: builds.length, category: 'farmen' } }]);
+  const view = computeView(index, state('?q=irgendwas'), { search: fake, category: 'infrastruktur' });
+  assert.deepEqual(calls, [{ count: builds.length, query: 'irgendwas', options: { limit: builds.length, category: 'infrastruktur' } }]);
   assert.deepEqual(view.results.map((build) => build.id), [builds[1].id, builds[3].id], 'unbekannte und doppelte Treffer fallen weg');
   assert.throws(() => computeView(index, state('?q=x'), { search: () => null }), /keine Trefferliste/);
 });
@@ -117,16 +119,19 @@ test('Ansicht: über 300 Einträge schnell genug, Nachladen in Schritten', () =>
   assert.equal(nextShown(24, 100), 48);
 });
 
-test('Startseite: Anzahl je Kategorie für die Kacheln – alle sieben, fehlende mit 0, Summe = Katalog', () => {
+test('Startseite: Anzahl je Kategorie für die Kacheln – alle sechs, fehlende mit 0, Summe = Katalog', () => {
   const counts = countByCategory(catalog);
   assert.deepEqual(Object.keys(counts), [...CATEGORY_SLUGS]);
   for (const slug of CATEGORY_SLUGS) assert.equal(counts[slug], inCategory(slug).length, slug);
   assert.equal(Object.values(counts).reduce((sum, n) => sum + n, 0), catalog.builds.length);
   assert.equal(counts.klein, 41);
   // Kategorie ohne Bauten → 0 (die Kachel zeigt „Noch keine Bauten“), kein Eintrag für alte Kategorien
-  const withoutFarms = countByCategory({ builds: catalog.builds.filter((build) => build.category !== 'farmen') });
-  assert.equal(withoutFarms.farmen, 0);
-  assert.equal(Object.hasOwn(withoutFarms, 'redstone'), false);
+  const withoutBridges = countByCategory({ builds: catalog.builds.filter((build) => build.category !== 'infrastruktur') });
+  assert.equal(withoutBridges.infrastruktur, 0);
+  for (const old of ['redstone', 'farmen']) assert.equal(Object.hasOwn(withoutBridges, old), false, old);
+  // Einträge alter Kategorien (z. B. aus einem alten Katalog) zählen nirgends mit
+  const old = countByCategory({ builds: [...catalog.builds, { ...catalog.builds[0], id: 'kaktusfarm', category: 'farmen' }] });
+  assert.deepEqual(old, counts);
   assert.deepEqual(countByCategory({ builds: [] }), Object.fromEntries(CATEGORY_SLUGS.map((slug) => [slug, 0])));
   assert.deepEqual(emptyFilters(), { groesse: [], herkunft: [], test: [] });
 });

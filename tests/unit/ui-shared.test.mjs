@@ -20,7 +20,6 @@ test('Kategorien: Slugs, Titel und Reihenfolge wie ARCHITEKTUR §8, Farben wie �
     ['fantasy', 'Fantasy, Anime & Film', '#9a5cc6'],
     ['mittelalter', 'Mittelalter & Burgen', '#9a9a9a'],
     ['klein', 'Kleine Projekte & Deko', '#e57ca3'],
-    ['farmen', 'Farmen & Technik', '#d9b84a'],
     ['infrastruktur', 'Brücken, Bahnhöfe & Häfen', '#d0703c'],
   ]);
   assert.deepEqual(CATEGORY_SLUGS, CATEGORIES.map((c) => c.slug));
@@ -45,14 +44,15 @@ test('Kategorie-Farben stimmen mit den CSS-Tokens --cat-<slug> überein', async 
     assert.equal(match[1].toLowerCase(), category.color, category.slug);
     assert.match(css, new RegExp(`\\[data-category='${category.slug}'\\]\\s*\\{\\s*--cat: var\\(--cat-${category.slug}\\);`), `data-category-Regel für ${category.slug}`);
   }
-  // Die Kategorie Redstone ist weg, die Redstone-Farben für Fehler bleiben
+  // Die Kategorien Redstone und Farmen sind weg, die Redstone-Farben für Fehler bleiben
   assert.doesNotMatch(css, /--cat-redstone|data-category='redstone'/);
+  assert.doesNotMatch(css, /--cat-farmen|data-category='farmen'/);
   for (const token of ['--c-redstone', '--c-redstone-deep', '--c-redstone-text']) assert.match(css, new RegExp(`${token}:\\s*#[0-9a-f]{6};`, 'i'), token);
 });
 
 test('findCategory, Herkunfts-Labels und keine Schwierigkeit mehr', () => {
-  assert.equal(findCategory('farmen').title, 'Farmen & Technik');
-  for (const bad of ['x', '', null, '__proto__', 'Redstone', 'redstone']) assert.equal(findCategory(bad), null, String(bad));
+  assert.equal(findCategory('infrastruktur').title, 'Brücken, Bahnhöfe & Häfen');
+  for (const bad of ['x', '', null, '__proto__', 'Redstone', 'redstone', 'farmen', 'Farmen']) assert.equal(findCategory(bad), null, String(bad));
   assert.deepEqual(ACCURACY_LABELS, {
     original: 'Original aus dem Spiel', massstab: 'Nach echten Maßen', vorlage: 'Nach bekannter Vorlage',
     nachempfunden: 'Nachempfunden', eigenes: 'Eigenes Design',
@@ -78,6 +78,7 @@ test('Alle Icons der Liste stehen im Sprite und umgekehrt', async () => {
   assert.deepEqual([...symbols].sort(), [...ICON_NAMES].sort());
   assert.equal(new Set(ICON_NAMES).size, ICON_NAMES.length, 'doppelte Icon-Namen');
   assert.equal(ICON_NAMES.includes('cat-redstone'), false, 'kein Icon für die alte Kategorie Redstone');
+  assert.equal(ICON_NAMES.includes('cat-farmen'), false, 'kein Icon für die alte Kategorie Farmen');
 });
 
 test('formatNumber: deutsche Tausendertrennung und Dezimalkomma', () => {

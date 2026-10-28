@@ -12,7 +12,6 @@ export const CATEGORIES = deepFreeze([
   { slug: 'fantasy', title: 'Fantasy, Anime & Film', shortTitle: 'Fantasy', color: '#9a5cc6', colorName: 'Amethyst', icon: 'cat-fantasy', description: 'Bauten aus Geschichten, Serien, Filmen und eigener Fantasie.' },
   { slug: 'mittelalter', title: 'Mittelalter & Burgen', shortTitle: 'Mittelalter', color: '#9a9a9a', colorName: 'Stein', icon: 'cat-mittelalter', description: 'Burgen, Mauern, Türme und mittelalterliche Gebäude.' },
   { slug: 'klein', title: 'Kleine Projekte & Deko', shortTitle: 'Klein & Deko', color: '#e57ca3', colorName: 'Blüte', icon: 'cat-klein', description: 'Schnelle Bauten und Deko-Ideen für zwischendurch.' },
-  { slug: 'farmen', title: 'Farmen & Technik', shortTitle: 'Farmen', color: '#d9b84a', colorName: 'Weizen', icon: 'cat-farmen', description: 'Farmen und technische Anlagen, die dir Arbeit abnehmen.' },
   { slug: 'infrastruktur', title: 'Brücken, Bahnhöfe & Häfen', shortTitle: 'Infrastruktur', color: '#d0703c', colorName: 'Kupfer', icon: 'cat-infrastruktur', description: 'Brücken, Bahnhöfe, Häfen und Verkehrswege.' },
 ]);
 

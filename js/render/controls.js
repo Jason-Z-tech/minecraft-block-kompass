@@ -778,6 +778,18 @@ const WALK_KEYS = {
 const KEY_TURN_DEGREES_PER_SECOND = 120;
 const TOUCH_LOOK_DEGREES_PER_PIXEL = 0.28;
 const JOYSTICK_RADIUS = 48;
+// Alt, Cmd und Windows-Taste gehören System und Browser: Solange sie gehalten werden, kann das keyup anderer Tasten
+// fehlen (macOS meldet bei gehaltener Cmd-Taste kein keyup, Alt und Windows-Taste öffnen Menüs).
+const SYSTEM_KEYS = new Set(['AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'OSLeft', 'OSRight']);
+
+function safeCapture(element, pointerId, capture) {
+  try {
+    if (capture) element.setPointerCapture?.(pointerId);
+    else element.releasePointerCapture?.(pointerId);
+  } catch {
+    // Chrome lehnt das Fangen ab, solange eine Zeigersperre angefragt ist; das Ende des Ziehens erkennt pointermove
+  }
+}
 
 function createTouchButton(label, ariaLabel) {
   const button = document.createElement('button');
@@ -792,8 +804,12 @@ function createTouchButton(label, ariaLabel) {
 /**
  * Laufen/Fliegen wie im Spiel: WASD, Maus (Pointer Lock nach Klick; sonst Ziehen), Leertaste springen,
  * doppelt Leertaste = Fliegen an/aus, Umschalt = schleichen/runter, Strg (oder doppelt W) = sprinten,
- * Pfeiltasten drehen/neigen den Blick, Esc = beenden (onExit). Touch: Joystick links, Blicken durch Ziehen,
- * Knöpfe Springen/Fliegen/Hoch/Runter.
+ * Pfeiltasten drehen/neigen den Blick, Esc = alles loslassen und beenden (onExit). Touch: Joystick links,
+ * Blicken durch Ziehen, Knöpfe Springen/Fliegen/Hoch/Runter.
+ * Nichts bleibt hängen, wenn der Browser ein keyup verschluckt: Ein- und Ausschalten, Ende der Zeigersperre, Vollbild-
+ * Wechsel, Fokusverlust, Kontextmenü außerhalb der Ansicht und Alt/Cmd/Windows-Taste lassen alle Tasten los;
+ * Strg/Umschalt folgen dem Zustand, den jedes Tasten- und Mausereignis meldet; ohne Finger auf dem Bildschirm
+ * ist nichts Berührtes mehr gehalten.
  * options: { world: { collisionBoxes(x, y, z) }, position: [x, y, z] (Füße), yaw, pitch (Grad), flying, mayFly,
  *            voidY, sensitivity (Grad je Pixel, wie im Spiel 0,15), overlayParent, onExit(), onChange(player) }
  */
@@ -810,7 +826,8 @@ export class WalkControls {
   #activeOffs = [];
   #look = null;
   #stick = { id: null, left: 0, forward: 0 };
-  #touchHeld = new Set();
+  // Gehaltene Touch-Knöpfe: Zeiger-ID → Aktion (jeder Finger lässt nur seinen Knopf los)
+  #touchHeld = new Map();
   #overlay = null;
   #touchUsed = false;
   #unloadGuard = null;
@@ -830,6 +847,7 @@ export class WalkControls {
       listen(element, 'pointermove', (e) => this.#pointerMove(e)),
       listen(element, 'pointerup', (e) => this.#pointerUp(e)),
       listen(element, 'pointercancel', (e) => this.#pointerUp(e)),
+      listen(element, 'lostpointercapture', (e) => this.#pointerUp(e)),
     );
   }
 
@@ -840,23 +858,32 @@ export class WalkControls {
     const next = Boolean(value);
     if (next === this.#enabled) return;
     this.#enabled = next;
+    // Beim Ein- und Ausschalten ist alles losgelassen: keyup-Ereignisse aus der Zeit dazwischen fehlen
+    this.#releaseAll();
+    this.#pendingFlyToggle = false;
     if (next) {
       const doc = this.#element.ownerDocument;
       const win = doc.defaultView;
+      const touchOptions = { capture: true, passive: true };
       this.#activeOffs.push(
         listen(win, 'keydown', (e) => this.#keyDown(e)),
         listen(win, 'keyup', (e) => this.#keyUp(e)),
         listen(win, 'blur', () => this.#releaseAll()),
+        listen(win, 'contextmenu', (e) => this.#contextMenu(e)),
         listen(doc, 'visibilitychange', () => { if (doc.hidden) this.#releaseAll(); }),
-        listen(doc, 'pointerlockchange', () => this.#element.focus({ preventScroll: true })),
+        listen(doc, 'pointerlockchange', () => this.#pointerLockChange()),
+        listen(doc, 'fullscreenchange', () => this.#releaseAll()),
         listen(doc, 'mousemove', (e) => this.#lockedMouseMove(e)),
+        listen(doc, 'pointerup', (e) => this.#pointerEnded(e), true),
+        listen(doc, 'pointercancel', (e) => this.#pointerEnded(e), true),
+        listen(doc, 'touchend', (e) => this.#touchEnded(e), touchOptions),
+        listen(doc, 'touchcancel', (e) => this.#touchEnded(e), touchOptions),
       );
       this.#accumulator = 0;
       if (this.#touchUsed || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)) this.#showOverlay();
     } else {
       for (const off of this.#activeOffs) off();
       this.#activeOffs = [];
-      this.#releaseAll();
       this.#hideOverlay();
       this.exitPointerLock();
     }
@@ -928,7 +955,14 @@ export class WalkControls {
   #held(action) {
     for (const code of this.#keys) if (WALK_KEYS[code] === action) return true;
     for (const code of this.#latched) if (WALK_KEYS[code] === action) return true;
-    return this.#touchHeld.has(action);
+    for (const held of this.#touchHeld.values()) if (held === action) return true;
+    return false;
+  }
+
+  // Tastatur gehört der Ansicht: Zeigersperre, Fokus auf dem Canvas oder auf der Touch-Steuerung
+  #keyboardFocused() {
+    const doc = this.#element.ownerDocument;
+    return this.#isLocked() || doc.activeElement === this.#element || Boolean(this.#overlay?.root.contains(doc.activeElement));
   }
 
   #input() {
@@ -961,13 +995,19 @@ export class WalkControls {
   }
 
   #keyDown(event) {
-    if (!this.#enabled || event.altKey || event.metaKey || isTypingTarget(event.target)) return;
-    const doc = this.#element.ownerDocument;
-    if (!this.#isLocked() && doc.activeElement !== this.#element && !this.#overlay?.root.contains(doc.activeElement)) return;
+    if (!this.#enabled) return;
+    this.#syncModifiers(event);
+    // Esc lässt immer alles los, auch wenn der Fokus woanders liegt; beendet wird nur aus der Ansicht heraus
     if (event.code === 'Escape') {
-      if (!this.#isLocked() && this.#options.onExit) this.#options.onExit();
+      this.#releaseAll();
+      if (!this.#isLocked() && this.#keyboardFocused() && !isTypingTarget(event.target) && this.#options.onExit) this.#options.onExit();
       return;
     }
+    if (event.altKey || event.metaKey || SYSTEM_KEYS.has(event.code)) {
+      this.#releaseKeys();
+      return;
+    }
+    if (isTypingTarget(event.target) || !this.#keyboardFocused()) return;
     const action = WALK_KEYS[event.code];
     if (!action) return;
     if (action === 'sprint') this.#guardUnload(true);
@@ -977,19 +1017,89 @@ export class WalkControls {
     event.preventDefault();
   }
 
+  // Loslassen braucht kein vorheriges Drücken und keinen Fokus: jedes keyup beendet seine Taste
   #keyUp(event) {
+    if (!this.#enabled) return;
+    this.#syncModifiers(event);
+    if (SYSTEM_KEYS.has(event.code)) {
+      // macOS: Was während der gehaltenen Cmd-Taste losgelassen wurde, hat kein keyup geschickt
+      this.#releaseKeys();
+      return;
+    }
     if (!this.#keys.delete(event.code)) return;
     if (WALK_KEYS[event.code] === 'sprint' && !this.#held('sprint')) this.#guardUnload(false);
   }
 
-  #releaseAll() {
+  // Strg und Umschalt melden ihren Zustand mit jedem Tasten- und Mausereignis: Ein verlorenes keyup
+  // (z. B. nach der Rückfrage bei Strg+W) heilt so beim nächsten Ereignis.
+  #syncModifiers(event) {
+    const code = typeof event.code === 'string' ? event.code : '';
+    let dropped = false;
+    for (const held of [...this.#keys]) {
+      const stale = (held.startsWith('Control') && event.ctrlKey === false && !code.startsWith('Control'))
+        || (held.startsWith('Shift') && event.shiftKey === false && !code.startsWith('Shift'));
+      if (stale) {
+        this.#keys.delete(held);
+        dropped = true;
+      }
+    }
+    if (dropped && !this.#held('sprint')) this.#guardUnload(false);
+  }
+
+  #releaseKeys() {
     this.#keys.clear();
     this.#latched.clear();
-    this.#touchHeld.clear();
-    this.#stick = { id: null, left: 0, forward: 0 };
-    this.#look = null;
     this.#guardUnload(false);
+  }
+
+  #releaseTouch() {
+    this.#touchHeld.clear();
+    this.#resetStick();
+    if (this.#look?.type === 'touch') this.#look = null;
+  }
+
+  #releaseAll() {
+    this.#releaseKeys();
+    this.#releaseTouch();
+    this.#look = null;
     this.#updateOverlay();
+  }
+
+  #resetStick() {
+    this.#stick = { id: null, left: 0, forward: 0 };
+    if (this.#overlay) this.#overlay.knob.style.transform = '';
+  }
+
+  // Esc beendet die Zeigersperre im Browser selbst: Die Seite sieht die Taste nicht, und Chrome verschluckt danach
+  // alle keyup bis zum nächsten Tastendruck. Darum hier alles loslassen (wie das Spiel beim Öffnen des Menüs).
+  #pointerLockChange() {
+    if (!this.#isLocked()) this.#releaseAll();
+    this.#element.focus({ preventScroll: true });
+  }
+
+  // Im Lauf-Modus kein Kontextmenü über der Ansicht; ein Menü anderswo schluckt die keyup-Ereignisse
+  #contextMenu(event) {
+    const target = event.target;
+    const ours = target === this.#element || Boolean(this.#overlay && typeof target?.nodeType === 'number' && this.#overlay.root.contains(target));
+    if (ours) {
+      event.preventDefault();
+      return;
+    }
+    if (!event.defaultPrevented) this.#releaseAll();
+  }
+
+  // Ende eines Zeigers irgendwo auf der Seite (auch wenn das Fangen verloren ging)
+  #pointerEnded(event) {
+    const id = event.pointerId;
+    this.#touchHeld.delete(id);
+    if (this.#stick.id === id) this.#resetStick();
+    if (this.#look?.id === id) this.#endLook(id);
+  }
+
+  // Kein Finger mehr auf dem Bildschirm: nichts Berührtes kann noch gehalten sein
+  #touchEnded(event) {
+    if (event.touches && event.touches.length > 0) return;
+    this.#releaseTouch();
   }
 
   // Strg+W schließt im Browser den Tab und lässt sich nicht abfangen. Solange Strg gehalten wird,
@@ -1009,13 +1119,16 @@ export class WalkControls {
   }
 
   #lockedMouseMove(event) {
-    if (!this.#enabled || !this.#isLocked()) return;
+    if (!this.#enabled) return;
+    this.#syncModifiers(event);
+    if (!this.#isLocked()) return;
     const s = this.#options.sensitivity;
     this.#turn(event.movementX * s, event.movementY * s);
   }
 
   #pointerDown(event) {
     if (!this.#enabled) return;
+    this.#syncModifiers(event);
     this.#element.focus({ preventScroll: true });
     if (event.pointerType === 'touch') {
       if (!this.#touchUsed) {
@@ -1025,14 +1138,21 @@ export class WalkControls {
     } else if (event.pointerType === 'mouse' && event.button === 0 && !this.#isLocked()) {
       this.requestPointerLock();
     }
-    if (this.#isLocked() || this.#look) return;
-    this.#element.setPointerCapture?.(event.pointerId);
-    this.#look = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    // Ein zweiter Finger dreht nicht mit; derselbe Zeiger ersetzt ein Ziehen, dessen Ende verloren ging
+    if (this.#isLocked() || (this.#look && this.#look.id !== event.pointerId)) return;
+    safeCapture(this.#element, event.pointerId, true);
+    this.#look = { id: event.pointerId, type: event.pointerType, x: event.clientX, y: event.clientY };
     event.preventDefault();
   }
 
   #pointerMove(event) {
-    if (!this.#look || this.#look.id !== event.pointerId || this.#isLocked()) return;
+    if (!this.#look || this.#look.id !== event.pointerId) return;
+    // Maus ohne gedrückte Taste: Das Loslassen ging verloren (z. B. außerhalb des Fensters) → Ziehen beenden
+    if (event.pointerType !== 'touch' && event.buttons === 0) {
+      this.#endLook(event.pointerId);
+      return;
+    }
+    if (this.#isLocked()) return;
     const dx = event.clientX - this.#look.x, dy = event.clientY - this.#look.y;
     this.#look.x = event.clientX;
     this.#look.y = event.clientY;
@@ -1041,10 +1161,12 @@ export class WalkControls {
   }
 
   #pointerUp(event) {
-    if (this.#look && this.#look.id === event.pointerId) {
-      this.#look = null;
-      this.#element.releasePointerCapture?.(event.pointerId);
-    }
+    if (this.#look && this.#look.id === event.pointerId) this.#endLook(event.pointerId);
+  }
+
+  #endLook(pointerId) {
+    this.#look = null;
+    safeCapture(this.#element, pointerId, false);
   }
 
   #showOverlay() {
@@ -1097,11 +1219,11 @@ export class WalkControls {
     const hold = (button, action) => {
       const press = (event) => {
         event.preventDefault();
-        button.setPointerCapture?.(event.pointerId);
-        this.#touchHeld.add(action);
+        safeCapture(button, event.pointerId, true);
+        this.#touchHeld.set(event.pointerId, action);
         if (action === 'jump') this.#latched.add('Space');
       };
-      const release = () => this.#touchHeld.delete(action);
+      const release = (event) => this.#touchHeld.delete(event.pointerId);
       button.addEventListener('pointerdown', press);
       button.addEventListener('pointerup', release);
       button.addEventListener('pointercancel', release);
@@ -1135,7 +1257,7 @@ export class WalkControls {
     };
     stick.addEventListener('pointerdown', (event) => {
       event.preventDefault();
-      stick.setPointerCapture?.(event.pointerId);
+      safeCapture(stick, event.pointerId, true);
       this.#stick.id = event.pointerId;
       moveStick(event);
     });
@@ -1143,9 +1265,7 @@ export class WalkControls {
       if (this.#stick.id === event.pointerId) moveStick(event);
     });
     const endStick = (event) => {
-      if (this.#stick.id !== event.pointerId) return;
-      this.#stick = { id: null, left: 0, forward: 0 };
-      knob.style.transform = '';
+      if (this.#stick.id === event.pointerId) this.#resetStick();
     };
     stick.addEventListener('pointerup', endStick);
     stick.addEventListener('pointercancel', endStick);
