@@ -11,7 +11,7 @@ export const meta = {
   title: 'Weizenfarm mit Wasser-Ernte',
   category: 'farmen',
   subtitle: 'Ein Knopfdruck spült das reife Feld in die Truhe',
-  tags: ['Farm', 'Weizen', 'Ackerbau', 'Wasser', 'Werfer', 'Trichter', 'Halbautomatisch', 'Redstone', 'Anfänger', 'Brot'],
+  tags: ['Farm', 'Weizen', 'Ackerbau', 'Wasser', 'Werfer', 'Trichter', 'Halbautomatisch', 'Redstone', 'Brot'],
   aliases: [
     'weizenfarm', 'weizen farm', 'weizenfarm wasser', 'wasser ernte', 'wasserernte', 'halbautomatische weizenfarm',
     'feld', 'ackerfeld', 'weizenfeld', 'weitzenfarm', 'weizn farm', 'getreidefarm', 'brotfarm', 'wheat farm',

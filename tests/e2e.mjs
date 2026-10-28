@@ -317,7 +317,12 @@ async function checkGuideWithoutTexts(page, label) {
   const found = await page.eval(`(() => {
     const removed = document.querySelectorAll('.bv-step__title, .bv-step__text, .bv-chapter__text, .bv-tips, .bv-note, .bv-notes, .bv-marker, .difficulty').length;
     const steps = [...document.querySelectorAll('.bv-step')];
-    const badSteps = steps.filter((b) => b.children.length !== 2 || !/^[\\d.]+ (?:Block|Blöcke)( · y = -?\\d+)?$/.test(b.querySelector('.bv-step__meta')?.textContent ?? '')).length;
+    // Kurzinfo „24 Blöcke“ oder „24 Blöcke · Ebene 3 (y = 2)“ – Ebene 1 = y 0
+    const metaOk = (text) => {
+      const m = /^[\\d.]+ (?:Block|Blöcke)(?: · Ebene ([\\d.]+) \\(y = ([\\d.]+)\\))?$/.exec(text);
+      return Boolean(m) && (m[1] === undefined || Number(m[1].replaceAll('.', '')) === Number(m[2].replaceAll('.', '')) + 1);
+    };
+    const badSteps = steps.filter((b) => b.children.length !== 2 || !metaOk(b.querySelector('.bv-step__meta')?.textContent ?? '')).length;
     const chapters = [...document.querySelectorAll('.bv-chapter__title')].filter((h) => h.textContent.trim() !== '').length;
     return { removed, badSteps, chapters, total: document.querySelectorAll('.bv-chapter').length };
   })()`);

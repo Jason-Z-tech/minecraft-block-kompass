@@ -628,6 +628,11 @@
   color: var(--c-text-muted);
 }
 
+/* Ebene und y bleiben beim Umbruch zusammen */
+.bv-step__layer {
+  white-space: nowrap;
+}
+
 .bv-step.is-done .bv-step__num {
   color: var(--c-on-accent);
   background: var(--c-grass);

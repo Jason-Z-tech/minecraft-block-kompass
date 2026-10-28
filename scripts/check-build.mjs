@@ -16,6 +16,14 @@ export const ACCURACIES = ['original', 'massstab', 'vorlage', 'nachempfunden', '
 const META_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources', 'credits', 'scales', 'tested'];
 // Felder, die es früher gab: stehen sie noch im Modul, ist das ein Fehler.
 const REMOVED_META_KEYS = ['difficulty', 'facts'];
+// Schlagwörter, die eine Schwierigkeit nennen – die Schwierigkeit gibt es nicht mehr (auch nicht als Tag).
+const DIFFICULTY_TAGS = ['anfänger', 'einsteiger', 'fortgeschritten', 'profi', 'experte', 'schwierigkeit'];
+
+/** Tags aus der Liste, die eine Schwierigkeit nennen (Groß-/Kleinschreibung egal). */
+export function difficultyTags(tags) {
+  return Array.isArray(tags) ? tags.filter((t) => typeof t === 'string' && DIFFICULTY_TAGS.includes(t.trim().toLowerCase())) : [];
+}
+
 const ID_PATTERN = /^[a-z0-9-]{2,80}$/;
 const TOP_MATERIALS = 20;
 
@@ -97,6 +105,7 @@ export function validateMeta(meta, { fileId, folderCategory = null }) {
   else if (folderCategory && folderCategory !== meta.category) errors.push(`meta.category „${meta.category}“ passt nicht zum Ordner „${folderCategory}“.`);
   if (!ACCURACIES.includes(meta.accuracy)) errors.push(`meta.accuracy muss eine von ${ACCURACIES.join(', ')} sein.`);
   for (const key of ['tags', 'aliases']) checkTextList(meta, key, errors);
+  for (const tag of difficultyTags(meta.tags)) errors.push(`meta.tags: „${tag}“ ist eine Schwierigkeit – die gibt es nicht mehr.`);
   if (Array.isArray(meta.aliases) && meta.aliases.some((a) => typeof a === 'string' && a !== a.toLowerCase())) warnings.push('meta.aliases sollten klein geschrieben sein (für die Suche).');
   checkSources(meta, errors);
   checkCredits(meta, errors);

@@ -215,7 +215,6 @@ export class Stage {
       slider.value = String(layer);
       slider.style.setProperty('--fill', `${height > 1 ? ((layer - 1) / (height - 1)) * 100 : 100}%`);
       setPressed(clip, active);
-      this.#ctx.events.emit('clip', active ? layer - 1 : null);
     };
     slider.addEventListener('input', () => applyClip(Number(slider.value)));
     off.addEventListener('click', () => applyClip(height));

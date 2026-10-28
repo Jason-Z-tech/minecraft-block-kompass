@@ -103,6 +103,17 @@ test('Schwierigkeit und Wissenswertes gibt es nicht mehr: meta.difficulty und me
   assert.deepEqual(check({}), { errors: [], warnings: [] });
 });
 
+test('Schwierigkeit auch nicht als Schlagwort: Tags wie „Anfänger“ sind Fehler', () => {
+  const check = (tags) => validateMeta({ ...goodMeta(), tags }, { fileId: 'turm' });
+  assert.deepEqual(check(['Turm', 'Anfänger']), { errors: ['meta.tags: „Anfänger“ ist eine Schwierigkeit – die gibt es nicht mehr.'], warnings: [] });
+  assert.deepEqual(check(['einsteiger', 'Fortgeschritten']).errors, [
+    'meta.tags: „einsteiger“ ist eine Schwierigkeit – die gibt es nicht mehr.',
+    'meta.tags: „Fortgeschritten“ ist eine Schwierigkeit – die gibt es nicht mehr.',
+  ]);
+  // Nur ganze Tags zählen: „Starterhaus“ oder „Klein“ sind keine Schwierigkeit.
+  assert.deepEqual(check(['Starterhaus', 'Klein', 'Profiküche']), { errors: [], warnings: [] });
+});
+
 test('Fehlerhafte Module: unbekannter Block, Zufall, fehlende build-Funktion, Maßstab', async () => {
   await mkdir(path.join(PROJECT_ROOT, 'tmp'), { recursive: true });
   const dir = await mkdtemp(path.join(PROJECT_ROOT, 'tmp', 'check-build-'));

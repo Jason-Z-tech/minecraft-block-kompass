@@ -10,7 +10,7 @@ export const meta = {
   title: 'Zuckerrohrfarm',
   category: 'farmen',
   subtitle: 'Vollautomatisch mit Beobachtern, Kolben und Trichtern',
-  tags: ['Farm', 'Zuckerrohr', 'Automatisch', 'Redstone', 'Beobachter', 'Kolben', 'Trichter', 'Papier', 'Technik', 'Anfänger'],
+  tags: ['Farm', 'Zuckerrohr', 'Automatisch', 'Redstone', 'Beobachter', 'Kolben', 'Trichter', 'Papier', 'Technik'],
   aliases: [
     'zuckerrohrfarm', 'zuckerrohr farm', 'automatische zuckerrohrfarm', 'zuckerrohr', 'zuckerrohfarm', 'zuckerohrfarm',
     'papierfarm', 'papier farm', 'sugar cane farm', 'sugarcane farm', 'automatic sugar cane farm', 'sugar cane',

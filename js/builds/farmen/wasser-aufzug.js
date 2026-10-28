@@ -10,14 +10,14 @@ export const meta = {
   title: 'Wasser-Aufzug',
   category: 'farmen',
   subtitle: 'Blasensäulen hoch und runter im Glasschacht',
-  tags: ['Aufzug', 'Wasser', 'Blasensäule', 'Seelensand', 'Magmablock', 'Technik', 'Anfänger', 'Ohne Redstone'],
+  tags: ['Aufzug', 'Wasser', 'Blasensäule', 'Seelensand', 'Magmablock', 'Technik', 'Ohne Redstone'],
   aliases: [
     'wasser-aufzug', 'wasseraufzug', 'wasser aufzug', 'wasserlift', 'wasser lift', 'blasenaufzug', 'blasensäule',
     'blasensaeule', 'seelensand aufzug', 'magma aufzug', 'aufzug', 'fahrstuhl', 'wasserfahrstuhl', 'water elevator',
     'bubble elevator', 'bubble column elevator', 'soul sand elevator', 'elevator', 'wasseraufzg', 'wasser auf zug',
   ],
   accuracy: 'vorlage',
-  description: 'Zwei Glasschächte voller Wasserquellen: Unter dem linken liegt Seelensand, er macht eine Blasensäule, die dich nach oben trägt. Unter dem rechten liegt ein Magmablock, seine Blasensäule zieht dich schnell nach unten. Unten gehst du durch eine Tür hinein, oben steigst du auf eine kleine, überdachte Plattform aus. Das Wichtigste ist, dass jeder Schacht von unten bis oben aus Wasserquellen besteht – die Anleitung zeigt, wie das mit Seetang ganz einfach geht.',
+  description: 'Zwei Glasschächte voller Wasserquellen: Unter dem linken liegt Seelensand, er macht eine Blasensäule, die dich nach oben trägt. Unter dem rechten liegt ein Magmablock, seine Blasensäule zieht dich schnell nach unten. Unten gehst du durch eine Tür hinein, oben steigst du auf eine kleine, überdachte Plattform aus. Das Wichtigste ist, dass jeder Schacht von unten bis oben aus Wasserquellen besteht.',
   sources: [
     { title: 'Minecraft Wiki: Blasensäule (englisch)', url: 'https://minecraft.wiki/w/Bubble_Column' },
     { title: 'Minecraft Wiki: Seetang (englisch)', url: 'https://minecraft.wiki/w/Kelp' },

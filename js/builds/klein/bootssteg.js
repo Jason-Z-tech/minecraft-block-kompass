@@ -8,7 +8,7 @@ export const meta = {
   title: 'Bootssteg mit Hütte',
   category: 'klein',
   subtitle: 'Holzsteg mit Pollern und Angelplatz, dazu eine kleine Fischerhütte am Ufer',
-  tags: ['Steg', 'Bootssteg', 'Anlegestelle', 'Fischerhütte', 'Hütte', 'Angeln', 'Wasser', 'Teich', 'See', 'Holz', 'Klein', 'Anfänger'],
+  tags: ['Steg', 'Bootssteg', 'Anlegestelle', 'Fischerhütte', 'Hütte', 'Angeln', 'Wasser', 'Teich', 'See', 'Holz', 'Klein'],
   aliases: [
     'bootssteg', 'steg', 'boot steg', 'bootsteg', 'holzsteg', 'anlegestelle', 'anleger', 'fischerhütte', 'fischerhuette',
     'angelsteg', 'angelplatz', 'dock', 'boat dock', 'pier', 'jetty', 'fishing dock', 'fishing hut', 'fisherman hut', 'wooden dock',

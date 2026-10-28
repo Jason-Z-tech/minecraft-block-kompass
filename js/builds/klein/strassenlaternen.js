@@ -8,7 +8,7 @@ export const meta = {
   title: 'Straßenlaternen',
   category: 'klein',
   subtitle: 'Drei Laternen-Stile: rustikal aus Holz, Stadt mit Eisen-Optik und modern',
-  tags: ['Laterne', 'Straßenlaterne', 'Licht', 'Beleuchtung', 'Deko', 'Straße', 'Dorf', 'Stadt', 'Modern', 'Klein', 'Anfänger'],
+  tags: ['Laterne', 'Straßenlaterne', 'Licht', 'Beleuchtung', 'Deko', 'Straße', 'Dorf', 'Stadt', 'Modern', 'Klein'],
   aliases: [
     'strassenlaterne', 'straßenlaterne', 'strassenlaternen', 'straßenlaternen', 'laterne', 'laternen', 'laternenpfahl',
     'strassenlampe', 'straßenlampe', 'lampe', 'lampen', 'beleuchtung', 'strasenlaterne', 'laterne bauen',

@@ -10,7 +10,7 @@ export const meta = {
   title: 'Strandhaus auf Stelzen',
   category: 'haeuser',
   subtitle: 'Helles Holzhaus über Sand und Lagune, mit Veranda, Steg und Palmen',
-  tags: ['Haus', 'Strand', 'Meer', 'Stelzenhaus', 'Holzhaus', 'Birke', 'Veranda', 'Steg', 'Palmen', 'Sommer', 'Einsteiger'],
+  tags: ['Haus', 'Strand', 'Meer', 'Stelzenhaus', 'Holzhaus', 'Birke', 'Veranda', 'Steg', 'Palmen', 'Sommer'],
   aliases: [
     'strandhaus', 'stelzenhaus', 'strand haus', 'haus auf stelzen', 'pfahlhaus', 'beach house', 'stilt house', 'beachhouse',
     'beach hut', 'strandhütte', 'strandhuette', 'ferienhaus', 'haus am meer', 'haus am strand', 'lagunenhaus', 'strandhaus stelzen',

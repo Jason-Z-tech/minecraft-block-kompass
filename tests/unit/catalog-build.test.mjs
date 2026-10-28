@@ -162,6 +162,7 @@ describe('Hilfsfunktionen', () => {
     assert.deepEqual(validateStructureDefinition({ ...good, difficulty: 2 }), ['difficulty gibt es nicht mehr.']);
     assert.deepEqual(validateStructureDefinition({ ...good, facts: ['x'] }), ['facts gibt es nicht mehr.']);
     assert.deepEqual(validateStructureDefinition({ ...good, facts: [] }), ['facts gibt es nicht mehr.'], 'auch eine leere Liste');
+    assert.deepEqual(validateStructureDefinition({ ...good, tags: ['Dorf', 'Anfänger'] }), ['tags: „Anfänger“ ist eine Schwierigkeit – die gibt es nicht mehr.']);
     const redstone = validateStructureDefinition({ ...good, category: 'redstone' });
     assert.equal(redstone.length, 1);
     assert.match(redstone[0], /^category muss eine von haeuser, wahrzeichen, fantasy, mittelalter, klein, farmen, infrastruktur sein\.$/);

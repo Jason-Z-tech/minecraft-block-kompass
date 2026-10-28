@@ -79,7 +79,7 @@ async function desktopFlow(server) {
     const removed = await page.eval("document.querySelectorAll('.bv-step__title, .bv-step__text, .bv-chapter__text, .bv-tips, .bv-note, .bv-notes, .bv-marker, .difficulty').length");
     check('Keine Schritt-Namen, Texte, Tipps, Notizen oder Schwierigkeit', removed === 0, `${removed} Elemente`);
     const steps = await page.eval("[...document.querySelectorAll('.bv-step')].map((b) => [...b.children].map((c) => c.className + '=' + c.textContent).join(' | '))");
-    check('Schritte zeigen nur Nummer, Blockzahl und Ebene', steps.length === 18 && steps.every((line) => /^bv-step__num=Schritt \d+ \| bv-step__meta=[\d.]+ (?:Block|Blöcke)( · y = -?\d+)?$/.test(line)), steps.slice(0, 2).join(' / '));
+    check('Schritte zeigen nur Nummer, Blockzahl und Ebene', steps.length === 18 && steps.every((line) => /^bv-step__num=Schritt \d+ \| bv-step__meta=[\d.]+ (?:Block|Blöcke)( · Ebene [\d.]+ \(y = [\d.]+\))?$/.test(line)), steps.slice(0, 2).join(' / '));
     const chapters = await page.eval("[...document.querySelectorAll('.bv-chapter__title')].map((h) => h.textContent)");
     check('Kapitel-Titel bleiben', chapters.join(',') === 'Fundament,Wände,Tür und Fenster,Dach,Einrichtung,Vorgarten', chapters.join(', '));
 
@@ -96,7 +96,7 @@ async function desktopFlow(server) {
     check('Tastatur: Pos1 und → zeigen Schritt 1', /Schritt 1/.test(label1), label1);
     check('Anleitung markiert Schritt 1', await page.eval("document.querySelector('.bv-step.is-current')?.dataset.step === '0'"));
     const now = await page.eval("({ lines: [...document.querySelectorAll('.bv-player__now p')].map((p) => p.textContent), live: document.querySelector('.bv-player p[aria-live]').textContent })");
-    check('Player: Kapitel, Blockzahl und Ebene statt Schritt-Name und Anleitungssatz', now.lines.join(' | ') === 'Kapitel 1 von 6 | Fundament | 63 Blöcke · y = 0', now.lines.join(' | '));
+    check('Player: Kapitel, Blockzahl und Ebene statt Schritt-Name und Anleitungssatz', now.lines.join(' | ') === 'Kapitel 1 von 6 | Fundament | 63 Blöcke · Ebene 1 (y = 0)', now.lines.join(' | '));
     check('Live-Region: „Schritt 1 von 18 (Fundament).“', now.live === 'Schritt 1 von 18 (Fundament).', now.live);
     await shot(page, 'desktop-03-schritt-1');
 

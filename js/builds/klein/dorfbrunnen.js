@@ -8,7 +8,7 @@ export const meta = {
   title: 'Dorfbrunnen',
   category: 'klein',
   subtitle: 'Runder Steinbrunnen mit Satteldach und Seilwinde',
-  tags: ['Brunnen', 'Dorf', 'Mittelalter', 'Deko', 'Wasser', 'Dorfplatz', 'Klein', 'Anfänger'],
+  tags: ['Brunnen', 'Dorf', 'Mittelalter', 'Deko', 'Wasser', 'Dorfplatz', 'Klein'],
   aliases: [
     'brunnen', 'dorfbrunnen', 'dorf brunnen', 'ziehbrunnen', 'steinbrunnen', 'wunschbrunnen', 'brunen', 'dorfbrunen',
     'well', 'village well', 'wishing well', 'medieval well', 'stone well', 'mittelalter brunnen',

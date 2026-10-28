@@ -12,7 +12,7 @@ export const meta = {
   title: 'Wachturm',
   category: 'mittelalter',
   subtitle: 'Bemooster Steinturm mit Holzausguck und Feuerkorb',
-  tags: ['Turm', 'Mittelalter', 'Burg', 'Wachposten', 'Zinnen', 'Steinziegel', 'Bruchstein', 'Leiter', 'Lagerfeuer', 'Anfänger'],
+  tags: ['Turm', 'Mittelalter', 'Burg', 'Wachposten', 'Zinnen', 'Steinziegel', 'Bruchstein', 'Leiter', 'Lagerfeuer'],
   aliases: [
     'wachturm', 'wach turm', 'watchtower', 'watch tower', 'guard tower', 'wachtturm', 'wachtrum', 'aussichtsturm',
     'steinturm', 'stone tower', 'turm', 'mittelalterlicher turm', 'medieval tower', 'signalturm', 'feuerturm', 'burgturm',

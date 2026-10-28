@@ -8,7 +8,7 @@ export const meta = {
   title: 'Parkbank mit Blumenbeet',
   category: 'klein',
   subtitle: 'Sitzbank mit Lehne und Armlehnen vor einem Hochbeet, mit Laterne und Kiesweg',
-  tags: ['Bank', 'Parkbank', 'Blumenbeet', 'Hochbeet', 'Park', 'Garten', 'Deko', 'Sitzplatz', 'Klein', 'Anfänger'],
+  tags: ['Bank', 'Parkbank', 'Blumenbeet', 'Hochbeet', 'Park', 'Garten', 'Deko', 'Sitzplatz', 'Klein'],
   aliases: [
     'parkbank', 'bank', 'sitzbank', 'gartenbank', 'holzbank', 'park bank', 'blumenbeet', 'hochbeet', 'beet',
     'bench', 'park bench', 'garden bench', 'flower bed', 'flowerbed', 'sitzecke', 'parkbankk', 'parkbnak',

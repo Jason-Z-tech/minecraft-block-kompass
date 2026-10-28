@@ -8,7 +8,7 @@ export const meta = {
   title: 'Starterhaus aus Eiche',
   category: 'haeuser',
   subtitle: 'Kleines Giebelhaus für die erste Nacht aus Eiche, Bruchstein und Glas, Dach aus Fichte',
-  tags: ['Starterhaus', 'Anfänger', 'Erster Tag', 'Überleben', 'Survival', 'Eiche', 'Holzhaus', 'Klein', 'Giebeldach', 'Vorgarten', 'Günstig'],
+  tags: ['Starterhaus', 'Erster Tag', 'Überleben', 'Survival', 'Eiche', 'Holzhaus', 'Klein', 'Giebeldach', 'Vorgarten', 'Günstig'],
   aliases: [
     'starterhaus', 'starter haus', 'startahaus', 'erstes haus', 'anfängerhaus', 'anfaengerhaus', 'einfaches haus', 'kleines haus',
     'holzhaus', 'eichenhaus', 'survival haus', 'überlebenshaus', 'haus für den ersten tag', 'starter house', 'oak starter house',

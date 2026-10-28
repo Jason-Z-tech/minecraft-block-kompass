@@ -2,7 +2,13 @@
 // zum Schritt, der aktuelle Schritt ist markiert. Hover/Fokus auf einem Schritt hebt ihn in 3D hervor.
 import { el } from '../dom.js';
 import { formatNumber, formatCount } from '../shared.js';
-import { phaseNumber, stepMeta } from './step-model.js';
+import { phaseNumber, stepMetaParts } from './step-model.js';
+
+// Kurzinfo „24 Blöcke · Ebene 3 (y = 2)“; die Ebene bricht nur als Ganzes um (schmale Handys)
+function stepMetaElement(step) {
+  const [count, layer] = stepMetaParts(step);
+  return el('span', { class: 'bv-step__meta' }, count, layer ? ' · ' : null, layer ? el('span', { class: 'bv-step__layer' }, layer) : null);
+}
 
 export class Guide {
   #ctx;
@@ -31,7 +37,7 @@ export class Guide {
       const steps = phase.steps.map((stepIndex) => {
         const button = el('button', { class: 'bv-step', type: 'button', dataset: { step: stepIndex } },
           el('span', { class: 'bv-step__num' }, el('span', { class: 'visually-hidden' }, 'Schritt '), formatNumber(stepIndex + 1)),
-          el('span', { class: 'bv-step__meta' }, stepMeta(result.steps[stepIndex])));
+          stepMetaElement(result.steps[stepIndex]));
         button.addEventListener('click', () => this.#ctx.goToStep(stepIndex));
         button.addEventListener('pointerenter', () => this.#ctx.previewStep(stepIndex));
         button.addEventListener('pointerleave', () => this.#ctx.previewStep(null));

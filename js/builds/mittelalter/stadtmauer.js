@@ -20,8 +20,7 @@ export const meta = {
   accuracy: 'eigenes',
   description: 'Ein Abschnitt einer mittelalterlichen Stadtmauer, den du beliebig verlängern kannst: Mauerturm mit drei '
     + 'Stockwerken und Zinnenkranz, 19 Blöcke Mauer mit Wehrgang, Zinnen und Stützpfeilern auf der Feldseite. Auf der '
-    + 'Stadtseite gliedern Bogennischen mit Schießscharten die Mauer, eine breite Steintreppe führt zum Wehrgang hinauf. '
-    + 'Die Anleitung zeigt, wie du Turm und Mauerstück immer wieder aneinandersetzt.',
+    + 'Stadtseite gliedern Bogennischen mit Schießscharten die Mauer, eine breite Steintreppe führt zum Wehrgang hinauf.',
   sources: [],
   credits: null,
   tested: null,

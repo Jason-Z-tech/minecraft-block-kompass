@@ -12,7 +12,7 @@ export const meta = {
   title: 'Schmiede',
   category: 'mittelalter',
   subtitle: 'Offene Dorfschmiede mit Esse, Amboss und Wassertrog',
-  tags: ['Mittelalter', 'Dorf', 'Werkstatt', 'Schmied', 'Esse', 'Amboss', 'Fachwerk', 'Klein', 'Einsteiger'],
+  tags: ['Mittelalter', 'Dorf', 'Werkstatt', 'Schmied', 'Esse', 'Amboss', 'Fachwerk', 'Klein'],
   aliases: [
     'schmiede', 'schmide', 'schmiedte', 'dorfschmiede', 'mittelalter schmiede', 'mittelalterliche schmiede', 'waffenschmiede',
     'hufschmied', 'esse', 'werkstatt schmied', 'blacksmith', 'smithy', 'forge', 'blacksmith house', 'medieval blacksmith',

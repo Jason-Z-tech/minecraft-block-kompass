@@ -11,7 +11,7 @@ import buildHouse from '../fixtures/core/example-house.js';
 import * as stepModel from '../../js/ui/build/step-model.js';
 import {
   shownStep, clampProgress, previousTarget, nextTarget, progressForStep, phaseSegments, segmentFill, phaseNumber, phaseCount,
-  stepAnnouncement, stepMeta, dominantLayer, shortcutAllowed,
+  stepAnnouncement, stepMeta, stepMetaParts, dominantLayer, shortcutAllowed,
 } from '../../js/ui/build/step-model.js';
 import { advancePlayback, stepLabel, SPEEDS } from '../../js/ui/build/step-player.js';
 import * as guide from '../../js/ui/build/guide.js';
@@ -117,9 +117,15 @@ test('Schritt-Label', () => {
 });
 
 test('Kurzinfo eines Schritts in Anleitung und Player', () => {
-  assert.equal(stepMeta(result.steps[0]), '63 Blöcke · y = 0');
+  // Ebene 1 = y 0, wie im Ebenen-Plan und in den Kapiteltiteln der Formen („Ebene 1–10“)
+  assert.equal(stepMeta(result.steps[0]), '63 Blöcke · Ebene 1 (y = 0)');
+  assert.equal(stepMeta({ blockCount: 24, layerY: 2 }), '24 Blöcke · Ebene 3 (y = 2)');
+  assert.equal(stepMeta({ blockCount: 1, layerY: 1199 }), '1 Block · Ebene 1.200 (y = 1.199)');
   assert.equal(stepMeta({ blockCount: 1, layerY: null }), '1 Block');
   assert.equal(stepMeta({ blockCount: 1234, layerY: null }), '1.234 Blöcke');
+  // Teile für die Anleitung: die Ebene bricht nur als Ganzes um
+  assert.deepEqual(stepMetaParts({ blockCount: 24, layerY: 2 }), ['24 Blöcke', 'Ebene 3 (y = 2)']);
+  assert.deepEqual(stepMetaParts({ blockCount: 12, layerY: null }), ['12 Blöcke']);
 });
 
 test('Kennzahlen der Infos: aus dem Bau, sonst aus dem Eintrag und seiner Variante', () => {

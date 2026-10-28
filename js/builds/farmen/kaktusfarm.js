@@ -11,7 +11,7 @@ export const meta = {
   title: 'Kaktusfarm',
   category: 'farmen',
   subtitle: 'Passiv: Kaktus bricht am Zaun ab, Wasser trägt ihn zur Truhe',
-  tags: ['Farm', 'Kaktus', 'Passiv', 'Ohne Redstone', 'Wasserstrom', 'Trichter', 'Schnur', 'Wüste', 'Grüner Farbstoff', 'Anfänger', 'Technik'],
+  tags: ['Farm', 'Kaktus', 'Passiv', 'Ohne Redstone', 'Wasserstrom', 'Trichter', 'Schnur', 'Wüste', 'Grüner Farbstoff', 'Technik'],
   aliases: [
     'kaktusfarm', 'kaktus farm', 'kakteenfarm', 'kaktus', 'kaktussfarm', 'kaktusfram', 'automatische kaktusfarm',
     'passive kaktusfarm', 'cactus farm', 'cactus', 'automatic cactus farm', 'passive cactus farm', 'green dye farm',

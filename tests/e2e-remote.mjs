@@ -667,7 +667,7 @@ async function checkSteps(page, label) {
     // Kapitel, Blockzahl und Ebene statt Schritt-Name und Anleitungssatz; Anleitung ohne Texte, Tipps und Notizen
     const now = await page.eval("[...document.querySelectorAll('.bv-player__now p')].map((p) => p.textContent)");
     const removed = await page.eval("document.querySelectorAll('.bv-step__title, .bv-step__text, .bv-chapter__text, .bv-tips, .bv-note, .bv-notes, .bv-marker, .difficulty').length");
-    check(`${label}: ohne Schritt-Namen, Texte, Tipps und Notizen`, /^Kapitel \d+ von \d+$/.test(now[0] ?? '') && /^[\d.]+ (?:Block|Blöcke)( · y = -?\d+)?$/.test(now[2] ?? '') && removed === 0,
+    check(`${label}: ohne Schritt-Namen, Texte, Tipps und Notizen`, /^Kapitel \d+ von \d+$/.test(now[0] ?? '') && /^[\d.]+ (?:Block|Blöcke)( · Ebene [\d.]+ \(y = [\d.]+\))?$/.test(now[2] ?? '') && removed === 0,
       `${now.join(' | ')} · ${removed} alte Elemente`);
     await page.click('.bv-player__controls .btn--icon:nth-of-type(3)');
     await page.waitFor('window.__buildView.context.p === 2', 8000);

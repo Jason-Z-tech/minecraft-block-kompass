@@ -7,6 +7,7 @@ import { Builder } from '../../js/core/builder.js';
 import { setBlockData } from '../../js/core/block-data.js';
 import * as generators from '../../js/create/shape-generators.js';
 import { checkSource, buildShapeResult, EngineError } from '../../js/render/engine-worker.js';
+import { stepMeta } from '../../js/ui/build/step-model.js';
 
 const {
   SHAPES, SHAPE_IDS, MAX_SHAPE_BLOCKS, validateShapeParams, buildShape, parseShapeQuery, shapeQueryString, defaultShapeParams, shapeSize, archGrid,
@@ -195,6 +196,12 @@ describe('buildShape – alle Formen bauen', () => {
   test('große Formen bekommen sinnvolle Kapitel', () => {
     const result = build('sphere', { diameter: 61 });
     assert.deepEqual(result.phases.map((p) => p.title), ['Kugel: Unteres Drittel (Ebene 1–20)', 'Kugel: Mittleres Drittel (Ebene 21–40)', 'Kugel: Oberes Drittel (Ebene 41–61)']);
+    // Kapiteltitel und Kurzinfo der Schritte zählen die Ebenen gleich (Ebene 1 = y 0)
+    for (const phase of result.phases) {
+      const [, from, to] = phase.title.match(/\(Ebene (\d+)–(\d+)\)$/);
+      assert.match(stepMeta(result.steps[phase.steps[0]]), new RegExp(` · Ebene ${from} \\(y = ${from - 1}\\)$`), phase.title);
+      assert.match(stepMeta(result.steps[phase.steps.at(-1)]), new RegExp(` · Ebene ${to} \\(y = ${to - 1}\\)$`), phase.title);
+    }
     assert.equal(result.steps.length, 61);
     const tower = build('cylinder', { diameter: 9, height: 200 });
     assert.equal(tower.phases.length, 4);

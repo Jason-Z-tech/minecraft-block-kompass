@@ -67,10 +67,19 @@ export function stepAnnouncement(result, p) {
   return `Schritt ${formatNumber(shown + 1)} von ${formatNumber(n)}${phase ? ` (${phase.title})` : ''}.${done}`;
 }
 
-/** Kurzinfo eines Schritts: „24 Blöcke · y = 2“ (Ebenen-Schritt) bzw. „12 Blöcke“. */
-export function stepMeta(step) {
+/**
+ * Teile der Kurzinfo: [„24 Blöcke“, „Ebene 3 (y = 2)“] (Ebenen-Schritt) bzw. [„12 Blöcke“].
+ * Ebene 1 = y 0, so zählen auch Ebenen-Plan, Schnitt und die Kapiteltitel der Formen.
+ */
+export function stepMetaParts(step) {
   const count = formatCount(step.blockCount, 'Block', 'Blöcke');
-  return Number.isInteger(step.layerY) ? `${count} · y = ${formatNumber(step.layerY)}` : count;
+  if (!Number.isInteger(step.layerY)) return [count];
+  return [count, `Ebene ${formatNumber(step.layerY + 1)} (y = ${formatNumber(step.layerY)})`];
+}
+
+/** Kurzinfo eines Schritts: „24 Blöcke · Ebene 3 (y = 2)“ bzw. „12 Blöcke“. */
+export function stepMeta(step) {
+  return stepMetaParts(step).join(' · ');
 }
 
 /**

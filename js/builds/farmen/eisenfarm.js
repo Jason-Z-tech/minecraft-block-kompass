@@ -12,7 +12,7 @@ export const meta = {
   title: 'Eisenfarm',
   category: 'farmen',
   subtitle: 'Drei Dorfbewohner, ein Zombie und eine Lavaklinge für Eisengolems',
-  tags: ['Farm', 'Eisen', 'Eisengolem', 'Golem', 'Dorfbewohner', 'Zombie', 'Panik', 'Lava', 'Trichter', 'Automatisch', 'Fortgeschritten'],
+  tags: ['Farm', 'Eisen', 'Eisengolem', 'Golem', 'Dorfbewohner', 'Zombie', 'Panik', 'Lava', 'Trichter', 'Automatisch'],
   aliases: [
     'eisenfarm', 'eisen farm', 'eisengolemfarm', 'eisengolem farm', 'golemfarm', 'golem farm', 'iron farm', 'iron golem farm',
     'ironfarm', 'eisnfarm', 'eisenfram', 'eisen golem farm', 'panik farm', 'villager iron farm', 'dorfbewohner eisenfarm',

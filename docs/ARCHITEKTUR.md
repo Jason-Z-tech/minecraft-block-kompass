@@ -987,7 +987,8 @@ Schritt für 3 s bzw. während des Abspielens (danach aus, damit der Viewer nich
 in `bau.html` die geladene Ansicht (für Klick-Tests). Prüfung: `node tests/visual/build-page-check.mjs` (Screenshots, Abläufe, FPS).
 Änderung (2026-10-28, Anleitung ohne Texte): Es gibt keine Schritt-Namen, Schritt- und Kapiteltexte, Tipps, Notizen (auch keine
 Markierungen in 3D) und keinen Anleitungssatz unter dem Schieberegler. Anleitung: Kapitel mit „Kapitel n“, Titel und Schrittzahl,
-Schritte mit Nummer und Kurzinfo „24 Blöcke · y = 2“ (`stepMeta`). Player: „Kapitel n von N“, Kapiteltitel, Kurzinfo des Schritts,
+Schritte mit Nummer und Kurzinfo „24 Blöcke · Ebene 3 (y = 2)“ (`stepMeta`, Teile `stepMetaParts`; Ebene 1 = y 0 wie in §3,
+im Ebenen-Plan, im Schnitt und in den Kapiteltiteln der Formen; auf schmalen Handys bricht „Ebene 3 (y = 2)“ nur als Ganzes um). Player: „Kapitel n von N“, Kapiteltitel, Kurzinfo des Schritts,
 daneben „Schritt n von N“; Live-Region „Schritt 3 von 12 (Erdgeschoss).“ (`stepAnnouncement`). Tooltips nennen „Schritt 5“,
 der Materialhinweis „Schritt 5“ bzw. „Kapitel 2: Erdgeschoss“. Der Info-Tab zeigt Einordnung, Beschreibung, Maßstab, Kennzahlen,
 Quellen und Design, aber keine Schwierigkeit und kein Wissenswertes.
@@ -1035,6 +1036,10 @@ kurz auf Deutsch, Schritte ohne Titel und Text; echte Bauwerke mit Quellen, unsi
 Änderung (2026-10-28): `meta.difficulty` und `meta.facts` gibt es nicht mehr; stehen sie noch im Modul, meldet check-build
 einen Fehler („meta.difficulty gibt es nicht mehr.“ bzw. „meta.facts gibt es nicht mehr.“). `description`, `subtitle`,
 `sources` und `credits` bleiben (Quelle und Lizenz übernommener Bauten).
+Änderung (2026-10-28, Nacharbeit): Auch als Schlagwort gibt es keine Schwierigkeit. Tags wie „Anfänger“, „Einsteiger“,
+„Fortgeschritten“, „Profi“, „Experte“ oder „Schwierigkeit“ (ganzer Tag, Groß-/Kleinschreibung egal, `difficultyTags` in
+`check-build.mjs`) sind ein Fehler in check-build und `build-catalog.mjs` („meta.tags: „Anfänger“ ist eine Schwierigkeit – die gibt es
+nicht mehr.“). Suchwörter in `aliases` (z. B. „anfängerhaus“) bleiben erlaubt, sie werden nicht angezeigt.
 Änderung (Integration Runde 2): `Math.sin`, `Math.cos` und `Math.atan2` liefern in Node 24 (V8 13.6) und Chrome 156 im letzten
 Bit verschiedene Werte. Wer aus Winkeln Blockpositionen rundet, rundet das Ergebnis vorher auf ein feines Raster (z. B.
 `Math.round(v * 1e6) / 1e6`), sonst kippen einzelne Blöcke an .5-Grenzen und Katalog (Node) und Bau-Seite (Browser) haben
@@ -1411,7 +1416,7 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   und CSS (`url()`, `@import`). Erzeugte Ordner (`game-data/`, `thumbs/`, `tmp/`) zählen nicht. Ausgabe `datei:zeile: art
   „verweis“ – grund`, Exit-Code 1 bei Funden. Als Bibliothek: `checkImports({ root })` → `{ files, references, errors }`.
 - `node scripts/check-build.mjs <modulpfad>` – Modul bauen, prüfen (Blöcke/Zustände gültig,
-  Grenzen, Texte vorhanden), Kennzahlen ausgeben; Exit-Code 1 bei Fehlern.
+  Grenzen, Titel, Untertitel und Beschreibung vorhanden), Kennzahlen ausgeben; Exit-Code 1 bei Fehlern.
   Änderung: Optionen `--scale <zahl>`, `--json` (Bericht als JSON: `ok, module, id, title, category, scale,
   size, blockCount, phases, steps, phaseList, materials[{item,name,count,amount}], topMaterials, warnings,
   errors, durationMs`) und `--data <ordner>` (andere Spieldaten, z. B. `tests/fixtures/core`). Prüft zusätzlich
@@ -1419,8 +1424,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   DOM-Zugriffen. Als Bibliothek: `checkBuild(pfad, { scale, dataDir })`, `validateMeta(meta, { fileId,
   folderCategory })`.
   Änderung (2026-10-28): `meta.difficulty` und `meta.facts` sind Fehler („… gibt es nicht mehr.“), die Warnung „Kapitel … hat
-  keinen Text“ entfällt, die Warnung zu `tested` gilt nur noch für `farmen`. Leere Schritte nennen Nummer und Kapitel
-  („Schritt 3 (Kapitel „Möbel“) setzt keine Blöcke.“). `CATEGORIES` (7 Kategorien) nutzen auch `build-catalog.mjs` und `start.mjs`.
+  keinen Text“ entfällt (geprüft werden nur noch die Texte in meta), die Warnung zu `tested` gilt nur noch für `farmen`.
+  Leere Schritte nennen Nummer und Kapitel („Schritt 3 (Kapitel „Möbel“) setzt keine Blöcke.“). `CATEGORIES` (7 Kategorien)
+  nutzen auch `build-catalog.mjs` und `start.mjs`. Tags, die eine Schwierigkeit nennen, sind Fehler (§9).
 - `node scripts/shot.mjs --module <pfad> | --structure <datei> [--views iso,front,top] [--out tmp/shots]`
   – Screenshots über Chrome (für Sichtprüfungen).
   Änderung: weitere Quellen `--gallery <gruppe|all>` (ohne `--page` alle Seiten) und `--synthetic <anzahl>`; Optionen

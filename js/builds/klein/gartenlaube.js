@@ -8,7 +8,7 @@ export const meta = {
   title: 'Gartenlaube',
   category: 'klein',
   subtitle: 'Achteckiger Pavillon mit Zeltdach, Bänken und Ranken',
-  tags: ['Pavillon', 'Laube', 'Garten', 'Park', 'Deko', 'Achteck', 'Holz', 'Klein', 'Anfänger'],
+  tags: ['Pavillon', 'Laube', 'Garten', 'Park', 'Deko', 'Achteck', 'Holz', 'Klein'],
   aliases: [
     'gartenlaube', 'laube', 'pavillon', 'gartenpavillon', 'gazebo', 'garden gazebo', 'pavilion', 'garden pavilion',
     'gartenhaus offen', 'achteck pavillon', 'octagon gazebo', 'pergola', 'musikpavillon', 'gartenlaub', 'pavilon',

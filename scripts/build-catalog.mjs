@@ -11,7 +11,7 @@ import { readFile, readdir, rename, writeFile, unlink, mkdir, stat } from 'node:
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { checkBuild, CATEGORIES, ACCURACIES } from './check-build.mjs';
+import { checkBuild, CATEGORIES, ACCURACIES, difficultyTags } from './check-build.mjs';
 import { moduleSources } from './lib/module-sources.mjs';
 import { materialsFromPaletteCounts } from '../js/core/materials.js';
 import { CATEGORIES as CATEGORY_INFO } from '../js/ui/shared.js';
@@ -326,6 +326,7 @@ export function validateStructureDefinition(def) {
   // Schwierigkeit und Wissenswertes gibt es nicht mehr
   if (Object.hasOwn(def, 'difficulty')) errors.push('difficulty gibt es nicht mehr.');
   if (Object.hasOwn(def, 'facts')) errors.push('facts gibt es nicht mehr.');
+  for (const tag of difficultyTags(def.tags)) errors.push(`tags: „${tag}“ ist eine Schwierigkeit – die gibt es nicht mehr.`);
   if (isTextList(def.aliases) && def.aliases.some((a) => a !== a.toLowerCase())) errors.push('aliases müssen klein geschrieben sein.');
   return errors;
 }
