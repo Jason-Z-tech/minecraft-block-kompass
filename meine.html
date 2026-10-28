@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com/misode/mcmeta/; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#15171b">
+  <title>Meine Bauten – Block-Kompass</title>
+  <meta name="description" content="Deine eigenen Bau-Dateien (.schem, .litematic, .nbt und 3D-Modelle), dauerhaft in deinem Browser gespeichert – mit Anleitung in 3D.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/atkinson-hyperlegible-next-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/mine.css">
+  <script type="module" src="js/ui/mine-page.js"></script>
+</head>
+<body data-page="mine">
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <header class="site-header" id="site-header">
+    <div class="site-header__bar container">
+      <a class="brand" href="index.html">
+        <img class="brand__logo" src="assets/logo.svg" alt="" width="40" height="40">
+        <span class="brand__text">
+          <span class="brand__name">Block<span class="brand__dash">-</span>Kompass</span>
+          <span class="brand__tag">Java Edition 26.2</span>
+        </span>
+      </a>
+      <nav class="site-nav hotbar" aria-label="Hauptnavigation">
+        <ul class="hotbar__list" role="list">
+          <li><a class="hotbar__slot" href="index.html" data-nav="home"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#home"></use></svg><span>Start</span></a></li>
+          <li><a class="hotbar__slot" href="kategorie.html" data-nav="category"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#grid"></use></svg><span>Kategorien</span></a></li>
+          <li><a class="hotbar__slot" href="erstellen.html" data-nav="create"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#hammer"></use></svg><span class="label-long">Selber erstellen</span><span class="label-short">Erstellen</span></a></li>
+          <li><a class="hotbar__slot" href="meine.html" data-nav="mine"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#star"></use></svg><span class="label-long">Meine Bauten</span><span class="label-short">Meine</span></a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript><p class="noscript">Der Block-Kompass braucht JavaScript für Katalog, 3D-Ansicht und Anleitungen. Bitte aktiviere JavaScript für diese Seite.</p></noscript>
+
+    <div class="page-head page-head--mine" id="mine-head">
+      <div class="container page-head__inner">
+        <nav class="breadcrumb" aria-label="Brotkrümelpfad">
+          <ol>
+            <li><a href="index.html">Start</a></li>
+            <li aria-current="page">Meine Bauten</li>
+          </ol>
+        </nav>
+        <div class="page-head__title-row">
+          <span class="page-head__icon" aria-hidden="true"><svg class="icon icon--48" aria-hidden="true" focusable="false"><use href="assets/icons.svg#star"></use></svg></span>
+          <h1 class="page-head__title" id="mine-title">Meine Bauten</h1>
+        </div>
+      </div>
+    </div>
+
+    <div class="container section mine" id="mine-root">
+      <input class="visually-hidden" id="mine-file" type="file" multiple tabindex="-1" aria-hidden="true">
+      <div class="mine__bar" id="mine-bar" hidden>
+        <form class="mine__search" id="mine-filter-form" role="search" aria-label="Meine Bauten durchsuchen">
+          <div class="field">
+            <label class="field__label" for="mine-query">Suchen</label>
+            <input class="field__input" id="mine-query" type="search" name="q" maxlength="120" placeholder="Name …" autocomplete="off" enterkeyhint="search" spellcheck="false">
+          </div>
+          <div class="field">
+            <label class="field__label" for="mine-category">Kategorie</label>
+            <span class="select"><select class="field__input" id="mine-category"></select></span>
+          </div>
+        </form>
+        <button class="btn btn--primary mine__add" id="mine-add" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#plus"></use></svg><span>Dateien hinzufügen</span></button>
+      </div>
+      <div class="status-region" id="mine-status" role="status" aria-live="polite"></div>
+      <p class="mine__count mono" id="mine-count" aria-live="polite"></p>
+      <ul class="mine__list" id="mine-list" role="list" aria-label="Meine Bauten"></ul>
+      <div class="mine__empty" id="mine-empty"></div>
+      <div class="mine__drop" id="mine-drop" aria-hidden="true"><span class="mine__drop-text">Dateien hier loslassen</span></div>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="site-footer">
+    <div class="container site-footer__inner">
+      <div class="site-footer__brand">
+        <img src="assets/logo.svg" alt="" width="32" height="32">
+        <p><strong>Block-Kompass</strong> ist deine private Sammlung von Bauprojekten für Minecraft Java Edition 26.2 – mit Schritt-für-Schritt-Anleitungen in 3D.</p>
+      </div>
+      <nav aria-label="Fußnavigation">
+        <p class="site-footer__title">Seiten</p>
+        <ul class="site-footer__links" role="list">
+          <li><a href="index.html">Start</a></li>
+          <li><a href="kategorie.html">Kategorien</a></li>
+          <li><a href="erstellen.html">Selber erstellen</a></li>
+          <li><a href="meine.html">Meine Bauten</a></li>
+        </ul>
+      </nav>
+      <div class="site-footer__notes">
+        <p class="site-footer__title">Gut zu wissen</p>
+        <p>Texturen, Modelle und Blocknamen stammen original aus Minecraft Java 26.2; die Seite lädt sie beim ersten Besuch aus öffentlichen Quellen (misode/mcmeta auf GitHub) und speichert sie im Browser.</p>
+        <p>Schriften: Pixelify Sans, Atkinson Hyperlegible Next und Mono (SIL Open Font License, <a href="assets/fonts/QUELLEN.md">Quellen</a>).</p>
+      </div>
+      <p class="site-footer__legal">Kein offizielles Minecraft-Produkt. Nicht von Mojang oder Microsoft genehmigt oder mit ihnen verbunden.</p>
+    </div>
+  </footer>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-relevant="additions"></div>
+</body>
+</html>

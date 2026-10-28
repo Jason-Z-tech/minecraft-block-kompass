@@ -11,6 +11,11 @@ import { testBlockColors, sphereTriangles, voxelReader, outsideReachable } from 
 
 const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'create', 'voxelize');
 const fixture = (name) => fs.readFileSync(path.join(FIXTURES, name));
+// Genau die Bytes der Datei als eigener ArrayBuffer (kleine Buffer liegen sonst mitten in Nodes gemeinsamem Speicherpool)
+const fixtureBuffer = (name) => {
+  const bytes = fixture(name);
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+};
 const blockColors = testBlockColors();
 
 function countBy(result) {
@@ -20,7 +25,7 @@ function countBy(result) {
 }
 
 test('Vertrag: size, palette mit air vorn, Uint16Array mit Index (y·l + z)·w + x, warnings, stats', async () => {
-  const result = await modelToVolume('stl', fixture('cube-binary.stl').buffer.slice(0), { height: 10 }, { blockColors });
+  const result = await modelToVolume('stl', fixtureBuffer('cube-binary.stl'), { height: 10 }, { blockColors });
   assert.deepEqual(Object.keys(result).sort(), ['data', 'palette', 'size', 'stats', 'warnings']);
   assert.deepEqual(result.size, [10, 10, 10]);
   assert.equal(result.palette[0], 'air');

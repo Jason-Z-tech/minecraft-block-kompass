@@ -117,6 +117,10 @@ test('normalizeSearchQuery: trimmen, Leerraum zusammenfassen, Steuerzeichen raus
   assert.equal(normalizeSearchQuery('Straße  „Brücke“'), 'Straße „Brücke“');
   assert.equal(normalizeSearchQuery('   '), '');
   for (const value of [null, undefined, 42, {}]) assert.equal(normalizeSearchQuery(value), '');
+  // Schreibrichtungs-Steuerung (Einbettung, Überschreibung, Isolierung) fällt weg
+  for (const code of [0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069]) {
+    assert.equal(normalizeSearchQuery(`Burg${String.fromCharCode(code)}Turm`), 'BurgTurm', code.toString(16));
+  }
 });
 
 test('normalizeSearchQuery begrenzt auf 120 Zeichen, ohne Emoji zu zerschneiden', () => {

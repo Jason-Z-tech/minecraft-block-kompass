@@ -21,7 +21,7 @@ und nennt sie im Abschlussbericht.
   CDNs**. Node-Skripte nur mit Bordmitteln (`node:fs`, `node:zlib`, `node:http`, `node:test`,
   `node:child_process` …). Installiert: Node 24, Python 3.13, git, Chrome.
 - **Start:** `node scripts/serve.mjs` → http://127.0.0.1:8080 (ES-Module und Worker brauchen http).
-- **Spieldaten:** Texturen, Blockmodelle, deutsche Namen und Original-Strukturen liest
+- **Spieldaten:** Texturen, Blockmodelle und deutsche Namen liest
   `node scripts/extract-game-data.mjs` einmalig aus der installierten Minecraft Java 26.2 nach
   `game-data/` (gitignored, wird nie weitergegeben).
   - **Nur lesen.** Nie etwas in `%APPDATA%\.minecraft` oder `%USERPROFILE%\curseforge` schreiben.
@@ -43,7 +43,7 @@ und nennt sie im Abschlussbericht.
 
 ```
 minecraft-block-kompass/
-  index.html  kategorie.html  bau.html  erstellen.html
+  index.html  kategorie.html  bau.html  erstellen.html  meine.html
   assets/            fonts/ (woff2, OFL-Lizenzen, QUELLEN.md), logo.svg, favicon.svg, icons.svg,
                      patterns/ (Grasskante, Gelände, Textur), ui/ (Masken für Haken und Pfeil)
   css/style.css      Design-System (Tokens, Komponenten)
@@ -70,11 +70,11 @@ minecraft-block-kompass/
     controls.js      Orbit- und Lauf-/Flugsteuerung (Maus, Touch, Tastatur)
     picking.js       Strahl-Test (DDA) für Hover/Klick
     mat.js           kleine Vektor-/Matrix-Helfer
-  js/ui/             Seitenlogik
-  js/create/         Freitext-Erkennung, Formen-Generatoren
+  js/ui/             Seitenlogik (browse/, build/, create/, mine/)
+  js/create/         Freitext-Erkennung, Formen-Generatoren, Datei-Import, Modell-Umwandlung
+  js/data/           Spieldaten im Browser (§13), Meine Bauten (my-builds.js, §8 „Meine Bauten“) und ZIP-Leser (zip.js)
   js/builds/<kategorie>/<id>.js   Bau-Module (Inhalte)
   js/builds/lib/     Hilfsbibliothek für Bau-Module (§9.1): index.js (alles), palettes.js, bauteile.js, innen.js, natur.js
-  js/builds/game-structures.js    Auswahl der Original-Strukturen aus dem Spiel
   scripts/           Node-Skripte (serve, extract-game-data, build-catalog, check-build, shot)
   scripts/lib/       zip.mjs, nbt.mjs
   tests/unit/        node --test
@@ -157,8 +157,9 @@ des Spielers ohne +180° (Banner und Schilder mit +180°), der Kopf schaut also 
 
 **Quellen (nur lesen):**
 - Jar: `%APPDATA%\.minecraft\versions\26.2\26.2.jar` (überschreibbar mit `--jar <pfad>`).
-  Enthält `assets/minecraft/{blockstates,models,textures,items,lang/en_us.json}` und
-  `data/minecraft/structure/**.nbt`.
+  Gelesen werden `assets/minecraft/{blockstates,models,textures,items,lang/en_us.json}`.
+  Änderung (2026-10-28): Original-Strukturen aus dem Spiel (`data/minecraft/structure/**.nbt`) werden nicht mehr gelesen
+  (Spiel-Bauten entfernt, Wunsch des Users); ein `structures/`-Ordner früherer Läufe wird beim nächsten Lauf gelöscht.
 - Deutsch: `minecraft/lang/de_de.json` über Asset-Index `32.json` aus
   `%USERPROFILE%\curseforge\minecraft\Install\assets` (sonst `%APPDATA%\.minecraft\assets`;
   überschreibbar mit `--assets <ordner>`). Datei: `objects/<hash[0..2]>/<hash>`.
@@ -171,11 +172,12 @@ des Spielers ohne +180° (Banner und Schilder mit +180°), der Kopf schaut also 
   mit `--offline` wird nichts geladen. Asset-Index-ID aus `versions/26.2/26.2.json` (`assetIndex.id`,
   sonst 32); `de_de.json` wird per SHA-1 gegen den Index geprüft.
 - Änderung (cloud:spieldaten): **ohne Installation** `--remote` (`scripts/lib/remote-source.mjs`), für Claude Code im Web.
-  Statt Jar: ZIP-Archive der Tags `26.2-assets-tiny` (Assets ohne Sounds/fremde Sprachen) und `26.2-data` von misode/mcmeta
-  über `https://codeload.github.com/misode/mcmeta/zip/refs/tags/<tag>` (Hauptordner `mcmeta-<tag>/` wird abgeschnitten,
-  beide Archive zu einer Quelle zusammengelegt; `version.json` im mcmeta-Format: `data_version` = worldVersion,
-  `resource_pack_version`, `data_pack_version`). Geprüft 2026-10-23: alle Blockstates, Modelle, Texturen, `en_us.json` und
-  Struktur-NBTs sind Byte für Byte gleich wie in der 26.2-Jar (Git-Blob-SHA). `de_de.json`: Mojang-Versionsliste
+  Statt Jar: ZIP-Archiv des Tags `26.2-assets-tiny` von misode/mcmeta (Assets ohne Sounds/fremde Sprachen, ≈ 6 MB, zusammen
+  mit `de_de.json` und Blockbericht ≈ 7 MB) über `https://codeload.github.com/misode/mcmeta/zip/refs/tags/<tag>` (Hauptordner
+  `mcmeta-<tag>/` wird abgeschnitten; `version.json` im mcmeta-Format: `data_version` = worldVersion,
+  `resource_pack_version`, `data_pack_version`). Bis 2026-10-28 kam für die Struktur-NBTs noch `26.2-data` dazu; das
+  entfällt mit den Spiel-Bauten. Geprüft 2026-10-23: alle Blockstates, Modelle, Texturen und `en_us.json` sind Byte für
+  Byte gleich wie in der 26.2-Jar (Git-Blob-SHA). `de_de.json`: Mojang-Versionsliste
   (`piston-meta.mojang.com/mc/game/version_manifest_v2.json`) → Versionsdatei → Asset-Index → `resources.download.minecraft.net`,
   jede Stufe per SHA-1 geprüft; Rückfall `raw.githubusercontent.com/misode/mcmeta/26.2-assets/assets/minecraft/lang/de_de.json`
   (Stand der Veröffentlichung, ohne Prüfsumme: Mojang ergänzt die Datei im Asset-Index später um Namen neuerer Versionen;
@@ -184,17 +186,17 @@ des Spielers ohne +180° (Banner und Schilder mit +180°), der Kopf schaut also 
   `mojang-de_de.json`); `--remote --offline` nur aus dem Cache. Gesperrte Domain → deutsche Meldung mit der Domain, der
   Liste aller vier Domains und dem Hinweis auf README „In der Cloud“. Gesetzter `HTTPS_PROXY`/`HTTP_PROXY` ohne aktive
   Proxy-Unterstützung → das Skript startet sich einmal mit `node --use-env-proxy` neu. Ergebnis identisch mit dem Jar-Weg
-  (Hash-Vergleich aller Dateien), nur `meta.json` hat zusätzlich `sources.remote = { assets, data, lang }` und eine andere
-  `extractedAt`. Nie ein Jar herunterladen oder ausführen.
+  (Hash-Vergleich aller Dateien), nur `meta.json` hat zusätzlich `sources.remote = { assets, lang }` (Quelle des Archivs
+  und von `de_de.json`) und eine andere `extractedAt`. Nie ein Jar herunterladen oder ausführen.
 
 **Ausgaben:**
 
 `meta.json`
 ```json
 { "version": "26.2", "worldVersion": 4903, "extractedAt": "ISO-Zeit",
-  "counts": { "blocks": 0, "models": 0, "textures": 0, "structures": 0 }, "warnings": [] }
+  "counts": { "blocks": 0, "models": 0, "textures": 0 }, "warnings": [] }
 ```
-Änderung: zusätzlich `resourcePack` (88), `dataPack` (107), `sources` (`blocks`, `blocksRef`, `assetIndex`),
+Änderung (2026-10-28): `counts.structures` entfällt. Änderung: zusätzlich `resourcePack` (88), `dataPack` (107), `sources` (`blocks`, `blocksRef`, `assetIndex`),
 weitere `counts` (`blockstates`, `blockNames`, `itemNames`) und `features` (Zählungen der neuen 26.2-Felder,
 `rotationAngles`, `blocksWithoutGeometry` = Blöcke, deren Modelle alle keine Elemente haben).
 
@@ -287,28 +289,9 @@ Zusätzlich landet jede von Modellen genutzte Textur in der Datei (z. B. `item/b
 Optional `"mip"` = `texture.mipmap_strategy` aus der .mcmeta (`dark_cutout` Laub, `strict_cutout` Blumen,
 `mean` Glas/Redstone-Staub). Framegröße ohne Angabe: Quadrat mit der kürzeren Bildseite (wie im Spiel).
 
-`structures/index.json` + `structures/<datei>.json` – Original-Strukturen aus dem Spiel
-```json
-{ "version": "26.2", "structures": [
-  { "path": "village/plains/houses/plains_small_house_1",
-    "file": "village__plains__houses__plains_small_house_1.json",
-    "size": [9,7,9], "blocks": 210, "paletteSize": 18, "entities": 0 } ] }
-```
-```json
-{ "path": "village/plains/houses/plains_small_house_1", "size": [9,7,9],
-  "palette": ["air", "cobblestone", "oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"],
-  "rle": [0, 15, 1, 3] }
-```
-- `rle`: Paare `[paletteIndex, anzahl]` in der Reihenfolge y (außen) → z → x (innen),
-  Index `(y*sizeZ + z)*sizeX + x`. `palette[0]` ist immer `"air"`.
-- Umwandlung: `air`, `cave_air`, `structure_void` fallen weg; `jigsaw` → sein `final_state`
-  (aus dem Block-Entity, `minecraft:air` fällt weg); `structure_block` → weg; bei `palettes`
-  (mehrere) die erste nehmen; Entities nur zählen.
-- Änderung: auch `void_air` fällt weg. Zustände werden wie beim Laden im Spiel mit den Standardwerten aus
-  blocks.json vervollständigt (wichtig bei `final_state` wie `spruce_stairs[facing=east]`); bei `source: "mcmeta"`
-  fallen unbekannte Blöcke/Eigenschaften mit Warnung weg. `palette` enthält nur genutzte Zustände,
-  `paletteSize` = Länge von `palette` (mit `"air"`), `blocks` = Zahl der Nicht-Luft-Zellen. Das Beispiel oben ist
-  schematisch – das echte `plains_small_house_1` ist 7×7×7 mit 153 Blöcken und 22 Paletteneinträgen.
+Änderung (2026-10-28): `structures/index.json` und `structures/<datei>.json` (Original-Strukturen aus dem Spiel) gibt
+es nicht mehr – die Spiel-Bauten sind entfernt, alle Bauten sind eigene Bau-Module (§9). Uploads von Strukturdateien
+(`.nbt`) liest weiter der Datei-Import (§12.2).
 
 `catalog.json` – erzeugt von `scripts/build-catalog.mjs` (siehe §9).
 Änderung (Webseite, Etappe 1): Der Katalog liegt nicht mehr hier, sondern im Repo unter `data/catalog.json` (§9).
@@ -437,7 +420,7 @@ Regeln:
   weitere Argument (Text oder Optionen wie `tips`) → `Error` „phase: nur ein Titel – Texte und Tipps gibt es nicht
   mehr.“ `b.step()` nimmt keine Argumente, sonst `Error` „step: Schritte haben keinen Titel und keinen Text mehr.“
   `b.note` gibt es nicht mehr. Das Ergebnis hat keine Texte, Tipps oder Notizen; das gilt auch für Worker-Nachrichten
-  und Bauten aus Struktur, Form und Upload.
+  und Bauten aus Form und Upload.
 - Grenzen: mehr als `maxBlocks` Blöcke oder eine Kante größer als `maxSize` → `Error` mit deutscher Meldung.
 - `finalize()` führt aus: Normalisieren → Auto-Verbindungen (§6.3) → Schrittplan (§6.4) → Materialien (§6.5).
 
@@ -798,7 +781,7 @@ rectAlphaClass(entry, u0, v0, u1, v1)                    // Alpha-Klasse eines U
 
 ```js
 const viewer = new Viewer(canvas, { onPick, onHover, onStatus })
-await viewer.load(source, params)  // source: { kind:'module', path } | { kind:'structure', file } | { kind:'shape', shape, params }
+await viewer.load(source, params)  // source: { kind:'module', path } | { kind:'shape', shape, params } | { kind:'upload', … }
 viewer.result                       // BuildResult-Kopie (ohne Volume-Arrays-Doppelung im Hauptthread)
 viewer.setProgress(p)               // p = Schritt als Kommazahl (12.4 = Schritt 12 zu 40 %)
 viewer.setClip({ minY, maxY } | null)
@@ -809,6 +792,9 @@ viewer.setView('iso' | 'top' | 'front' | 'side')
 viewer.screenshot()                 // → Promise<Blob>
 viewer.dispose()
 ```
+- Änderung (2026-10-28): Die Quellenart `structure` (Original-Strukturen aus game-data/mcmeta) gibt es nicht mehr; der Worker
+  lehnt sie wie jede unbekannte Quelle ab („Unbekannte Quelle“). Quellen: `module`, `shape`, `upload` (Datei-Import §12.2/§12.3,
+  auch „Meine Bauten“, §8) sowie die Testquellen `gallery` und `synthetic`.
 - Bauen und Meshen laufen im Modul-Worker `engine-worker.js` (Hauptthread bleibt flüssig).
   Der Hauptthread behält eine Kopie des Volumens für Picking und Ebenen-Plan.
 - Orbit: Ziehen = drehen, Rechtsziehen/zwei Finger = verschieben, Rad/Pinch = zoomen, Pfeiltasten.
@@ -884,7 +870,7 @@ viewer.dispose()
     `step { job, step }`, `cap { job, y }`, `remesh { job }`; Worker → `status`, `built { result, volume (Transfer), textureNames,
     buildMs }`, `palette { collision, outline, pickable }`, `chunks { chunks: [{ cx, cy, cz, minStep, solid, cutout, translucent }],
     done, total }`, `meshed { chunks, quads, meshMs, warnings }`, `step`, `cap`, `error { request, code, message, detail }`.
-    Ein neuer `load` macht ältere Jobs ungültig. Strukturen werden über den Builder gebaut (`raw`, ein Kapitel „Aufbau“ in
+    Ein neuer `load` macht ältere Jobs ungültig. Uploads werden über den Builder gebaut (`raw`, ein Kapitel „Aufbau“ in
     Ebenen), Bau-Module per dynamischem import (Pfad nur `js/builds/…` oder `tests/fixtures/…`).
   - Kollision fürs Laufen (Worker, je Palette): Säulen-Verfahren über die waagrechten, nicht gedrehten Modellflächen (1/16-Raster,
     oberste Ober- und unterste Unterseite) → Boxen; Sondermodelle = Umriss ihrer Flächen; Zäune, Mauern, geschlossene Zauntore
@@ -900,14 +886,23 @@ viewer.dispose()
 
 ## 8. Seiten (`js/ui/`)
 
-- `index.html` – Start: Suche/Freitext „Was willst du bauen?“, Kategorien mit Anzahl, Empfehlungen.
+- `index.html` – Start, bewusst klein (Änderung 2026-10-28): Titel „Was willst du bauen?“, Suche/Freitext, die 7 Kategorien
+  als kompakte Kacheln mit Anzahl, Links „Selber erstellen“ und „Meine Bauten“ – keine Bau-Reihen, kein Einleitungstext.
 - `kategorie.html?k=<slug>` – Liste mit Vorschaubild, Filter (Größe, Herkunft, Test), Sortierung.
 - `bau.html?id=<id>[&scale=<zahl>]` – 3D-Ansicht + Schritt-Player + Anleitung (Kapitel mit Titel, Schritte mit Nummer,
   Blockzahl und Ebene),
   Material (gesamt und pro Schritt, abhakbar), Ebenen-Plan (2D-Raster der Ebene mit Block-Icons),
   Infos & Quellen. Fortschritt im `localStorage` (`bk:progress:<id>`, immer in try/catch).
 - `bau.html?form=<form>&…` – Ergebnis des Formen-Generators.
-- `erstellen.html` – Freitext + Formen-Generator.
+- `erstellen.html` – Freitext + Formen-Generator + Datei-Import (danach „Zu Meine Bauten“).
+- `meine.html` – Meine Bauten: eigene Bau-Dateien im Browser (Änderung 2026-10-28, Abschnitt „Meine Bauten“ unten).
+- `bau.html?meine=<uuid>` – ein eigener Bau aus „Meine Bauten“, gebaut wie ein Upload.
+
+Kopfzeile aller Seiten (Änderung 2026-10-28): Logo und Navigation Start · Kategorien · Selber erstellen · Meine Bauten
+(`data-nav` = `home`, `category`, `create`, `mine`; Icons `home`, `grid`, `hammer`, `star`; auf dem Handy „Erstellen“ und
+„Meine“). Kein Suchfeld und kein Such-Knopf mehr im Kopf (samt JS und CSS); gesucht wird auf der Startseite. `initPage()`
+markiert nur den aktiven Punkt (`NAV_FOR_PAGE`, `aria-current="page"`). Der Fuß nennt unter „Seiten“ dieselben vier Ziele;
+Kopf und Fuß sind auf allen Seiten gleich (Test).
 
 Kategorien (`slug` → Titel):
 `haeuser` Häuser & Wohnen · `wahrzeichen` Wahrzeichen & Riesenbauten · `fantasy` Fantasy, Anime & Film ·
@@ -921,9 +916,9 @@ Herkunft (`accuracy`):
 `nachempfunden` Nachempfunden · `eigenes` Eigenes Design
 
 Änderung: `kategorie.html` ohne `k` zeigt die Übersicht aller Kategorien (Kacheln mit Anzahl); ein
-unbekanntes `k` zeigt einen Fehlerhinweis plus Übersicht. Die Kopf-Suche jeder Seite leitet auf
+unbekanntes `k` zeigt einen Fehlerhinweis plus Übersicht. Die Suche der Startseite leitet auf
 `erstellen.html?q=<text>` (bereinigt, höchstens 120 Zeichen). Die stabilen Container-IDs jeder Seite stehen
-oben in ihrem Modul (`js/ui/home.js`, `category.js`, `build-page.js`, `create-page.js`); ein Test prüft,
+oben in ihrem Modul (`js/ui/home.js`, `category.js`, `build-page.js`, `create-page.js`, `mine-page.js`); ein Test prüft,
 dass es sie im HTML gibt. Gemeinsame Schnittstellen in `js/ui/` (alle Module ohne DOM-Zugriff beim Laden,
 daher in Node testbar):
 ```js
@@ -938,7 +933,7 @@ CATEGORIES (slug, title, shortTitle, color, colorName, icon, description) · CAT
 initPage() · bindSearchForm(form, input) · normalizeSearchQuery(text) · searchHref(text) · parseBuildParams(location.search)
 formatNumber(n) („12.345“) · formatCount(n, 'Bau', 'Bauten') · formatSize([w,h,l]) · storageGet/storageSet/storageRemove('bk:…')
 icon(name, { size: 16|32|48|64 }) · createChip / createCategoryChip / createAccuracyChip / createUntestedChip
-createBuildCard(eintrag) · createSkeletonCards(n) · renderCategoryGrid(liste) · setCategoryCounts(kacheln, zahlen)
+createBuildCard(eintrag) · createSkeletonCards(n) · renderCategoryGrid(liste, { compact }) · setCategoryCounts(kacheln, zahlen)
 renderLoading / renderEmpty / renderInfo / renderError(container, fehler, { onRetry }) / renderState / createState
 initTabs(root) · initSlider(input) / syncSlider(input) · setXpProgress(node, { value, max, level }) · showToast({ title, text, kind })
 attachTooltip(ziel, () => tooltipContent(name, { lines, meta })) · contrastRatio(a, b) / mixHex(a, b, anteil)
@@ -956,12 +951,13 @@ Sortierung legen einen Verlaufseintrag an (Zurück-Taste), Tippen nur beim erste
 shown, scrollY }` stellt nach Zurück die Zahl der Karten und die Stelle wieder her. Karten in Schritten zu 24 (IntersectionObserver
 + Knopf). Textsuche = `searchCatalog` aus `js/create/search.js`. Reine Module (Node-testbar) in `js/ui/browse/`: `model.js`
 (Größenklassen, Test-Zustand, Rauminhalt), `filters.js`, `sort.js`, `url-state.js` (`parseBrowseState`, `browseSearch`, `browseHref`),
-`view.js` (`createBrowseIndex`, `computeView(index, state, { search, category })`, `initialShown`, `nextShown`), `home-sections.js`
-(`selectHomeSections(builds)`, `catalogTotals(builds)`). Startseite: Abschnitte nach festen Regeln ohne Zufall – Riesenbauten (gross +
-riesig, meiste Blöcke), Klein & schnell gebaut (Größe klein, nach Blockzahl aufsteigend, dann Titel), Original aus dem Spiel,
-Nach echten Maßen, Farmen (Kategorie `farmen`, die größten zuerst);
-je 4 Karten, kein Bau doppelt, dazu Links „N Bauten in <Kategorie>“ auf genau diese Auswahl der Kategorie-Seite. Styles in
-`css/browse.css` (nach `style.css` eingebunden). `data.js` übernimmt zusätzlich die Katalogfelder von Runde 2 (`description`,
+`view.js` (`createBrowseIndex`, `computeView(index, state, { search, category })`, `initialShown`, `nextShown`).
+Änderung (2026-10-28): Die Startseite hat keine Bau-Reihen mehr (`home-sections.js` mit `selectHomeSections`/`catalogTotals` ist
+weg). `js/ui/home.js`: Titel, Suche (`bindSearchForm`), kompakte Kacheln `renderCategoryGrid(liste, { compact: true })` mit Anzahl
+aus `countByCategory` (fehlt der Katalog: Fehlerbox mit „Erneut versuchen“ über den Kacheln), Links `#home-links`. Alles bis zur
+letzten Kachel und den Links passt ohne Scrollen in 1280 × 800 und 390 × 844 (Kacheln: Handy 2 Spalten mit Kurznamen, ab 560 px
+lange Namen, ab 720 px 3, ab 1100 px 4 Spalten, unter 340 px eine; ein ungerader Rest steht mittig). Die Startseite bindet
+`css/browse.css` nicht mehr ein. Styles der Kategorie-Seite in `css/browse.css` (nach `style.css` eingebunden). `data.js` übernimmt zusätzlich die Katalogfelder von Runde 2 (`description`,
 `sources`, `credits`, `defaultScale`, `variants`, `phases`, `sizeClass`; nur wenn vorhanden), `shared.js` exportiert `SIZE_CLASS_KEYS`.
 Alte Felder wie `difficulty` und `facts` übernimmt `data.js` nicht. Karten zeigen Größe und Blockzahl, keine Schwierigkeit.
 
@@ -971,7 +967,7 @@ Alte Felder wie `difficulty` und `facts` übernimmt `data.js` nicht. Karten zeig
 mountBuildView(container, { source, params, entry, progressKey, onReady, onError, onScaleChange })
   // → Promise<{ viewer, result, context, dispose() }>; lehnt bei Ladefehlern ab (Fehlerzustand und onError vorher)
   // source/params wie viewer.load · entry: Katalog-Eintrag oder gleich aufgebautes Objekt (viewEntry prüft jedes Feld)
-  // progressKey: 'bk:progress:<id>' | 'bk:progress:<id>@<maßstab>' | 'bk:progress:form-<form>-<hash>' | null (nichts speichern)
+  // progressKey: 'bk:progress:<id>' | 'bk:progress:<id>@<maßstab>' | 'bk:progress:form-<form>-<hash>' | 'bk:progress:mine:<uuid>' | null
   // Der Container muss im Dokument hängen; er bekommt die Klasse .build-view (Raster stage/player/panels, in .build-layout display: contents)
 ```
 Fortschritt `{ v: 1, step, checked: [item…], updatedAt }` (Schritt als Kommazahl wie `setProgress`, gespeichert erst nach einer
@@ -1007,9 +1003,60 @@ Einstellungen (Höhe, hohl/voll, Palette, Block nur aus `block-colors.json`, Hoc
 frische Ansicht (`ViewSlot`), Fehler → Ansicht weg, Meldung bei der Auswahl. Teile in `js/ui/create/`: `model.js` (rein, Node-testbar),
 `view-slot.js`, `fields.js`, `block-picker.js`, `block-icons.js`, `shape-glyphs.js`, `shape-form.js`, `idea.js`, `importer.js`; Styles
 `css/create.css` (nach `style.css` und `build-view.css`). Klick-Tests: `window.__createPage` (`ready`, `request`, `shape`, `imports`,
-`lastImport`, `views.shape|import`); Prüfung `node tests/visual/create-page-check.mjs [--only idee|formen|import|handy|zustaende]`.
+`lastImport`, `saved`, `views.shape|import`); Prüfung `node tests/visual/create-page-check.mjs [--only idee|formen|import|handy|zustaende]`.
 Grenze: Die Farben einer `.mtl` reicht die Upload-Quelle des Workers (`checkUploadSource`) noch nicht an `modelToVolume` weiter – die
 Seite nimmt die `.mtl` an und sagt das ehrlich.
+
+Änderung (2026-10-28, **Meine Bauten**): eigene Bau-Dateien dauerhaft im Browser – nur dort, keine Netzanfragen dafür; online
+(GitHub Pages) und lokal gleich.
+- Speicher `js/data/my-builds.js`: IndexedDB **`bk-mine`** (Version 1, getrennt vom Spieldaten-Speicher `block-kompass-data`) mit
+  den Objektspeichern `meta` (keyPath `id`, Einträge ohne Daten, für die Liste) und `data` (ArrayBuffer je `id`). Eintrag:
+  ```js
+  { id /* UUID v4, crypto.randomUUID */, title /* ≤ 120 Zeichen */, category /* eine der 7 Kategorien | null */,
+    format /* schem|litematic|nbt|vox|stl|obj|glb|gltf */, fileName, size, addedAt /* ISO */,
+    source: { author, url /* nur https */, license } | null, params /* Modell-Optionen height, solid, palette, block, upAxis */ | null,
+    data /* ArrayBuffer, nur bei get() */ }
+  ```
+  `createMyBuilds({ backend })` mit austauschbarem Backend (`createIndexedDbBackend()` im Browser, `createMemoryBackend({ maxBytes })`
+  für Unit-Tests): `add(input)`, `addFiles(files, { onProgress })` → `{ added, skipped: [{ name, reason }], notSaved: [name], error }`
+  (nach einem Abbruch wie „Speicher voll“ stehen die Datei beim Abbruch und alle übrigen in `notSaved`, ein ZIP mit schon gespeicherten
+  Bauten als „<name> (teilweise)“; die Seite nennt den Grund nur einmal), `list()` (neueste
+  zuerst, ohne Daten), `get(id)`, `rename(id, title)`, `setCategory(id, category|null)`, `remove(id)`. `openMyBuilds()` = eine Instanz
+  je Seite. Fehler für den User: `MyBuildsError` (`quota` „Speicher voll …“, `unavailable` z. B. privates Fenster, `invalid`,
+  `not-found`); bei vollem Speicher bleibt schon Gespeichertes. `requestPersistence()` ruft beim ersten Hinzufügen (Klick oder Ablegen)
+  still `navigator.storage.persist()`.
+- Prüfung wie beim Upload (§12.2): Endung über `formatFromName` (auch `.schematic`, `.gltf`), höchstens 64 MB, leer → abgelehnt,
+  Inhalt passend (NBT-Formate brauchen NBT, `.gltf` JSON); `.mtl` wird mit Grund übersprungen. Änderung (2026-10-28): danach liest
+  `checkImportFile` (`js/create/import/index.js`) die Datei mit denselben Lesern wie der Upload, aber ohne Bau: Baupläne ganz
+  (Aufbau, Größe, Blockanzahl, alle Grenzen; ohne Blockdaten zählt `NameOnlyConverter` jeden Vanilla-Block außer Luft, gezählt wird
+  mit `BlockCounter`), 3D-Modelle nur geparst (`parseModel`, ohne Texturen und ohne Blockfarben). Alte MCEdit-`.schematic`,
+  beschädigte, leere oder zu große Dateien kommen so mit dem Grund des Imports unter „übersprungen“. Gespeichert wird das am Inhalt
+  erkannte Format.
+- ZIP-Archive (`js/data/zip.js`, Leser für Browser und Node über `DecompressionStream('deflate-raw')`, Methoden 0 und 8, ohne ZIP64 und
+  Verschlüsselung, CRC geprüft): je Eintrag höchstens 64 MB, entpackt zusammen höchstens 256 MB (`IMPORT_LIMITS`), höchstens 500
+  Einträge. Pfade ohne `./` (`zipEntryInfo`); `__MACOSX`, `.DS_Store` und `._*` fallen still weg; Bau-Dateien mit `..` im Pfad oder
+  in versteckten Ordnern/Dateien (Punkt am Anfang) und ZIP im ZIP werden mit Grund übersprungen; ein Archiv ganz ohne Bau-Datei meldet
+  das. Optional **`manifest.json`** (die mit dem kürzesten Pfad). Zuordnung: erst genau über den Pfad (ab dem Ordner der
+  `manifest.json`, sonst ab der Wurzel), nur übrige Einträge über den Dateinamen und nur, wenn er im Manifest und im Archiv eindeutig
+  ist; jeder Manifest-Eintrag gilt für höchstens eine Datei:
+  `[{ "file": "haus.schem", "title": "…", "category": "haeuser", "author": "…", "url": "https://…", "license": "…" }]` (auch
+  `{ "builds": [ … ] }`). Bereinigt: Steuer- und unsichtbare Zeichen (auch Schreibrichtungs-Steuerung U+202A–202E, U+2066–2069) weg, Längen begrenzt (Titel, Autor, Lizenz je 120, `url` 500),
+  `url` nur `https://` ohne Zugangsdaten, unbekannte Kategorie → `null`. Ohne Eintrag heißt der Bau wie seine Datei (ohne Endung).
+- Hinzufügen: (1) `erstellen.html` nach erfolgreichem Upload: Kasten `#import-save` „In Meine Bauten speichern“ (Name vorbelegt mit
+  dem Dateinamen ohne Endung, Kategorie optional, Knopf „Zu Meine Bauten“, danach Links „Öffnen“ und „Zu Meine Bauten“); bei Modellen
+  werden die gewählten Optionen mitgespeichert (`Importer` gibt `upload = { name, format, data, params }` an `onResult`).
+  (2) `meine.html`: „Dateien hinzufügen“ (Mehrfachauswahl) und Ablegen per Drag & Drop auf die Seite, auch `.zip`.
+- Liste `meine.html` (`js/ui/mine-page.js`, reine Hilfen `js/ui/mine/model.js`, Karten `js/ui/mine/cards.js`, Styles `css/mine.css`):
+  Karten mit Titel (Link), „.schem · 2 KB · 28.10.2026“, Kategorie-Chip; Suche (Titel und Dateiname) und Filter (alle, ohne Kategorie,
+  je Kategorie); Aktionen Öffnen, Umbenennen, Kategorie, Löschen mit Rückfrage (löscht auch den Fortschritt). Leerzustand
+  „Noch keine Bauten“ mit Knopf. Quelle und Lizenz zeigt nur die Bau-Seite (Infos), nicht die Liste. Alle Texte als Textknoten.
+  Klick-Tests: `window.__minePage` (`ready`, `error`, `count`, `shown`, `lastAdd` = `{ added, skipped, notSaved, error }`), Knöpfe der Karten über `data-action`
+  (`open`, `rename`, `category`, `delete`, `confirm-delete`).
+- Bau-Seite `bau.html?meine=<uuid>` (`parseBuildAddress` in `js/ui/build/entry.js`: gleiche strenge Prüfung wie `?id=`; mit `id` oder
+  `form` zusammen ungültig): lädt den Eintrag aus IndexedDB (`loadMineView`) und baut ihn wie einen Upload (`{ kind: 'upload', format,
+  name, data, params }`) – Schritte Ebene für Ebene, Material, Ebenen-Plan, Abhaken. Brotkrümel „Meine Bauten“, Fortschritt
+  `bk:progress:mine:<uuid>` (die Vorsilbe `bk:progress:` verlangt `mountBuildView`). Unbekannte, gelöschte oder ungültige ID → „Bau
+  nicht gefunden“ mit Link zu Meine Bauten; Speicher nicht nutzbar → verständliche Meldung.
 
 ## 9. Bau-Module (Inhalte)
 
@@ -1045,13 +1092,15 @@ Bit verschiedene Werte. Wer aus Winkeln Blockpositionen rundet, rundet das Ergeb
 `Math.round(v * 1e6) / 1e6`), sonst kippen einzelne Blöcke an .5-Grenzen und Katalog (Node) und Bau-Seite (Browser) haben
 verschiedene Blockzahlen (beim Tokyo Skytree 1:1 waren es 3 Blöcke; `tokyo-skytree.js` rundet jetzt in `polarPoint`).
 
-`scripts/build-catalog.mjs` liest alle Module und `game-structures.js`, prüft sie und schreibt
-`game-data/catalog.json`.
+`scripts/build-catalog.mjs` liest alle Module, prüft sie und schreibt
+`game-data/catalog.json`. Änderung (2026-10-28): Original-Strukturen aus dem Spiel (`game-structures.js`, IDs `spiel-…`, Feld
+`structure`) gibt es nicht mehr – der Katalog enthält nur eigene Bau-Module (Stand: 69 Bauten in 7 Kategorien); die Vorsilbe `spiel-`
+ist nicht mehr reserviert. Alte Adressen `bau.html?id=spiel-…` zeigen die normale Anzeige „Bau nicht gefunden“.
 Änderung (Webseite, Etappe 1): Ziel ist `data/catalog.json` (im Repo, wird mit der Seite veröffentlicht). Neu ist das Feld
 `"inputs": { "code": sha256, "data": sha256 }` nach `version`: `code` = Fingerabdruck dieses Skripts (nur die Datei), von
-`scripts/check-build.mjs`, `js/core/materials.js`, allen Bau-Modulen und `game-structures.js`, jeweils samt aller relativ
-importierten Dateien (CRLF zählt als LF); `data` = Spieldaten-Version (`version|worldVersion` aus `meta.json`),
-`blocks.json` und `structures/index.json`. Passt einer nicht mehr, ist der Katalog veraltet (`start.mjs`, Unit-Test
+`scripts/check-build.mjs`, `js/core/materials.js` und allen Bau-Modulen, jeweils samt aller relativ
+importierten Dateien (CRLF zählt als LF); `data` = Spieldaten-Version (`version|worldVersion` aus `meta.json`) und
+`blocks.json`. Passt einer nicht mehr, ist der Katalog veraltet (`start.mjs`, Unit-Test
 `tests/unit/catalog-fresh.test.mjs`). `thumb` ist im Katalog immer `null`: Vorschaubilder enthalten Spieltexturen und gibt es
 nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur auf 127.0.0.1/localhost (`loadLocalThumbIds`,
 `applyThumbs` in `js/ui/data.js`), online gibt es keine Anfrage danach und die Karten zeigen das Kategorie-Icon.
@@ -1064,8 +1113,7 @@ nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur 
     "id", "title", "category", "subtitle", "tags": [], "aliases": [], "accuracy",
     "description", "sources": [{ "title", "url" }], "credits": { "author", "url", "license" } | null,
     "tested": true | false | null,
-    "module": "js/builds/<kategorie>/<id>.js" | null,
-    "structure": "<datei>.json" | null,                (Original-Struktur aus game-data/structures/)
+    "module": "js/builds/<kategorie>/<id>.js",
     "scales": [1, 0.5] | null, "defaultScale": 1 | null,
     "size": [w, h, l], "blocks": n, "steps": n, "phases": n,   (beim defaultScale bzw. ohne Maßstab)
     "variants": { "1": { "size", "blocks", "steps" }, "0.5": { … } } | null,   (nur bei scales)
@@ -1073,21 +1121,15 @@ nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur 
     "sizeClass": "klein" | "mittel" | "gross" | "riesig",   (Blöcke: klein < 1 000 ≤ mittel < 10 000 ≤ gross < 100 000 ≤ riesig)
     "thumb": "thumbs/<id>.webp" | null } ] }
 ```
-- Original-Strukturen: `id` mit Vorsilbe `spiel-` (für Module verboten), `accuracy` `original`, `module` null, `structure` gesetzt,
-  `phases` 1, `steps` = belegte Ebenen, `size` = Begrenzung der Blöcke (Luftränder der Vorlage zählen nicht).
-  `defaultScale` = 1, wenn erlaubt, sonst der erste Maßstab (wie check-build).
+- `defaultScale` = 1, wenn erlaubt, sonst der erste Maßstab (wie check-build). Das Feld `structure` (Original-Strukturen) entfällt
+  seit 2026-10-28; das Label `original` bleibt in der Liste der Herkunft, auch wenn es gerade kein Bau nutzt.
 - Änderung (2026-10-28): Der Katalog hat keine Felder `difficulty` und `facts` und keine Kategorie `redstone` mehr.
 - `counts.byCategory` nennt immer alle 7 Kategorien (auch 0). `builds` sortiert nach Kategorie (Reihenfolge §8), dann Titel.
   `warnings`: Warnungen der Module (höchstens 20 je Eintrag), doppelte Titel, Einträge, die wegen Fehlern fehlen.
 - Die Datei hat einen Eintrag je Zeile (kompakt, gültiges JSON) und wird atomar geschrieben (Zwischendatei + Umbenennen).
 - Bau-Seite: `bau.html?id=<id>[&scale=<zahl>]`; Formen: `bau.html?form=<shape>&<param>=<wert>…`
 
-`js/builds/game-structures.js` (Agent catalog) exportiert `GAME_STRUCTURE_DEFAULTS` (`accuracy`, `sources`, `credits`,
-`tested`) und `GAME_STRUCTURES` (eingefroren): `{ id, structure: '<spielpfad>', title, subtitle, category, tags, aliases,
-description }` (ein Eintrag mit `difficulty` oder `facts` ist ein Fehler); `structure` ist der Pfad unter
-`data/minecraft/structure/` (z. B. `village/plains/houses/plains_library_1`),
-der Dateiname folgt daraus (`/` → `__`, `.json`). Auswahl: vollständige, nachbaubare Stücke – keine Zombie-, Verfalls- oder
-Kohle-Varianten, keine Straßen, Lampen, Deko-Kleinteile, Halb-Wracks oder Leerräume.
+Änderung (2026-10-28): `js/builds/game-structures.js` (Auswahl der Original-Strukturen) ist gelöscht.
 
 ### 9.1 Hilfsbibliothek (`js/builds/lib/`)
 
@@ -1427,7 +1469,7 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   keinen Text“ entfällt (geprüft werden nur noch die Texte in meta), die Warnung zu `tested` gilt nur noch für `farmen`.
   Leere Schritte nennen Nummer und Kapitel („Schritt 3 (Kapitel „Möbel“) setzt keine Blöcke.“). `CATEGORIES` (7 Kategorien)
   nutzen auch `build-catalog.mjs` und `start.mjs`. Tags, die eine Schwierigkeit nennen, sind Fehler (§9).
-- `node scripts/shot.mjs --module <pfad> | --structure <datei> [--views iso,front,top] [--out tmp/shots]`
+- `node scripts/shot.mjs --module <pfad> [--views iso,front,top] [--out tmp/shots]` (`--structure` gibt es seit 2026-10-28 nicht mehr)
   – Screenshots über Chrome (für Sichtprüfungen).
   Änderung: weitere Quellen `--gallery <gruppe|all>` (ohne `--page` alle Seiten) und `--synthetic <anzahl>`; Optionen
   `--progress 25,50,75` (zusätzliche Bilder bei diesen Prozent der Schritte), `--clip <y>`, `--ghost`, `--highlight <schritt>`,
@@ -1435,7 +1477,7 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `--gpu hardware|swiftshader` (Standard Grafikkarte, ohne WebGL2 dort Rückfall auf swiftshader), `--bench <s>` (Kamera dreht,
   FPS). Bilder unter `<out>/<name>/<ansicht>[-p50][-clip3][-ghost].png`; Ausgabe: Kennzahlen, Zeiten, Warnungen, fehlende
   Texturen, bei Galerien die Reihen. Exit-Code 1 bei Browser-Fehlern, 2 bei falschen Optionen.
-- Änderung: Testseite `tests/visual/viewer.html` – `?structure=<datei>` | `?module=<pfad>` | `?gallery=1` | `?gallery=<gruppe>`
+- Änderung: Testseite `tests/visual/viewer.html` – `?module=<pfad>` | `?gallery=1` | `?gallery=<gruppe>`
   `[&page=n]` | `?synthetic=<anzahl>` (ohne Angabe das Beispielhaus aus `tests/fixtures/core/`), dazu `view`, `progress` (Prozent)
   oder `step` (Schritt-Kommazahl), `clip`, `ghost=1`, `highlight`, `mode=walk`, `scale`, `ui=0` (nur die 3D-Ansicht),
   `bench=<s>`. Bedienleiste mit Ansichten, Laufen, Geist, Fortschritt (Schieber, ‹ Abspielen ›), Schnitt, Hover-
@@ -1443,14 +1485,14 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `picks`, `bench`; `window.__viewer` ist die Viewer-Instanz.
 - `node scripts/build-catalog.mjs` – Katalog erzeugen.
   Änderung (catalog): findet `js/builds/<kategorie>/<id>.js` (nur Kategorie-Ordner aus §8; `lib/` still, andere Ordner mit
-  Hinweis übersprungen), prüft jedes Modul mit `checkBuild` für jeden Maßstab und die Original-Strukturen (Datei vorhanden, Größe
-  und Blockzahl wie `structures/index.json`, keine Vorlage doppelt); doppelte IDs sind ein Fehler (alle Einträge der ID fallen weg).
+  Hinweis übersprungen), prüft jedes Modul mit `checkBuild` für jeden Maßstab; doppelte IDs sind ein Fehler (alle Einträge der ID
+  fallen weg). Änderung (2026-10-28): keine Original-Strukturen mehr (`--structures`, `--no-structures`, `catalogStructures`,
+  `analyzeStructure` und `structuresFile` sind weg).
   Fehlerhafte Einträge fehlen im Katalog, alle Fehler stehen am Ende, Exit-Code 1 (2 bei falschen Optionen); der Katalog wird
   trotzdem geschrieben. Ausgabe: Tabelle je Kategorie, Bilder-Zahl, Warnungen, Laufzeit. Optionen `--thumbs [--force]`
-  (danach `make-thumbs`, thumb-Felder neu), `--modules-dir <ordner>`, `--structures <datei>` | `--no-structures`, `--data <ordner>`,
-  `--out <datei>`, `--thumbs-dir <ordner>`. Als Bibliothek: `buildCatalog({ modulesDir, structuresFile, dataDir, thumbsDir })` →
-  `{ catalog, errors, notes, stats }`, `catalogModule`, `catalogStructures`, `analyzeStructure`, `sizeClass`, `serializeCatalog`,
-  `writeCatalog`, `writeFileAtomic`.
+  (danach `make-thumbs`, thumb-Felder neu), `--modules-dir <ordner>`, `--data <ordner>`,
+  `--out <datei>`, `--thumbs-dir <ordner>`. Als Bibliothek: `buildCatalog({ modulesDir, dataDir })` →
+  `{ catalog, errors, notes, stats }`, `catalogModule`, `sizeClass`, `serializeCatalog`, `writeCatalog`, `writeFileAtomic`.
   Änderung (Webseite, Etappe 1): Standard für `--out` ist `data/catalog.json` (`DEFAULT_OUT`); `--thumbs` rendert nur noch die
   Bilder (der Katalog bekommt keine thumb-Felder). Neu: `codeFingerprint`, `dataFingerprint`, `catalogInputs`,
   `writeCatalogIfChanged`. `moduleSources` liegt jetzt in `scripts/lib/module-sources.mjs` (make-thumbs exportiert es weiter).
@@ -1463,7 +1505,7 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   je Seite die zuerst sichtbaren Blöcke, gezählt die vom häufigsten Block abweichenden; eine andere Ecke (gespiegelte Winkel) gewinnt
   erst ab 15 % mehr Abwechslung.
   Neu gerendert wird nur bei geändertem Hash (Eintrag ohne `thumb`, Modul-Quelltext samt relativ importierter Dateien,
-  Strukturdatei, Spieldaten-Stand `version|worldVersion|resourcePack`, `THUMB_STYLE`) – gespeichert in `thumbs/index.json`
+  Spieldaten-Stand `version|worldVersion|resourcePack`, `THUMB_STYLE`) – gespeichert in `thumbs/index.json`
   (`{ version: 1, style, size, entries: { <id>: { hash, bytes, renderedAt } } }`). Danach trägt es die thumb-Felder in den
   Katalog ein. Änderung (Webseite, Etappe 1): Der Katalog bleibt unverändert, Standard für `--catalog` ist `data/catalog.json`. `--prune` löscht Bilder ohne Katalog-Eintrag (sonst nur Hinweis). Schlägt ein Bild fehl, lädt es die Seite neu und
   versucht es einmal. Als Bibliothek: `makeThumbs({ catalog, outDir, dataDir, force, only, gpu, prune, log })` →
@@ -1471,18 +1513,22 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `{ ok, data (Base64-WebP), bytes, blocks, ms }`; die Kamera-Helfer `thumbAngles`/`thumbOrbit` in `tests/visual/thumb.js` sind rein.
 - `node --test "tests/unit/**/*.test.mjs"` – Unit-Tests (Ordnername allein geht nicht).
   `node tests/e2e.mjs` – Klick-Test.
-  Änderung (Integration Runde 2): `node tests/e2e.mjs [--only start,bau,erstellen,handy] [--gpu hardware|swiftshader] [--out <ordner>]`
+  Änderung (Integration Runde 2): `node tests/e2e.mjs [--only start,bau,erstellen,meine,handy] [--gpu hardware|swiftshader] [--out <ordner>]`
   prüft im echten Chrome gegen den echten Katalog (`game-data/catalog.json`, seit Etappe 1 `data/catalog.json`; fehlt er → Exit-Code 2): Start → Kategorie (Filter,
-  Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1 mit Maßstab-Wechsel, Infinity Castle, ein Dorfhaus `spiel-…`, eine Farm
+  Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1 mit Maßstab-Wechsel, Infinity Castle, ein Haus mit Bett und Truhe, eine Farm
   mit `tested: false` (seit 2026-10-28 statt eines Redstone-Baus): Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt,
   Laufen, Bildrate) → „Selber erstellen“ (Freitext, Upload
-  je Fixture-Format) → Handy 390 × 844. Ausgabe je Prüfung `OK`/`FEHLER`, Leistungswerte, Screenshots und `e2e-report.json` (Standard
+  je Fixture-Format) → Handy 390 × 844. Änderung (2026-10-28): Start ohne Scrollen bis zur letzten Kachel (1280 × 800 und
+  390 × 844), Kopf ohne Suche mit „Meine Bauten“ auf allen Seiten, alte Adresse `bau.html?id=spiel-…` → „Bau nicht gefunden“ und
+  Ablauf `meine` (ZIP mit `manifest.json`, „Zu Meine Bauten“ auf erstellen.html, Liste, Suche/Filter, Öffnen, Neuladen mit Haken,
+  Modell-Optionen, Umbenennen, Kategorie, Löschen mit Rückfrage); gemeinsame Teile mit `e2e-remote.mjs` in `tests/lib/e2e-common.mjs`.
+  Ausgabe je Prüfung `OK`/`FEHLER`, Leistungswerte, Screenshots und `e2e-report.json` (Standard
   `tmp/integration/e2e/`); Exit-Code 1 bei Fehlern. Konsolenfehler zählen als Fehler (einzige Ausnahme: die absichtlich kaputte
   Upload-Datei, deren Ablehnung `renderer.js` mit `console.error` meldet).
 - Änderung (Integration Runde 2): `node scripts/start.mjs [--port 8080] [--remote] [--no-thumbs]` – ein Befehl zum Starten: fehlen
-  Spieldaten (`meta.json`, `blocks.json`, `names.json`, `models.json`, `textures.json/.bin`, `structures/index.json`, Version 26.2),
+  Spieldaten (`meta.json`, `blocks.json`, `names.json`, `models.json`, `textures.json/.bin`, Version 26.2; seit 2026-10-28 ohne `structures/`),
   ruft es `extract-game-data.mjs` (mit `--remote` aus dem Netz); ist der Katalog älter als `js/builds/`, `js/core/`, `build-catalog.mjs`,
-  `check-build.mjs`, `structures/index.json` oder `blocks.json` (oder fehlt er), ruft es `build-catalog.mjs --thumbs`; dann startet
+  `check-build.mjs` oder `blocks.json` (oder fehlt er), ruft es `build-catalog.mjs --thumbs`; dann startet
   der Server (belegter Port → die nächsten 9 probieren, außer bei `--port`). Exportiert `parseStartArgs`, `checkGameData`, `checkCatalog`.
   Änderung (ohne Minecraft): `ensureGameData({ remote, run, check, minecraftJar, log })` → `'present' | 'local' | 'remote'`.
   Jar am Standardort (`findMinecraftJar()`) → daraus lesen; scheitert das, ohne Jar oder mit `--remote` →
@@ -1624,11 +1670,13 @@ Fertige Bauten aus dem Netz laden → 3D-Ansicht + Anleitung (Kapitel „Aufbau�
 // Viewer (Hauptthread) – die Datei geht als ArrayBuffer an den Worker
 await viewer.load({ kind: 'upload', format, name, data: arrayBuffer, params })
 //   format: 'schem' | 'litematic' | 'nbt' | 'vox' | 'stl' | 'obj' | 'glb' | 'gltf' (aus der Endung, formatFromName)
-//   → BuildResult wie bei Strukturen, zusätzlich result.upload (Kennzahlen, s. u.);
+//   → BuildResult (Builder, raw, Ebenen), zusätzlich result.upload (Kennzahlen, s. u.);
 //     result.source = { kind:'upload', format, name, bytes, params } (ohne die Datei)
 // js/create/import/index.js (Browser, Worker, Node)
 importFile({ format, name, data, params, onProgress, loadBlockColors, importVoxelizer, limits }) // → Promise<ImportResult>
 importToBuildResult(imported, { onProgress })   // → BuildResult (Builder, raw: keine Auto-Verbindungen)
+checkImportFile({ format, name, data, limits, importVoxelizer }) // → Promise<{ format, size|null, blockCount|null }>, nur prüfen
+//   (Meine Bauten): gleiche Leser und ImportError wie importFile, ohne Bau; ohne Blockdaten NameOnlyConverter + BlockCounter
 formatFromName(name) / cleanFileName(name) / sniffContent(bytes)
 UPLOAD_FORMATS · NBT_FORMATS · MODEL_FORMATS · UPLOAD_ACCEPT (für accept=) · FORMAT_LABELS · IMPORT_LIMITS · ImportError · WORLD_VERSION (4903)
 // js/create/import/nbt.js (auch von scripts/lib/nbt.mjs genutzt, der dort nur zlib dazunimmt)
@@ -1752,21 +1800,24 @@ PALETTE_SETS · MATCH_WEIGHTS · PATTERN_WEIGHT (0,1)
 Änderung (Webseite, Etappe 2, 2026-10-27): Die Seite braucht kein `game-data/` mehr. Online (GitHub Pages) lädt der Browser
 die Original-Dateien von Minecraft Java 26.2 selbst aus misode/mcmeta auf raw.githubusercontent.com (CORS `*`, gzip) und
 wandelt sie mit derselben Logik wie `scripts/extract-game-data.mjs` um. Ergebnis: genau das Format von `game-data/`
-(names, blocks, models, Strukturen, Blockfarben Text für Text gleich; Texturen pixelgleich, als Atlas-Einträge). Auf der Seite
+(names, blocks, models, Blockfarben Text für Text gleich; Texturen pixelgleich, als Atlas-Einträge). Auf der Seite
 und im Repo liegen keine Mojang-Dateien. Ablage im Browser (IndexedDB), danach ohne Netz.
+Änderung (2026-10-28): Strukturen lädt die Seite nicht mehr (Spiel-Bauten entfernt). Weg sind `remote.structure()`,
+`structureUrl`/`structureRepoPath`/`structureFileToUrl`, der mcmeta-Pin `data`, `LIMITS.nbt`, `loadGameStructure` und in
+`convert.js` die Struktur-Umwandlung. Der Speicher-Schlüssel ändert sich dadurch (Commits ohne `data`): Ein Browser mit altem
+Stand lädt die Spieldaten einmal neu, `keepOnly` räumt dabei auch alte `structure:…`-Einträge weg. `CONVERT_VERSION` bleibt 1.
 
 Dateien (alle laufen in Fenster, Worker und Node, ohne DOM):
 - `convert.js` – reine Umwandlung (vorher im Node-Skript, das sie jetzt importiert und weiter exportiert): Namen, Blockbericht,
   Modelle (`buildModels`, `createAssetsFromSummary` als Assets-Adapter für die mcmeta-Zusammenfassungen), Textur-Einträge
-  (`textureEntry`, `selectTextureNames`, `parseAnimation`), Strukturen (`convertStructure`, `structureFileName`/
-  `structurePathFromFile`). `CONVERT_VERSION` (heute 1) erhöhen, sobald sich die Ausgabe ändert – sonst behalten Besucher alte
+  (`textureEntry`, `selectTextureNames`, `parseAnimation`). `CONVERT_VERSION` (heute 1) erhöhen, sobald sich die Ausgabe ändert – sonst behalten Besucher alte
   Daten; `tests/unit/data-remote.test.mjs` hält dafür eine Prüfsumme je Version fest.
 - `block-colors.js` – Kern der Blockfarben (`buildBlockColorsFrom` mit synchronem `textureImage(name)`), auch von
   `scripts/build-block-colors.mjs` genutzt.
 - `sources.js` – feste Commits (unveränderlich): summary `711a353b…` (version.json, Blockbericht, alle Blockstates, alle
   Modelle), atlas `dbfab673…` (blocks/items/entities: `atlas.png` + `data.min.json` mit `[x, y, w, h]`), assets `a4151022…`
   (101 `.png.mcmeta`, Liste `MCMETA_TEXTURES` = Texturen mit Animation oder Mipmap-Strategie), assetsJson `9a92e5df…`
-  (de_de/en_us), data `4d12c055…` (Struktur-NBT). `mcmetaUrl` prüft Pfade streng; `LIMITS` je Dateiart.
+  (de_de/en_us). `mcmetaUrl` prüft Pfade streng; `LIMITS` je Dateiart.
   Die Zeile `MCMETA_BASE = 'https://raw.githubusercontent.com/misode/mcmeta/'` ersetzt nur der Testserver (Spiegel).
 - `net.js` – `fetchBytes`/`fetchJson`: nur einfache GET ohne eigene Header (raw.githubusercontent.com beantwortet den
   CORS-Preflight mit 403), `credentials: 'omit'`, Größengrenze (Content-Length und beim Lesen), Zeitlimit je Versuch,
@@ -1775,17 +1826,17 @@ Dateien (alle laufen in Fenster, Worker und Node, ohne DOM):
 - `store.js` – IndexedDB „block-kompass-data“ (Objektspeicher „files“), Rückfall auf den Arbeitsspeicher (privates Fenster,
   Kontingent, Fehler), `withLock` über Web Locks.
 - `remote.js` – `createRemoteSource()`: `names()`, `blocks()`, `models()`, `textures()` (Einträge `{ atlas, x, y, w, h, anim,
-  mip? }`, ohne die 3 Colormaps, die zur Laufzeit niemand braucht), `atlas(name)` (PNG-Bytes), `structure(file)`,
+  mip? }`, ohne die 3 Colormaps, die zur Laufzeit niemand braucht), `atlas(name)` (PNG-Bytes),
   `blockColors()`, `isCached(name)`. Je Stufe: gemerkte Promise → Speicher → Sperre `bk-data:<name>` (Seite und Worker laden
   nie doppelt) → Speicher erneut → erzeugen → speichern; Fehler werden nie gemerkt. Schlüssel
   `v<STORE_VERSION>.<CONVERT_VERSION>.<BLOCK_COLORS_FORMAT>|<Commits>|<Stufe>`, alte Schlüssel räumt `keepOnly` weg.
   Scheitert eine `.mcmeta`, werden die übrigen abgebrochen (bei 429 keine Anfragen im Hintergrund). Höchstens 16 gleichzeitig.
 - `game-data.js` – einzige Datenquelle der Seite: `dataMode()` ('local' nur auf 127.0.0.1/localhost/[::1] mit vorhandenem
   `game-data/meta.json`, sonst 'remote' – online ohne jede Anfrage nach `game-data/`), `loadGameNames/Blocks/Models/
-  Textures/Structure/BlockColors()` (Texturen lokal `{ json, bin }`, online `{ json, atlas }` für `TextureStore.fromSource`),
+  Textures/BlockColors()` (Texturen lokal `{ json, bin }`, online `{ json, atlas }` für `TextureStore.fromSource`),
   `onGameDataProgress` (`{ stage, label, done, total, share, text }`, nur bei echtem Download, z. B. „Spieldaten von GitHub
   laden (einmalig) … 42 %“), `GameDataError { kind, title, message }` / `toGameDataError` (menschliche Texte ohne Befehle).
-  Benutzt von `renderer.js` (`loadTextureStore`), `appearance.js`, `engine-worker.js` (Modelle, Blöcke, Strukturen,
+  Benutzt von `renderer.js` (`loadTextureStore`), `appearance.js`, `engine-worker.js` (Modelle, Blöcke,
   Blockfarben; Fortschritt als Status „data“ mit Anteil), `ui/data.js` (`loadNames`), `create-page.js`, `create/importer.js`.
 - `texture-store.js`: Atlas-Modus (`new TextureStore(json, { atlas })`, `TextureStore.fromSource`, `mode`,
   `TextureSourceError`); jeder Atlas wird einmal geladen und dekodiert, nach dem Ausschneiden aller Einträge freigegeben.
@@ -1800,4 +1851,6 @@ Messwerte (headless Chrome, echtes raw.githubusercontent.com): erster Besuch ein
 Tests: `tests/unit/data-*.test.mjs` (u. a. Gleichheit mit `game-data/` über den Spiegel, Chrome mit IndexedDB),
 `node scripts/mirror-mcmeta.mjs` (Spiegel der festen Dateien nach `tmp/mcmeta-mirror/`), `tests/lib/mcmeta-mirror.mjs`
 (`mirrorOverrides` für `startServer({ overrides })`, nur programmatisch), `node tests/e2e-remote.mjs [--live]`
-(Pages-Nachbau auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`, mit Spiegel oder echtem GitHub).
+(Pages-Nachbau auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`, mit Spiegel oder echtem GitHub;
+Abläufe `start,bau,erstellen,meine,handy,fehler`, seit 2026-10-28 nur mit Bau-Modulen, dazu Startseite ohne Scrollen, Kopf ohne
+Suche und „Meine Bauten“ ohne Anfragen an mcmeta für Liste und Bearbeiten).

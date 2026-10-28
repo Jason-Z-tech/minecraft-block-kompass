@@ -151,9 +151,11 @@ async function ideaFlow(server) {
     check('Hinweise auf Formen und Import', await page.eval("document.querySelectorAll('.create-none__hints button').length === 2"));
     await shot(page, 'desktop-05-burj');
 
-    // Mehrdeutig: „Turm“ zeigt mehrere Treffer und die Form als Alternative, öffnet nichts automatisch
-    const tower = await ask(page, 'Turm');
-    check('„Turm“ → mehrere Treffer + Form als Alternative', tower === 'build' && await page.eval("document.querySelectorAll('.create-matches .build-card').length > 1 && !!document.querySelector('.create-alt')"));
+    // Mehrdeutig: „Bogen“ zeigt mehrere Treffer und die Form als Alternative, öffnet nichts automatisch
+    // („Turm“ trifft seit dem Entfernen der Spiel-Bauten nur noch den Wachturm und ist damit nicht mehr mehrdeutig)
+    const arch = await ask(page, 'Bogen');
+    check('„Bogen“ → mehrere Treffer + Form als Alternative', arch === 'build' && await page.eval("document.querySelectorAll('.create-matches .build-card').length > 1 && !!document.querySelector('.create-alt')"),
+      `${await page.eval("document.querySelectorAll('.create-matches .build-card').length")} Treffer`);
     await shot(page, 'desktop-06-turm');
 
     // HTML in der Anfrage wird nur als Text gezeigt

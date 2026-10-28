@@ -318,6 +318,7 @@ test('Fehlendes Vorschaubild: Ersatz aus Kategorie-Farbe und Icon statt kaputtem
   const page = await open(t, { thumbs: false });
   if (!page) return;
   await page.route('/thumbs/', { body: 'fehlt', status: 404, contentType: 'text/plain' });
+  // Die 7 Häuser mit Herkunft „original“ im Test-Katalog sind neutrale Beispiele (nur für dieses Label)
   await page.goto(`${server.url}/kategorie.html?k=haeuser&herkunft=original`);
   await page.waitFor(`document.querySelectorAll(${JSON.stringify(CARDS)}).length === 7`);
   await page.waitFor('document.querySelectorAll("#category-list .build-card__fallback").length === 7', 5000);

@@ -1,0 +1,222 @@
+/* „Meine Bauten“ (meine.html): Suchleiste, Karten der eigenen Bauten mit Bearbeiten in der Karte und die Fläche
+   beim Ziehen von Dateien. Nutzt Tokens und Komponenten aus style.css. */
+
+.page-head--mine {
+  --cat: var(--c-gold);
+  padding-block: var(--space-6) var(--space-5);
+}
+
+.mine {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+}
+
+.mine .status-region:not(:empty) {
+  margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------- Suche, Filter, Hinzufügen */
+.mine__bar {
+  display: grid;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.mine__search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.mine__add {
+  width: 100%;
+}
+
+@media (min-width: 560px) {
+  .mine__search {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .mine__bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .mine__add {
+    width: auto;
+  }
+}
+
+.mine__count {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.mine__count:empty,
+.mine__list:empty,
+.mine__empty:empty {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Karten */
+.mine__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.mine-card {
+  --notch: 4px;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-4);
+  padding-top: calc(var(--space-4) + 4px);
+}
+
+.mine-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(var(--cat), var(--cat)) left top / 100% 4px no-repeat,
+    var(--c-surface);
+  box-shadow: inset 0 0 0 2px var(--c-line), inset 0 -4px 0 rgb(0 0 0 / 0.3);
+  clip-path: polygon(
+    0 var(--notch), var(--notch) var(--notch), var(--notch) 0,
+    calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch),
+    100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%,
+    var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch))
+  );
+}
+
+.mine-card:focus-within::before {
+  background:
+    linear-gradient(var(--cat), var(--cat)) left top / 100% 4px no-repeat,
+    var(--c-card-hover);
+}
+
+.mine-card.is-new {
+  animation: drop-in var(--dur-slow) var(--ease-out);
+}
+
+.mine-card.is-new::before {
+  box-shadow: inset 0 0 0 2px var(--c-gold), inset 0 -4px 0 rgb(0 0 0 / 0.3);
+}
+
+.mine-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.mine-card__icon {
+  --notch: 3px;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--cat);
+  background: var(--c-slot);
+  box-shadow: inset 3px 3px 0 #0b0c0e, inset -3px -3px 0 #383d46;
+}
+
+.mine-card__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mine-card__title {
+  font-size: var(--fs-md);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.mine-card__link {
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+.mine-card__link:hover {
+  color: var(--c-link);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.mine-card__meta {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.mine-card__zone {
+  margin-top: auto;
+}
+
+/* Aktionen als 2 × 2-Raster: bleibt auch in schmalen Karten ordentlich */
+.mine-card__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.mine-card__actions .btn {
+  min-width: 0;
+  padding-inline: var(--space-2);
+}
+
+.mine-card__form,
+.mine-card__confirm-box {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.mine-card__question {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.mine-card__delete .icon {
+  color: var(--c-redstone-text);
+}
+
+/* ---------------------------------------------------------------- Dateien über die Seite ziehen */
+.mine__drop {
+  position: fixed;
+  inset: var(--space-3);
+  z-index: var(--z-toast);
+  display: none;
+  place-items: center;
+  padding: var(--space-4);
+  text-align: center;
+  background: rgb(15 17 20 / 0.86);
+  border: 4px dashed var(--c-grass);
+  pointer-events: none;
+}
+
+.mine__drop.is-active {
+  display: grid;
+}
+
+.mine__drop-text {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  color: var(--c-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mine-card.is-new {
+    animation: none;
+  }
+}

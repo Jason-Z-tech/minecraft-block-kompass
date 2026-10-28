@@ -174,6 +174,9 @@ test('Fehler des Viewers werden verständlich, Spieldaten ohne Befehle', () => {
   assert.equal(viewerErrorState({ code: 'data', title: '  ', message: 'x' }).title, 'Spieldaten fehlen', 'leerer Titel → allgemein');
   assert.equal(viewerErrorState({ code: 'no-webgl2', message: 'kein WebGL2' }).title, '3D-Ansicht nicht möglich');
   assert.equal(viewerErrorState({ code: 'build', message: 'kaputt' }).text, 'kaputt');
+  // „Erneut versuchen“ nur, wenn es helfen kann: nicht ohne WebGL2 und nicht bei Fehlern der Datei selbst
+  assert.deepEqual(['no-webgl2', 'upload', 'build', 'data', 'context-lost', 'worker'].map((code) => viewerErrorState({ code, message: 'x' }).retry), [false, false, true, true, true, true]);
+  assert.equal(viewerErrorState({ code: 'upload', message: 'Die Datei ist beschädigt.' }).title, 'Der Bau konnte nicht geladen werden');
   assert.equal(viewerErrorState(null).title, 'Der Bau konnte nicht geladen werden');
   assert.deepEqual(Object.keys(VIEW_LABELS), ['iso', 'top', 'front', 'side']);
 });

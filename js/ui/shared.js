@@ -36,18 +36,19 @@ export const SIZE_CLASS_KEYS = Object.freeze(['klein', 'mittel', 'gross', 'riesi
 export const ICON_NAMES = Object.freeze([
   'search', 'home', 'grid', 'hammer', 'prev', 'next', 'play', 'pause', 'check', 'close', 'info', 'warning',
   'size', 'blocks', 'steps', 'copy', 'retry', 'cube', 'layers', 'chest', 'book', 'arrow-right', 'arrow-left',
-  'chevron-down', 'star', ...CATEGORIES.map((category) => category.icon),
+  'chevron-down', 'star', 'plus', ...CATEGORIES.map((category) => category.icon),
 ]);
 
 export const SEARCH_MAX_LENGTH = 120;
 export const BUILD_ID_PATTERN = /^[a-z0-9-]{2,80}$/;
 
 // Zeichenklassen aus Codepunkten gebaut, damit keine unsichtbaren Zeichen im Quelltext stehen:
-// Steuerzeichen und Zeilen-/Absatztrenner werden zu Leerzeichen, Nullbreite-Zeichen und BOM fallen weg.
+// Steuerzeichen und Zeilen-/Absatztrenner werden zu Leerzeichen; Nullbreite-Zeichen, Schreibrichtungs-Steuerung
+// (Einbettung, Überschreibung, Isolierung) und BOM fallen weg.
 const toRegexEscape = (code) => `\\u${code.toString(16).padStart(4, '0')}`;
 const charClass = (ranges) => new RegExp(`[${ranges.map(([from, to]) => `${toRegexEscape(from)}-${toRegexEscape(to)}`).join('')}]`, 'g');
 const CONTROL_CHARACTERS = charClass([[0x0000, 0x001f], [0x007f, 0x009f], [0x2028, 0x2029]]);
-const ZERO_WIDTH_CHARACTERS = charClass([[0x200b, 0x200f], [0x2060, 0x2060], [0xfeff, 0xfeff]]);
+const ZERO_WIDTH_CHARACTERS = charClass([[0x200b, 0x200f], [0x202a, 0x202e], [0x2060, 0x2060], [0x2066, 0x2069], [0xfeff, 0xfeff]]);
 const FORM_NAME_PATTERN = /^[a-z0-9-]{1,40}$/;
 const STORAGE_PREFIX = 'bk:';
 

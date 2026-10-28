@@ -411,6 +411,15 @@
   box-shadow: inset 0 0 0 2px var(--c-line), inset 3px 3px 0 rgb(0 0 0 / 0.4);
 }
 
+/* Kleine Zeile über dem Titel („Form erkannt“), wie früher die Augenbraue der Startseite */
+.create-understood__kicker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-grass-text);
+  letter-spacing: 0.04em;
+}
+
 .create-understood__title {
   font-size: var(--fs-xl);
 }
@@ -1120,10 +1129,59 @@
   margin-bottom: var(--space-2);
 }
 
+/* „Zu Meine Bauten“ nach dem Import */
+.import-save {
+  --plate-edge: color-mix(in srgb, var(--c-gold) 45%, var(--c-line));
+  display: grid;
+  gap: var(--space-4);
+  animation: drop-in var(--dur-slow) var(--ease-out);
+}
+
+.import-save__form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.import-save__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (min-width: 720px) {
+  .import-save__form {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto;
+    align-items: end;
+  }
+
+  .import-save__form .field__error {
+    grid-column: 1 / -1;
+  }
+}
+
+.import-save__done {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.import-save__message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 650;
+  color: var(--c-grass-text);
+  overflow-wrap: anywhere;
+}
+
+.import-save__message .icon {
+  flex: none;
+}
+
 /* ---------------------------------------------------------------- Weniger Bewegung */
 @media (prefers-reduced-motion: reduce) {
   .shape-option:hover .shape-glyph,
-  .dropzone.is-dragover .dropzone__icon {
+  .dropzone.is-dragover .dropzone__icon,
+  .import-save {
     animation: none !important;
   }
 }

@@ -35,7 +35,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/kleines-holzhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -100,7 +99,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/fachwerkhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -166,7 +164,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/skandinavisches-blockhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -232,7 +229,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/moderne-villa.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -297,7 +293,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/bauernhaus-scheune.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -362,7 +357,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/strandhuette.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -427,7 +421,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/baumhaus-eiche.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -495,7 +488,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/japanisches-teehaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -560,7 +552,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/stadthaus-laden.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -625,7 +616,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/berghuette.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -690,7 +680,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/haus-leuchtturmwaerter.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -755,7 +744,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/wuerfelhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -821,7 +809,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/unterwasserkuppel.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -886,7 +873,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/mediterrane-villa.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -951,7 +937,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/wikinger-langhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1016,7 +1001,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/schwedenhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1082,7 +1066,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/wohnhochhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1147,7 +1130,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/reetdachhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1213,7 +1195,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/alpen-chalet.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1278,7 +1259,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/kleines-steinhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1328,22 +1308,21 @@
    "thumb": null
   },
   {
-   "id": "spiel-plains-small-house-1",
+   "id": "plains-small-house-1",
    "title": "Kleines Haus aus dem Ebenendorf",
    "category": "haeuser",
-   "subtitle": "Original-Struktur aus dem Spiel · village/plains/houses/plains_small_house_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Dorf",
     "Ebene"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „village/plains/houses/plains_small_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "village__plains__houses__plains_small_house_1.json",
+   "module": "js/builds/haeuser/plains-small-house-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1390,13 +1369,13 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-plains-small-house-1.webp"
+   "thumb": "thumbs/plains-small-house-1.webp"
   },
   {
-   "id": "spiel-plains-library-1",
+   "id": "plains-library-1",
    "title": "Bibliothek aus dem Ebenendorf",
    "category": "haeuser",
-   "subtitle": "Original-Struktur aus dem Spiel · village/plains/houses/plains_library_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Dorf",
     "Ebene",
@@ -1404,12 +1383,11 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „village/plains/houses/plains_library_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "village__plains__houses__plains_library_1.json",
+   "module": "js/builds/haeuser/plains-library-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1456,25 +1434,24 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-plains-library-1.webp"
+   "thumb": "thumbs/plains-library-1.webp"
   },
   {
-   "id": "spiel-plains-medium-house-1",
+   "id": "plains-medium-house-1",
    "title": "Mittleres Haus aus dem Ebenendorf",
    "category": "haeuser",
-   "subtitle": "Original-Struktur aus dem Spiel · village/plains/houses/plains_medium_house_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Dorf",
     "Ebene"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „village/plains/houses/plains_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "village__plains__houses__plains_medium_house_1.json",
+   "module": "js/builds/haeuser/plains-medium-house-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1521,25 +1498,24 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-plains-medium-house-1.webp"
+   "thumb": "thumbs/plains-medium-house-1.webp"
   },
   {
-   "id": "spiel-taiga-medium-house-1",
+   "id": "taiga-medium-house-1",
    "title": "Mittleres Haus aus dem Taigadorf",
    "category": "haeuser",
-   "subtitle": "Original-Struktur aus dem Spiel · village/taiga/houses/taiga_medium_house_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Dorf",
     "Taiga"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „village/taiga/houses/taiga_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "village__taiga__houses__taiga_medium_house_1.json",
+   "module": "js/builds/haeuser/taiga-medium-house-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1586,25 +1562,24 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-taiga-medium-house-1.webp"
+   "thumb": "thumbs/taiga-medium-house-1.webp"
   },
   {
-   "id": "spiel-snowy-medium-house-1",
+   "id": "snowy-medium-house-1",
    "title": "Mittleres Haus aus dem Schneedorf",
    "category": "haeuser",
-   "subtitle": "Original-Struktur aus dem Spiel · village/snowy/houses/snowy_medium_house_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Dorf",
     "Schnee"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „village/snowy/houses/snowy_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "village__snowy__houses__snowy_medium_house_1.json",
+   "module": "js/builds/haeuser/snowy-medium-house-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1651,25 +1626,24 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-snowy-medium-house-1.webp"
+   "thumb": "thumbs/snowy-medium-house-1.webp"
   },
   {
-   "id": "spiel-desert-medium-house-1",
+   "id": "desert-medium-house-1",
    "title": "Mittleres Haus aus dem Wüstendorf",
    "category": "haeuser",
-   "subtitle": "Original-Struktur aus dem Spiel · village/desert/houses/desert_medium_house_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Dorf",
     "Wüste"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „village/desert/houses/desert_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "village__desert__houses__desert_medium_house_1.json",
+   "module": "js/builds/haeuser/desert-medium-house-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1716,25 +1690,24 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-desert-medium-house-1.webp"
+   "thumb": "thumbs/desert-medium-house-1.webp"
   },
   {
-   "id": "spiel-igloo-top",
+   "id": "igloo-top",
    "title": "Iglu",
    "category": "haeuser",
-   "subtitle": "Original-Struktur aus dem Spiel (oberer Teil) · igloo/top",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Schnee",
     "Iglu"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „igloo/top“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "igloo__top.json",
+   "module": "js/builds/haeuser/igloo-top.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1781,7 +1754,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-igloo-top.webp"
+   "thumb": "thumbs/igloo-top.webp"
   },
   {
    "id": "tokyo-skytree",
@@ -1809,7 +1782,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/tokyo-skytree.js",
-   "structure": null,
    "scales": [
     1,
     0.5,
@@ -1914,7 +1886,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/eiffelturm.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -2010,7 +1981,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/koelner-dom.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -2105,7 +2075,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/big-ben.js",
-   "structure": null,
    "scales": [
     1
    ],
@@ -2188,7 +2157,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/brandenburger-tor.js",
-   "structure": null,
    "scales": [
     1
    ],
@@ -2272,7 +2240,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/freiheitsstatue.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -2367,7 +2334,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/kolosseum.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -2462,7 +2428,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/zytglogge.js",
-   "structure": null,
    "scales": [
     1
    ],
@@ -2547,7 +2512,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/grossmuenster.js",
-   "structure": null,
    "scales": [
     1
    ],
@@ -2633,7 +2597,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/cheops-pyramide.js",
-   "structure": null,
    "scales": [
     1,
     0.5,
@@ -2737,7 +2700,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/schiefer-turm-pisa.js",
-   "structure": null,
    "scales": [
     1
    ],
@@ -2820,7 +2782,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/burj-khalifa.js",
-   "structure": null,
    "scales": [
     0.5,
     0.25
@@ -2912,7 +2873,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/taj-mahal.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -3001,7 +2961,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/sagrada-familia.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3068,7 +3027,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/sydney-opera-house.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3133,7 +3091,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/weltenbaum.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3198,7 +3155,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/riesenrad.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3268,7 +3224,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/infinity-castle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3333,7 +3288,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/zaubererturm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3398,7 +3352,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/drachenhort.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3464,7 +3417,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/elfenbaumhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3529,7 +3481,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/schwebende-insel.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3594,7 +3545,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/pilzhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3659,7 +3609,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/hexenhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3727,7 +3676,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/hobbit-hoehle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3792,7 +3740,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/kristallpalast.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3857,7 +3804,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/nether-tor-ruine.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3907,22 +3853,21 @@
    "thumb": null
   },
   {
-   "id": "spiel-end-city-ship",
+   "id": "end-city-ship",
    "title": "Endschiff",
    "category": "fantasy",
-   "subtitle": "Original-Struktur aus der Endsiedlung · end_city/ship",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Ende",
     "Schiff"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „end_city/ship“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "end_city__ship.json",
+   "module": "js/builds/fantasy/end-city-ship.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -3969,25 +3914,24 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-end-city-ship.webp"
+   "thumb": "thumbs/end-city-ship.webp"
   },
   {
-   "id": "spiel-ruined-portal-1",
+   "id": "ruined-portal-1",
    "title": "Portalruine",
    "category": "fantasy",
-   "subtitle": "Original-Struktur aus dem Spiel · ruined_portal/portal_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Nether",
     "Ruine"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „ruined_portal/portal_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "ruined_portal__portal_1.json",
+   "module": "js/builds/fantasy/ruined-portal-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4034,7 +3978,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-ruined-portal-1.webp"
+   "thumb": "thumbs/ruined-portal-1.webp"
   },
   {
    "id": "kamado-haus",
@@ -4053,7 +3997,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/kamado-haus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4126,7 +4069,6 @@
    },
    "tested": null,
    "module": "js/builds/fantasy/badehaus-chihiro.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4191,7 +4133,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/sternwarte.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4256,7 +4197,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/versunkener-tempel.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4321,7 +4261,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/wichteldorf.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4388,7 +4327,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/burg-bergfried.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4453,7 +4391,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/wachturm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4518,7 +4455,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/stadtmauer-tor.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4583,7 +4519,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/schmiede.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4651,7 +4586,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/taverne.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4716,7 +4650,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/windmuehle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4781,7 +4714,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/kloster.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4846,7 +4778,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/marktplatz.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4911,7 +4842,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/burgtor.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -4976,7 +4906,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/ritterhalle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5041,7 +4970,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/dorfkirche.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5106,7 +5034,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/wassermuehle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5176,7 +5103,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/burg-eltz.js",
-   "structure": null,
    "scales": [
     1
    ],
@@ -5255,7 +5181,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/neuschwanstein.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5320,7 +5245,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/turmruine.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5385,7 +5309,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/holzpalisade.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5450,7 +5373,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/bauernkate.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5515,7 +5437,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/gefaengnisturm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5580,7 +5501,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/gotische-kathedrale.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5630,22 +5550,21 @@
    "thumb": null
   },
   {
-   "id": "spiel-pillager-outpost-watchtower",
+   "id": "pillager-outpost-watchtower",
    "title": "Plünderer-Außenposten",
    "category": "mittelalter",
-   "subtitle": "Original-Struktur aus dem Spiel · pillager_outpost/watchtower",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Plünderer",
     "Turm"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „pillager_outpost/watchtower“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "pillager_outpost__watchtower.json",
+   "module": "js/builds/mittelalter/pillager-outpost-watchtower.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5692,25 +5611,24 @@
     ]
    ],
    "sizeClass": "mittel",
-   "thumb": "thumbs/spiel-pillager-outpost-watchtower.webp"
+   "thumb": "thumbs/pillager-outpost-watchtower.webp"
   },
   {
-   "id": "spiel-trail-ruins-tower-1",
+   "id": "trail-ruins-tower-1",
    "title": "Turm aus den Pfadruinen",
    "category": "mittelalter",
-   "subtitle": "Original-Struktur aus dem Spiel · trail_ruins/tower/tower_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Ruine",
     "Turm"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „trail_ruins/tower/tower_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "trail_ruins__tower__tower_1.json",
+   "module": "js/builds/mittelalter/trail-ruins-tower-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5757,25 +5675,24 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-trail-ruins-tower-1.webp"
+   "thumb": "thumbs/trail-ruins-tower-1.webp"
   },
   {
-   "id": "spiel-woodland-mansion-entrance",
+   "id": "woodland-mansion-entrance",
    "title": "Eingang des Waldanwesens",
    "category": "mittelalter",
-   "subtitle": "Original-Struktur aus dem Spiel · woodland_mansion/entrance",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Waldanwesen",
     "Dunkeleiche"
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „woodland_mansion/entrance“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "woodland_mansion__entrance.json",
+   "module": "js/builds/mittelalter/woodland-mansion-entrance.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5822,7 +5739,7 @@
     ]
    ],
    "sizeClass": "mittel",
-   "thumb": "thumbs/spiel-woodland-mansion-entrance.webp"
+   "thumb": "thumbs/woodland-mansion-entrance.webp"
   },
   {
    "id": "laternenpfahl",
@@ -5840,7 +5757,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/laternenpfahl.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5885,7 +5801,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/gartenbank.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5930,7 +5845,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/steinbrunnen.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -5994,7 +5908,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/briefkasten.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6039,7 +5952,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/vogelhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6104,7 +6016,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/gemuesebeet.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6169,7 +6080,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kaminofen.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6234,7 +6144,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/schaukel.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6295,7 +6204,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/marktstand.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6360,7 +6268,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/seerosenteich.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6425,7 +6332,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/holzsteg.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6490,7 +6396,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/weihnachtsbaum.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6555,7 +6460,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kuerbiswagen.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6620,7 +6524,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/blumenkuebel.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6661,7 +6564,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/gartenlaube.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6726,7 +6628,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/lagerfeuerplatz.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6791,7 +6692,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kuechenzeile.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6856,7 +6756,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/leseecke.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6921,7 +6820,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/himmelbett.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -6986,7 +6884,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/springbrunnen.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7051,7 +6948,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/ritterstatue.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7115,7 +7011,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/heuballen-stapel.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7180,7 +7075,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/fassregal.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7245,7 +7139,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/doppel-laterne.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7306,7 +7199,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/rosenbogen.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7371,7 +7263,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/wegweiser.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7416,7 +7307,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/picknickplatz.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7481,7 +7371,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/bienenstand.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7546,7 +7435,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/hundehuette.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7611,7 +7499,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kratzbaum.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7676,7 +7563,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/aquarium.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7741,7 +7627,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kirschbluetenbaum.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7806,7 +7691,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/grosse-eiche.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7871,7 +7755,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kutsche.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -7936,7 +7819,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/ruderboot.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8000,7 +7882,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/schneemann.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8045,7 +7926,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/eisstand.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8110,7 +7990,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/gartenhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8174,7 +8053,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kompostecke.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8219,7 +8097,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/teppichmuster.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8284,7 +8161,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/weinlaube.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8349,7 +8225,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/weizenfarm-automatisch.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8414,7 +8289,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/zuckerrohrfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8479,7 +8353,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/kuerbis-melonenfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8547,7 +8420,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/eisenfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8612,7 +8484,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/huehnerfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8677,7 +8548,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/kaktusfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8742,7 +8612,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/bambusfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8807,7 +8676,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/seetangfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8872,7 +8740,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/honigfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -8937,7 +8804,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/dorfbewohner-zucht.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9002,7 +8868,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/farmen/gemuesegarten.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9067,7 +8932,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/farmen/baumfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9132,7 +8996,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/schafsfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9200,7 +9063,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/monsterfarm-spawner.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9265,7 +9127,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/kakaofarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9330,7 +9191,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/farmen/pilzkeller.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9380,10 +9240,10 @@
    "thumb": null
   },
   {
-   "id": "spiel-savanna-large-farm-1",
+   "id": "savanna-large-farm-1",
    "title": "Großer Hof aus dem Savannendorf",
    "category": "farmen",
-   "subtitle": "Original-Struktur aus dem Spiel · village/savanna/houses/savanna_large_farm_1",
+   "subtitle": "Beispiel-Eintrag mit Herkunft „original“",
    "tags": [
     "Dorf",
     "Savanne",
@@ -9391,12 +9251,11 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "description": "Die Struktur „village/savanna/houses/savanna_large_farm_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
+   "description": "Testdaten: deckt nur die Herkunft „original“ ab.",
    "sources": [],
    "credits": null,
    "tested": null,
-   "module": null,
-   "structure": "village__savanna__houses__savanna_large_farm_1.json",
+   "module": "js/builds/farmen/savanna-large-farm-1.js",
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9443,7 +9302,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/spiel-savanna-large-farm-1.webp"
+   "thumb": "thumbs/savanna-large-farm-1.webp"
   },
   {
    "id": "steinbruecke",
@@ -9461,7 +9320,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/steinbruecke.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9526,7 +9384,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/haengebruecke.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9591,7 +9448,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/bahnhof.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9656,7 +9512,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/hafen-steg.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9722,7 +9577,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/leuchtturm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -9793,7 +9647,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/golden-gate-bridge.js",
-   "structure": null,
    "scales": [
     0.25,
     0.125
@@ -9886,7 +9739,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/kapellbruecke.js",
-   "structure": null,
    "scales": [
     1
    ],
@@ -9963,7 +9815,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/tunnelportal.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -10029,7 +9880,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/nether-eisstrasse.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -10094,7 +9944,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/kanalschleuse.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -10159,7 +10008,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/strassenkreuzung.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -10224,7 +10072,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/bushaltestelle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -10289,7 +10136,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/eisenbahn-viadukt.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -10354,7 +10200,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/seilbahn-station.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [

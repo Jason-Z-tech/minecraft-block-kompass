@@ -1,5 +1,5 @@
 // Testseite der 3D-Ansicht (ARCHITEKTUR §7.4, §10).
-// Quelle: ?structure=<datei> | ?module=<pfad> | ?gallery=1 | ?gallery=<gruppe>[&page=n] | ?synthetic=<anzahl>
+// Quelle: ?module=<pfad> | ?gallery=1 | ?gallery=<gruppe>[&page=n] | ?synthetic=<anzahl>
 // (ohne Angabe: tests/fixtures/core/example-house.js). Weitere Parameter: view=iso|top|front|side,
 // progress=<0 … 100 % der Schritte> oder step=<Schritt-Kommazahl>, clip=<Ebene y>, ghost=1, highlight=<Schritt>,
 // mode=walk, ui=0 (nur die 3D-Ansicht, für Screenshots), bench=<Sekunden> (Kamera dreht, FPS werden gezählt).
@@ -38,14 +38,10 @@ function numberParam(search, key, min, max) {
 
 // Adresse prüfen (Whitelist + Zahlengrenzen); die Quelle prüft der Worker zusätzlich.
 function parseParams(search) {
-  const sources = ['structure', 'module', 'gallery', 'synthetic'].filter((key) => search.has(key));
-  if (sources.length > 1) throw new Error('Nur eine Quelle angeben: structure, module, gallery oder synthetic.');
+  const sources = ['module', 'gallery', 'synthetic'].filter((key) => search.has(key));
+  if (sources.length > 1) throw new Error('Nur eine Quelle angeben: module, gallery oder synthetic.');
   let source = { kind: 'module', path: 'tests/fixtures/core/example-house.js' };
-  if (search.has('structure')) {
-    const file = search.get('structure');
-    if (!/^[a-z0-9_]{1,150}\.json$/.test(file)) throw new Error('Parameter structure: Dateiname aus game-data/structures/ erwartet.');
-    source = { kind: 'structure', file };
-  } else if (search.has('module')) {
+  if (search.has('module')) {
     const path = search.get('module');
     if (!/^[a-z0-9\-/]{1,150}\.js$/.test(path)) throw new Error('Parameter module: Pfad wie js/builds/haeuser/x.js erwartet.');
     source = { kind: 'module', path };
@@ -89,7 +85,6 @@ function summarize(result) {
     warnings: result.warnings,
     gallery: result.gallery ?? null,
     meta: result.meta ? { id: result.meta.id, title: result.meta.title } : null,
-    structure: result.structure ?? null,
   };
 }
 

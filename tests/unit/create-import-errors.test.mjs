@@ -6,7 +6,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadFixtureData } from '../fixtures/core/setup.mjs';
-import { importFile, importToBuildResult, ImportError, IMPORT_LIMITS } from '../../js/create/import/index.js';
+import { importFile, importToBuildResult, checkImportFile, ImportError, IMPORT_LIMITS } from '../../js/create/import/index.js';
+import { NameOnlyConverter } from '../../js/create/import/rename.js';
+import { BlockCounter, cleanText } from '../../js/create/import/common.js';
 
 const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'create', 'import');
 const fixture = (name) => fs.readFileSync(path.join(FIXTURES, name));
@@ -82,6 +84,65 @@ test('Prototyp-Tricks in der Palette ändern nichts am Objekt-Prototyp', async (
   assert.deepEqual(imported.palette, ['air', 'stone']);
   assert.equal(imported.blockCount, 1);
   assert.ok(imported.warnings.some((w) => /„__proto__“/.test(w)));
+});
+
+// ------------------------------------------------------------------ Prüfen ohne Bau (für „Meine Bauten“)
+
+test('checkImportFile: gleiche Fehler wie importFile, sonst Format, Größe und Blockanzahl wie beim Import', async () => {
+  const formats = { schem: 'schem', schematic: 'schem', litematic: 'litematic', nbt: 'nbt' };
+  let compared = 0;
+  for (const name of fs.readdirSync(FIXTURES)) {
+    const format = formats[name.split('.').pop()];
+    if (!format) continue;
+    const settle = (promise) => promise.then((value) => ({ value }), (error) => ({ error }));
+    const imported = await settle(load(name, format));
+    const checked = await settle(checkImportFile({ format, name, data: fixture(name) }));
+    if (imported.error) {
+      assert.ok(checked.error instanceof ImportError, `${name}: Prüfung müsste scheitern (${imported.error.code})`);
+      assert.equal(checked.error.code, imported.error.code, name);
+      assert.equal(checked.error.message, imported.error.message, name);
+    } else {
+      assert.equal(checked.error, undefined, `${name}: ${checked.error?.message}`);
+      assert.deepEqual(checked.value, { format: imported.value.format, size: imported.value.size, blockCount: imported.value.blockCount }, name);
+    }
+    compared++;
+  }
+  assert.ok(compared >= 15, `${compared} Testdateien verglichen`);
+  // Modelle werden nur gelesen (ohne Blockfarben, ohne Texturen); kaputte Modelle scheitern verständlich
+  const voxelize = path.join(FIXTURES, '..', 'voxelize');
+  for (const [name, format] of [['cube-ascii.stl', 'stl'], ['cube-binary.stl', 'stl'], ['colored.obj', 'obj'], ['textured.glb', 'glb'], ['scene.vox', 'vox']]) {
+    assert.deepEqual(await checkImportFile({ format, name, data: fs.readFileSync(path.join(voxelize, name)) }), { format, size: null, blockCount: null }, name);
+  }
+  await rejectsWith(checkImportFile({ format: 'stl', name: 'kaputt.stl', data: new TextEncoder().encode('solid x\nfacet normal 0 0 1\nouter loop\nvertex 0 0\n') }), 'model', /Das Modell konnte nicht gelesen werden/);
+  await rejectsWith(checkImportFile({ format: 'glb', name: 'x.glb', data: new TextEncoder().encode(`glTF${'x'.repeat(40)}`) }), 'model', /nicht gelesen/);
+  // NBT-Inhalt gewinnt gegen die Endung (wie beim Import)
+  const house = await load('house-v2.schem', 'schem');
+  assert.deepEqual(await checkImportFile({ format: 'glb', name: 'x.glb', data: fixture('house-v2.schem') }), { format: 'schem', size: house.size, blockCount: house.blockCount });
+  await rejectsWith(checkImportFile({ format: 'exe', name: 'x.exe', data: new ArrayBuffer(4) }), 'unknown-format', /Unbekanntes Dateiformat/);
+  await rejectsWith(checkImportFile({ format: 'schem', name: 'leer.schem', data: new ArrayBuffer(0) }), 'empty-file', /leer/);
+  await rejectsWith(checkImportFile({ format: 'schem', name: 'x.schem', data: fixture('house-v2.schem'), limits: { ...IMPORT_LIMITS, maxBlocks: 10 } }), 'too-many-blocks', /mehr als 10 Blöcke/);
+});
+
+test('Ohne Blockdaten: NameOnlyConverter zählt Vanilla-Blöcke, Luft, Mods und Unlesbares sind Luft; BlockCounter misst', () => {
+  const converter = new NameOnlyConverter();
+  assert.equal(converter.fromString('minecraft:stone').index, 1);
+  assert.equal(converter.fromString('oak_stairs[facing=north]').index, 1);
+  assert.equal(converter.fromCompound({ Name: 'minecraft:grass' }).index, 1);
+  for (const air of ['minecraft:air', 'cave_air', 'minecraft:structure_void', 'create:shaft', '???', '']) assert.equal(converter.fromString(air).index, 0, air);
+  assert.equal(converter.fromCompound({ Name: 42 }).index, 0);
+  assert.equal(converter.invalid('x').index, 0);
+  assert.deepEqual(converter.warnings(), []);
+  const counter = new BlockCounter({ ...IMPORT_LIMITS, maxBlocks: 3, maxEdge: 5 });
+  counter.begin('Aufbau');
+  counter.push(-2, 0, 1);
+  counter.push(2, 3, 1);
+  assert.deepEqual(counter.finish(), { size: [5, 4, 1], blockCount: 2 });
+  counter.push(3, 0, 0);
+  assert.throws(() => counter.finish(), { name: 'ImportError', code: 'too-big' });
+  assert.throws(() => counter.push(0, 0, 0), { code: 'too-many-blocks' });
+  assert.throws(() => new BlockCounter().finish(), { code: 'no-blocks' });
+  // Namen aus Dateien (Autor, Region, Dateiname): ohne Steuerzeichen und ohne Schreibrichtungs-Steuerung
+  assert.equal(cleanText('Haus\u202egnp.exe\u0007 X\u2066Y\u2069'), 'Hausgnp.exe XY');
 });
 
 // ------------------------------------------------------------------ Modelle (Vertrag mit create:voxelize)

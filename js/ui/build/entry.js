@@ -4,7 +4,8 @@
 // Ohne DOM-Zugriff beim Laden, daher in Node testbar.
 import { loadJson, loadLocalThumbIds, applyThumbs, normalizeCatalog, findBuild, CATALOG_PATH } from '../data.js';
 import { isSafeUrl, isSafeSitePath } from '../dom.js';
-import { formatNumber, CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN } from '../shared.js';
+import { formatNumber, parseBuildParams, CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN } from '../shared.js';
+import { isMyBuildId } from '../../data/my-builds.js';
 
 // Bau-Module wie im Worker erlaubt: js/builds/<ordner>/<id>.js oder Testmodule unter tests/fixtures/<ordner>/
 export const MODULE_PATH_PATTERN = /^(?:js\/builds|tests\/fixtures)\/[a-z0-9-]{1,40}\/[a-z0-9-]{2,80}\.js$/;
@@ -149,6 +150,18 @@ export function resolveScale(entry, requested) {
   }
   const match = findScale(scales, requested);
   return match === null ? { ok: false, reason: 'unknown-scale' } : { ok: true, scale: match };
+}
+
+/**
+ * Adresse der Bau-Seite: wie parseBuildParams, dazu eigene Bauten (bau.html?meine=<id>).
+ * → { kind: 'mine', id } | { kind: 'invalid', reason: 'meine' | 'mixed' } | Ergebnis von parseBuildParams
+ */
+export function parseBuildAddress(search) {
+  const params = new URLSearchParams(search);
+  const mine = params.getAll('meine');
+  if (mine.length === 0) return parseBuildParams(search);
+  if (params.has('id') || params.has('form') || mine.length > 1) return { kind: 'invalid', reason: 'mixed' };
+  return isMyBuildId(mine[0]) ? { kind: 'mine', id: mine[0] } : { kind: 'invalid', reason: 'meine' };
 }
 
 /** Fortschritt im localStorage: „bk:progress:<id>“ bzw. „bk:progress:<id>@<maßstab>“ */

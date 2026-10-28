@@ -22,17 +22,20 @@ export class Importer {
   #colorIds = null;
   #token = 0;
   #onResult;
+  #onStart;
 
   /**
    * parts: { drop, input, body, status, report, reportBody }; slot: ViewSlot für das Ergebnis.
-   * onResult({ ok, error?, result? }) nach jedem Ladeversuch (für Tests und Seitentitel).
+   * onResult({ ok, error?, result?, upload? }) nach jedem Ladeversuch (für Tests, Seitentitel und „Zu Meine Bauten“);
+   * upload = { name, format, data, params } der erfolgreich geladenen Datei. Vor jedem neuen Versuch: onStart().
    */
-  constructor({ parts, slot, names, blocks, onResult = null }) {
+  constructor({ parts, slot, names, blocks, onResult = null, onStart = null }) {
     this.#parts = parts;
     this.#slot = slot;
     this.#names = names;
     this.#blocks = blocks;
     this.#onResult = typeof onResult === 'function' ? onResult : null;
+    this.#onStart = typeof onStart === 'function' ? onStart : null;
     parts.input.setAttribute('accept', FILE_ACCEPT);
     parts.input.addEventListener('change', () => {
       const files = [...(parts.input.files ?? [])];
@@ -45,6 +48,7 @@ export class Importer {
 
   /** Dateien prüfen und (bei Bauplänen sofort, bei Modellen nach den Einstellungen) laden. */
   handleFiles(files) {
+    if (this.#onStart) this.#onStart();
     const check = checkSelectedFiles(files);
     if (!check.ok) {
       this.#selection = null;
@@ -70,6 +74,7 @@ export class Importer {
     const selection = this.#selection;
     if (!selection) return;
     const token = ++this.#token;
+    if (this.#onStart) this.#onStart();
     let params = {};
     if (isModelFormat(selection.format)) {
       const checked = modelParams(selection.format, this.#readOptions());
@@ -107,7 +112,7 @@ export class Importer {
       if (token !== this.#token || !handle) return;
       clear(this.#parts.status);
       this.#report(handle.result);
-      if (this.#onResult) this.#onResult({ ok: true, result: handle.result });
+      if (this.#onResult) this.#onResult({ ok: true, result: handle.result, upload: { name: file.name, format, data, params } });
     } catch (error) {
       if (token !== this.#token) return;
       // Eine kaputte Datei lässt sich nicht „erneut versuchen“: Ansicht weg, Meldung bei der Auswahl

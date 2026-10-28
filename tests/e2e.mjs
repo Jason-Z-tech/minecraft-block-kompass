@@ -1,9 +1,11 @@
 // Klick-Test der ganzen Seite im echten Chrome gegen den echten Katalog (data/catalog.json):
-//   node tests/e2e.mjs [--gpu hardware|swiftshader] [--out tmp/integration/e2e] [--only start,bau,erstellen,handy]
-// Start → Kategorie (Filter, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Dorfhaus aus dem
-// Spiel, eine Farm: Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Maßstab) →
-// „Selber erstellen“ (Freitext, Upload je Fixture-Format) → Handy 390 × 844. Screenshots nach --out, Leistungswerte
-// (Ladezeit, Bildrate beim Drehen) am Ende. Konsolenfehler zählen als Fehler. Exit-Code 1, wenn eine Prüfung fehlschlägt,
+//   node tests/e2e.mjs [--gpu hardware|swiftshader] [--out tmp/integration/e2e] [--only start,bau,erstellen,meine,handy]
+// Start (ohne Scrollen bis zur letzten Kachel, Kopf ohne Suche, Navigation mit „Meine Bauten“) → Kategorie (Filter,
+// Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Haus mit Bett und Truhe, eine Farm:
+// Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Maßstab; alte Adresse spiel-… → unbekannt)
+// → „Selber erstellen“ (Freitext, Upload je Fixture-Format) → „Meine Bauten“ (Upload → speichern → Liste → öffnen →
+// neu laden → löschen, ZIP mit manifest.json) → Handy 390 × 844. Screenshots nach --out, Leistungswerte (Ladezeit,
+// Bildrate beim Drehen) am Ende. Konsolenfehler zählen als Fehler. Exit-Code 1, wenn eine Prüfung fehlschlägt,
 // 2 bei falschen Optionen oder fehlenden Spieldaten.
 import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -12,12 +14,13 @@ import { fileURLToPath } from 'node:url';
 import { startServer } from '../scripts/serve.mjs';
 import { CATEGORY_SLUGS } from '../js/ui/shared.js';
 import { launchBrowser } from './browser.mjs';
+import { HOME_READY, MINE_READY, homeFits, checkHeader, mineFlowSteps } from './lib/e2e-common.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CATALOG_FILE = path.join(ROOT, 'data', 'catalog.json');
 const IMPORT_DIR = path.join(ROOT, 'tests/fixtures/create/import');
 const MODEL_DIR = path.join(ROOT, 'tests/fixtures/create/voxelize');
-const FLOW_NAMES = ['start', 'bau', 'erstellen', 'handy'];
+const FLOW_NAMES = ['start', 'bau', 'erstellen', 'meine', 'handy'];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function readOptions(argv) {
@@ -215,63 +218,89 @@ function expectedCategory(slug) {
   return catalog.builds.filter((build) => build.category === slug);
 }
 
+// Desktop-Größe für die Prüfung „Startseite ohne Scrollen“ (der übrige Ablauf läuft mit 1280 × 900)
+const setViewport = (page, width, height) => page.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+
 async function startFlow(server) {
-  note('Start und Kategorie (Desktop 1280 × 900)');
+  note('Start und Kategorie (Desktop 1280 × 800 bzw. 1280 × 900)');
   const page = await openBrowser();
   try {
+    await setViewport(page, 1280, 800);
     await page.goto(`${server.url}/index.html`);
-    await page.waitFor("document.querySelectorAll('#home-sections .build-card').length > 0", 20000);
-    const total = await page.eval("document.getElementById('home-total').textContent");
-    check('Start: Gesamtzahl der Bauten', total.replace(/[.'’\s]/g, '').includes(String(catalog.counts.total)), total.trim().slice(0, 120));
-    const tileCounts = await page.eval("Object.fromEntries([...document.querySelectorAll('#home-categories .category-tile')].map((t) => [t.dataset.category, t.querySelector('.category-tile__count').textContent.replace(/\\D/g, '')]))");
-    const wrongTiles = Object.entries(catalog.counts.byCategory).filter(([slug, n]) => tileCounts[slug] !== String(n));
-    check('Start: Anzahl je Kategorie-Kachel', wrongTiles.length === 0, wrongTiles.map(([slug, n]) => `${slug} ${tileCounts[slug]} statt ${n}`).join(', ') || `${CATEGORY_SLUGS.length} Kacheln`);
-    check('Start: sieben Kategorien, keine Kategorie Redstone', Object.keys(tileCounts).join(',') === CATEGORY_SLUGS.join(',') && !('redstone' in catalog.counts.byCategory)
-      && catalog.builds.every((build) => build.category !== 'redstone'), Object.keys(tileCounts).join(', '));
-    check('Start: Karten ohne Schwierigkeit', await page.eval("document.querySelectorAll('.difficulty').length === 0 && !/Schwierigkeit/.test(document.querySelector('main').textContent)"));
-    const brokenImages = await loadLazyImages(page);
-    const thumbCount = await page.eval("document.querySelectorAll('#home-sections img.build-card__img').length");
-    check('Start: alle Vorschaubilder geladen', brokenImages === 0 && thumbCount > 0, `${thumbCount} Vorschaubilder, ${brokenImages} kaputt`);
-    await fullShot(page, 'desktop-01-start');
+    await page.waitFor(HOME_READY, 20000);
+    check('Start: Katalog geladen, keine Fehlerbox', await page.eval("!document.querySelector('.state--error')"));
+    const home = await homeFits(page);
+    check('Start: Gesamtzahl der Bauten (Summe der Kacheln)', home.total === catalog.counts.total && catalog.builds.length === catalog.counts.total, `${home.total} Bauten, Katalog ${catalog.counts.total}`);
+    const wrongTiles = Object.entries(catalog.counts.byCategory).filter(([slug, n]) => home.byCategory[slug] !== String(n));
+    check('Start: Anzahl je Kategorie-Kachel', wrongTiles.length === 0, wrongTiles.map(([slug, n]) => `${slug} ${home.byCategory[slug]} statt ${n}`).join(', ') || `${CATEGORY_SLUGS.length} Kacheln`);
+    check('Start: sieben Kategorien, keine Kategorie Redstone', Object.keys(home.byCategory).join(',') === CATEGORY_SLUGS.join(',') && !('redstone' in catalog.counts.byCategory)
+      && catalog.builds.every((build) => build.category !== 'redstone'), Object.keys(home.byCategory).join(', '));
+    check('Start 1280 × 800: bis zur letzten Kachel und den Links ohne Scrollen', home.ok, `Kacheln bis ${home.tiles} px, Links bis ${home.links} px, Fenster ${home.height} px`);
+    const simple = await page.eval(`({
+      cards: document.querySelectorAll('main .build-card, main img.build-card__img, .shelf, .how, .hero-stats, .eyebrow, #home-sections, #home-total').length,
+      links: [...document.querySelectorAll('#home-links a')].map((a) => a.getAttribute('href')).join(','),
+      search: document.querySelector('#home-search-form')?.getAttribute('action') ?? null,
+      text: /Schwierigkeit|So funktioniert|Original aus dem Spiel|Stand /.test(document.querySelector('main').textContent),
+    })`);
+    check('Start: einfach – Titel, Suche, Kacheln und zwei Links, keine Bau-Reihen', simple.cards === 0 && !simple.text && simple.links === 'erstellen.html,meine.html' && simple.search === 'erstellen.html', JSON.stringify(simple));
+    await checkHeader(page, check, 'Start', 'home');
+    await shot(page, 'desktop-01-start');
+    // Suche der Startseite leitet wie bisher auf „Selber erstellen“
+    await page.type('#home-search-input', 'Infinity Castle');
+    await page.click('#home-search-form button[type="submit"]');
+    await page.waitFor("location.pathname.endsWith('/erstellen.html') && window.__createPage && window.__createPage.request", 30000);
+    check('Start: Suche führt zu erstellen.html?q=…', await page.eval("window.__createPage.request.matches?.[0]?.entry.id === 'infinity-castle' && new URLSearchParams(location.search).get('q') === 'Infinity Castle'"),
+      await page.eval('location.search'));
+    await checkHeader(page, check, 'Erstellen', 'create');
     checkConsole(page, 'Start');
 
     // Kategorie über die Kachel öffnen
+    await setViewport(page, 1280, 900);
+    await page.goto(`${server.url}/index.html`);
+    await page.waitFor(HOME_READY, 20000);
     await page.click('#home-categories .category-tile[data-category="haeuser"]');
     await page.waitFor("location.pathname.endsWith('/kategorie.html') && document.querySelectorAll('#category-list .build-card').length > 0", 20000);
     const houses = expectedCategory('haeuser');
     const countText = await page.eval("document.getElementById('category-result-count').textContent");
     check('Kategorie Häuser: Trefferzahl', countText.replace(/\D/g, '').startsWith(String(houses.length)), countText.trim());
+    await checkHeader(page, check, 'Kategorie', 'category');
+    // Vorschaubilder gibt es nur noch auf den Kategorie-Seiten (die Startseite zeigt keine Bauten mehr)
+    const brokenImages = await loadLazyImages(page);
+    const thumbCount = await page.eval("document.querySelectorAll('#category-list img.build-card__img').length");
+    check('Kategorie: alle Vorschaubilder geladen', brokenImages === 0 && thumbCount > 0, `${thumbCount} Vorschaubilder, ${brokenImages} kaputt`);
+    await page.eval('window.scrollTo(0, 0)');
     const sorts = await page.eval("[...document.querySelectorAll('#category-sort option')].map((o) => o.value)");
     const filterNames = await page.eval("[...new Set([...document.querySelectorAll('#category-filters input')].map((i) => i.name))]");
     check('Kategorie: weder Filter noch Sortierung nach Schwierigkeit', !sorts.some((key) => key.startsWith('schwierigkeit')) && !filterNames.includes('schwierigkeit'), `${sorts.join(', ')} · ${filterNames.join(', ')}`);
     await fullShot(page, 'desktop-02-kategorie', { lazy: false });
 
-    // Filter Herkunft „Original aus dem Spiel“
-    const filterVisible = await page.eval("(() => { const box = document.querySelector('#category-filters input[name=\"herkunft\"][value=\"original\"]'); const label = box && box.closest('label'); return Boolean(label && label.getBoundingClientRect().width > 0); })()");
+    // Filter Herkunft „Nachempfunden“ (Häuser haben keine Bauten „Original aus dem Spiel“ mehr: diese Option fehlt)
+    check('Filter: keine Option „Original aus dem Spiel“ ohne passende Bauten', await page.eval("!document.querySelector('#category-filters input[name=\"herkunft\"][value=\"original\"]')"));
+    const filterVisible = await page.eval("(() => { const box = document.querySelector('#category-filters input[name=\"herkunft\"][value=\"nachempfunden\"]'); const label = box && box.closest('label'); return Boolean(label && label.getBoundingClientRect().width > 0); })()");
     if (!filterVisible) await page.click('#category-filter-toggle');
-    await page.click('#category-filters label.filter-option:has(input[name="herkunft"][value="original"])');
-    await page.waitFor("location.search.includes('herkunft=original')", 5000);
-    const originals = houses.filter((build) => build.accuracy === 'original');
+    await page.click('#category-filters label.filter-option:has(input[name="herkunft"][value="nachempfunden"])');
+    await page.waitFor("location.search.includes('herkunft=nachempfunden')", 5000);
+    const copied = houses.filter((build) => build.accuracy === 'nachempfunden');
     const filtered = await page.eval("document.getElementById('category-result-count').textContent");
-    check('Filter „Original aus dem Spiel“', filtered.replace(/\D/g, '').startsWith(String(originals.length)), filtered.trim());
+    check('Filter „Nachempfunden“', copied.length > 0 && filtered.replace(/\D/g, '').startsWith(String(copied.length)), filtered.trim());
 
     // Sortierung „Blöcke: viele zuerst“
     await page.eval("(() => { const s = document.getElementById('category-sort'); s.value = 'bloecke-ab'; s.dispatchEvent(new Event('change', { bubbles: true })); })()");
     await page.waitFor("location.search.includes('sort=bloecke-ab')", 5000);
-    const maxBlocks = Math.max(...originals.map((build) => build.blocks));
+    const maxBlocks = Math.max(...copied.map((build) => build.blocks));
     const firstTitle = await page.eval("document.querySelector('#category-list .build-card__link').textContent");
-    const firstOk = originals.some((build) => build.title === firstTitle && build.blocks === maxBlocks);
+    const firstOk = copied.some((build) => build.title === firstTitle && build.blocks === maxBlocks);
     check('Sortierung „Blöcke: viele zuerst“', firstOk, `erste Karte: ${firstTitle}`);
     await fullShot(page, 'desktop-03-kategorie-filter-sortiert', { lazy: false });
 
     // Zurück-Taste: erst Sortierung, dann Filter weg
     await page.eval('history.back()');
-    await page.waitFor("!location.search.includes('sort=') && location.search.includes('herkunft=original')", 5000);
+    await page.waitFor("!location.search.includes('sort=') && location.search.includes('herkunft=nachempfunden')", 5000);
     check('Zurück: Sortierung zurückgenommen', await page.eval("document.getElementById('category-sort').value === 'name'"));
     await page.eval('history.back()');
     await page.waitFor("!location.search.includes('herkunft=')", 5000);
     const backCount = await page.eval("document.getElementById('category-result-count').textContent");
-    check('Zurück: Filter zurückgenommen', backCount.replace(/\D/g, '').startsWith(String(houses.length)) && !(await page.eval("document.querySelector('#category-filters input[value=\"original\"]').checked")), backCount.trim());
+    check('Zurück: Filter zurückgenommen', backCount.replace(/\D/g, '').startsWith(String(houses.length)) && !(await page.eval("document.querySelector('#category-filters input[value=\"nachempfunden\"]').checked")), backCount.trim());
 
     // Karte öffnet die Bau-Seite
     const href = await page.eval("document.querySelector('#category-list .build-card__link').getAttribute('href')");
@@ -305,8 +334,9 @@ async function startFlow(server) {
 
 // ---------------------------------------------------------------- Bau-Seiten
 
-const DORFHAUS_ID = catalog.builds.find((build) => build.structure === 'village__plains__houses__plains_small_house_1.json')?.id
-  ?? catalog.builds.find((build) => build.category === 'haeuser' && build.id.startsWith('spiel-'))?.id;
+// Ein kleines Haus mit Bett und Truhe (Blöcke mit Entity-Texturen), sonst das kleinste Haus
+const HAUS_ID = byId.get('starterhaus-eiche')?.module ? 'starterhaus-eiche'
+  : [...catalog.builds].filter((build) => build.category === 'haeuser' && build.module).sort((a, b) => a.blocks - b.blocks)[0]?.id;
 // Eine Farm mit eigenem Modul (nicht im Spiel getestet, tested: false)
 const FARM_ID = byId.get('kaktusfarm')?.tested === false ? 'kaktusfarm'
   : catalog.builds.find((build) => build.category === 'farmen' && build.module && build.tested === false)?.id;
@@ -482,7 +512,7 @@ async function buildPagesFlow(server) {
   try {
     await buildFlow(page, server, { id: 'tokyo-skytree', scale: 1, label: 'Tokyo Skytree 1:1', measureFps: true, scaleSwitch: 0.5 });
     await buildFlow(page, server, { id: 'infinity-castle', label: 'Infinity Castle', measureFps: true });
-    await buildFlow(page, server, { id: DORFHAUS_ID, label: `Dorfhaus ${DORFHAUS_ID}` });
+    await buildFlow(page, server, { id: HAUS_ID, label: `Haus ${HAUS_ID}` });
     await buildFlow(page, server, { id: FARM_ID, label: `Farm ${FARM_ID}` });
     await page.goto(`${server.url}/bau.html?id=${FARM_ID}`);
     await page.waitFor(BUILD_READY, 60000);
@@ -495,6 +525,12 @@ async function buildPagesFlow(server) {
     await page.goto(`${server.url}/bau.html?id=gibt-es-nicht`);
     await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
     check('Unbekannte Bau-ID: Fehlerzustand', true);
+    // Alte Adresse einer Spiel-Struktur: dieselbe Anzeige „unbekannt“
+    await page.goto(`${server.url}/bau.html?id=spiel-plains-small-house-1`);
+    await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
+    check('Alte Adresse bau.html?id=spiel-…: „Bau nicht gefunden“', !catalog.builds.some((build) => build.id.startsWith('spiel-'))
+      && await page.eval("document.querySelector('#build-status .state__title').textContent === 'Bau nicht gefunden' && document.getElementById('build-layout').hidden"));
+    await checkHeader(page, check, 'Bau-Seite', null);
     await page.goto(`${server.url}/bau.html?form=sphere&diameter=15&block=glass&hollow=1`);
     await page.waitFor(BUILD_READY, 60000);
     check('Formen-Adresse bau.html?form=sphere', await page.eval('window.__buildView.result.blockCount > 0'));
@@ -600,6 +636,21 @@ async function createFlow(server) {
   }
 }
 
+// ---------------------------------------------------------------- Meine Bauten
+
+async function mineFlow(server) {
+  note('Meine Bauten (Desktop 1280 × 900, frisches Profil)');
+  const page = await openBrowser();
+  try {
+    await mineFlowSteps(page, {
+      base: `${server.url}/`, check, shot, importDir: IMPORT_DIR, modelDir: MODEL_DIR, tmpDir: path.join(OUT, 'dateien'), prefix: 'desktop-20-meine',
+      checkConsole: (label) => checkConsole(page, label),
+    });
+  } finally {
+    await page.close();
+  }
+}
+
 // ---------------------------------------------------------------- Handy
 
 async function mobileFlow(server) {
@@ -607,9 +658,13 @@ async function mobileFlow(server) {
   const page = await openBrowser({ mobile: true });
   try {
     await page.goto(`${server.url}/index.html`);
-    await page.waitFor("document.querySelectorAll('#home-sections .build-card').length > 0", 20000);
+    await page.waitFor(HOME_READY, 20000);
     check('Handy Start: kein waagrechtes Scrollen', await noHorizontalScroll(page));
-    await fullShot(page, 'handy-01-start');
+    const home = await homeFits(page);
+    check('Handy Start 390 × 844: bis zur letzten Kachel und den Links ohne Scrollen', home.ok && home.width === 390, `Kacheln bis ${home.tiles} px, Links bis ${home.links} px, Fenster ${home.height} px`);
+    await checkHeader(page, check, 'Handy Start', 'home');
+    await shot(page, 'handy-01-start');
+    await fullShot(page, 'handy-01-start-ganz');
 
     await page.goto(`${server.url}/kategorie.html?k=farmen`);
     await page.waitFor("document.querySelectorAll('#category-list .build-card').length > 0", 20000);
@@ -619,13 +674,14 @@ async function mobileFlow(server) {
     await sleep(300);
     check('Handy: Filter klappen auf', await page.eval("document.getElementById('category-filter-toggle').getAttribute('aria-expanded') === 'true'"));
     await shot(page, 'handy-03-filter');
-    await page.click('#category-filters label.filter-option:has(input[name="test"])');
-    await page.waitFor("location.search.includes('test=')", 5000);
+    // Farmen sind alle „nicht im Spiel getestet“ – die Gruppe „Test“ erscheint dort nicht (nur bei ≥ 2 Werten); Herkunft schon
+    await page.click('#category-filters label.filter-option:has(input[name="herkunft"][value="vorlage"])');
+    await page.waitFor("location.search.includes('herkunft=vorlage')", 5000);
     await page.click('#category-filters-done');
     await sleep(300);
     check('Handy: Filter wirkt, „Bauten anzeigen“ klappt zu', await page.eval("document.getElementById('category-filter-toggle').getAttribute('aria-expanded') === 'false'"));
 
-    await page.goto(`${server.url}/bau.html?id=${DORFHAUS_ID}`);
+    await page.goto(`${server.url}/bau.html?id=${HAUS_ID}`);
     await page.waitFor(BUILD_READY, 60000);
     await waitIdle(page);
     check('Handy Bau-Seite: geladen, kein waagrechtes Scrollen', await noHorizontalScroll(page));
@@ -670,6 +726,19 @@ async function mobileFlow(server) {
     check('Handy mit Import: kein waagrechtes Scrollen', await noHorizontalScroll(page));
     await fullShot(page, 'handy-11-erstellen-import');
     checkConsole(page, 'Handy Erstellen');
+
+    // Meine Bauten auf dem Handy: Leerzustand, eine Datei hinzufügen, Karte mit Aktionen
+    await page.goto(`${server.url}/meine.html`);
+    await page.waitFor(MINE_READY, 20000);
+    await checkHeader(page, check, 'Handy Meine Bauten', 'mine');
+    check('Handy Meine Bauten: Leerzustand, kein waagrechtes Scrollen', await page.eval("window.__minePage.count === 0 && Boolean(document.getElementById('mine-empty-add'))") && await noHorizontalScroll(page));
+    await shot(page, 'handy-12-meine-leer');
+    await page.setInputFiles('#mine-file', [path.join(IMPORT_DIR, 'house.nbt')]);
+    await page.waitFor('window.__minePage.lastAdd', 30000);
+    check('Handy Meine Bauten: Datei hinzugefügt, kein waagrechtes Scrollen', await page.eval("window.__minePage.count === 1 && document.querySelectorAll('#mine-list .mine-card [data-action]').length === 4") && await noHorizontalScroll(page),
+      JSON.stringify(await page.eval('window.__minePage.lastAdd')));
+    await shot(page, 'handy-13-meine-liste');
+    checkConsole(page, 'Handy Meine Bauten');
   } finally {
     await page.close();
   }
@@ -679,7 +748,7 @@ async function mobileFlow(server) {
 
 await mkdir(OUT, { recursive: true });
 const server = await startServer({ port: 0 });
-const flows = { start: startFlow, bau: buildPagesFlow, erstellen: createFlow, handy: mobileFlow };
+const flows = { start: startFlow, bau: buildPagesFlow, erstellen: createFlow, meine: mineFlow, handy: mobileFlow };
 const startedAt = Date.now();
 try {
   for (const [name, flow] of Object.entries(flows)) {

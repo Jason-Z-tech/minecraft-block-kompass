@@ -128,7 +128,7 @@ function shapeNode(result, actions, names) {
     el('div', { class: 'create-understood__head' },
       el('span', { class: 'create-understood__glyph' }, shapeGlyph(result.shape, { size: 64 })),
       el('div', null,
-        el('p', { class: 'eyebrow' }, 'Form erkannt'),
+        el('p', { class: 'create-understood__kicker' }, 'Form erkannt'),
         el('h3', { class: 'create-understood__title' }, result.title),
         el('p', { class: 'create-understood__estimate mono' }, result.ok ? estimateText(result.estimate) : 'Noch nicht baubar'))),
     el('ul', { class: 'create-understood__list', role: 'list', 'aria-label': 'Erkannt' }, items.map((item) => el('li', null, icon('check'), el('span', null, item.text)))),

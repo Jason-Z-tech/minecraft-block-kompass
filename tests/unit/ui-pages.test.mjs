@@ -12,6 +12,7 @@ const PAGES = [
   { file: 'kategorie.html', page: 'category', module: 'js/ui/category.js' },
   { file: 'bau.html', page: 'build', module: 'js/ui/build-page.js' },
   { file: 'erstellen.html', page: 'create', module: 'js/ui/create-page.js' },
+  { file: 'meine.html', page: 'mine', module: 'js/ui/mine-page.js' },
   { file: 'tests/visual/styleguide.html', page: 'styleguide', module: 'tests/visual/styleguide.js' },
 ];
 
@@ -94,6 +95,10 @@ test('Alle Seiten haben denselben Kopf und Fuß', async () => {
     assert.equal(page.header, pages[0].header, `Kopf von ${page.file} weicht ab`);
     assert.equal(page.footer, pages[0].footer, `Fuß von ${page.file} weicht ab`);
   }
+  // Fuß „Seiten“: dieselben vier Ziele wie die Navigation
+  const footerLinks = between(pages[0].footer, '<ul class="site-footer__links"', '</ul>');
+  assert.deepEqual([...footerLinks.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map((m) => [m[1], m[2]]),
+    [['index.html', 'Start'], ['kategorie.html', 'Kategorien'], ['erstellen.html', 'Selber erstellen'], ['meine.html', 'Meine Bauten']]);
 });
 
 test('Kopf: keine Suche, Navigation Start · Kategorien · Selber erstellen · Meine Bauten', async () => {
@@ -152,7 +157,7 @@ test('Startseite: Titel, Suche, kompakte Kategorien und zwei Links – keine Bau
 });
 
 test('Die oben im Seitenmodul dokumentierten Container-IDs gibt es im HTML', async () => {
-  for (const spec of PAGES.slice(0, 4)) {
+  for (const spec of PAGES.filter((page) => page.page !== 'styleguide')) {
     const [html, source] = await Promise.all([read(spec.file), read(spec.module)]);
     const header = source.slice(0, source.indexOf('\nimport '));
     const documented = [...header.matchAll(/#([a-z][a-z0-9-]+)/g)].map((m) => m[1]);

@@ -136,13 +136,11 @@ export function validateJob(job) {
   const { source, scale = null } = job;
   if (source?.kind === 'module') {
     if (typeof source.path !== 'string' || !/^(js\/builds|tests\/fixtures)\/[a-z0-9/-]+\.js$/.test(source.path)) throw new Error(`Ungültiger Modulpfad „${String(source.path).slice(0, 80)}“.`);
-  } else if (source?.kind === 'structure') {
-    if (typeof source.file !== 'string' || !/^[a-z0-9_]+\.json$/.test(source.file)) throw new Error(`Ungültige Strukturdatei „${String(source.file).slice(0, 80)}“.`);
   } else {
-    throw new Error('Quelle muss { kind: "module", path } oder { kind: "structure", file } sein.');
+    throw new Error('Quelle muss { kind: "module", path } sein.');
   }
   if (scale !== null && !(typeof scale === 'number' && Number.isFinite(scale) && scale > 0)) throw new Error('Ungültiger Maßstab.');
-  return { source: source.kind === 'module' ? { kind: 'module', path: source.path } : { kind: 'structure', file: source.file }, scale };
+  return { source: { kind: 'module', path: source.path }, scale };
 }
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));

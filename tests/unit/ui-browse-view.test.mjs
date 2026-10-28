@@ -1,5 +1,5 @@
 // Textsuche, Ansicht der Kategorie-Seite und Anzahlen der Startseite – mit dem Test-Katalog
-// tests/fixtures/ui/browse-catalog.json (Format von Runde 2).
+// tests/fixtures/ui/browse-catalog.json (Katalog-Format ohne Spiel-Strukturen, nur Bau-Module).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -33,11 +33,11 @@ test('Test-Katalog: gültiges Format von Runde 2, alle Einträge übernommen', (
     assert.ok(!Object.hasOwn(build, 'difficulty') && !Object.hasOwn(build, 'facts'), `${build.id}: keine Schwierigkeit, kein Wissenswertes`);
     assert.equal(build.sizeClass, sizeClassForBlocks(build.blocks), `${build.id}: Größenklasse`);
     assert.ok(build.blocks <= build.size[0] * build.size[1] * build.size[2], `${build.id}: Blöcke passen in die Größe`);
-    if (build.id.startsWith('spiel-')) {
-      assert.equal(build.accuracy, 'original');
-      assert.equal(build.module, null);
-      assert.ok(build.structure);
-    }
+    // Nur noch eigene Bau-Module: keine Spiel-Strukturen (Feld structure, IDs spiel-…, Texte über Strukturen aus dem Spiel).
+    // Die Einträge mit Herkunft „original“ sind neutrale Beispiele und decken nur dieses Label ab.
+    assert.ok(!Object.hasOwn(build, 'structure') && !build.id.startsWith('spiel-'), `${build.id}: keine Spiel-Struktur`);
+    assert.doesNotMatch(`${build.subtitle} ${build.description}`, /Struktur|aus dem Spiel|Spieldateien|village\//, `${build.id}: kein Text über Spiel-Strukturen`);
+    assert.equal(build.module, `js/builds/${build.category}/${build.id}.js`, `${build.id}: Bau-Modul`);
     if (build.scales) assert.deepEqual(Object.keys(build.variants), build.scales.map(String));
   }
   assert.ok(catalog.builds.some((build) => build.thumb) && catalog.builds.some((build) => !build.thumb), 'mit und ohne Vorschaubild');

@@ -50,6 +50,7 @@ describe('Helfer', () => {
     assert.throws(() => jobFor(entry({ module: null, structure: 'igloo__top.json' })), /kein Bau-Modul/);
     assert.throws(() => validateJob({ source: { kind: 'module', path: '/etc/passwd.js' } }), /Ungültiger Modulpfad/);
     assert.throws(() => validateJob({ source: { kind: 'shape' } }), /Quelle/);
+    assert.throws(() => validateJob({ source: { kind: 'structure', file: 'igloo__top.json' } }), /Quelle/);
     assert.throws(() => validateJob({ source: { kind: 'module', path: 'js/builds/haeuser/a.js' }, scale: -1 }), /Maßstab/);
     assert.deepEqual(validateJob({ source: { kind: 'module', path: 'js/builds/haeuser/a.js', extra: 1 } }), { source: { kind: 'module', path: 'js/builds/haeuser/a.js' }, scale: null });
   });

@@ -18,7 +18,6 @@ const TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.mcmeta': 'text/plain; charset=utf-8',
-  '.nbt': 'application/octet-stream',
 };
 const NOT_FOUND = Object.freeze({ status: 404, body: 'Nicht gefunden.', type: 'text/plain; charset=utf-8' });
 
@@ -58,13 +57,7 @@ export function mirrorOverrides({ mirrorDir = 'tmp/mcmeta-mirror', hideGameData 
 // → { available, missing: ['<commit>/<pfad>', …] } – vollständig, wenn alle Dateien von mirror-mcmeta.mjs da sind.
 export function mirrorStatus(mirrorDir = 'tmp/mcmeta-mirror', { rootDir = ROOT } = {}) {
   const base = path.resolve(rootDir, mirrorDir);
-  let files;
-  try {
-    files = mirrorFileList();
-  } catch {
-    return { available: false, missing: ['data/catalog.json'] };
-  }
-  const missing = files.filter((file) => !existsSync(mirrorFilePath(base, file.commit, file.path))).map((file) => `${file.commit}/${file.path}`);
+  const missing = mirrorFileList().filter((file) => !existsSync(mirrorFilePath(base, file.commit, file.path))).map((file) => `${file.commit}/${file.path}`);
   return { available: missing.length === 0, missing };
 }
 

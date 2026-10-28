@@ -3,10 +3,11 @@
 // (.vox, .stl, .obj, .glb, .gltf) gibt es an modelToVolume aus js/create/voxelize/index.js weiter.
 // Das Format wird am Inhalt erkannt (gzip-Kennung, NBT-Aufbau, Datei-Kennungen), nicht nur an der Endung.
 // Ergebnis: ImportResult (Kapitel mit Blocklisten) → importToBuildResult() → BuildResult (Schritte Ebene für Ebene).
+// checkImportFile() prüft eine Datei mit denselben Lesern nur, ohne Bau (für „Meine Bauten“ vor dem Speichern).
 
 import { readNbtAsync, detectCompression, NbtError } from './nbt.js';
-import { IMPORT_LIMITS, ImportError, BlockCollector, formatInt, formatMb, cleanText, isCompound } from './common.js';
-import { StateConverter } from './rename.js';
+import { IMPORT_LIMITS, ImportError, BlockCollector, BlockCounter, formatInt, formatMb, cleanText, isCompound } from './common.js';
+import { StateConverter, NameOnlyConverter } from './rename.js';
 import { findSpongeSchematic, readSchem } from './schem.js';
 import { isLitematic, readLitematic } from './litematic.js';
 import { isStructureNbt, readStructureNbt } from './structure-nbt.js';
@@ -141,8 +142,8 @@ function versionWarnings(info, warnings) {
   }
 }
 
-async function importNbtFamily(bytes, declared, name, ctx) {
-  const { limits, onProgress, warnings } = ctx;
+// NBT lesen und die Art bestimmen (Schematic, Litematica, Strukturdatei) → { root, kind, sponge }
+async function readNbtKind(bytes, declared, name, { limits, onProgress, warnings }) {
   onProgress?.(detectCompression(bytes) === 'none' ? 'Lese Datei …' : 'Entpacke Datei …', null);
   let root;
   try {
@@ -152,33 +153,42 @@ async function importNbtFamily(bytes, declared, name, ctx) {
   }
   const { kind, sponge } = detectNbtKind(root);
   if (NBT_FORMATS.includes(declared) && kind !== declared) warnings.push(`„${name}“ ist eigentlich im Format ${FORMAT_LABELS[kind]} und wird so geladen.`);
-  if (!isBlockDataLoaded()) throw new ImportError('data-missing', 'Die Blockdaten (Liste aller Blöcke) sind nicht geladen.');
-  const converter = new StateConverter();
-  const collector = new BlockCollector(limits);
-  const readCtx = { converter, collector, onProgress, warnings };
-  let info;
+  return { root, kind, sponge };
+}
+
+// Blöcke mit dem passenden Leser in den Sammler (BlockCollector oder BlockCounter) → Infos der Datei
+function readNbtBlocks({ root, kind, sponge }, readCtx) {
   try {
-    if (kind === 'litematic') info = readLitematic(root, readCtx);
-    else if (kind === 'schem') info = readSchem(sponge, readCtx);
-    else info = readStructureNbt(root, readCtx);
+    if (kind === 'litematic') return readLitematic(root, readCtx);
+    if (kind === 'schem') return readSchem(sponge, readCtx);
+    return readStructureNbt(root, readCtx);
   } catch (error) {
     if (error instanceof ImportError) throw error;
     throw new ImportError('corrupt', 'Die Datei ist beschädigt oder unvollständig.', { detail: error?.stack ?? String(error) });
   }
+}
+
+async function importNbtFamily(bytes, declared, name, ctx) {
+  const { limits, onProgress, warnings } = ctx;
+  const read = await readNbtKind(bytes, declared, name, ctx);
+  if (!isBlockDataLoaded()) throw new ImportError('data-missing', 'Die Blockdaten (Liste aller Blöcke) sind nicht geladen.');
+  const converter = new StateConverter();
+  const collector = new BlockCollector(limits);
+  const info = readNbtBlocks(read, { converter, collector, onProgress, warnings });
   const finished = collector.finish();
   versionWarnings(info, warnings);
   warnings.unshift(...converter.warnings());
   const { regionList, size: sourceSize, ...rest } = info;
   return {
-    format: kind,
+    format: read.kind,
     finished,
     palette: converter.palette,
     stats: {
       ...rest,
       sourceSize: sourceSize ?? null,
       regionList: regionList ?? null,
-      compression: root.compression,
-      unpackedBytes: root.unpackedBytes,
+      compression: read.root.compression,
+      unpackedBytes: read.root.unpackedBytes,
       ...converter.summary(),
     },
   };
@@ -197,17 +207,23 @@ function checkVolume(volume) {
   if (!(data instanceof Uint16Array) || data.length !== size[0] * size[1] * size[2]) throw bad('data');
 }
 
-async function importModel(bytes, format, ctx) {
-  const { limits, onProgress, warnings, params } = ctx;
+const VOXELIZER_MISSING = 'Der Import von 3D-Modellen (.vox, .stl, .obj, .glb, .gltf) ist noch nicht verfügbar.';
+
+// Modul für 3D-Modelle laden; method = die Funktion, die gebraucht wird
+async function loadVoxelizer(importVoxelizer, method) {
   let voxelizer;
   try {
-    voxelizer = await (ctx.importVoxelizer ?? defaultImportVoxelizer)();
+    voxelizer = await (importVoxelizer ?? defaultImportVoxelizer)();
   } catch (error) {
-    throw new ImportError('module-missing', 'Der Import von 3D-Modellen (.vox, .stl, .obj, .glb, .gltf) ist noch nicht verfügbar.', { detail: error?.message ?? String(error) });
+    throw new ImportError('module-missing', VOXELIZER_MISSING, { detail: error?.message ?? String(error) });
   }
-  if (!voxelizer || typeof voxelizer.modelToVolume !== 'function') {
-    throw new ImportError('module-missing', 'Der Import von 3D-Modellen (.vox, .stl, .obj, .glb, .gltf) ist noch nicht verfügbar.');
-  }
+  if (!voxelizer || typeof voxelizer[method] !== 'function') throw new ImportError('module-missing', VOXELIZER_MISSING);
+  return voxelizer;
+}
+
+async function importModel(bytes, format, ctx) {
+  const { limits, onProgress, warnings, params } = ctx;
+  const voxelizer = await loadVoxelizer(ctx.importVoxelizer, 'modelToVolume');
   let blockColors = null;
   if (typeof ctx.loadBlockColors === 'function') {
     try {
@@ -323,6 +339,41 @@ export async function importFile({ format, name, data, params = {}, onProgress =
     warnings,
     stats: { ...stats, fileBytes: bytes.length, paletteSize: palette.length },
   };
+}
+
+// Texturen prüft checkImportFile nicht (Bilder dekodieren ist teuer); jede Textur gilt als 1 × 1 Pixel.
+const SKIP_TEXTURE = async () => ({ width: 1, height: 1, data: new Uint8Array(4) });
+
+/**
+ * Prüft eine Datei wie importFile, aber ohne Bau (z. B. vor dem Speichern in „Meine Bauten“): Baupläne werden mit
+ * denselben Lesern ganz gelesen (Aufbau, Größe, Blockanzahl, Grenzen), 3D-Modelle nur geparst (ohne Texturen und
+ * ohne Umwandlung in Blöcke). Ohne geladene Blockdaten zählt jeder Vanilla-Block außer Luft (NameOnlyConverter).
+ * options: format, name, data, limits, importVoxelizer wie bei importFile.
+ * → { format (am Inhalt erkannt), size: [x, y, z] | null, blockCount | null }. Fehler: ImportError wie bei importFile.
+ */
+export async function checkImportFile({ format, name, data, limits = IMPORT_LIMITS, importVoxelizer = null } = {}) {
+  const cleanName = cleanFileName(name);
+  if (!UPLOAD_FORMATS.includes(format)) throw new ImportError('unknown-format', `Unbekanntes Dateiformat. ${SUPPORTED_TEXT}`);
+  const bytes = toBytes(data);
+  checkSize(bytes, limits);
+  const warnings = [];
+  const route = routeFormat(format, sniffContent(bytes), warnings, cleanName);
+  if (route === 'nbt-family') {
+    const read = await readNbtKind(bytes, format, cleanName, { limits, onProgress: null, warnings });
+    const converter = isBlockDataLoaded() ? new StateConverter() : new NameOnlyConverter();
+    const counter = new BlockCounter(limits);
+    readNbtBlocks(read, { converter, collector: counter, onProgress: null, warnings });
+    const { size, blockCount } = counter.finish();
+    return { format: read.kind, size, blockCount };
+  }
+  const voxelizer = await loadVoxelizer(importVoxelizer, 'parseModel');
+  try {
+    await voxelizer.parseModel(route, bytes, { decodeImage: SKIP_TEXTURE });
+  } catch (error) {
+    if (error instanceof ImportError) throw error;
+    throw new ImportError('model', `Das Modell konnte nicht gelesen werden: ${error?.message ?? String(error)}`, { detail: error?.stack ?? null });
+  }
+  return { format: route, size: null, blockCount: null };
 }
 
 /** ImportResult → BuildResult (Builder, raw, je Kapitel Ebenen); result.upload = Kennzahlen der Datei. */

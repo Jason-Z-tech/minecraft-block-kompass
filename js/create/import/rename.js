@@ -243,3 +243,44 @@ export class StateConverter {
     return { renamed: sorted(renamed), dropped: sorted(dropped), fixedValues, ignoredProps };
   }
 }
+
+const NAME_AIR = Object.freeze({ index: 0, notes: Object.freeze([]) });
+const NAME_BLOCK = Object.freeze({ index: 1, notes: Object.freeze([]) });
+
+/**
+ * Ersatz für StateConverter ohne Blockdaten (Prüfung einer Datei vor dem Speichern): Luftarten, Blöcke aus Mods und
+ * Unlesbares zählen als Luft, jeder andere Block als Block (Index 1). Unbekannte Vanilla-Namen erkennt er nicht.
+ */
+export class NameOnlyConverter {
+  constructor() {
+    this.palette = ['air', 'block'];
+  }
+
+  invalid() {
+    return NAME_AIR;
+  }
+
+  fromString(text) {
+    const parsed = parseForeignState(text);
+    return parsed ? this.fromParts(parsed.namespace, parsed.id) : NAME_AIR;
+  }
+
+  fromCompound(compound) {
+    const split = splitName(compound?.Name);
+    return split ? this.fromParts(split.namespace, split.id) : NAME_AIR;
+  }
+
+  fromParts(namespace, id) {
+    return namespace === 'minecraft' && !DROPPED_IDS.has(id) ? NAME_BLOCK : NAME_AIR;
+  }
+
+  count() {}
+
+  warnings() {
+    return [];
+  }
+
+  summary() {
+    return { renamed: [], dropped: [], fixedValues: 0, ignoredProps: 0 };
+  }
+}

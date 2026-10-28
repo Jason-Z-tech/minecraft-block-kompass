@@ -1,4 +1,5 @@
-// Bau-Seite (bau.html?id=<id>[&scale=<zahl>] oder bau.html?form=<form>&<param>=<wert>…)
+// Bau-Seite (bau.html?id=<id>[&scale=<zahl>], bau.html?form=<form>&<param>=<wert>… oder bau.html?meine=<id> für
+// einen eigenen Bau aus „Meine Bauten“, gebaut wie ein Upload)
 // Container-IDs (stabil):
 //   #build-status          seitenweiter Zustand (Adresse ungültig, Katalog fehlt, Bau oder Maßstab unbekannt)
 //   #build-layout          Raster aus Kopf und Bau-Ansicht (Handy untereinander, Desktop zweispaltig)
@@ -6,18 +7,21 @@
 //   #build-view            Bau-Ansicht (mountBuildView aus build-view.js: 3D-Bühne, Schritt-Player, Tabs)
 import { el, requireElement, sitePath } from './dom.js';
 import {
-  initPage, parseBuildParams, findCategory, renderState, renderError, linkButton, createCategoryChip, createAccuracyChip,
+  initPage, findCategory, renderState, renderError, linkButton, createCategoryChip, createAccuracyChip,
   createUntestedChip,
 } from './shared.js';
 import { mountBuildView } from './build-view.js';
-import { loadBuildEntry, resolveScale, sourceForEntry, progressKeyFor, formatScale, scaleToken } from './build/entry.js';
+import { loadBuildEntry, resolveScale, sourceForEntry, progressKeyFor, formatScale, scaleToken, parseBuildAddress } from './build/entry.js';
 import { formProgressKey } from './build/progress.js';
+import { openMyBuilds } from '../data/my-builds.js';
+import { loadMineView } from './mine/model.js';
 
 const INVALID_TEXTS = {
   id: 'Die Kennung des Baus in der Adresse ist ungültig. Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche.',
   scale: 'Der Maßstab in der Adresse ist ungültig. Erlaubt ist eine Zahl wie 1 oder 0.5.',
   form: 'Der Name der Form in der Adresse ist ungültig.',
   both: 'Die Adresse enthält gleichzeitig einen Bau und eine Form. Wähle eins von beidem.',
+  mixed: 'Die Adresse enthält mehrere Bauten auf einmal. Wähle einen davon.',
 };
 const SHAPES_MODULE = '../create/shape-generators.js';
 
@@ -31,9 +35,12 @@ start(window.location.search).then((view) => {
 });
 
 async function start(search) {
-  const params = parseBuildParams(search);
+  const params = parseBuildAddress(search);
   if (params.kind === 'build') return startBuild(params);
   if (params.kind === 'form') return startForm(search);
+  if (params.kind === 'mine') return startMine(params.id);
+  // Kennung eines eigenen Baus, die es so nicht geben kann: wie ein unbekannter eigener Bau
+  if (params.kind === 'invalid' && params.reason === 'meine') return showMineNotFound();
   if (params.kind === 'none') {
     return showPageState({
       kind: 'info',
@@ -98,7 +105,7 @@ async function startBuild(params) {
     showPageState({
       kind: 'error',
       title: 'Keine 3D-Daten',
-      text: `Für „${entry.title}“ fehlt im Katalog das Bau-Modul oder die Struktur.`,
+      text: `Für „${entry.title}“ fehlt im Katalog das Bau-Modul.`,
       actions: [linkButton('Zu den Kategorien', 'kategorie.html', { iconName: 'grid' })],
     });
     return;
@@ -168,7 +175,48 @@ async function startForm(search) {
   });
 }
 
-function showHead(entry, { form = false } = {}) {
+// Eigener Bau aus „Meine Bauten“ (IndexedDB im Browser, keine Netzanfrage für die Datei)
+async function startMine(id) {
+  const status = requireElement('build-status');
+  let view;
+  try {
+    view = await loadMineView(id, openMyBuilds());
+  } catch (error) {
+    requireElement('build-layout').hidden = true;
+    document.title = 'Bau nicht verfügbar – Block-Kompass';
+    if (error?.name !== 'MyBuildsError') console.error('[Block-Kompass] Eigener Bau nicht lesbar:', error);
+    renderState(status, {
+      kind: 'error',
+      title: 'Meine Bauten nicht verfügbar',
+      text: error?.name === 'MyBuildsError' ? error.message : 'Der Speicher im Browser ließ sich nicht lesen.',
+      headingLevel: 1,
+      actions: [linkButton('Zu Meine Bauten', 'meine.html', { iconName: 'star' })],
+    });
+    return;
+  }
+  if (!view) {
+    showMineNotFound();
+    return;
+  }
+  showHead(view.entry, { mine: true });
+  return mountBuildView(requireElement('build-view'), {
+    source: view.source,
+    params: {},
+    entry: view.entry,
+    progressKey: view.progressKey,
+  });
+}
+
+function showMineNotFound() {
+  showPageState({
+    kind: 'error',
+    title: 'Bau nicht gefunden',
+    text: 'In „Meine Bauten“ gibt es diesen Bau nicht (mehr).',
+    actions: [linkButton('Zu Meine Bauten', 'meine.html', { iconName: 'star' })],
+  });
+}
+
+function showHead(entry, { form = false, mine = false } = {}) {
   requireElement('build-layout').hidden = false;
   document.title = `${entry.title} – Block-Kompass`;
   const crumb = requireElement('build-crumb-category');
@@ -176,6 +224,10 @@ function showHead(entry, { form = false } = {}) {
   if (form) {
     crumb.textContent = 'Selber erstellen';
     crumb.setAttribute('href', sitePath('erstellen.html'));
+  } else if (mine) {
+    crumb.textContent = 'Meine Bauten';
+    crumb.setAttribute('href', sitePath('meine.html'));
+    if (category) requireElement('build-layout').dataset.category = category.slug;
   } else if (category) {
     crumb.textContent = category.title;
     crumb.setAttribute('href', sitePath(`kategorie.html?k=${category.slug}`));

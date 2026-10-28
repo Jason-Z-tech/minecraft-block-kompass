@@ -1,4 +1,4 @@
-// Vanilla-Strukturdatei (.nbt aus dem Strukturblock, Format wie ARCHITEKTUR §5):
+// Vanilla-Strukturdatei (.nbt aus dem Strukturblock):
 // { DataVersion, size [x, y, z], palette [ {Name, Properties} ] | palettes [[…], …], blocks [ {pos [x,y,z], state, nbt?} ],
 //   entities [ … ] }. Wie im Spiel beim Platzieren: jigsaw → sein final_state, structure_block fällt weg,
 // bei mehreren Paletten zählt die erste.

@@ -1,5 +1,5 @@
 // Klick-Test der Seite im Online-Modus wie auf GitHub Pages (Spieldaten aus misode/mcmeta statt aus game-data/):
-//   node tests/e2e-remote.mjs [--only start,bau,erstellen,handy,fehler] [--gpu swiftshader|hardware]
+//   node tests/e2e-remote.mjs [--only start,bau,erstellen,meine,handy,fehler] [--gpu swiftshader|hardware]
 //                             [--out tmp/integration/e2e-remote] [--live]
 // Ein eigener kleiner statischer Server spielt GitHub Pages nach: ohne Sicherheits-Header, die Seite liegt unter
 // /minecraft-block-kompass/ (Unterpfad), ausgeliefert wird nur, was auch auf Pages läge (git ls-files plus neue, nicht
@@ -10,6 +10,7 @@
 // https://raw.githubusercontent.com/misode/mcmeta/.
 // Jeder Ablauf startet Chrome mit frischem Profil (leere IndexedDB). Eine zweite DevTools-Verbindung zählt die Anfragen
 // von Seite und 3D-Worker, sammelt Fehler aus dem Worker und lässt im Fehlerfall (--live) Downloads scheitern.
+// „Meine Bauten“ läuft online wie lokal: Dateien bleiben im Browser (IndexedDB „bk-mine“), keine Netzanfragen dafür.
 // Ausgabe OK/FEHLER je Prüfung, Screenshots und Bericht (e2e-remote-report.json) nach --out.
 // Exit-Code 1, wenn eine Prüfung fehlschlägt; 2 bei falschen Optionen, fehlendem Spiegel (ohne --live), ohne git oder
 // wenn 127.0.0.2 nicht nutzbar ist.
@@ -23,13 +24,14 @@ import { launchBrowser } from './browser.mjs';
 import { MIRROR_PREFIX, mirrorOverrides, mirrorStatus } from './lib/mcmeta-mirror.mjs';
 import { MCMETA_COMMITS, LANG_FILES } from '../js/data/sources.js';
 import { CATEGORY_SLUGS } from '../js/ui/shared.js';
+import { HOME_READY, MINE_READY, homeFits, checkHeader, mineFlowSteps } from './lib/e2e-common.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CATALOG_FILE = path.join(ROOT, 'data', 'catalog.json');
 const IMPORT_DIR = path.join(ROOT, 'tests/fixtures/create/import');
 const MODEL_DIR = path.join(ROOT, 'tests/fixtures/create/voxelize');
 const CHROME_DIR = path.join(ROOT, 'tmp', 'e2e-remote-chrome');
-const FLOW_NAMES = ['start', 'bau', 'erstellen', 'handy', 'fehler'];
+const FLOW_NAMES = ['start', 'bau', 'erstellen', 'meine', 'handy', 'fehler'];
 const PAGES_HOST = '127.0.0.2';
 const SITE_PREFIX = '/minecraft-block-kompass/';
 const LIVE_BASE = 'https://raw.githubusercontent.com/misode/mcmeta/';
@@ -83,11 +85,14 @@ const byId = new Map(catalog.builds.map((build) => [build.id, build]));
 function pickBuild(preferred, fits) {
   return preferred.find((id) => byId.has(id) && fits(byId.get(id))) ?? catalog.builds.find(fits)?.id ?? null;
 }
-const MODULE_ID = pickBuild(['fachwerkhaus'], (b) => b.category === 'haeuser' && b.module && !b.structure);
-const STRUCTURE_ID = pickBuild(['spiel-aussenposten-wachturm'], (b) => Boolean(b.structure) && b.category !== 'haeuser');
-// Dorfhäuser mit Bett und Schild bzw. Truhe und Banner: Blöcke mit Texturen aus dem Entity-Atlas
-const ENTITY_ID = pickBuild(['spiel-taigadorf-kleines-haus-1'], (b) => Boolean(b.structure) && b.category === 'haeuser');
-const MOBILE_ID = pickBuild(['spiel-savannendorf-kleines-haus-4'], (b) => Boolean(b.structure) && b.category === 'haeuser' && b.id !== ENTITY_ID);
+// Alle Bauten sind eigene Bau-Module (Original-Strukturen aus dem Spiel gibt es nicht mehr)
+const isModule = (b) => typeof b.module === 'string' && b.module !== '';
+const MODULE_ID = pickBuild(['fachwerkhaus'], (b) => b.category === 'haeuser' && isModule(b));
+// Zweiter Bau aus einer anderen Kategorie, wenn die Spieldaten schon im Browser liegen (auch Fehlerfall „Netz weg“)
+const SECOND_ID = pickBuild(['dorfbrunnen'], (b) => b.category !== 'haeuser' && isModule(b) && b.blocks < 5000);
+// Häuser mit Bett und Banner bzw. Bett und Truhe: Blöcke mit Texturen aus dem Entity-Atlas
+const ENTITY_ID = pickBuild(['japanisches-wohnhaus'], (b) => b.category === 'haeuser' && isModule(b) && b.id !== MODULE_ID);
+const MOBILE_ID = pickBuild(['starterhaus-eiche'], (b) => b.category === 'haeuser' && isModule(b) && b.id !== ENTITY_ID && b.id !== MODULE_ID);
 const ENTITY_ITEM = /(?:^|_)bed$|^(?:trapped_)?chest$|_sign$|_banner$/;
 
 // ---------------------------------------------------------------- Ergebnisse
@@ -631,8 +636,8 @@ async function statusLog(page) {
 function progressSeries(log) {
   const series = [];
   for (const { phase, text } of log) {
-    const match = /(Spieldaten von GitHub laden \(einmalig\)|Struktur von GitHub laden) … (\d+) %/.exec(text);
-    if (match) series.push({ phase, kind: match[1].startsWith('Struktur') ? 'struktur' : 'einmalig', share: Number(match[2]) });
+    const match = /Spieldaten von GitHub laden \(einmalig\) … (\d+) %/.exec(text);
+    if (match) series.push({ phase, kind: 'einmalig', share: Number(match[1]) });
   }
   const backwards = series.filter((item, i) => i > 0 && series[i - 1].phase === item.phase && item.share < series[i - 1].share);
   return { series, backwards };
@@ -731,7 +736,7 @@ function storedKeys(page) {
   })()`);
 }
 
-// Bau-Seite prüfen. visit: 'erst' (frisches Profil, alles wird geladen) | 'struktur' (Spieldaten schon da) | 'neu' (Neuladen)
+// Bau-Seite prüfen. visit: 'erst' (frisches Profil, alles wird geladen) | 'weiter' (Spieldaten schon da) | 'neu' (Neuladen)
 async function buildVisit(page, { id, label, visit, shotName, materials = true, plan = true, steps = true, expectEntity = false, mobile = false }) {
   const build = byId.get(id);
   if (!build) {
@@ -763,9 +768,8 @@ async function buildVisit(page, { id, label, visit, shotName, materials = true, 
       oneTime.length ? `${oneTime.length} Meldungen: ${[...new Set(oneTime.map((item) => `${item.phase} ${item.share} %`))].slice(0, 8).join(', ')}` : `nur: ${loaded.log.slice(0, 3).map((entry) => entry.text.slice(0, 80)).join(' | ')}`);
     check(`${label}: Fortschritt geht innerhalb einer Phase nie zurück`, backwards.length === 0,
       backwards.length ? backwards.map((item) => `${item.phase} ${item.share} %`).join(', ') : `${series.length} Prozentwerte`);
-  } else if (visit === 'struktur') {
-    const structureText = series.filter((item) => item.kind === 'struktur');
-    check(`${label}: Ladeanzeige erscheint`, loadingShown, structureText.length ? `„Struktur von GitHub laden … ${structureText.map((item) => item.share).join('/')} %“` : 'Bau wird geladen …');
+  } else if (visit === 'weiter') {
+    check(`${label}: Ladeanzeige erscheint`, loadingShown, `Bau wird geladen … · ${requests.cdp} mcmeta-Anfragen (nur fehlende Atlanten)`);
   } else {
     check(`${label}: Neuladen ohne „(einmalig)“-Anzeige`, series.every((item) => item.kind !== 'einmalig'), series.length ? series.map((item) => `${item.share} %`).join(', ') : 'keine Download-Anzeige');
   }
@@ -797,20 +801,28 @@ async function buildVisit(page, { id, label, visit, shotName, materials = true, 
 // ---------------------------------------------------------------- Start und Kategorie
 
 async function startFlow() {
-  note('Start und Kategorie (Desktop 1280 × 900, frisches Profil)');
+  note('Start und Kategorie (Desktop 1280 × 800 bzw. 1280 × 900, frisches Profil)');
   const page = await openBrowser();
   const from = mark(page);
+  // Startseite ohne Scrollen: Desktop-Prüfung mit 1280 × 800, danach wieder 1280 × 900
+  await page.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
   await page.goto(SERVER.base);
   check('Testumgebung: 127.0.0.2 gilt als sicherer Kontext (wie https auf Pages)', await page.eval('window.isSecureContext && Boolean(navigator.locks)'),
     `isSecureContext ${await page.eval('window.isSecureContext')}, Web Locks ${await page.eval('Boolean(navigator.locks)')}`);
-  await page.waitFor("document.querySelectorAll('#home-sections .build-card').length > 0", 20000);
-  const home = await page.eval("({ cards: document.querySelectorAll('#home-sections .build-card').length, tiles: document.querySelectorAll('#home-categories .category-tile').length, total: document.getElementById('home-total')?.textContent.trim() ?? '', error: Boolean(document.querySelector('.state--error')) })");
-  check('Start: Karten da, keine Fehlerbox', home.cards > 0 && home.tiles === CATEGORY_SLUGS.length && !home.error && home.total.replace(/\D/g, '').includes(String(catalog.counts.total)),
-    `${home.cards} Karten, ${home.tiles} Kacheln, „${home.total.slice(0, 60)}“`);
+  await page.waitFor(HOME_READY, 20000);
+  const home = await homeFits(page);
+  const error = await page.eval("Boolean(document.querySelector('.state--error'))");
+  const wrongTiles = Object.entries(catalog.counts.byCategory).filter(([slug, n]) => home.byCategory[slug] !== String(n));
+  check('Start: Kacheln mit Anzahl, keine Fehlerbox', !error && wrongTiles.length === 0 && Object.keys(home.byCategory).join(',') === CATEGORY_SLUGS.join(',') && home.total === catalog.counts.total,
+    `${home.total} Bauten in ${Object.keys(home.byCategory).length} Kacheln${wrongTiles.length ? `, falsch: ${wrongTiles.map(([slug]) => slug).join(', ')}` : ''}`);
+  check('Start 1280 × 800: bis zur letzten Kachel und den Links ohne Scrollen', home.ok, `Kacheln bis ${home.tiles} px, Links bis ${home.links} px, Fenster ${home.height} px`);
+  check('Start: keine Bau-Reihen, Links „Selber erstellen“ und „Meine Bauten“', await page.eval("document.querySelectorAll('main .build-card, #home-sections, #home-total, .shelf, .how').length === 0 && [...document.querySelectorAll('#home-links a')].map((a) => a.getAttribute('href')).join(',') === 'erstellen.html,meine.html'"));
+  await checkHeader(page, check, 'Start', 'home');
   const images = await loadLazyImages(page);
   check('Start: keine kaputten Bilder', images.broken.length === 0, `${images.total} Bilder${images.broken.length ? `, kaputt: ${images.broken.join(', ')}` : ''}`);
-  await fullShot(page, 'desktop-01-start');
+  await shot(page, 'desktop-01-start');
   await checkNoCommands(page, 'Start');
+  await page.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
 
   await page.click('#home-categories .category-tile[data-category="haeuser"]');
   await waitAcrossNavigation(page, "location.pathname.endsWith('/kategorie.html') && document.querySelectorAll('#category-list .build-card').length > 0", 20000);
@@ -818,6 +830,7 @@ async function startFlow() {
   const category = await page.eval("({ cards: document.querySelectorAll('#category-list .build-card').length, count: document.getElementById('category-result-count')?.textContent.trim() ?? '', error: Boolean(document.querySelector('.state--error')), path: location.pathname })");
   check('Kategorie Häuser: Karten da, keine Fehlerbox', category.cards > 0 && !category.error && category.count.replace(/\D/g, '').startsWith(String(houses)) && category.path.startsWith(SITE_PREFIX),
     `${category.cards} Karten, „${category.count}“, ${category.path}`);
+  await checkHeader(page, check, 'Kategorie', 'category');
   const catImages = await loadLazyImages(page);
   check('Kategorie: keine kaputten Bilder', catImages.broken.length === 0, `${catImages.total} Bilder`);
   await page.eval('window.scrollTo(0, 0)');
@@ -858,17 +871,26 @@ async function buildPagesFlow() {
   }
   checkConsole(page, `Modul ${MODULE_ID} (neu geladen)`);
 
-  const structure = await buildVisit(page, { id: STRUCTURE_ID, label: `Struktur ${STRUCTURE_ID}`, visit: 'struktur', shotName: `bau-${STRUCTURE_ID}` });
-  if (structure) info(`Struktur ${STRUCTURE_ID}: ${structure.mcmeta.cdp} Anfragen an mcmeta (nur die .nbt und ggf. ein weiterer Atlas)`);
-  checkConsole(page, `Struktur ${STRUCTURE_ID}`);
+  const second = await buildVisit(page, { id: SECOND_ID, label: `Modul ${SECOND_ID}`, visit: 'weiter', shotName: `bau-${SECOND_ID}` });
+  if (second) info(`Modul ${SECOND_ID}: ${second.mcmeta.cdp} Anfragen an mcmeta (Spieldaten liegen schon im Browser)`);
+  checkConsole(page, `Modul ${SECOND_ID}`);
 
-  const entity = await buildVisit(page, { id: ENTITY_ID, label: `Dorfhaus ${ENTITY_ID}`, visit: 'struktur', shotName: `bau-${ENTITY_ID}`, expectEntity: true, plan: true, steps: false });
+  const entity = await buildVisit(page, { id: ENTITY_ID, label: `Haus ${ENTITY_ID}`, visit: 'weiter', shotName: `bau-${ENTITY_ID}`, expectEntity: true, plan: true, steps: false });
   if (entity) {
     const keys = await storedKeys(page);
-    check(`Dorfhaus ${ENTITY_ID}: Entity-Atlas geladen und gespeichert`, Boolean(keys?.some((key) => key.endsWith('|atlas:entities'))),
+    check(`Haus ${ENTITY_ID}: Entity-Atlas geladen und gespeichert`, Boolean(keys?.some((key) => key.endsWith('|atlas:entities'))),
       keys ? keys.filter((key) => /atlas:/.test(key)).map((key) => key.split('|').pop()).join(', ') : 'Datenbank fehlt');
   }
-  checkConsole(page, `Dorfhaus ${ENTITY_ID}`);
+  checkConsole(page, `Haus ${ENTITY_ID}`);
+
+  // Alte Adresse einer Spiel-Struktur: „Bau nicht gefunden“ wie jede unbekannte ID, ohne Spieldaten-Download
+  const oldFrom = mark(page);
+  await page.goto(`${SERVER.base}bau.html?id=spiel-plains-small-house-1`);
+  await page.waitFor("document.querySelector('#build-status .state__title')", 30000);
+  check('Alte Adresse bau.html?id=spiel-… zeigt „unbekannt“', await page.eval("document.querySelector('#build-status .state__title').textContent === 'Bau nicht gefunden' && document.getElementById('build-layout').hidden")
+    && countMcmeta(page, oldFrom).cdp === 0, await page.eval("document.querySelector('#build-status').textContent.replace(/\\s+/g, ' ').trim().slice(0, 120)"));
+  await checkHeader(page, check, 'Bau-Seite', null);
+  checkConsole(page, 'Alte Adresse spiel-…');
   checkRequests(page, 'Bau-Seiten', from);
   await page.close();
 }
@@ -975,6 +997,32 @@ async function createFlow() {
   await page.close();
 }
 
+// ---------------------------------------------------------------- Meine Bauten
+
+async function mineFlow() {
+  note('Meine Bauten (Desktop 1280 × 900, frisches Profil)');
+  const page = await openBrowser();
+  const from = mark(page);
+  let sectionFrom = mark(page);
+  try {
+    await mineFlowSteps(page, {
+      base: SERVER.base, check, shot, importDir: IMPORT_DIR, modelDir: MODEL_DIR, tmpDir: path.join(OUT, 'dateien'), prefix: 'desktop-20-meine',
+      checkConsole: (label) => checkConsole(page, label),
+      checkMaterials: (label) => checkMaterials(page, label),
+      onSection: async (label) => {
+        const mc = countMcmeta(page, sectionFrom);
+        // Liste und Bearbeiten brauchen keine Spieldaten; die Bau-Seite lädt sie beim ersten Besuch dieses Profils
+        if (/Liste|Bearbeiten|unbekannt/.test(label)) check(`${label}: keine Anfragen an mcmeta`, mc.cdp === 0, `${mc.cdp} mcmeta-Anfragen`);
+        else info(`${label}: ${mc.cdp} mcmeta-Anfragen`);
+        sectionFrom = mark(page);
+      },
+    });
+    checkRequests(page, 'Meine Bauten', from);
+  } finally {
+    await page.close();
+  }
+}
+
 // ---------------------------------------------------------------- Handy
 
 async function mobileFlow() {
@@ -982,9 +1030,13 @@ async function mobileFlow() {
   const page = await openBrowser({ mobile: true });
   const from = mark(page);
   await page.goto(SERVER.base);
-  await page.waitFor("document.querySelectorAll('#home-sections .build-card').length > 0", 20000);
-  check('Handy Start: Karten da, keine Fehlerbox, kein waagrechtes Scrollen',
+  await page.waitFor(HOME_READY, 20000);
+  check('Handy Start: Kacheln da, keine Fehlerbox, kein waagrechtes Scrollen',
     (await page.eval("!document.querySelector('.state--error')")) && await noHorizontalScroll(page));
+  const home = await homeFits(page);
+  check('Handy Start 390 × 844: bis zur letzten Kachel und den Links ohne Scrollen', home.ok && home.width === 390 && home.total === catalog.counts.total,
+    `Kacheln bis ${home.tiles} px, Links bis ${home.links} px, Fenster ${home.height} px`);
+  await checkHeader(page, check, 'Handy Start', 'home');
   await shot(page, 'handy-01-start');
   await page.goto(`${SERVER.base}kategorie.html?k=haeuser`);
   await page.waitFor("document.querySelectorAll('#category-list .build-card').length > 0", 20000);
@@ -993,7 +1045,7 @@ async function mobileFlow() {
 
   await buildVisit(page, { id: MOBILE_ID, label: `Handy ${MOBILE_ID} (erster Besuch)`, visit: 'erst', shotName: `handy-bau-${MOBILE_ID}`, expectEntity: true, mobile: true });
   checkConsole(page, `Handy ${MOBILE_ID}`);
-  await buildVisit(page, { id: MODULE_ID, label: `Handy Modul ${MODULE_ID}`, visit: 'struktur', shotName: `handy-bau-${MODULE_ID}`, materials: true, plan: false, steps: true, mobile: true });
+  await buildVisit(page, { id: MODULE_ID, label: `Handy Modul ${MODULE_ID}`, visit: 'weiter', shotName: `handy-bau-${MODULE_ID}`, materials: true, plan: false, steps: true, mobile: true });
   checkConsole(page, `Handy Modul ${MODULE_ID}`);
 
   await page.goto(`${SERVER.base}erstellen.html`);
@@ -1005,8 +1057,22 @@ async function mobileFlow() {
   check('Handy Upload .nbt', outcome.ok && outcome.missing?.length === 0, outcome.ok ? `${outcome.blockCount} Blöcke` : outcome.error);
   check('Handy mit Import: kein waagrechtes Scrollen', await noHorizontalScroll(page));
   await fullShot(page, 'handy-03-erstellen-import');
-  checkRequests(page, 'Handy', from);
   checkConsole(page, 'Handy Erstellen');
+
+  // Meine Bauten auf dem Handy: Leerzustand, eine Datei hinzufügen – ohne Netzanfragen für die Datei
+  const mineFrom = mark(page);
+  await page.goto(`${SERVER.base}meine.html`);
+  await page.waitFor(MINE_READY, 20000);
+  await checkHeader(page, check, 'Handy Meine Bauten', 'mine');
+  check('Handy Meine Bauten: Leerzustand, kein waagrechtes Scrollen', await page.eval("window.__minePage.error === null && window.__minePage.count === 0 && Boolean(document.getElementById('mine-empty-add'))") && await noHorizontalScroll(page));
+  await page.setInputFiles('#mine-file', [path.join(IMPORT_DIR, 'house.nbt')]);
+  await page.waitFor('window.__minePage.lastAdd', 30000);
+  check('Handy Meine Bauten: Datei hinzugefügt, kein waagrechtes Scrollen', await page.eval("window.__minePage.count === 1 && document.querySelectorAll('#mine-list .mine-card [data-action]').length === 4") && await noHorizontalScroll(page),
+    JSON.stringify(await page.eval('window.__minePage.lastAdd')));
+  check('Handy Meine Bauten: keine Anfragen an mcmeta', countMcmeta(page, mineFrom).cdp === 0, `${countMcmeta(page, mineFrom).cdp} mcmeta-Anfragen`);
+  await shot(page, 'handy-04-meine');
+  checkConsole(page, 'Handy Meine Bauten');
+  checkRequests(page, 'Handy', from);
   await page.close();
 }
 
@@ -1134,7 +1200,7 @@ async function createFailure() {
 async function failureFlow() {
   note(`Fehlerfall (${OPTIONS.live ? 'Chrome lässt GitHub-Anfragen scheitern' : 'Spiegel antwortet 503 bzw. trennt die Verbindung'}, je frisches Profil)`);
   await buildFailure({ mobile: false, kind: '503', id: MODULE_ID, label: `Fehlerfall ${MODULE_ID} (503)`, shotName: 'fehler-bau-503' });
-  await buildFailure({ mobile: true, kind: 'offline', id: STRUCTURE_ID, label: `Fehlerfall Handy ${STRUCTURE_ID} (Netz weg)`, shotName: 'fehler-handy-offline' });
+  await buildFailure({ mobile: true, kind: 'offline', id: SECOND_ID, label: `Fehlerfall Handy ${SECOND_ID} (Netz weg)`, shotName: 'fehler-handy-offline' });
   await createFailure();
 }
 
@@ -1155,11 +1221,13 @@ try {
 }
 await mkdir(OUT, { recursive: true });
 console.log(`Pages-Nachbau: ${SERVER.base} · ${FILES.size} Dateien · Spieldaten: ${OPTIONS.live ? LIVE_BASE : `Spiegel unter ${MIRROR_PREFIX}`}`);
-console.log(`Bauten: Modul ${MODULE_ID}, Struktur ${STRUCTURE_ID}, Entity-Texturen ${ENTITY_ID}, Handy ${MOBILE_ID}`);
-for (const [name, id] of Object.entries({ MODULE_ID, STRUCTURE_ID, ENTITY_ID, MOBILE_ID })) {
+console.log(`Bauten: Modul ${MODULE_ID}, zweites Modul ${SECOND_ID}, Entity-Texturen ${ENTITY_ID}, Handy ${MOBILE_ID}`);
+check('Katalog: nur eigene Bau-Module, keine Spiel-Strukturen', catalog.builds.length > 0 && catalog.builds.every((b) => isModule(b) && !('structure' in b) && !b.id.startsWith('spiel-')),
+  `${catalog.builds.length} Bauten`);
+for (const [name, id] of Object.entries({ MODULE_ID, SECOND_ID, ENTITY_ID, MOBILE_ID })) {
   if (!id) check(`Katalog: Bau für ${name}`, false, 'kein passender Bau gefunden');
 }
-const flows = { start: startFlow, bau: buildPagesFlow, erstellen: createFlow, handy: mobileFlow, fehler: failureFlow };
+const flows = { start: startFlow, bau: buildPagesFlow, erstellen: createFlow, meine: mineFlow, handy: mobileFlow, fehler: failureFlow };
 const startedAt = Date.now();
 try {
   if (!OPTIONS.live || MIRROR.available) LANG = await readLang(null);
@@ -1194,7 +1262,7 @@ const failed = results.filter((result) => !result.ok);
 const seconds = (Date.now() - startedAt) / 1000;
 await writeFile(path.join(OUT, 'e2e-remote-report.json'), `${JSON.stringify({
   when: new Date().toISOString(), mode: MODE, base: SERVER.base, gpu: usedGpu, seconds, files: FILES.size,
-  builds: { module: MODULE_ID, structure: STRUCTURE_ID, entity: ENTITY_ID, mobile: MOBILE_ID },
+  builds: { module: MODULE_ID, second: SECOND_ID, entity: ENTITY_ID, mobile: MOBILE_ID },
   results, perf, notes,
 }, null, 2)}\n`);
 console.log(`\n${results.length - failed.length} von ${results.length} Prüfungen OK, ${failed.length} FEHLER · ${seconds.toFixed(0)} s · Screenshots und Bericht: ${path.relative(ROOT, OUT)}`);

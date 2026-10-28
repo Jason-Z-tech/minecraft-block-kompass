@@ -72,7 +72,7 @@ export class InfoPanel {
         el('ul', { class: 'bv-info__sources' }, sources.map((source) => el('li', null, externalLink(source.url, source.title || new URL(source.url).hostname))))) : null,
       credits ? el('section', { class: 'bv-info__section' },
         el('h3', { class: 'bv-info__heading' }, 'Design'),
-        el('p', null, 'Von ', credits.url ? externalLink(credits.url, credits.author) : el('strong', null, credits.author),
+        el('p', { class: 'bv-info__credits' }, 'Von ', credits.url ? externalLink(credits.url, credits.author) : el('strong', null, credits.author),
           credits.license ? ` · Lizenz: ${credits.license}` : '')) : null,
       Array.isArray(entry.tags) && entry.tags.length ? el('ul', { class: 'chip-list bv-info__tags', role: 'list', 'aria-label': 'Schlagwörter' }, entry.tags.map((tag) => el('li', null, createChip(tag)))) : null,
       this.#progressBox);

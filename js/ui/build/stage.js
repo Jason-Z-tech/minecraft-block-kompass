@@ -20,23 +20,26 @@ const STATUS_STEPS = [
   ['meshing', '3D-Modell'],
 ];
 
-/** Fehler des Viewers → Zustand für die Anzeige (Titel, Text, Schritte). */
+/**
+ * Fehler des Viewers → Zustand für die Anzeige (Titel, Text, Schritte) und ob „Erneut versuchen“ helfen kann
+ * (retry: nicht ohne WebGL2 und nicht bei Fehlern der Datei selbst, code 'upload').
+ */
 export function viewerErrorState(error) {
   const code = error?.code ?? null;
   const message = error?.message ?? 'Unbekannter Fehler.';
   if (code === 'no-webgl2') {
-    return { kind: 'error', title: '3D-Ansicht nicht möglich', text: message, steps: [] };
+    return { kind: 'error', title: '3D-Ansicht nicht möglich', text: message, steps: [], retry: false };
   }
   if (code === 'data') {
     // Titel aus js/data/game-data.js (z. B. „Keine Verbindung zu GitHub“), sonst allgemein
     const title = typeof error?.title === 'string' && error.title.trim() !== '' ? error.title.trim().slice(0, 120) : 'Spieldaten fehlen';
     return {
       kind: 'error', title, text: message,
-      steps: [{ text: 'Lade die Seite neu. Hilft das nicht, versuche es später noch einmal.' }],
+      steps: [{ text: 'Lade die Seite neu. Hilft das nicht, versuche es später noch einmal.' }], retry: true,
     };
   }
-  if (code === 'context-lost') return { kind: 'error', title: 'Grafikkarte zurückgesetzt', text: message, steps: [{ text: 'Lade die Seite neu.' }] };
-  return { kind: 'error', title: 'Der Bau konnte nicht geladen werden', text: message, steps: [] };
+  if (code === 'context-lost') return { kind: 'error', title: 'Grafikkarte zurückgesetzt', text: message, steps: [{ text: 'Lade die Seite neu.' }], retry: true };
+  return { kind: 'error', title: 'Der Bau konnte nicht geladen werden', text: message, steps: [], retry: code !== 'upload' };
 }
 
 export class Stage {
@@ -109,9 +112,9 @@ export class Stage {
 
   /** Fehlerzustand über der Bühne (mit optionalem „Erneut versuchen“). */
   showError(error, { onRetry = null } = {}) {
-    const spec = viewerErrorState(error);
+    const { retry, ...spec } = viewerErrorState(error);
     const actions = [];
-    if (onRetry && error?.code !== 'no-webgl2') {
+    if (onRetry && retry) {
       actions.push(el('button', { class: 'btn btn--secondary', type: 'button', on: { click: onRetry } }, icon('retry'), el('span', null, 'Erneut versuchen')));
     }
     this.#parts.canvas.hidden = error?.code === 'no-webgl2';

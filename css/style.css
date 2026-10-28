@@ -970,6 +970,16 @@ ol.cluster {
   --btn-bg: var(--c-surface-3);
 }
 
+/* Gefährliche Aktion (z. B. „Ja, löschen“): Redstone-Rot statt Gras-Grün */
+.btn--danger {
+  --btn-bg: var(--c-redstone-deep);
+  --btn-bg-hover: #c22e28;
+  --btn-fg: #ffffff;
+  --btn-hi: rgb(255 255 255 / 0.2);
+  --btn-lo: #7a1d19;
+  --btn-shadow: #2a0a08;
+}
+
 .btn--ghost {
   --btn-bg: transparent;
   --btn-bg-hover: rgb(255 255 255 / 0.07);
@@ -2494,7 +2504,8 @@ textarea.field__input {
 
 /* ---------------------------------------------------------------- 8 Seiten */
 
-/* Start: Bauplan-Raster, Titel, Suche, kompakte Kacheln, Gelände-Streifen – alles ohne Scrollen sichtbar */
+/* Start: Bauplan-Raster, Titel, Suche, kompakte Kacheln, Gelände-Streifen – alles ohne Scrollen sichtbar und
+   einheitlich mittig (die letzte Kachelreihe und die Links stehen ohnehin mittig) */
 .home {
   position: relative;
   overflow: hidden;
@@ -2523,6 +2534,7 @@ textarea.field__input {
   font-size: var(--fs-2xl);
   font-weight: 700;
   line-height: 1.05;
+  text-align: center;
 }
 
 .home__title-accent {
@@ -2532,7 +2544,9 @@ textarea.field__input {
 .home-search {
   display: flex;
   gap: var(--space-3);
+  width: 100%;
   max-width: 720px;
+  margin-inline: auto;
 }
 
 .home-search .field__input {

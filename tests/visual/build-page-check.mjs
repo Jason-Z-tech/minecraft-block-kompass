@@ -260,12 +260,12 @@ async function desktopFlow(server) {
 async function mobileFlow(server) {
   const page = await openBrowser({ mobile: true });
   try {
-    await page.goto(`${server.url}/bau.html?id=spiel-plains-small-house-1`);
+    await page.goto(`${server.url}/bau.html?id=example-house`);
     await shot(page, 'handy-01-laden');
     await page.waitFor(READY, 40000);
     await waitIdle(page);
     await shot(page, 'handy-02-fertig');
-    check('Handy: Original-Struktur geladen', await page.eval("document.querySelectorAll('.bv-step').length === 7"));
+    check('Handy: Bau geladen', await page.eval("document.querySelectorAll('.bv-step').length === 18"), '18 Schritte in der Anleitung');
     await page.click('.bv-player__controls .btn--icon:nth-of-type(1)');
     await page.eval('window.scrollTo(0, 0)');
     await page.eval("(() => { const s = document.querySelector('.bv-player__slider'); s.value = '0'; s.dispatchEvent(new Event('input', { bubbles: true })); })()");
@@ -315,17 +315,19 @@ async function errorFlow(server) {
     await page.goto(`${server.url}/bau.html?id=x%3Cscript%3E`);
     await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
     check('Ungültige ID: Fehlerzustand', await page.eval("/Ungültige Adresse/.test(document.querySelector('#build-status').textContent)"));
-    // Struktur fehlt in game-data → „Spieldaten fehlen“ mit verständlichem Hinweis, ohne Befehl (läuft auch online)
-    await page.unroute('data/catalog.json');
-    const broken = JSON.stringify({ version: '26.2', builds: [{ id: 'spiel-fehlt', title: 'Fehlt', category: 'haeuser', accuracy: 'original', structure: 'gibt_es_nicht.json', module: null, size: [3, 3, 3], blocks: 1, steps: 1 }] });
-    await page.route('data/catalog.json', { body: broken, contentType: 'application/json' });
-    await page.goto(`${server.url}/bau.html?id=spiel-fehlt`);
+    // Alte Adresse einer Spiel-Struktur (gibt es nicht mehr) → wie jede unbekannte ID „Bau nicht gefunden“
+    await page.goto(`${server.url}/bau.html?id=spiel-plains-small-house-1`);
+    await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
+    check('Alte Adresse spiel-…: „Bau nicht gefunden“', await page.eval("/Bau nicht gefunden/.test(document.querySelector('#build-status').textContent) && document.getElementById('build-layout').hidden"));
+    // Spieldaten-Datei fehlt (404) → „Spieldaten fehlen“ mit verständlichem Hinweis, ohne Befehl (läuft auch online)
+    await page.route('game-data/textures.json', { body: 'fehlt', status: 404, contentType: 'text/plain' });
+    await page.goto(`${server.url}/bau.html?id=example-house`);
     await page.waitFor("document.querySelector('.bv-stage.is-error')", 30000);
-    check('Fehlende Spieldaten: Hinweis ohne Befehl', await page.eval("(() => { const t = document.querySelector('.bv-stage__status').textContent; return /Spieldaten fehlen/.test(t) && /neu/.test(t) && !/node |scripts\\/|Projektordner/.test(t); })()"));
+    check('Fehlende Spieldaten: Hinweis ohne Befehl', await page.eval("(() => { const t = document.querySelector('.bv-stage__status').textContent; return /Spieldaten fehlen/.test(t) && /neu/.test(t) && !/node |scripts\\/|Projektordner/.test(t); })()"),
+      await page.eval("document.querySelector('.bv-stage__status').textContent.replace(/\\s+/g, ' ').trim().slice(0, 160)"));
     await shot(page, 'fehler-03-spieldaten');
     takeErrors(page);
-    await page.unroute('data/catalog.json');
-    await page.route('data/catalog.json', { file: CATALOG });
+    await page.unroute('game-data/textures.json');
     // Kein WebGL2
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: "(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : original.call(this, type, ...rest); }; })();" });
     await page.goto(`${server.url}/bau.html?id=example-house`);

@@ -7,8 +7,9 @@
 //   #create-panel-formen          Formen-Generator: #shape-generator-body (Form und Felder), #shape-summary-body (Kennzahlen,
 //                                 Knöpfe), Vorschau #shape-preview (Bau-Komponente)
 //   #create-panel-import          Import: #import-drop, #import-file, #import-body (Datei, Modell-Einstellungen),
-//                                 #import-status, Bericht #import-report (#import-report-body), Ergebnis #import-result
-// Für Klick-Tests: window.__createPage (ready, error, request, shape, imports, views { shape, import }).
+//                                 #import-status, Bericht #import-report (#import-report-body), „Zu Meine Bauten“
+//                                 #import-save (#import-save-body), Ergebnis #import-result
+// Für Klick-Tests: window.__createPage (ready, error, request, shape, imports, lastImport, saved, views { shape, import }).
 import { el, clear, requireElement } from './dom.js';
 import { loadCatalog, loadNames, loadBlockList } from './data.js';
 import { onGameDataProgress } from '../data/game-data.js';
@@ -17,10 +18,12 @@ import { parseRequest } from '../create/text-parser.js';
 import { ViewSlot } from './create/view-slot.js';
 import { ShapeGenerator } from './create/shape-form.js';
 import { Importer } from './create/importer.js';
+import { SaveToMine } from './create/save-mine.js';
+import { openMyBuilds } from '../data/my-builds.js';
 import { renderRequestResult } from './create/idea.js';
 import { CREATE_TABS, tabFromHash, requestFromSearch, createHref, pickExamples } from './create/model.js';
 
-const page = { ready: false, error: null, request: null, shape: null, imports: 0, lastImport: null, views: { shape: null, import: null } };
+const page = { ready: false, error: null, request: null, shape: null, imports: 0, lastImport: null, saved: null, views: { shape: null, import: null } };
 window.__createPage = page;
 
 initPage();
@@ -198,14 +201,24 @@ function setupImport() {
     report: requireElement('import-report'),
     reportBody: requireElement('import-report-body'),
   };
+  const save = new SaveToMine({
+    section: requireElement('import-save'),
+    body: requireElement('import-save-body'),
+    getStore: openMyBuilds,
+    onSaved: (entry) => { page.saved = { id: entry.id, title: entry.title, category: entry.category }; },
+  });
   // Ohne names.json kann die Blockauswahl nur IDs zeigen – der Import selbst braucht sie nicht
   new Importer({
     parts, slot: importSlot, names: data.names, blocks: data.blocks,
+    onStart: () => save.hide(),
     onResult: (outcome) => {
       page.imports += 1;
+      page.saved = null;
       page.lastImport = outcome.ok
         ? { ok: true, blockCount: outcome.result.blockCount, size: outcome.result.size, warnings: outcome.result.warnings, upload: outcome.result.upload }
         : { ok: false, error: outcome.error, code: outcome.code ?? null };
+      if (outcome.ok) save.show(outcome.upload);
+      else save.hide();
     },
   });
   if (!data.names) {

@@ -1036,7 +1036,9 @@
   font-size: var(--fs-sm);
 }
 
-.bv-info__link {
+/* Lange Namen oder Lizenz-Adressen ohne Leerzeichen (z. B. aus einer manifest.json) brechen um */
+.bv-info__link,
+.bv-info__credits {
   overflow-wrap: anywhere;
 }
 
