@@ -96,7 +96,7 @@ export class MaterialsPanel {
     const step = result.steps[stepIndex];
     if (!step) return { index: null, note: 'Dieser Bau hat keine Schritte.' };
     if (this.#scope === 'step') {
-      return { index: stepIndex, note: `Schritt ${formatNumber(stepIndex + 1)}: ${step.title}${shown < 0 ? ' (als Nächstes)' : ''}` };
+      return { index: stepIndex, note: `Schritt ${formatNumber(stepIndex + 1)}${shown < 0 ? ' (als Nächstes)' : ''}` };
     }
     const phase = result.phases[step.phase];
     return { index: step.phase, note: `Kapitel ${formatNumber(phaseNumber(result, step.phase))}: ${phase?.title ?? ''}${shown < 0 ? ' (als Nächstes)' : ''}` };

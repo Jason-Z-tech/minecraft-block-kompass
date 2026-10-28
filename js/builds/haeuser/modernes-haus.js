@@ -17,14 +17,7 @@ export const meta = {
     'moderns haus', 'modernes hause',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Zwei weiße Kuben aus Beton und Quarz liegen versetzt übereinander: Das Obergeschoss kragt nach Osten über die Einfahrt aus und bildet so den Carport. Auf dem freien Dach des Erdgeschosses liegt eine Dachterrasse mit Glasgeländer und Whirlpool, im Garten ein Pool mit Holzdeck und Liegen. Innen gibt es einen offenen Wohnbereich mit Kamin, Küche und Esstisch, oben Schlafzimmer, Bad und Arbeitsplatz.',
-  facts: [
-    'Erdgeschoss 17 × 11 Blöcke, Obergeschoss 17 × 11 Blöcke, um 6 nach Osten und 2 nach Norden versetzt',
-    'Deckenleuchten aus Endstäben: schlank und hell (Lichtstärke 14)',
-    'Der Pool ist 2 Blöcke tief und wird von Seelaternen in den Wänden beleuchtet',
-    'Solarpaneele auf dem Dach aus Tageslichtsensoren',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -50,16 +43,12 @@ const slab = (id, type = 'bottom') => formatState(id, { type });
 const endRod = formatState('end_rod', { facing: 'down' });
 
 function ground(b) {
-  b.phase('Grundstück', 'Ebne das Grundstück ein: oben Gras, darunter zwei Ebenen Erde. Wo Haus, Einfahrt und Pool hinkommen, wird das Gras später ersetzt.', {
-    tips: ['Steck zuerst die Ecken von Haus, Pool und Einfahrt mit einzelnen Blöcken ab – dann stimmen die Abstände.'],
-  });
+  b.phase('Grundstück');
   terrain(b, { x: PLOT.x1, y: -2, z: PLOT.z1, width: PLOT.x2 - PLOT.x1 + 1, depth: PLOT.z2 - PLOT.z1 + 1, height: 2, seed: 4 });
 }
 
 function foundation(b) {
-  b.phase('Bodenplatte, Pool und Einfahrt', 'Leg die Bodenplatte des Erdgeschosses aus Birkenbrettern mit einem Rand aus glattem Quarz. Heb den Pool 2 Blöcke tief aus und kleide ihn mit weißem Beton aus, alle 3 Blöcke sitzt eine Seelaterne in der Wand. Die Einfahrt ist aus poliertem Andesit mit Seelaternen als Bodenlichter am Rand. Rund um den Pool, vom Haus bis zur Einfahrt, ersetzt du das Gras durch ein Deck aus Fichtenbrettern.', {
-    tips: ['Die Seelaternen in der Poolwand leuchten das Wasser von innen aus und halten nachts Monster fern.'],
-  });
+  b.phase('Bodenplatte, Pool und Einfahrt');
   b.fill(A.x1, 0, A.z1, A.x2, 0, A.z2, PLATE);
   b.fill(A.x1 + 1, 0, A.z1 + 1, A.x2 - 1, 0, A.z2 - 1, FLOOR_GF);
   // Pool: Boden y −2, Wände y −1 und Rand y 0
@@ -82,9 +71,7 @@ function foundation(b) {
 }
 
 function groundFloorWalls(b) {
-  b.phase('Erdgeschoss: Wände und Glas', 'Mauere die Ecken und Wandstücke des Erdgeschosses 4 Blöcke hoch aus weißem Beton. Nach Süden und Westen bekommt das Wohnzimmer raumhohe Glasscheiben mit grauen Pfosten, die Ostwand am Carport verkleidest du mit geschälten Fichtenstämmen.', {
-    tips: ['Glasscheiben verbinden sich von selbst mit den Nachbarblöcken – setz zuerst die grauen Pfosten, dann die Scheiben dazwischen.'],
-  });
+  b.phase('Erdgeschoss: Wände und Glas');
   const top = 4;
   b.walls(A.x1, 1, A.z1, A.x2, top, A.z2, WALL);
   // Süden: Glasfront x 5 … 19 mit Pfosten
@@ -99,9 +86,7 @@ function groundFloorWalls(b) {
 }
 
 function upperPlate(b) {
-  b.phase('Decke und Terrasse', 'Die Decke über dem Erdgeschoss ist gleichzeitig der Boden des Obergeschosses und die Dachterrasse. Sie steht nach Süden und Westen einen Block über und reicht im Osten weit über die Einfahrt – das ist das Dach des Carports. Innen und auf der Terrasse belegst du sie mit Fichtenbrettern (Holzdecke unten, Dielen oben), außen bleibt ein Rand aus glattem Quarz. Lass über der Treppe (an der Ostwand innen) drei Felder hintereinander offen – sonst stößt du beim Hinaufgehen mit dem Kopf an.', {
-    tips: ['Die Auskragung über dem Carport kannst du in Minecraft frei bauen: Setz die Platte Reihe für Reihe von der Hauswand aus nach außen.'],
-  });
+  b.phase('Decke und Terrasse');
   b.fill(A.x1 - 1, 5, A.z1, A.x2, 5, A.z2 + 1, PLATE);
   b.fill(B.x1, 5, B.z1, B.x2, 5, B.z2, PLATE);
   b.fill(A.x1, 5, A.z1 + 1, A.x2 - 1, 5, A.z2, spruce.planks);
@@ -110,7 +95,7 @@ function upperPlate(b) {
 }
 
 function upperWalls(b) {
-  b.phase('Obergeschoss: Wände und Glas', 'Die Wände oben sind ebenfalls 4 hoch. Nach Süden gehen raumhohe Fenster (3 Glasscheiben, darüber ein Sturz aus Beton), nach Norden ein Fensterband, im Westen die Glastür zur Dachterrasse. Die Ostwand über dem Carport ist mit Fichte verkleidet. Innen trennen Wände Schlafzimmer und Bad ab.');
+  b.phase('Obergeschoss: Wände und Glas');
   const y1 = 6;
   const y2 = 9;
   b.walls(B.x1, y1, B.z1, B.x2, y2, B.z2, WALL);
@@ -127,9 +112,7 @@ function upperWalls(b) {
 }
 
 function roofs(b) {
-  b.phase('Dach und Geländer', 'Schließ das Obergeschoss mit einer Dachplatte aus glattem Quarz und setz ringsum eine Attika aus Quarzstufen. Über dem Treppenhaus sitzt ein Oberlicht aus Glas, daneben liegen Reihen aus Tageslichtsensoren als Solarpaneele. Die Dachterrasse bekommt ein Geländer aus Glasscheiben.', {
-    tips: ['Das Glasgeländer sieht am saubersten aus, wenn du an die Ecken glatten Quarz als Pfosten setzt.'],
-  });
+  b.phase('Dach und Geländer');
   b.fill(B.x1, 10, B.z1, B.x2, 10, B.z2, PLATE);
   b.fill(18, 10, 12, 19, 10, 15, 'glass');
   for (const z of [8, 9, 13, 14]) for (let x = 12; x <= 16; x++) b.set(x, 11, z, formatState('daylight_detector', { inverted: 'false', power: '0' }));
@@ -147,7 +130,7 @@ function roofs(b) {
 }
 
 function doorsAndStairs(b) {
-  b.phase('Türen und Treppe', 'Die Haustür sitzt unter dem Carport in der Ostwand. Innen führt eine freitragende Treppe aus 5 Fichtenstufen an der Ostwand nach oben: Setz die Stufen mit der hohen Seite nach Süden direkt an die Wand, jede eine Ebene höher und einen Block weiter südlich. Die oberste Stufe ersetzt ein Brett der Decke direkt hinter der Öffnung – so kommst du oben ohne Springen an. Oben führen Türen ins Schlafzimmer, ins Bad und auf die Terrasse.');
+  b.phase('Türen und Treppe');
   doorway(b, { x: A.x2, y: 1, z: 16, facing: 'east', door: spruce.door, frame: null });
   straightStairs(b, { x: 19, y: 1, z: 11, facing: 'south', width: 1, height: 5, stairs: spruce.stairs, support: null });
   doorway(b, { x: B.x1, y: 6, z: 13, facing: 'west', door: spruce.door, frame: null });
@@ -155,12 +138,11 @@ function doorsAndStairs(b) {
   doorway(b, { x: 16, y: 6, z: 9, facing: 'east', door: 'birch_door', frame: null });
   for (const z of [12, 13, 14]) b.set(18, 6, z, GLASS);
   b.set(19, 6, 11, GLASS);
-  b.note(19, 6, 15, 'Hier kommst du oben an: Die Treppe steigt nach Süden.');
 }
 
 function groundFloorInterior(b) {
-  b.phase('Einrichtung Erdgeschoss', 'Der offene Wohnbereich: Kamin aus poliertem Tiefenschiefer an der Westwand, davor ein Sofa, Küche an der Nordwand, Kücheninsel und Esstisch zur Glasfront.');
-  b.step('Wohnbereich mit Kamin', 'Der Kamin ist 3 breit, der Sims aus Tiefenschiefertreppen. Das Sofa aus Tiefenschieferfliesen-Treppen schaut zum Kamin, die Armlehnen sind offene Fichtenfalltüren. Davor ein niedriger Tisch aus Fichtenstufen auf einem grauen Teppich.');
+  b.phase('Einrichtung Erdgeschoss');
+  b.step();
   fireplace(b, { x: A.x1 + 1, y: 1, z: 13, facing: 'east', height: 4, block: 'polished_deepslate', mantel: 'polished_deepslate_stairs' });
   for (let z = 11; z <= 15; z++) b.set(10, 1, z, st('deepslate_tile_stairs', 'east'));
   b.set(10, 1, 10, formatState(spruce.trapdoor, { facing: 'north', half: 'bottom', open: 'true' }));
@@ -170,7 +152,7 @@ function groundFloorInterior(b) {
   b.set(8, 2, 13, 'potted_blue_orchid');
   for (const [x, z] of [[5, 9], [5, 17], [11, 17]]) b.set(x, 1, z, 'potted_bamboo');
 
-  b.step('Küche, Insel und Esstisch', 'Die Küchenzeile mit Hängeschränken steht an der Nordwand. Davor die Insel aus glattem Quarz, zur Glasfront der Esstisch für sechs.');
+  b.step();
   kitchen(b, { x: 12, y: 1, z: A.z1 + 1, facing: 'south', width: 7, wood: 'fichte' });
   b.fill(13, 1, 12, 16, 1, 12, PLATE);
   b.set(13, 2, 12, 'potted_red_tulip');
@@ -179,11 +161,11 @@ function groundFloorInterior(b) {
 }
 
 function upperInterior(b) {
-  b.phase('Einrichtung Obergeschoss', 'Oben liegen Schlafzimmer, Bad und ein Arbeitsplatz mit Bücherwand, verbunden durch einen hellen Flur am Treppenhaus.');
-  b.step('Schlafzimmer', 'Doppelbett mit dem Kopfteil an der Ostwand, Nachttische, Truhe am Fußende, Teppich und ein Kleiderschrank aus Fichte.');
+  b.phase('Einrichtung Obergeschoss');
+  b.step();
   bedroom(b, { x: B.x2 - 1, y: 6, z: B.z1 + 1, facing: 'west', width: 9, depth: 5, wood: 'fichte', color: 'grau', rug: 'weiss', double: true });
 
-  b.step('Bad', 'Die Badewanne sind zwei Kessel mit Wasser in einer Reihe, das Waschbecken ein weiterer Kessel mit einem Stolperdrahthaken als Wasserhahn. Die Toilette ist eine Quarztreppe mit einer Falltür als Deckel.');
+  b.step();
   for (const x of [11, 12]) b.set(x, 6, 7, formatState('water_cauldron', { level: '3' }));
   b.set(13, 6, 7, PLATE);
   b.set(13, 7, 7, 'potted_fern');
@@ -195,7 +177,7 @@ function upperInterior(b) {
   b.set(11, 7, 10, formatState('white_candle', { candles: '2', lit: 'false' }));
   b.fill(12, 6, 9, 13, 6, 9, 'light_blue_carpet');
 
-  b.step('Arbeitsplatz und Flur', 'Die Bücherwand steht an der Badwand, der Schreibtisch aus Fichtenstufen vor der Glasfront. Im Flur stehen eine Sitzbank mit Pflanze und am Treppengeländer ein Sofa zum Lesen.');
+  b.step();
   bookWall(b, { x: 11, y: 6, z: 12, facing: 'south', width: 5, height: 3, wood: 'fichte', chiseled: true, crown: false });
   b.fill(12, 6, 15, 14, 6, 15, slab(spruce.slab, 'top'));
   b.set(13, 6, 14, st(spruce.stairs, 'north'));
@@ -211,10 +193,8 @@ function upperInterior(b) {
 }
 
 function terraces(b) {
-  b.phase('Dachterrasse und Pooldeck', 'Auf die Dachterrasse kommen ein Whirlpool (2 × 2 Wasser in einem Rand aus glattem Quarz), eine Lounge aus Treppen und Pflanzen. Unten am Pool stellst du Liegen und einen Sonnenschirm aufs Holzdeck.', {
-    tips: ['Wasser auf dem Dach läuft nicht aus, wenn der Rand ringsum geschlossen ist – setz den Rand zuerst, dann das Wasser.'],
-  });
-  b.step('Whirlpool und Lounge');
+  b.phase('Dachterrasse und Pooldeck');
+  b.step();
   b.walls(4, 6, 9, 7, 6, 12, PLATE);
   b.fill(5, 6, 10, 6, 6, 11, 'water');
   for (let z = 14; z <= 17; z++) b.set(3 + 1, 6, z, st('deepslate_tile_stairs', 'west'));
@@ -223,10 +203,10 @@ function terraces(b) {
   for (const [x, z] of [[4, 18], [9, 19], [13, 18], [17, 18]]) b.set(x, 6, z, 'potted_flowering_azalea_bush');
   b.set(8, 6, 9, 'potted_bamboo');
 
-  b.step('Wasser in den Pool', 'Füll den Pool mit Wassereimern, zuerst die untere Ebene. Alles sind Quellblöcke – nichts fließt.');
+  b.step();
   b.fill(POOL.x1, -1, POOL.z1, POOL.x2, 0, POOL.z2, 'water');
 
-  b.step('Liegen und Sonnenschirm', 'Die Liegen sind Quarztreppen als Rückenlehne mit einem weißen Teppich davor. Der Sonnenschirm ist ein Fichtenzaun mit einem Block weißer Wolle obendrauf, ringsum kommen obere Quarzstufen als dünnes Schirmdach dran.');
+  b.step();
   for (const x of [6, 8, 12, 14]) { b.set(x, 1, 29, st('smooth_quartz_stairs', 'south')); b.set(x, 1, 28, 'white_carpet'); }
   b.fill(10, 1, 28, 10, 3, 28, spruce.fence);
   b.set(10, 4, 28, 'white_wool');
@@ -240,8 +220,8 @@ function terraces(b) {
 }
 
 function lights(b) {
-  b.phase('Licht', 'Als Deckenleuchten setzt du Endstäbe von unten an die Decke (sie zeigen nach unten): schlicht, modern und hell genug gegen Monster. Unter dem Carport hängen ebenfalls Endstäbe.');
-  b.step('Deckenleuchten');
+  b.phase('Licht');
+  b.step();
   for (const [x, z] of [[7, 10], [7, 16], [12, 14], [15, 10], [17, 16], [16, 14]]) b.set(x, 4, z, endRod);
   for (const [x, z] of [[17, 9], [17, 14], [13, 8], [13, 13], [23, 9], [23, 13]]) b.set(x, 9, z, endRod);
   for (const [x, z] of [[23, 10], [23, 14], [24, 7]]) b.set(x, 4, z, endRod);
@@ -258,21 +238,19 @@ function plantRows(b, x1, x2, z1, z2, pick) {
 }
 
 function garden(b) {
-  b.phase('Garten', 'Zum Schluss der Garten: Hecken aus Schwarzeichenlaub an den Grundstücksgrenzen, Birken im Garten hinter dem Haus, Beete an der Westseite und Büsche entlang der Einfahrt.', {
-    tips: ['Für eine Hecke setzt du Laub zwei Blöcke hoch. Selbst gesetztes Laub verrottet nicht.'],
-  });
-  b.step('Hecken');
+  b.phase('Garten');
+  b.step();
   for (let z = PLOT.z1; z <= PLOT.z2; z++) for (const y of [1, 2]) { b.set(PLOT.x1, y, z, formatState('dark_oak_leaves', { persistent: 'true' })); b.set(PLOT.x2, y, z, formatState('dark_oak_leaves', { persistent: 'true' })); }
   for (let x = PLOT.x1 + 1; x < PLOT.x2; x++) for (const y of [1, 2]) b.set(x, y, PLOT.z1, formatState('dark_oak_leaves', { persistent: 'true' }));
-  b.step('Bäume und Büsche');
+  b.step();
   tree(b, { x: 5, y: 1, z: 3, species: 'birke', size: 'mittel', seed: 3 });
   tree(b, { x: 17, y: 1, z: 3, species: 'birke', size: 'gross', seed: 8 });
   tree(b, { x: 30, y: 1, z: 25, species: 'birke', size: 'mittel', seed: 5 });
   for (const [x, z] of [[29, 9], [29, 15], [29, 31]]) bush(b, { x, y: 1, z, size: 'klein', leaves: 'azalee', seed: x + z });
-  b.step('Beete', 'Pflanz die Blumen direkt in den Rasen: an der Westseite Orchideen, Kornblumen und Zierlauch, vorne am Deck weiße Tulpen, Margeriten und Maiglöckchen.');
+  b.step();
   plantRows(b, 1, 2, 9, 17, (x, z) => (x === 1 ? 'blue_orchid' : (z % 2 ? 'cornflower' : 'allium')));
   plantRows(b, 2, 19, 31, 32, (x, z) => (z === 31 ? 'white_tulip' : (x % 3 === 0 ? 'lily_of_the_valley' : 'oxeye_daisy')));
-  b.step('Rasen', 'Streu etwas Gras und ein paar Blumen über den Rasen.');
+  b.step();
   vegetation(b, { x: PLOT.x1 + 1, y: 0, z: PLOT.z1 + 1, width: PLOT.x2 - PLOT.x1 - 1, depth: PLOT.z2 - PLOT.z1, mix: 'wiese', density: 0.2, seed: 6 });
 }
 

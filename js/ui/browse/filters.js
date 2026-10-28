@@ -1,6 +1,6 @@
-// Filter der Kategorie-Seite: Größe, Schwierigkeit, Herkunft, Test im Spiel.
+// Filter der Kategorie-Seite: Größe, Herkunft, Test im Spiel.
 // Innerhalb einer Gruppe gilt „oder“, zwischen den Gruppen „und“. Rein und in Node testbar.
-import { ACCURACY_KEYS, ACCURACY_LABELS, DIFFICULTY_LABELS } from '../shared.js';
+import { ACCURACY_KEYS, ACCURACY_LABELS } from '../shared.js';
 import { SIZE_CLASSES, TEST_STATES, sizeClassOf, sizeClassRange, testStateOf } from './model.js';
 
 const freezeGroup = (group) => Object.freeze({ ...group, options: Object.freeze(group.options.map((option) => Object.freeze(option))) });
@@ -12,12 +12,6 @@ export const FILTER_GROUPS = Object.freeze([
     title: 'Größe',
     options: SIZE_CLASSES.map((sizeClass) => ({ value: sizeClass.key, label: sizeClass.label, hint: sizeClassRange(sizeClass.key) })),
     valueOf: (build) => sizeClassOf(build),
-  }),
-  freezeGroup({
-    key: 'schwierigkeit',
-    title: 'Schwierigkeit',
-    options: DIFFICULTY_LABELS.map((label, index) => ({ value: String(index + 1), label })),
-    valueOf: (build) => (Number.isInteger(build.difficulty) && build.difficulty >= 1 && build.difficulty <= 5 ? String(build.difficulty) : null),
   }),
   freezeGroup({
     key: 'herkunft',
@@ -52,7 +46,7 @@ export function emptyFilters() {
   return Object.fromEntries(FILTER_KEYS.map((key) => [key, []]));
 }
 
-/** Werte eines Eintrags je Gruppe, z. B. { groesse: 'klein', schwierigkeit: '2', herkunft: 'original', test: 'ohne' } */
+/** Werte eines Eintrags je Gruppe, z. B. { groesse: 'klein', herkunft: 'original', test: 'ohne' } */
 export function filterValuesOf(build) {
   return Object.fromEntries(FILTER_GROUPS.map((group) => [group.key, group.valueOf(build)]));
 }

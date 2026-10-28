@@ -1,5 +1,5 @@
 // Kategorie-Seite (kategorie.html?k=<slug>; ohne k: Übersicht aller Kategorien)
-// Zustand in der Adresse: &q=<text>&groesse=…&schwierigkeit=…&herkunft=…&test=…&sort=… (siehe browse/url-state.js)
+// Zustand in der Adresse: &q=<text>&groesse=…&herkunft=…&test=…&sort=… (siehe browse/url-state.js)
 // Container-IDs (stabil, für spätere Module):
 //   #category-head                Seitenkopf; data-category setzt die Akzentfarbe (Grasskante, Icon)
 //   #category-crumb-all           Brotkrümel „Kategorien“
@@ -10,7 +10,7 @@
 //   #category-query-form, #category-query   Textfilter innerhalb der Kategorie
 //   #category-sort                Sortierung
 //   #category-filter-toggle       Filter ein-/ausklappen (schmale Bildschirme)
-//   #category-filters             Filterbereich; darin #category-filters-groups (Größe, Schwierigkeit, Herkunft, Test im Spiel)
+//   #category-filters             Filterbereich; darin #category-filters-groups (Größe, Herkunft, Test im Spiel)
 //   #category-filters-done        „N Bauten anzeigen“ – klappt die Filter auf dem Handy wieder zu
 //   #category-result-count        Anzahl der Treffer (Live-Region)
 //   #category-active              aktive Filter als entfernbare Chips

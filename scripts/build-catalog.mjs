@@ -278,9 +278,7 @@ export async function catalogModule({ file, folder, fileId }, { dataDir = DEFAUL
     tags: [...meta.tags],
     aliases: [...meta.aliases],
     accuracy: meta.accuracy,
-    difficulty: meta.difficulty,
     description: meta.description,
-    facts: [...meta.facts],
     sources: meta.sources.map((s) => ({ title: s.title, url: s.url })),
     credits: meta.credits ? { author: meta.credits.author, url: meta.credits.url, license: meta.credits.license } : null,
     tested: typeof meta.tested === 'boolean' ? meta.tested : null,
@@ -324,9 +322,10 @@ export function validateStructureDefinition(def) {
   if (typeof def.structure !== 'string' || !STRUCTURE_PATH_PATTERN.test(def.structure)) errors.push('structure muss ein Spielpfad wie „village/plains/houses/plains_library_1“ sein.');
   for (const key of ['title', 'subtitle', 'description']) if (!isNonEmptyText(def[key])) errors.push(`${key} fehlt oder ist leer.`);
   if (!CATEGORIES.includes(def.category)) errors.push(`category muss eine von ${CATEGORIES.join(', ')} sein.`);
-  if (!Number.isInteger(def.difficulty) || def.difficulty < 1 || def.difficulty > 5) errors.push('difficulty muss eine ganze Zahl von 1 bis 5 sein.');
   for (const key of ['tags', 'aliases']) if (!isTextList(def[key]) || def[key].length === 0) errors.push(`${key} muss eine nicht leere Liste aus Texten sein.`);
-  if (def.facts !== undefined && !isTextList(def.facts)) errors.push('facts muss eine Liste aus Texten sein.');
+  // Schwierigkeit und Wissenswertes gibt es nicht mehr
+  if (Object.hasOwn(def, 'difficulty')) errors.push('difficulty gibt es nicht mehr.');
+  if (Object.hasOwn(def, 'facts')) errors.push('facts gibt es nicht mehr.');
   if (isTextList(def.aliases) && def.aliases.some((a) => a !== a.toLowerCase())) errors.push('aliases müssen klein geschrieben sein.');
   return errors;
 }
@@ -458,10 +457,7 @@ export async function catalogStructures(definitions, defaults, { dataDir = DEFAU
       tags: [...def.tags],
       aliases: [...def.aliases],
       accuracy: defaults.accuracy,
-      difficulty: def.difficulty,
       description: def.description,
-      // Spielinterner Name der Vorlage (z. B. für /place template in einer Kreativwelt)
-      facts: [...(def.facts ?? []), `Vorlage im Spiel: minecraft:${def.structure}`],
       sources: defaults.sources.map((s) => ({ title: s.title, url: s.url })),
       credits: { author: defaults.credits.author, url: defaults.credits.url, license: defaults.credits.license },
       tested: defaults.tested,

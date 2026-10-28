@@ -53,7 +53,12 @@ test('Sponge-Schematic v1, v2, v3 (gzip, zlib, ungepackt) ergeben genau die Test
     assert.deepEqual(result.size, [5, 4, 3], name);
     assert.equal(result.blockCount, 24, name);
     assert.deepEqual(result.phases.map((p) => p.title), ['Aufbau'], name);
-    assert.deepEqual(result.steps.map((s) => s.title), ['Ebene 1', 'Ebene 2', 'Ebene 4'], name);
+    // Schritte = belegte Ebenen, ohne Titel und Text; Kapitel nur mit Titel
+    assert.deepEqual(result.steps.map((s) => s.layerY), [0, 1, 3], name);
+    assert.ok(result.steps.every((s) => !('title' in s) && !('text' in s)), name);
+    assert.deepEqual(Object.keys(result.phases[0]).sort(), ['steps', 'title'], name);
+    assert.equal('notes' in result, false, name);
+    assert.deepEqual(Object.keys(imported.parts[0]).sort(), ['blocks', 'count', 'title'], `${name}: Kapitel des Imports ohne Text`);
     assert.equal(result.upload.format, 'schem');
     assert.equal(result.upload.name, name);
   }

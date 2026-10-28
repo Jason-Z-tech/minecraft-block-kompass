@@ -16,19 +16,7 @@ export const meta = {
     'tower brige', 'towerbrücke', 'themse brücke', 'thames bridge', 'klappbrücke london', 'bascule bridge london', 'tower bridge england',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Die Tower Bridge im Maßstab 1:1: 287 m von Widerlager zu Widerlager, zwei 65 m hohe neugotische Türme auf mächtigen Pfeilern, dazwischen die geschlossene Klappbrücke mit 61 m Spannweite und darüber die beiden verglasten Fußgängerstege rund 44 m über der Themse. Zu beiden Seiten hängen die 82 m langen Seitenfelder an blau-weißen Ketten, die an den kleinen Widerlagertürmen enden. Spannweiten, Turmhöhe, Steghöhe, Brückenbreiten und Pfeiler sind belegt; Gliederung der Türme, Fenster, Kettenkurve und Innenräume sind nach Fotos geschätzt.',
-  facts: [
-    'Eröffnet am 30. Juni 1894 nach acht Jahren Bauzeit; Architekt Horace Jones, nach seinem Tod 1887 Ingenieur John Wolfe Barry.',
-    'Gesamtlänge 940 ft (rund 287 m) mit Widerlagern; Mittelöffnung 200 ft (61 m), Seitenfelder je 270 ft (82 m).',
-    'Die Türme sind 65 m hoch, die oberen Stege liegen 143 ft (43,6 m) über der Themse bei Hochwasser.',
-    'Die Brücke ist 60 ft (18,3 m) breit, über der Klappe 49 ft (14,9 m). Das Baugesetz von 1885 verlangte unter der geschlossenen Klappe 29 ft (8,8 m) Durchfahrtshöhe, im Modell sind es 8,1 m.',
-    'Jede Klappe wiegt rund 1 070 t und hebt sich in etwa fünf Minuten; die Angaben zum Winkel schwanken zwischen 82° und 86°.',
-    'Die Türme haben ein Stahlskelett, verkleidet mit Granit aus Cornwall und Portland-Kalkstein. Seit 2014 haben die Stege Glasböden.',
-    'Blau-weiß gestrichen seit der Sanierung 2008–2012; zum Silberjubiläum 1977 war sie rot-weiß-blau.',
-    'Im Modell läuft die Brücke genau Nord–Süd; in London ist sie um 23° gedreht. Der Wasserspiegel steht für Hochwasser.',
-    'Geschätzt (nicht belegt): Grundriss der Türme (29 × 19 m), Ecktürmchen, Fenster, Dachform, Kettenkurve, Länge der Glasböden, Innenräume.',
-  ],
   sources: [
     { title: 'Wikipedia (en): Tower Bridge', url: 'https://en.wikipedia.org/wiki/Tower_Bridge' },
     { title: 'Wikipedia (de): Tower Bridge', url: 'https://de.wikipedia.org/wiki/Tower_Bridge' },
@@ -204,12 +192,7 @@ function towerGeometry(spec) {
 
 function buildRiverbed(b, spec) {
   const y = spec.y;
-  b.phase('Flussbett und Ufermauern',
-    `Leg zuerst das Flussbett der Themse an: ${spec.waterHalfX * 2 + 1} Blöcke breit und ${spec.waterEndZ * 2 + 1} Blöcke lang zwischen den beiden Ufermauern. Das Wasser kommt erst ganz am Schluss hinein. An beiden Enden steht eine Ufermauer aus Steinziegeln bis auf ${y.ground - y.water} Blöcke über dem Wasser, dahinter das flache Ufer.`,
-    { tips: [
-      'Markier dir die Brückenachse mit einer Linie aus Wolle – alles andere misst du von dort aus.',
-      'Die Brücke ist symmetrisch: Bau immer zuerst eine Hälfte und übertrag die Maße auf die andere.',
-    ] });
+  b.phase('Flussbett und Ufermauern');
   bothHalves(b, () => {
     for (let z = 0; z <= spec.waterEndZ; z++) {
       for (let x = -spec.rimX; x <= spec.rimX; x++) {
@@ -222,7 +205,6 @@ function buildRiverbed(b, spec) {
       for (let yy = y.bed; yy <= y.ground; yy++) b.set(x, yy, wallZ, granite(x, yy, wallZ));
     }
   });
-  b.note(0, y.water, 0, 'Brückenmitte: Hier treffen sich die beiden Klappen.');
 }
 
 function pierCell(spec, x, z) {
@@ -236,9 +218,7 @@ function pierCell(spec, x, z) {
 
 function buildPiers(b, spec) {
   const p = spec.pier;
-  b.phase('Pfeiler',
-    `Die beiden Flusspfeiler tragen die Haupttürme: je ${p.z1 - p.z0 + 1} Blöcke breit (in Brückenrichtung) und ${Math.round(2 * (p.rectX + p.endR))} Blöcke lang, mit runden Enden gegen die Strömung. Mauere sie aus Steinziegeln vom Flussbett bis ${p.top - spec.y.water + 1} Blöcke über das Wasser, oben schließt eine Lage poliertem Andesit ab.`,
-    { tips: ['Die runden Enden: Setz erst den Halbkreis mit einem Zirkel aus Wolle (Radius ' + String(p.endR).replace('.', ',') + ') und füll dann auf.'] });
+  b.phase('Pfeiler');
   bothHalves(b, () => {
     for (let z = p.z0; z <= p.z1; z++) {
       for (let x = -Math.ceil(p.rectX + p.endR); x <= Math.ceil(p.rectX + p.endR); x++) {
@@ -263,12 +243,7 @@ function towerWallState(spec, geo, x, y, z) {
 function buildTowerBase(b, spec, geo) {
   const t = spec.tower;
   const y = spec.y;
-  b.phase('Haupttürme: Sockel und Durchfahrt',
-    `Auf jedem Pfeiler steht ein Hauptturm, ${t.hx * 2 + 1} × ${t.z1 - t.z0 + 1} Blöcke groß, mit vier achteckigen Ecktürmchen, die einen Block vorstehen. Der Sockel bis Ebene ${t.granite - y.bed + 1} ist aus Granit (Steinziegel). Mitten hindurch führt die Fahrbahn in einem spitzen Torbogen, ${t.arch.hx * 2 + 1} Blöcke breit und ${t.arch.top - y.walk + 1 + t.arch.point.length} Blöcke hoch.`,
-    { tips: [
-      'Setz zuerst die Mittelpunkte der vier Ecktürmchen und mauere die Achtecke, dann die Wände dazwischen.',
-      'Die Bogenspitze bekommt einen Rahmen aus Kalzit – so sieht der Torbogen auch aus der Ferne sauber aus.',
-    ] });
+  b.phase('Haupttürme: Sockel und Durchfahrt');
   bothHalves(b, () => {
     for (let yy = t.base; yy <= t.granite; yy++) {
       const half = geo.archHalf(yy);
@@ -287,7 +262,6 @@ function buildTowerBase(b, spec, geo) {
       }
     }
   });
-  b.note(0, y.walk, t.z0, 'Torbogen der Durchfahrt im Südturm.');
 }
 
 function windowCell(spec, geo, x, y, z) {
@@ -312,12 +286,7 @@ function walkwayDoor(spec, x, y, z) {
 
 function buildTowerUpper(b, spec, geo) {
   const t = spec.tower;
-  b.phase('Haupttürme: Mauern, Fenster und Böden',
-    `Über dem Sockel geht es in hellem Portland-Kalkstein weiter (polierter Diorit mit etwas Diorit) bis Ebene ${t.top - spec.y.bed + 1}. Die Mauer ist ${t.wall > 1 ? `${t.wall} Blöcke dick; die schmalen Fenster (graue Glasscheiben) sitzen innen, außen bleibt eine Nische` : '1 Block dick, die schmalen Fenster sind graue Glasscheiben'}. Unter jedes Fenster kommt außen eine obere Stufe aus poliertem Diorit als Fensterbank${t.windowHeight >= 4 ? ', darüber eine Treppe mit der hohen Seite zur Wand als Tropfgesims' : ''}. Auf jeder Geschosshöhe läuft ein Gesims aus Kalzit um den Turm, und innen legst du dort den Boden aus Schwarzeichenbrettern. Die Ecktürmchen steigen ${t.turret.top - t.top} Blöcke über die Mauerkrone hinaus.`,
-    { tips: [
-      `Geschosse auf den Ebenen ${t.floors.map((f) => f - spec.y.bed + 1).join(', ')} – auf der obersten Ebene setzen später die Fußgängerstege an.`,
-      'Lass auf der Innenseite zur Klappbrücke die Öffnungen für die beiden Stege frei.',
-    ] });
+  b.phase('Haupttürme: Mauern, Fenster und Böden');
   bothHalves(b, () => {
     for (let yy = t.granite + 1; yy <= t.turret.top; yy++) {
       for (let z = t.z0 - 1; z <= t.z1 + 1; z++) {
@@ -383,9 +352,7 @@ function abutCell(spec, x, z) {
 function buildAbutments(b, spec) {
   const a = spec.abut;
   const y = spec.y;
-  b.phase('Widerlagertürme',
-    `An beiden Ufern steht ein kleinerer Turm, das Widerlager: ${a.hx * 2 + 1} × ${a.z1 - a.z0 + 1} Blöcke, ${a.top - y.water + 1} Blöcke über dem Wasser, mit vier Ecktürmchen. Er ist massiv gemauert, unten Granit, oben Portland-Kalkstein, und hat einen spitzen Torbogen für die Fahrbahn. In ihm enden später die Ketten der Seitenfelder.`,
-    { tips: ['Die Fenster auf der Flussseite sind Blendfenster: graue Glasscheiben direkt vor dem Mauerwerk.'] });
+  b.phase('Widerlagertürme');
   const archHalf = (yy) => {
     if (yy < y.walk) return -1;
     if (yy <= a.arch.top) return a.arch.hx;
@@ -422,9 +389,7 @@ function buildAbutments(b, spec) {
 function buildBascule(b, spec) {
   const k = spec.bascule;
   const y = spec.y;
-  b.phase('Klappbrücke (geschlossen)',
-    `Zwischen den Pfeilern liegen die beiden Klappen, zusammen ${k.z1 * 2 + 1} Blöcke lang (davon ${(spec.pier.z0 - 1) * 2 + 1} Blöcke lichte Weite über dem Wasser, die äußersten Reihen liegen auf den Pfeilern) und ${k.parapetX * 2 + 1} Blöcke breit, ${y.deck - y.water} Blöcke über dem Wasser. Leg zuerst die stählernen Längsträger (hellblauer Beton) – sie werden zu den Pfeilern hin tiefer, weil dort das Gegengewicht sitzt. Darauf kommt die Fahrbahn aus grauem Beton, links und rechts der Gehweg aus glattem Stein. In der Mitte, wo sich die Klappen treffen, markiert eine hellgraue Fuge die Trennung.`,
-    { tips: ['Bau die Träger von beiden Pfeilern aus zur Mitte – so hängt nichts frei in der Luft.'] });
+  b.phase('Klappbrücke (geschlossen)');
   bothHalves(b, () => {
     for (let z = 0; z <= k.z1; z++) {
       // Träger werden zu den Pfeilern hin tiefer; an der Spitze trägt nur die Fahrbahnplatte (Durchfahrtshöhe).
@@ -455,16 +420,13 @@ function buildBascule(b, spec) {
       }
     }
   });
-  b.note(0, y.deck, 0, 'Fuge zwischen den beiden Klappen – hier öffnet sich die Brücke.');
 }
 
 function buildSideSpans(b, spec) {
   const s = spec.side;
   const y = spec.y;
   const ap = spec.approach;
-  b.phase('Seitenfelder und Zufahrten',
-    `Die beiden Seitenfelder spannen ${s.z1 - s.z0} Blöcke vom Pfeiler bis zum Widerlager. Sie sind breiter als die Klappen: ${s.parapetX * 2 + 1} Blöcke von Brüstung zu Brüstung. Leg alle ${s.girderEvery} Blöcke einen Querträger aus hellblauem Beton, an den Außenkanten je einen Randträger (blau, oben weiß), dann Fahrbahn und Gehwege. Hinter den Widerlagern führt die Straße auf einem gemauerten Damm noch ein Stück weiter.`,
-    { tips: ['Arbeite von beiden Enden zur Mitte des Feldes – die Hänger an den Ketten kommen erst später, bis dahin trägt die Fahrbahn sich im Spiel selbst.'] });
+  b.phase('Seitenfelder und Zufahrten');
   bothHalves(b, () => {
     for (let z = s.z0; z <= ap.z1; z++) {
       const inAbut = z >= spec.abut.z0 && z <= spec.abut.z1;
@@ -494,12 +456,7 @@ function buildSideSpans(b, spec) {
 
 function buildWalkways(b, spec) {
   const w = spec.walkway;
-  b.phase('Obere Fußgängerstege',
-    `In ${w.floor - spec.y.water + 1} Blöcken Höhe verbinden zwei verglaste Stege die Türme. Jeder ist ${w.x1 - w.x0 + 1} Blöcke breit und ${w.z1 * 2 + 1} Blöcke lang. Bau zuerst Boden und Untergurt aus den Turmöffnungen heraus zur Mitte, dann die Seitenwände als Gitterträger: hellblaue Diagonalen im Rautenmuster, dazwischen Glasscheiben. Oben schließt ein weißes Dach ab, in das Seelaternen eingelassen sind. In der Mitte hat jeder Steg einen Glasboden.`,
-    { tips: [
-      'Für das Rautenmuster: Zähl in jeder Reihe vier Blöcke weiter – die Diagonalen kreuzen sich dann von selbst.',
-      'Für den Glasboden nimmst du echtes Glas statt Scheiben, damit man darauf stehen kann.',
-    ] });
+  b.phase('Obere Fußgängerstege');
   bothHalves(b, () => {
     for (const sx of [-1, 1]) {
       for (let z = 0; z <= w.z1; z++) {
@@ -522,7 +479,6 @@ function buildWalkways(b, spec) {
       }
     }
   });
-  b.note(Math.round((w.x0 + w.x1) / 2), w.floor, 0, `Glasboden im Steg – ${w.floor + 1 - spec.y.water} Blöcke über der Themse.`);
 }
 
 function chainCurve(spec) {
@@ -537,12 +493,7 @@ function chainCurve(spec) {
 function buildChains(b, spec) {
   const c = spec.chain;
   const curve = chainCurve(spec);
-  b.phase('Ketten und Hänger',
-    `Über jedem Seitenfeld hängen zwei Ketten, eine an jeder Seite. Sie beginnen am Hauptturm auf Höhe der Stege, hängen in einem Bogen bis knapp über die Fahrbahn durch und steigen zum Widerlagerturm wieder an. Jede Kette ist drei Blöcke hoch: oben und unten hellblauer Beton, in der Mitte ein weißes Band. Alle ${c.hangerEvery} Blöcke hängt die Fahrbahn an einem Hänger aus Eisengittern.`,
-    { tips: [
-      'Steck die Kurve zuerst mit einzelnen Blöcken alle 5 Felder ab und verbinde sie dann.',
-      'Die Kette ist am Turm steil – dort springt sie pro Block auch mal um zwei Ebenen.',
-    ] });
+  b.phase('Ketten und Hänger');
   bothHalves(b, () => {
     for (const sx of [-1, 1]) {
       const x = sx * c.x;
@@ -568,12 +519,7 @@ function buildChains(b, spec) {
 function buildRoofs(b, spec, geo) {
   const t = spec.tower;
   const a = spec.abut;
-  b.phase('Dächer und Turmspitzen',
-    'Die Türme tragen steile Dächer aus Tiefenschiefer-Fliesen. Auf den Hauptturm kommt ein Walmdach hinter der Brüstung, darüber eine Spitze mit goldenem Knauf. Die Ecktürmchen bekommen spitze, achteckige Helme mit einem Blitzableiter als Spitze. Die Widerlagertürme erhalten dieselben Dächer in klein.',
-    { tips: [
-      'Setz bei den spitzen Helmen zuerst die Mittelachse bis zur Spitze und bau die Treppen ringweise darum.',
-      'Das Walmdach ist innen hohl: Jede Treppenreihe sitzt schräg über der darunter. Stell dich auf einen Hilfsblock, setz die erste Treppe einer Reihe dagegen und reih die anderen daran an.',
-    ] });
+  b.phase('Dächer und Turmspitzen');
   bothHalves(b, () => {
     // Walmdach des Hauptturms (innerhalb der Brüstung)
     const heights = new Map();
@@ -626,11 +572,8 @@ function helmet(b, cx, cz, a, base, apex) {
 function buildInterior(b, spec, geo) {
   const t = spec.tower;
   const y = spec.y;
-  b.phase('Treppe, Ausstellung und Licht',
-    'Die Türme sind innen hohl: Hier liegen heute Treppen, Aufzüge und die Ausstellung zur Brücke. Bau die Treppe hinauf zu den Stegen und richte die Geschosse mit Vitrinen, Bänken und Lesepulten ein. Jedes Geschoss und die Durchfahrt bekommen Laternen, damit nirgends Monster erscheinen.');
-  b.step('Treppe zu den Stegen', t.stair.kind === 'spiral'
-    ? 'In einem Ecktürmchen auf der Außenseite windet sich eine Wendeltreppe aus Schwarzeichentreppen um eine Mittelsäule aus Kalzit nach oben; alle fünf Ebenen sitzt eine Seelaterne in der Säule. Den Eingang erreichst du vom Gehweg in der Durchfahrt; auf jedem Geschoss führt ein kurzer Gang in den Turm.'
-    : 'In der Ostwand führt eine Leiter vom Gehweg in der Durchfahrt durch alle Geschosse bis zu den Stegen.');
+  b.phase('Treppe, Ausstellung und Licht');
+  b.step();
   bothHalves(b, () => {
     const st = t.stair;
     if (st.kind === 'spiral') {
@@ -652,9 +595,7 @@ function buildInterior(b, spec, geo) {
       for (const [dx, dz] of st.door) for (let yy = y.walk; yy <= y.walk + 1; yy++) b.remove(dx, yy, dz);
     }
   });
-  b.step('Ausstellung in den Geschossen', t.hx >= 10
-    ? 'Stell in die unteren Geschosse Vitrinen (Glas auf poliertem Andesit), eine Bankreihe aus Schwarzeichentreppen vor dem Lesepult, Fensterbänke unter den Seitenfenstern und einen roten Teppich als Läufer durch die Mitte. Im obersten Geschoss, wo die Stege ansetzen, stehen nur Bänke an den Wänden und ein Lesepult. Unter jede Decke kommen Laternen im Raster. Das oberste Geschoss ist zum Dachstuhl hin offen – dort hängen die Laternen an Eisenketten, die bis unter das Dach reichen.'
-    : 'Stell in jedes Geschoss ein Lesepult und eine Laterne auf den Boden; im obersten Geschoss hängen die Laternen zusätzlich an Eisenketten unter dem Dach.');
+  b.step();
   bothHalves(b, () => {
     const floors = t.floors;
     floors.forEach((f, i) => {
@@ -662,7 +603,7 @@ function buildInterior(b, spec, geo) {
       exhibitFloor(b, spec, geo, f, ceiling, i);
     });
   });
-  b.step('Licht in den Durchfahrten', 'Häng in den Durchfahrten der Haupttürme und der Widerlagertürme unter den Bogenscheitel Laternen an einem Kettenglied – alle 4 Blöcke eine Reihe, die erste und letzte direkt an den Bogenöffnungen. So ist es dort auch nachts hell.');
+  b.step();
   bothHalves(b, () => {
     const archTop = t.arch.top + t.arch.point.length;
     const hx = t.arch.point.length ? t.arch.point[t.arch.point.length - 1][1] : t.arch.hx;
@@ -735,9 +676,7 @@ function buildRailings(b, spec) {
   const y = spec.y;
   const k = spec.bascule;
   const s = spec.side;
-  b.phase('Geländer und Laternen',
-    `Jetzt kommen die Geländer: auf der Klappbrücke und den Seitenfeldern Eisengitter mit einem hellblauen Pfosten alle 8 Blöcke, auf den Zufahrten eine Steinmauer. Alle ${spec.lampEvery} Blöcke steht eine Laterne auf einem dunklen Pfosten – so ist die ganze Brücke beleuchtet.`,
-    { tips: ['Setz zuerst alle Pfosten, dann füll mit Eisengittern auf – die Gitter verbinden sich automatisch.'] });
+  b.phase('Geländer und Laternen');
   bothHalves(b, () => {
     const rail = (x, z, lampOk) => {
       const lamp = lampOk && mod(z, spec.lampEvery) === spec.lampEvery / 2;
@@ -758,9 +697,7 @@ function buildRailings(b, spec) {
 function buildBanks(b, spec) {
   const y = spec.y;
   const L = spec.land.x;
-  b.phase('Ufer: Wege, Rasen und Bäume',
-    'Hinter den Ufermauern liegt das Ufer: am Nordufer Rasen wie vor dem Tower of London, am Südufer ein gepflasterter Platz. Ein paar Platanen (hier Eichen), Laternen und Bänke runden es ab.',
-    { tips: ['Das Gelände ist hier nur eine Ebene dick – im Spiel baust du es einfach auf deinen Boden.'] });
+  b.phase('Ufer: Wege, Rasen und Bäume');
   const ground = (north) => {
     for (let z = spec.abut.z0 + 1; z <= spec.approach.z1; z++) {
       for (let x = -L; x <= L; x++) {
@@ -805,9 +742,7 @@ function tree(b, x, y, z, big) {
 
 function buildWater(b, spec) {
   const y = spec.y;
-  b.phase('Wasser einfüllen',
-    'Zum Schluss füllst du die Themse mit Wasserquellen. Am schnellsten geht es mit einer unendlichen Wasserquelle und mehreren Eimern; der Rand aus Schlamm hält das Wasser im Streifen.',
-    { tips: ['Fang an einer Ufermauer an und arbeite dich Reihe für Reihe zur anderen vor.'] });
+  b.phase('Wasser einfüllen');
   bothHalves(b, () => {
     for (let z = 0; z <= spec.waterEndZ; z++) {
       for (let x = -spec.waterHalfX; x <= spec.waterHalfX; x++) {

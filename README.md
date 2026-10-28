@@ -41,19 +41,19 @@ Vorschaubilder (`node scripts/build-catalog.mjs --thumbs`) gibt es nur lokal: Di
 
 ## Seiten
 - `index.html`: Start mit Suche, Kategorien und Empfehlungen
-- `kategorie.html?k=<kategorie>`: Liste mit Filtern (Größe, Schwierigkeit, Herkunft, im Spiel getestet) und Sortierung
-- `bau.html?id=<bau>[&scale=<maßstab>]`: 3D-Ansicht, Schritt-Player, Anleitung, Material, Ebenen-Plan, Infos und Quellen; der Fortschritt bleibt im Browser gespeichert
+- `kategorie.html?k=<kategorie>`: Liste mit Filtern (Größe, Herkunft, im Spiel getestet) und Sortierung
+- `bau.html?id=<bau>[&scale=<maßstab>]`: 3D-Ansicht, Schritt-Player, Anleitung (Kapitel mit Titel, Schritte mit Blockzahl und Ebene, ohne Anleitungstexte), Material, Ebenen-Plan, Infos und Quellen; der Fortschritt bleibt im Browser gespeichert
 - `erstellen.html`: Freitext („Tokyo Skytree 1:1“, „hohle Kugel Radius 12 aus Glas“), Formen-Generator und Datei-Import
 
 ## Ordner
 - `index.html`, `kategorie.html`, `bau.html`, `erstellen.html`: die vier Seiten
 - `css/`: Design-System (`style.css`) und Seiten-Stile
 - `assets/`: Logo, Icons, Muster (aus `assets/pixel-art/` erzeugt) und lokale Schriften (SIL OFL, Quellen in `assets/fonts/QUELLEN.md`)
-- `js/core/`: Kern für Browser und Node: Block-Volumen, Builder-API, Auto-Verbindungen, Schritte, Materialien, Texte
+- `js/core/`: Kern für Browser und Node: Block-Volumen, Builder-API, Auto-Verbindungen, Schritte, Materialien, Blocknamen
 - `js/render/`: eigene 3D-Ansicht (WebGL2) mit Worker, Texturen aus dem Spiel, Lauf-Modus
 - `js/ui/`: Seitenlogik (`browse/` Start und Kategorien, `build/` Bau-Seite, `create/` „Selber erstellen“)
 - `js/create/`: Freitext-Suche, Formen-Generatoren, Datei-Import (`import/`) und Modell-Umwandlung (`voxelize/`)
-- `js/builds/<kategorie>/`: die Bau-Module; `js/builds/lib/`: Hilfsbibliothek (Fenster, Türen, Dächer, Möbel, Licht, Bäume, Gelände); `js/builds/game-structures.js`: Auswahl der Original-Strukturen aus dem Spiel
+- `js/builds/<kategorie>/`: die Bau-Module in 7 Kategorien (Häuser, Wahrzeichen, Fantasy, Mittelalter, Kleine Projekte, Farmen, Infrastruktur); `js/builds/lib/`: Hilfsbibliothek (Fenster, Türen, Dächer, Möbel, Licht, Bäume, Gelände); `js/builds/game-structures.js`: Auswahl der Original-Strukturen aus dem Spiel
 - `scripts/`: Start, Server, Spieldaten-Extraktion, Katalog, Vorschaubilder, Prüf- und Screenshot-Werkzeuge
 - `tests/`: Unit-Tests (`unit/`), Klick-Test (`e2e.mjs`), Testseiten und Sichtprüfungen (`visual/`), Testdaten (`fixtures/`), Chrome-Steuerung (`browser.mjs`)
 - `docs/ARCHITEKTUR.md`: verbindliche Spezifikation mit allen Schnittstellen; `docs/recherche/`: Maße und Quellen der echten Bauwerke
@@ -69,7 +69,7 @@ node scripts/check-build.mjs <modulpfad> [--scale <zahl>] [--json]   # einen Bau
 node scripts/shot.mjs --module <modulpfad>                           # Screenshots der 3D-Ansicht
 ```
 - `node tests/e2e-remote.mjs [--live]`: Klick-Test wie auf GitHub Pages (eigener statischer Server auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`). Ohne `--live` aus dem Spiegel `tmp/mcmeta-mirror/` (erzeugen mit `node scripts/mirror-mcmeta.mjs`), mit `--live` gegen das echte raw.githubusercontent.com.
-- Der Klick-Test geht Start → Kategorie (Filter, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Dorfhaus, ein Redstone-Bau) → „Selber erstellen“ (Freitext, Upload je Dateiformat) → Handy-Ansicht durch, misst Ladezeiten und Bildrate und legt Screenshots nach `tmp/integration/e2e/`. Optionen: `--only start,bau,erstellen,handy`, `--gpu swiftshader`, `--out <ordner>`.
+- Der Klick-Test geht Start → Kategorie (Filter, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Dorfhaus, eine Farm) → „Selber erstellen“ (Freitext, Upload je Dateiformat) → Handy-Ansicht durch, misst Ladezeiten und Bildrate und legt Screenshots nach `tmp/integration/e2e/`. Optionen: `--only start,bau,erstellen,handy`, `--gpu swiftshader`, `--out <ordner>`.
 - Ausführlichere Sichtprüfungen einzelner Seiten: `node tests/visual/build-page-check.mjs`, `node tests/visual/create-page-check.mjs`.
 
 ## In der Cloud

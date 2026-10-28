@@ -32,7 +32,7 @@ function quietly(fn) {
 
 const VALID_BUILD = {
   id: 'tokyo-skytree', title: 'Tokyo Skytree', category: 'wahrzeichen', subtitle: 'Fernseh- und Aussichtsturm in Tokio',
-  tags: ['Japan', 'Turm'], aliases: ['skytree'], accuracy: 'massstab', difficulty: 5, size: [68, 634, 68], blocks: 123456,
+  tags: ['Japan', 'Turm'], aliases: ['skytree'], accuracy: 'massstab', size: [68, 634, 68], blocks: 123456,
   steps: 420, topMaterials: [['white_concrete', 5000]], module: 'js/builds/wahrzeichen/tokyo-skytree.js', structure: null,
   scales: [1, 0.5, 0.25], tested: null, thumb: 'thumbs/tokyo-skytree.webp',
 };
@@ -103,18 +103,24 @@ test('normalizeBuild übernimmt gültige Einträge vollständig', () => {
   assert.deepEqual(result.build, VALID_BUILD);
 });
 
+test('normalizeBuild: Schwierigkeit und Wissenswertes aus alten Katalogen fallen weg', () => {
+  const { build } = normalizeBuild({ ...VALID_BUILD, difficulty: 3, facts: ['Höchster Turm Japans'], description: 'Text' });
+  assert.equal(Object.hasOwn(build, 'difficulty'), false);
+  assert.equal(Object.hasOwn(build, 'facts'), false);
+  assert.equal(build.description, 'Text', 'die Beschreibung bleibt');
+});
+
 test('normalizeBuild: ohne ID, Titel oder Kategorie wird verworfen, andere Felder werden geleert', () => {
   assert.equal(normalizeBuild(null).ok, false);
   assert.equal(normalizeBuild({ ...VALID_BUILD, id: 'Tokyo Skytree' }).ok, false);
   assert.equal(normalizeBuild({ ...VALID_BUILD, title: '   ' }).ok, false);
   assert.equal(normalizeBuild({ ...VALID_BUILD, category: 'weltall' }).ok, false);
   const { build } = normalizeBuild({
-    ...VALID_BUILD, accuracy: 'geraten', difficulty: 9, size: [10, 0, 10], blocks: -5, steps: 1.5, tested: 'ja',
+    ...VALID_BUILD, accuracy: 'geraten', size: [10, 0, 10], blocks: -5, steps: 1.5, tested: 'ja',
     thumb: '../geheim.webp', module: 'https://evil.example/x.js', structure: '../../x.json', scales: [1, 'x', 0, 9],
     tags: ['ok', 42, '', 'x'.repeat(100)], topMaterials: [['stone', 3], ['Böse<>', 1], ['dirt', -1]],
   });
   assert.equal(build.accuracy, null);
-  assert.equal(build.difficulty, null);
   assert.equal(build.size, null);
   assert.equal(build.blocks, null);
   assert.equal(build.steps, null);
@@ -134,14 +140,15 @@ test('normalizeCatalog: überspringt ungültige und doppelte Einträge und melde
   await quietly((warnings) => {
     const catalog = normalizeCatalog({
       generatedAt: '2026-10-22T12:00:00Z', version: '26.2',
-      builds: [VALID_BUILD, { id: 'x' }, { ...VALID_BUILD }, { ...VALID_BUILD, id: 'zweiter-bau', category: 'redstone' }],
+      builds: [VALID_BUILD, { id: 'x' }, { ...VALID_BUILD }, { ...VALID_BUILD, id: 'zweiter-bau', category: 'farmen' },
+        { ...VALID_BUILD, id: 'kolben-tuer', category: 'redstone' }],
     });
-    assert.equal(catalog.builds.length, 2);
-    assert.equal(catalog.skipped, 2);
+    assert.deepEqual(catalog.builds.map((build) => build.id), ['tokyo-skytree', 'zweiter-bau']);
+    assert.equal(catalog.skipped, 3, 'die Kategorie Redstone gibt es nicht mehr');
     assert.equal(catalog.version, '26.2');
     assert.equal(catalog.generatedAt, '2026-10-22T12:00:00Z');
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /2 Einträge/);
+    assert.match(warnings[0], /3 Einträge/);
   });
   assert.throws(() => normalizeCatalog([]), { kind: 'format' });
   assert.throws(() => normalizeCatalog({ builds: {} }), { kind: 'format', title: 'Katalog unvollständig' });
@@ -192,20 +199,20 @@ test('Lokale Vorschaubilder: nur auf dem eigenen Rechner aus thumbs/index.json, 
 });
 
 test('loadCatalog ergänzt lokale Vorschaubilder nur auf dem eigenen Rechner', async () => {
-  const body = { version: '26.2', builds: [{ ...VALID_BUILD, thumb: null }, { ...VALID_BUILD, id: 'kolben-tuer', category: 'redstone', thumb: null }] };
-  const respond = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json({ version: 1, entries: { 'kolben-tuer': {} } }) : json(body));
+  const body = { version: '26.2', builds: [{ ...VALID_BUILD, thumb: null }, { ...VALID_BUILD, id: 'kaktusfarm', category: 'farmen', thumb: null }] };
+  const respond = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json({ version: 1, entries: { kaktusfarm: {} } }) : json(body));
   const local = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: '127.0.0.1' } });
-  assert.deepEqual(local.builds.map((build) => build.thumb), [null, 'thumbs/kolben-tuer.webp']);
+  assert.deepEqual(local.builds.map((build) => build.thumb), [null, 'thumbs/kaktusfarm.webp']);
   const online = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } });
   assert.deepEqual(online.builds.map((build) => build.thumb), [null, null]);
 });
 
 test('loadCatalog, findBuild und countByCategory', async () => {
-  const { fetch } = fakeFetch(() => json({ version: '26.2', builds: [VALID_BUILD, { ...VALID_BUILD, id: 'kolben-tuer', category: 'redstone' }] }));
+  const { fetch } = fakeFetch(() => json({ version: '26.2', builds: [VALID_BUILD, { ...VALID_BUILD, id: 'kaktusfarm', category: 'farmen' }] }));
   const catalog = await loadCatalog({ fetch, root: ROOT });
-  assert.equal(findBuild(catalog, 'kolben-tuer').category, 'redstone');
+  assert.equal(findBuild(catalog, 'kaktusfarm').category, 'farmen');
   assert.equal(findBuild(catalog, 'gibt-es-nicht'), null);
-  assert.deepEqual(countByCategory(catalog), { haeuser: 0, wahrzeichen: 1, fantasy: 0, mittelalter: 0, klein: 0, redstone: 1, farmen: 0, infrastruktur: 0 });
+  assert.deepEqual(countByCategory(catalog), { haeuser: 0, wahrzeichen: 1, fantasy: 0, mittelalter: 0, klein: 0, farmen: 1, infrastruktur: 0 });
 });
 
 // Spieldaten kommen über js/data/game-data.js; hier ein lokaler Zugang mit Fake-fetch (game-data/ auf 127.0.0.1)

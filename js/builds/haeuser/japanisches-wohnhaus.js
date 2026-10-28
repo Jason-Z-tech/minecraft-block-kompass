@@ -16,15 +16,7 @@ export const meta = {
     'asian house', 'japanisches hous', 'japanishes haus', 'japanisches hus', 'sakura haus', 'kirschblüten haus', 'zen haus', 'zen garten',
   ],
   accuracy: 'nachempfunden',
-  difficulty: 3,
   description: 'Ein traditionelles japanisches Wohnhaus aus dunklen Holzständern und hellen Wandfeldern, an der Süd- und Ostseite mit einer Engawa-Veranda und Schiebetüren aus Birkenfalltüren. Das Irimoya-Dach aus Tiefenschieferziegeln ist unten abgewalmt, oben ein kleiner Giebel, und an den vier Ecken leicht hochgezogen. Innen liegen Tatami aus geschältem Bambus, ein Wohnraum mit Feuerstelle und Bildnische, ein Schlafraum mit Futons und eine kleine Küche. Draußen warten Teich mit Steg, Kirschbaum, Steinlaternen, Kiesgarten und ein Bambushain.',
-  facts: [
-    'Haus 13 × 9 Blöcke, mit Engawa 15 × 11, Dach 17 × 13 Blöcke; der First liegt 11 Blöcke über dem Boden.',
-    'Irimoya heißt das typische Dach mit Walm unten und kleinem Giebeldreieck oben – hier mit drei Walm-Reihen und einem Giebel darüber.',
-    'Die Shoji-Optik entsteht aus offenen Birkenfalltüren, die flach in den Türöffnungen hängen; die Gitterfenster sind offene Bambusfalltüren.',
-    'Die Tatami sind Reihen aus geschältem Bambusblock, deren Richtung von Matte zu Matte wechselt.',
-    'Jedes begehbare Feld im Haus hat Blocklicht über 0: Laternen hängen an den Querbalken, die Feuerstelle leuchtet mit.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -104,23 +96,21 @@ function gableCells(gx) {
 // --------------------------------------------------------------- Bauplatz und Fundament
 
 function site(b) {
-  b.phase('Bauplatz', 'Such dir eine ebene Wiese von etwa 43 × 31 Blöcken. Das Haus steht im Westen, südöstlich davor kommt später der Teich hin, dahinter ein Bambushain.');
-  b.step('Wiese', 'Die ebene Grasfläche, auf der Haus und Garten liegen.');
+  b.phase('Bauplatz');
+  b.step();
   b.fill(GROUND.x0, -1, GROUND.z0, GROUND.x1, -1, GROUND.z1, 'grass_block');
 }
 
 function foundation(b) {
-  b.phase('Fundament', 'Japanische Häuser stehen auf einzelnen Steinen: die Holzständer berühren den Boden nicht direkt. Darauf liegen die Schwellen, die den Grundriss vorgeben.', {
-    tips: ['Setz zuerst die vier Ecksteine (13 × 9 Blöcke Außenmaß) und zähl dann die Zwischensteine ab – alle 4 Blöcke einer.'],
-  });
-  b.step('Fundamentsteine', 'Ersetze an jeder Ständer-Stelle den Grasblock durch polierten Andesit: am Haus alle 4 Blöcke (Ecken bei x 0/12, z 0/8), dazu einen in der Hausmitte für die Innenwand und die Steine unter den Verandapfosten am Süd- und Ostrand (2 Blöcke vor der Wand).');
+  b.phase('Fundament');
+  b.step();
   const stones = [];
   for (const x of BODY_POSTS_X) for (const z of [BODY.z0, BODY.z1]) stones.push([x, z]);
   for (const z of BODY_POSTS_Z) for (const x of [BODY.x0, BODY.x1]) stones.push([x, z]);
   stones.push([8, 4], ...ENGAWA_POSTS);
   for (const [x, z] of stones) b.set(x, -1, z, 'polished_andesite');
 
-  b.step('Ständerfüße und Schwellen', 'Auf jeden Hausstein kommt ein entrindeter Schwarzeichenstamm (stehend). Dazwischen legst du Schwellen aus liegenden Stämmen – klick immer auf die Seite des Nachbarstamms, dann liegen sie in Wandrichtung. Unter der Innenwand (x = 8 und z = 4) liegen ebenfalls Schwellen.');
+  b.step();
   for (const x of BODY_POSTS_X) for (const z of [BODY.z0, BODY.z1]) b.set(x, 0, z, log(POST, 'y'));
   for (const z of BODY_POSTS_Z) for (const x of [BODY.x0, BODY.x1]) b.set(x, 0, z, log(POST, 'y'));
   b.set(8, 0, 4, log(POST, 'y'));
@@ -140,21 +130,19 @@ function tatami(b, x1, z1, x2, z2, axis) {
 }
 
 function floors(b) {
-  b.phase('Böden', 'Jetzt füllst du den Grundriss: Tatami im Wohn- und Schlafraum, festgestampfter Lehm in der Küche und Holzdielen auf der Veranda.', {
-    tips: ['Geschälten Bambusblock legst du wie Stämme: klick auf die Seite eines Nachbarblocks, dann liegt er in diese Richtung. So entsteht das Mattenmuster.'],
-  });
-  b.step('Feuerstelle (Irori)', 'In die Mitte des Wohnraums (Westteil) kommt ein Lagerfeuer direkt in die Bodenebene, ringsum 8 glatte Steinstufen (untere Hälfte). So liegt die Glut etwas tiefer als die Matten.');
+  b.phase('Böden');
+  b.step();
   for (let x = 3; x <= 5; x++) for (let z = 3; z <= 5; z++) b.set(x, 0, z, 'smooth_stone_slab[type=bottom]');
   b.set(4, 0, 4, 'campfire[facing=south,lit=true]');
 
-  b.step('Tatami im Wohnraum', 'Vier Mattenfelder im Windrad um die Feuerstelle: Norden (5 × 2) und Süden (5 × 2) mit Bambus in Ost-West-Richtung, Westen und Osten (2 × 5) in Nord-Süd-Richtung. Vor der Nordwand links bleiben 3 Felder für die Bildnische: dort liegen Schwarzeichenbretter.');
+  b.step();
   tatami(b, 1, 1, 5, 2, 'x');
   tatami(b, 6, 1, 7, 5, 'z');
   tatami(b, 3, 6, 7, 7, 'x');
   tatami(b, 1, 3, 2, 7, 'z');
   for (let x = 1; x <= 3; x++) b.set(x, 0, 1, 'dark_oak_planks');
 
-  b.step('Schlafraum und Küche', 'Im Nordosten (3 × 3) Tatami in Nord-Süd-Richtung, die Mitte quer. In der Küche im Südosten (3 × 3) liegt fester Schlamm als Lehmboden.');
+  b.step();
   for (let z = 1; z <= 3; z++) {
     b.set(9, 0, z, log(TATAMI, 'z'));
     b.set(10, 0, z, log(TATAMI, 'x'));
@@ -162,7 +150,7 @@ function floors(b) {
   }
   for (let x = 9; x <= 11; x++) for (let z = 5; z <= 7; z++) b.set(x, 0, z, 'packed_mud');
 
-  b.step('Engawa-Boden', 'Die Veranda läuft 2 Blöcke breit an der Süd- und Ostseite entlang. Setz Fichtenholzstufen in die obere Blockhälfte (klick auf die obere Hälfte der Schwelle) – so liegt die Veranda auf Höhe des Fußbodens und darunter bleibt ein Schattenspalt. Die Felder mit Fundamentsteinen bleiben frei für die Pfosten.');
+  b.step();
   const isPost = (x, z) => ENGAWA_POSTS.some(([px, pz]) => px === x && pz === z);
   for (let x = BODY.x0; x <= ENGAWA.x1; x++) {
     for (let z = BODY.z0; z <= ENGAWA.z1; z++) {
@@ -175,21 +163,21 @@ function floors(b) {
 // --------------------------------------------------------------- Ständer, Balken, Wände
 
 function frame(b) {
-  b.phase('Ständer und Balken', 'Das Gerüst aus dunklen Schwarzeichenstämmen trägt Dach und Veranda. Die Wände füllst du erst danach.');
-  b.step('Hausständer', 'Verlängere jeden Ständerfuß um 4 Stämme nach oben (bis y = 4), auch den Innenständer in der Mitte der Innenwand.');
+  b.phase('Ständer und Balken');
+  b.step();
   for (const x of BODY_POSTS_X) for (const z of [BODY.z0, BODY.z1]) b.fill(x, 1, z, x, 4, z, log(POST, 'y'));
   for (const z of BODY_POSTS_Z) for (const x of [BODY.x0, BODY.x1]) b.fill(x, 1, z, x, 4, z, log(POST, 'y'));
   b.fill(8, 1, 4, 8, 4, 4, log(POST, 'y'));
 
-  b.step('Rähm', 'Oben auf die Ständer kommt ringsum ein Rahmen aus liegenden Stämmen (y = 5). Die vier Ecken sind entrindetes Schwarzeichenholz (Rinde auf allen Seiten), damit die Ecke sauber aussieht.');
+  b.step();
   for (let x = BODY.x0 + 1; x < BODY.x1; x++) for (const z of [BODY.z0, BODY.z1]) b.set(x, WALL_TOP, z, log(POST, 'x'));
   for (let z = BODY.z0 + 1; z < BODY.z1; z++) for (const x of [BODY.x0, BODY.x1]) b.set(x, WALL_TOP, z, log(POST, 'z'));
   for (const x of [BODY.x0, BODY.x1]) for (const z of [BODY.z0, BODY.z1]) b.set(x, WALL_TOP, z, `${POST_WOOD}[axis=y]`);
 
-  b.step('Querbalken', 'Vier Balken spannen von der Nord- zur Südwand (y = 5) bei x = 1, 4, 8 und 11. An den mittleren hängen später die Laternen, die äußeren tragen die Giebeldreiecke.');
+  b.step();
   for (const x of [1, 4, 8, 11]) for (let z = BODY.z0 + 1; z < BODY.z1; z++) b.set(x, WALL_TOP, z, log(POST, 'z'));
 
-  b.step('Verandapfosten und Pfette', 'Auf die Steine am Verandarand kommen Pfosten, 3 Stämme hoch (y = 0 … 2). Darüber verbindet eine liegende Pfette (y = 3) alle Pfosten und läuft an beiden Enden bis zur Hauswand zurück.');
+  b.step();
   for (const [x, z] of ENGAWA_POSTS) b.fill(x, 0, z, x, 2, z, log(POST, 'y'));
   for (let x = BODY.x0; x < ENGAWA.x1; x++) b.set(x, 3, ENGAWA.z1, log(POST, 'x'));
   for (let z = BODY.z0; z < ENGAWA.z1; z++) b.set(ENGAWA.x1, 3, z, log(POST, 'z'));
@@ -223,15 +211,10 @@ function forEachWallCell(fn) {
 }
 
 function walls(b) {
-  b.phase('Wände', 'Die Felder zwischen den Ständern: unten eine Reihe Fichtenbretter, darüber helle Wandfelder aus glattem Quarz. Lass die Öffnungen für Schiebetüren, Fenster und Haustür frei.', {
-    tips: [
-      'Offen bleiben: im Süden die zwei westlichen Felder ganz (je 3 breit, 3 hoch), im Osten das nördliche Feld (3 breit, 3 hoch), die Haustür bei x = 10 im Süden (2 hoch) und fünf Fenster (1 breit, 2 hoch, über der Bretterreihe).',
-      'Statt glattem Quarz gehen auch weißer Beton oder Kalzit.',
-    ],
-  });
-  b.step('Bretterreihe', 'Eine Reihe Fichtenholzbretter direkt auf den Schwellen (y = 1), außer in den Schiebetür-Öffnungen und der Tür.');
+  b.phase('Wände');
+  b.step();
   forEachWallCell((x, z) => { if (!isOpening(x, 1, z)) b.set(x, 1, z, BAND); });
-  b.step('Helle Wandfelder', 'Darüber bis unter den Rähm (y = 2 … 4) glatter Quarz. Über den Schiebetüren und der Tür ist das Wandfeld nur einen bzw. zwei Blöcke hoch.');
+  b.step();
   forEachWallCell((x, z) => {
     for (let y = 2; y <= 4; y++) if (!isOpening(x, y, z)) b.set(x, y, z, PANEL);
   });
@@ -240,25 +223,19 @@ function walls(b) {
 // --------------------------------------------------------------- Dach
 
 function roof(b) {
-  b.phase('Dach', 'Das Irimoya-Dach aus Tiefenschieferziegeln: unten läuft ein Walm rundum (3 Reihen), darüber steht ein Satteldach mit kleinen Giebeldreiecken im Westen und Osten. Es steht 2 Blöcke über – im Süden und Osten liegt die Traufe auf der Verandapfette.', {
-    tips: [
-      'Bau das Dach von innen nach außen: zuerst die Reihe auf dem Rähm, dann die Reihe daneben, dann die Sparren und zuletzt die Traufe – so hat jeder Block einen Nachbarn, an den du ihn setzen kannst.',
-      'Alle Treppen zeigen mit der hohen Seite nach innen (zum First). Stell dich außen hin und schau beim Setzen zur Hausmitte.',
-      'An den Walm-Ecken bilden sich die Außenecken von selbst, wenn die Ecktreppe zur selben Seite schaut wie die Reihe, in die sie hineinläuft.',
-    ],
-  });
-  b.step('Erste Dachreihe', 'Ein Ring aus Tiefenschieferziegeltreppen direkt auf dem Rähm (y = 6), 13 × 9 Blöcke.');
+  b.phase('Dach');
+  b.step();
   roofRing(b, 2);
-  b.step('Zweite Reihe', 'Eine Reihe weiter außen und eine Ebene tiefer (y = 5): du setzt die Treppen an die Seite des Rähms.');
+  b.step();
   roofRing(b, 1);
-  b.step('Sparrenköpfe', 'Unter die zweite Reihe kommen auf y = 4 kurze Sparren aus entrindetem Fichtenstamm, quer zur Wand und mit je einem Block Abstand; die Ecken sind ganze Holzblöcke. Von unten sieht man später die typischen Sparren unter dem Vordach.');
+  b.step();
   rafters(b);
-  b.step('Traufe', 'Die äußerste Reihe (y = 4) setzt du an die Sparren. Im Süden und Osten liegt sie auf der Verandapfette.');
+  b.step();
   roofRing(b, 0);
 
-  b.step('Giebelbalken', 'Über die äußeren Querbalken (x = 1 und x = 11) legst du eine zweite Balkenlage (y = 6). Darauf stehen gleich die Giebeldreiecke.');
+  b.step();
   for (const x of [1, 11]) for (let z = BODY.z0 + 1; z < BODY.z1; z++) b.set(x, 6, z, log(POST, 'z'));
-  b.step('Giebeldreiecke', 'Die kleinen Giebel im Westen und Osten (5 breit, 3 hoch): unten ein liegender Balken, in der Mitte ein stehender, die beiden Felder daneben glatter Quarz.');
+  b.step();
   for (const gx of [1, 11]) {
     for (const [x, y, z] of gableCells(gx)) {
       if (y === ROOF.y + ROOF.gable) b.set(x, y, z, log(POST, 'z'));
@@ -266,9 +243,9 @@ function roof(b) {
       else b.set(x, y, z, PANEL);
     }
   }
-  b.step('Dachflächen', 'Die Reihen 4 bis 6 des Satteldachs (y = 7 … 9) laufen von Giebel zu Giebel (x = 1 … 11). Fang jede Reihe am Giebeldreieck an.');
+  b.step();
   for (let k = ROOF.gable; k < RIDGE_K; k++) roofRing(b, k);
-  b.step('First', 'Der First (y = 10) ist eine Reihe ganzer Tiefenschieferziegel. Obendrauf liegt eine Tiefenschieferziegelmauer, an beiden Enden schließt je eine Treppe mit der hohen Seite nach außen ab (wie die Zierziegel japanischer Dächer).');
+  b.step();
   roofRing(b, RIDGE_K);
   const ridgeZ = (ROOF.z0 + ROOF.z1) / 2;
   const ridgeX0 = ROOF.x0 + ROOF.gable;
@@ -278,7 +255,7 @@ function roof(b) {
   b.stairs(ridgeX0, capY, ridgeZ, TILE.stairs, { facing: 'west' });
   b.stairs(ridgeX1, capY, ridgeZ, TILE.stairs, { facing: 'east' });
 
-  b.step('Hochgezogene Ecken', 'Auf jede der vier Traufecken kommt eine weitere Treppe, deren hohe Ecke schräg nach außen zeigt. So biegen sich die Dachecken nach oben. Wichtig: Von selbst formt sich diese Treppe nicht zur Ecke, weil neben ihr keine andere Treppe liegt – sie bleibt gerade. Im Kreativmodus stellst du sie mit dem Debug-Stab auf „outer_right“ (Linksklick wählt die Eigenschaft „shape“, Rechtsklick schaltet ihren Wert weiter). Im Überlebensmodus setzt du sie gerade mit der hohen Seite nach außen oder lässt den Schritt weg.');
+  b.step();
   const tips = [
     [ROOF.x0, ROOF.z0, 'west'], [ROOF.x1, ROOF.z0, 'north'], [ROOF.x1, ROOF.z1, 'east'], [ROOF.x0, ROOF.z1, 'south'],
   ];
@@ -313,20 +290,18 @@ function shutterFacing(x, z) {
 }
 
 function openings(b) {
-  b.phase('Schiebetüren, Fenster und Haustür', 'Jetzt kommen die typischen hellen Gitterflächen in die Öffnungen.', {
-    tips: ['Setzt du eine Falltür auf den Boden, liegt sie aufgeklappt flach an der Seite, zu der du beim Setzen geschaut hast. Stell dich also innen vor die Öffnung, schau nach draußen, setz die Falltür auf den Block darunter und klapp sie mit Rechtsklick auf – dann liegt sie an der Außenkante.'],
-  });
-  b.step('Shoji-Schiebetüren', 'In die zwei großen Öffnungen der Südwand (je 3 × 3) und die Öffnung der Ostwand kommen offene Birkenholzfalltüren, flach an der Außenkante. Ihr Gittermuster sieht aus wie Papier-Schiebetüren.');
+  b.phase('Schiebetüren, Fenster und Haustür');
+  b.step();
   for (const x of SHOJI_SOUTH) for (let y = 1; y <= 3; y++) b.set(x, y, BODY.z1, 'birch_trapdoor[facing=north,half=bottom,open=true]');
   for (const z of SHOJI_EAST) for (let y = 1; y <= 3; y++) b.set(BODY.x1, y, z, 'birch_trapdoor[facing=west,half=bottom,open=true]');
 
-  b.step('Gitterfenster', 'Die fünf kleinen Fenster (je 1 breit, 2 hoch) bekommen offene Bambusfalltüren an der Außenkante – das ergibt ein Bambusgitter.');
+  b.step();
   for (const [x, z] of WINDOWS) {
     const facing = shutterFacing(x, z);
     for (const y of [2, 3]) b.set(x, y, z, `bamboo_trapdoor[facing=${facing},half=bottom,open=true]`);
   }
 
-  b.step('Haustür und Noren', 'Die Bambustür sitzt in der Südwand bei x = 10, mit Blick nach Norden gesetzt (öffnet nach innen). Darüber hängt außen ein blaues Banner als Noren-Vorhang, davor liegt ein Trittstein aus glatter Steinstufe.');
+  b.step();
   b.door(DOOR[0], 1, DOOR[1], 'bamboo_door', { facing: 'north', hinge: 'left' });
   b.set(DOOR[0], 3, DOOR[1] + 1, 'blue_wall_banner[facing=south]');
   b.set(DOOR[0], 0, ENGAWA.z1 + 1, 'smooth_stone_slab[type=bottom]');
@@ -336,14 +311,14 @@ function openings(b) {
 // --------------------------------------------------------------- Innenwände und Einrichtung
 
 function partitions(b) {
-  b.phase('Innenwände', 'Die Räume trennen leichte Shoji-Wände aus offenen Birkenfalltüren. Oben bleibt über einem Türbalken alles offen, so verteilt sich das Licht.');
-  b.step('Wand zwischen Wohnraum und Ostteil', 'Entlang x = 8 setzt du offene Birkenfalltüren (3 hoch). Frei bleiben die Durchgänge bei z = 3 (zum Schlafraum) und z = 6 (zur Küche). Darüber liegt auf y = 4 ein Türbalken.');
+  b.phase('Innenwände');
+  b.step();
   for (let z = 1; z <= 7; z++) {
     if (z === 4) continue;
     if (z !== 3 && z !== 6) for (let y = 1; y <= 3; y++) b.set(8, y, z, 'birch_trapdoor[facing=west,half=bottom,open=true]');
     b.set(8, 4, z, log(POST, 'z'));
   }
-  b.step('Wand zwischen Schlafraum und Küche', 'Entlang z = 4 (x = 9 … 11) eine geschlossene Reihe offener Birkenfalltüren, darüber wieder ein Türbalken.');
+  b.step();
   for (let x = 9; x <= 11; x++) {
     for (let y = 1; y <= 3; y++) b.set(x, y, 4, 'birch_trapdoor[facing=north,half=bottom,open=true]');
     b.set(x, 4, 4, log(POST, 'x'));
@@ -351,27 +326,27 @@ function partitions(b) {
 }
 
 function interior(b) {
-  b.phase('Einrichtung', 'Japanisch wohnen heißt: wenig Möbel, alles nah am Boden.');
-  b.step('Bildnische (Tokonoma)', 'In der Nordwestecke liegt die Nische auf den Schwarzeichenbrettern: ein weißes Banner an der Nordwand als Rollbild, daneben ein verzierter Krug und ein Bonsai (Azalee im Topf). Ein heller Pfosten aus entrindetem Eichenstamm und ein Balken darüber rahmen die Nische.');
+  b.phase('Einrichtung');
+  b.step();
   b.set(2, 3, 1, 'white_wall_banner[facing=south]');
   b.set(1, 1, 1, 'potted_flowering_azalea_bush');
   b.set(3, 1, 1, 'decorated_pot[facing=south]');
   b.fill(4, 1, 1, 4, 3, 1, 'stripped_oak_log[axis=y]');
   b.fill(1, 4, 1, 3, 4, 1, 'stripped_oak_log[axis=x]');
 
-  b.step('Sitzkissen und Kessel', 'Um die Feuerstelle liegen vier Sitzkissen (rote Teppiche). Vom mittleren Querbalken hängt an zwei Ketten ein Kessel über der Glut.');
+  b.step();
   for (const [x, z] of [[4, 2], [4, 6], [2, 4], [6, 4]]) b.set(x, 1, z, 'red_carpet');
   b.set(4, 4, 4, 'iron_chain[axis=y]');
   b.set(4, 3, 4, 'iron_chain[axis=y]');
   b.set(4, 2, 4, 'cauldron');
 
-  b.step('Schlafraum', 'Zwei weiße Betten als Futons, das Kopfteil an der Nordwand (beim Setzen nach Norden schauen). Dazwischen steht eine Laterne als Andon-Lampe, in der Ecke eine Truhe.');
+  b.step();
   b.bed(9, 1, 2, 'white_bed', { facing: 'north' });
   b.bed(11, 1, 2, 'white_bed', { facing: 'north' });
   b.set(10, 1, 1, 'lantern[hanging=false]');
   b.set(11, 1, 3, 'chest[facing=west]');
 
-  b.step('Küche', 'An der Innenwand: Räucherofen, ein Kessel mit Wasser als Spüle und ein Fass mit einer Bambuspflanze obendrauf. An der Ostwand ein Ofen und eine Truhe. Auf dem Räucherofen steht eine Laterne.');
+  b.step();
   b.set(9, 1, 5, 'smoker[facing=south]');
   b.set(10, 1, 5, 'water_cauldron[level=3]');
   b.set(11, 1, 5, 'barrel[facing=up]');
@@ -382,13 +357,13 @@ function interior(b) {
 }
 
 function lights(b) {
-  b.phase('Licht', 'Laternen an den Querbalken im Wohnraum und an der Verandapfette. Zusammen mit Feuerstelle und Andon ist jedes Feld im Haus hell genug, dass keine Monster erscheinen.');
-  b.step('Laternen im Haus', 'Zwei Laternen hängen an je einem Kettenglied unter dem Querbalken bei x = 4 (bei z = 2 und z = 6).');
+  b.phase('Licht');
+  b.step();
   hangingLantern(b, { x: 4, y: WALL_TOP - 1, z: 2, chain: 1 });
   hangingLantern(b, { x: 4, y: WALL_TOP - 1, z: 6, chain: 1 });
   // Bis y = 6 liegt die Box ganz unter dem Dach (darüber gehörten auch Felder auf der Dachfläche dazu).
   lightRoom(b, { x1: 1, y1: 1, z1: 1, x2: 11, y2: ROOF.y + ROOF.gable - 1, z2: 7 });
-  b.step('Laternen an der Veranda', 'Unter die Verandapfette hängst du fünf Laternen direkt an den Balken.');
+  b.step();
   for (const [x, z] of [[2, ENGAWA.z1], [6, ENGAWA.z1], [10, ENGAWA.z1], [ENGAWA.x1, 2], [ENGAWA.x1, 6]]) b.set(x, 2, z, 'lantern[hanging=true]');
 }
 
@@ -461,37 +436,35 @@ function dock(b, z1, z2, length) {
 }
 
 function garden(b) {
-  b.phase('Garten', 'Ein japanischer Garten lebt von Wasser, Stein und wenigen Pflanzen. Fang mit dem Teich an, dann kommen Wege, Laternen und Bäume.', {
-    tips: ['Den Kies unter der Dachtraufe legen japanische Gärtner wirklich so an: dort tropft der Regen vom Dach.'],
-  });
-  b.step('Teich', 'Südöstlich vor der Veranda gräbst du einen Teich (etwa 13 × 10 Blöcke, in der Mitte 2 tief) mit Kiesufer. Wasser nur als Quellen setzen, Seerosen und Schilf dürfen dazu.');
+  b.phase('Garten');
+  b.step();
   b.fill(POND.x, -4, POND.z, POND.x + POND.width - 1, -2, POND.z + POND.depth - 1, 'dirt');
   pond(b, { x: POND.x, y: -1, z: POND.z, width: POND.width, depth: POND.depth, facing: 'west', shore: 'kies', waterDepth: 2, seed: 4 });
-  b.step('Steg', 'Vom Westufer führt ein 2 breiter Steg aus Fichtenholzstufen (obere Hälfte, genau auf Geländehöhe) 5 Blöcke weit ins Wasser. Am Ende stehen zwei Zaunpfosten, auf einem eine Laterne.');
+  b.step();
   const steg = dock(b, DOCK_Z, DOCK_Z + 1, 6);
 
-  b.step('Kies unter der Traufe', 'Rund ums Haus, genau unter der Dachkante, ersetzt du einen Streifen Gras durch Kies.');
+  b.step();
   for (let x = ROOF.x0 - 1; x <= ROOF.x1 + 1; x++) for (const z of [ROOF.z0 - 1, ROOF.z1 + 1]) gravelAt(b, x, z);
   for (let z = ROOF.z0; z <= ROOF.z1; z++) for (const x of [ROOF.x0 - 1, ROOF.x1 + 1]) gravelAt(b, x, z);
 
-  b.step('Trittsteine', 'Flache Trittsteine aus glattem Stein und poliertem Andesit führen von der Haustür nach Süden und von der Ostveranda zum Steg.');
+  b.step();
   const front = [[10, 12], [9, 13], [10, 14], [11, 15], [10, 16], [9, 17], [10, 18]];
   front.forEach(([x, z], i) => b.set(x, -1, z, i % 2 === 0 ? 'smooth_stone' : 'polished_andesite'));
   for (let x = ENGAWA.x1 + 2; x < steg.start; x++) b.set(x, -1, DOCK_Z + (x % 2), x % 2 === 0 ? 'smooth_stone' : 'polished_andesite');
 
-  b.step('Kiesgarten', 'Südwestlich vor dem Haus liegt ein Kiesgarten (8 × 6 Blöcke) mit einem größeren und einem kleinen bemoosten Andesitfelsen – der kleine Zen-Garten.');
+  b.step();
   for (let x = 0; x <= 7; x++) for (let z = 13; z <= 18; z++) gravelAt(b, x, z);
   rock(b, { x: 2, y: 0, z: 15, size: 'mittel', material: 'andesit', rubble: false, seed: 3 });
   rock(b, { x: 6, y: 0, z: 17, size: 'klein', material: 'andesit', rubble: false, seed: 8 });
 
-  b.step('Steinlaternen', 'Drei Steinlaternen: neben dem Weg zur Tür, zwischen Haus und Teich und am Ostufer. Je ein gemeißelter Steinziegel, eine Steinziegelmauer, eine Laterne darauf und ein Dach aus 8 Steinziegeltreppen (hohe Seite zur Mitte) um einen Steinziegel, obenauf eine Stufe.');
+  b.step();
   for (const [x, z] of LANTERNS) stoneLantern(b, x, z);
 
-  b.step('Kirschbaum', 'Nordöstlich des Teichs wächst ein großer Kirschbaum mit rosa Blütenblättern darunter.');
+  b.step();
   tree(b, { x: 27, y: 0, z: -3, species: 'kirsche', size: 'gross', seed: 2 });
-  b.step('Bambushain', 'Hinter dem Haus im Nordwesten wächst ein dichter Bambushain (6 bis 12 Blöcke hoch). Bambus pflanzt du auf Gras und lässt ihn wachsen – oder du stapelst Bambus von Hand.');
+  b.step();
   bambooGrove(b, GROUND.x0 + 1, GROUND.z0 + 1, 4, -4);
-  b.step('Büsche und Wiese', 'Ein paar Azaleenbüsche an den Hausecken und etwas Gras auf der Wiese.');
+  b.step();
   bush(b, { x: -5, y: 0, z: 11, size: 'klein', leaves: 'azalee', seed: 2 });
   bush(b, { x: 16, y: 0, z: -3, size: 'klein', leaves: 'azalee', seed: 5 });
   bush(b, { x: 31, y: 0, z: 16, size: 'mittel', leaves: 'azalee', seed: 6 });

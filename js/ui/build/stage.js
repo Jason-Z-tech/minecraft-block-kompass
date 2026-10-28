@@ -1,11 +1,8 @@
 // 3D-Bühne der Bau-Ansicht: Canvas für den Viewer, Vorschaubild, Lade- und Fehlerzustände, Werkzeugleiste
-// (Ansichten, Schnitt, Geist, Laufen, Vollbild, Hilfe), Block-Tooltip beim Zeigen, Notiz-Markierungen und
-// eine kleine Schritt-Steuerung im Vollbild.
+// (Ansichten, Schnitt, Geist, Laufen, Vollbild, Hilfe), Block-Tooltip beim Zeigen und eine kleine
+// Schritt-Steuerung im Vollbild.
 import { el, clear, sitePath } from '../dom.js';
 import { createState, renderState, formatNumber, icon } from '../shared.js';
-import { ORBIT_FOV, WALK_FOV, splitProgress, isStepShown } from '../../render/renderer.js';
-import { mat4 } from '../../render/mat.js';
-import { raycastBlocks } from '../../render/picking.js';
 import { toolButton, setPressed, FloatingTooltip, blockTooltipParts, positionText } from './kit.js';
 import { stepLabel } from './step-player.js';
 
@@ -22,20 +19,6 @@ const STATUS_STEPS = [
   ['textures', 'Texturen'],
   ['meshing', '3D-Modell'],
 ];
-
-/**
- * Punkt (Welt) → Bildschirm: { x, y } in CSS-Pixeln der Fläche oder null (hinter der Kamera / außerhalb).
- * viewProj spaltenweise (wie mat.js).
- */
-export function projectPoint(m, x, y, z, width, height) {
-  const cx = m[0] * x + m[4] * y + m[8] * z + m[12];
-  const cy = m[1] * x + m[5] * y + m[9] * z + m[13];
-  const cw = m[3] * x + m[7] * y + m[11] * z + m[15];
-  if (cw <= 1e-6) return null;
-  const nx = cx / cw, ny = cy / cw;
-  if (nx < -1.05 || nx > 1.05 || ny < -1.05 || ny > 1.05) return null;
-  return { x: ((nx + 1) / 2) * width, y: ((1 - ny) / 2) * height };
-}
 
 /** Fehler des Viewers → Zustand für die Anzeige (Titel, Text, Schritte). */
 export function viewerErrorState(error) {
@@ -62,13 +45,6 @@ export class Stage {
   #parts = {};
   #tooltip;
   #pointer = null;
-  #notes = [];
-  #noteRaf = 0;
-  #lastMatrix = new Float32Array(16);
-  #matrix = mat4.create();
-  #projection = mat4.create();
-  #view = mat4.create();
-  #eye = [0, 0, 0];
   #offs = [];
   #walkHelpTimer = null;
 
@@ -91,7 +67,6 @@ export class Stage {
       preview.setAttribute('src', sitePath(entry.thumb));
       preview.hidden = false;
     }
-    const notes = el('div', { class: 'bv-notes', 'aria-label': 'Markierungen' });
     const views = el('div', { class: 'bv-views', role: 'group', 'aria-label': 'Ansicht' });
     const tools = el('div', { class: 'bv-tools', role: 'toolbar', 'aria-label': '3D-Werkzeuge' });
     const clipPanel = el('div', { class: 'bv-clip', hidden: true });
@@ -99,9 +74,9 @@ export class Stage {
     const walkHelp = el('div', { class: 'bv-walkhelp', hidden: true, 'aria-live': 'polite' });
     const mini = el('div', { class: 'bv-mini', role: 'group', 'aria-label': 'Schritt-Steuerung' });
     const status = el('div', { class: 'stage__status bv-stage__status' });
-    Object.assign(this.#parts, { canvas, preview, notes, views, tools, clipPanel, help, walkHelp, mini, status });
+    Object.assign(this.#parts, { canvas, preview, views, tools, clipPanel, help, walkHelp, mini, status });
     return el('section', { class: 'stage bv-stage', 'aria-label': '3D-Ansicht' },
-      canvas, preview, notes, views, tools, clipPanel, help, walkHelp, mini, status);
+      canvas, preview, views, tools, clipPanel, help, walkHelp, mini, status);
   }
 
   // ---------------------------------------------------------------- Zustände
@@ -151,7 +126,7 @@ export class Stage {
 
   // ---------------------------------------------------------------- Nach dem Laden
 
-  /** Werkzeuge, Tooltip und Markierungen mit dem geladenen Bau verbinden. */
+  /** Werkzeuge und Tooltip mit dem geladenen Bau verbinden. */
   attach(ctx) {
     this.detach();
     this.#ctx = ctx;
@@ -161,7 +136,6 @@ export class Stage {
     this.#buildTools();
     this.#buildHelp();
     this.#buildMini();
-    this.#buildNotes();
     const canvas = this.#parts.canvas;
     const onMove = (event) => {
       this.#pointer = { x: event.clientX, y: event.clientY, type: event.pointerType };
@@ -184,8 +158,6 @@ export class Stage {
       () => canvas.removeEventListener('pointerleave', onLeave),
       () => document.removeEventListener('fullscreenchange', onFullscreen),
       ctx.events.on('progress', () => this.#renderMini()),
-      ctx.events.on('step', () => this.#updateNotes(true)),
-      ctx.events.on('clip', () => this.#updateNotes(true)),
     );
     this.#renderMini();
   }
@@ -193,11 +165,9 @@ export class Stage {
   detach() {
     for (const off of this.#offs) off();
     this.#offs = [];
-    cancelAnimationFrame(this.#noteRaf);
-    this.#noteRaf = 0;
     clearTimeout(this.#walkHelpTimer);
     this.#tooltip.hide();
-    for (const key of ['views', 'tools', 'clipPanel', 'help', 'walkHelp', 'mini', 'notes']) clear(this.#parts[key]);
+    for (const key of ['views', 'tools', 'clipPanel', 'help', 'walkHelp', 'mini']) clear(this.#parts[key]);
     this.#parts.clipPanel.hidden = true;
     this.#parts.help.hidden = true;
     this.#parts.walkHelp.hidden = true;
@@ -376,9 +346,8 @@ export class Stage {
       this.#tooltip.hide();
       return;
     }
-    const { viewer, result } = this.#ctx;
-    const step = result.steps[hit.step];
-    const parts = blockTooltipParts(hit.state, { step: hit.step, stepTitle: step?.title ?? '', coords: positionText(hit.x, hit.y, hit.z) });
+    const { viewer } = this.#ctx;
+    const parts = blockTooltipParts(hit.state, { step: hit.step, coords: positionText(hit.x, hit.y, hit.z) });
     if (viewer.mode === 'walk') {
       const box = this.#root.getBoundingClientRect();
       // Mit Touch-Bedienung liegen unten Joystick und Knöpfe: dann oben in der Mitte zeigen (unter den Werkzeugen)
@@ -391,97 +360,10 @@ export class Stage {
 
   onPick(hit) {
     if (!this.#ctx || !hit || !Number.isInteger(hit.step) || hit.step < 0) return;
-    const { result } = this.#ctx;
     if (this.#pointer && this.#pointer.type !== 'mouse') {
-      const step = result.steps[hit.step];
-      this.#tooltip.show(blockTooltipParts(hit.state, { step: hit.step, stepTitle: step?.title ?? '' }), this.#pointer.x, this.#pointer.y, { duration: 2500 });
+      this.#tooltip.show(blockTooltipParts(hit.state, { step: hit.step }), this.#pointer.x, this.#pointer.y, { duration: 2500 });
     }
     this.#ctx.goToStep(hit.step);
-  }
-
-  // ---------------------------------------------------------------- Notizen
-
-  #buildNotes() {
-    const { result } = this.#ctx;
-    this.#notes = (result.notes ?? []).map((note, index) => {
-      const button = el('button', { class: 'bv-marker', type: 'button', title: note.text, dataset: { step: note.step ?? '' } },
-        el('span', { class: 'bv-marker__pin', 'aria-hidden': 'true' }, String(index + 1)),
-        el('span', { class: 'bv-marker__text' }, note.text));
-      button.addEventListener('click', () => {
-        if (Number.isInteger(note.step)) this.#ctx.goToStep(note.step);
-      });
-      this.#parts.notes.append(button);
-      return { note, button };
-    });
-    if (this.#notes.length) this.#updateNotes(true);
-  }
-
-  #updateNotes(force = false) {
-    if (!this.#ctx || this.#notes.length === 0) return;
-    const shown = this.#ctx.shown;
-    for (const { note, button } of this.#notes) {
-      const visible = Number.isInteger(note.step) && note.step <= shown;
-      button.hidden = !visible;
-      button.classList.toggle('is-current', note.step === shown);
-    }
-    if (force) this.#lastMatrix.fill(NaN);
-    if (!this.#noteRaf) this.#noteRaf = requestAnimationFrame(this.#positionNotes);
-  }
-
-  // Markierungen jedes Bild an die Kamera anpassen (nur wenn sie sich bewegt hat)
-  #positionNotes = () => {
-    this.#noteRaf = 0;
-    const ctx = this.#ctx;
-    if (!ctx || this.#notes.length === 0) return;
-    this.#noteRaf = requestAnimationFrame(this.#positionNotes);
-    const { viewer } = ctx;
-    const canvas = this.#parts.canvas;
-    const width = canvas.clientWidth, height = canvas.clientHeight;
-    if (width < 2 || height < 2) return;
-    const walking = viewer.mode === 'walk';
-    const controls = walking ? viewer.controls.walk : viewer.controls.orbit;
-    if (!controls) return;
-    controls.viewMatrix(this.#view);
-    mat4.perspective(this.#projection, walking ? WALK_FOV : ORBIT_FOV, Math.max(1, canvas.width) / Math.max(1, canvas.height), 0.05, Infinity);
-    mat4.multiply(this.#matrix, this.#projection, this.#view);
-    let same = true;
-    for (let i = 0; i < 16; i++) if (this.#matrix[i] !== this.#lastMatrix[i]) same = false;
-    if (same) return;
-    this.#lastMatrix.set(this.#matrix);
-    const clip = viewer.clip;
-    controls.eye(this.#eye);
-    for (const { note, button } of this.#notes) {
-      if (button.hidden) continue;
-      const cut = clip && (note.y < clip.minY || note.y > clip.maxY);
-      const point = cut ? null : projectPoint(this.#matrix, note.x + 0.5, note.y + 0.5, note.z + 0.5, width, height);
-      button.classList.toggle('is-offscreen', !point);
-      if (!point) continue;
-      button.style.transform = `translate(${Math.round(point.x)}px, ${Math.round(point.y)}px)`;
-      button.classList.toggle('is-behind', this.#noteHidden(note, clip));
-    }
-  };
-
-  // Liegt zwischen Kamera und Markierung ein gesetzter Block? Dann wird sie gedämpft gezeigt.
-  #noteHidden(note, clip) {
-    const { result, viewer, stepCount } = this.#ctx;
-    const volume = result.volume;
-    const target = [note.x + 0.5, note.y + 0.5, note.z + 0.5];
-    const dir = [target[0] - this.#eye[0], target[1] - this.#eye[1], target[2] - this.#eye[2]];
-    const distance = Math.hypot(dir[0], dir[1], dir[2]);
-    if (distance < 1e-3) return false;
-    for (let i = 0; i < 3; i++) dir[i] /= distance;
-    const { cur, frac } = splitProgress(viewer.progress, stepCount);
-    const hit = raycastBlocks(this.#eye, dir, distance - 0.5, (x, y, z) => {
-      if (x === note.x && y === note.y && z === note.z) return false;
-      if (clip && (y < clip.minY || y > clip.maxY)) return false;
-      return volume.getIndex(x, y, z) !== 0 && isStepShown(volume.getStep(x, y, z), cur, frac);
-    });
-    return hit !== null;
-  }
-
-  /** Für Schnitt-Änderungen: Markierungen neu setzen. */
-  refreshNotes() {
-    this.#updateNotes(true);
   }
 
   dispose() {

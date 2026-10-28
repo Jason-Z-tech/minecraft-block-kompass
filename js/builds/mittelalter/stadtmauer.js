@@ -18,17 +18,10 @@ export const meta = {
     'wehrmauer', 'ringmauer', 'mauer mit turm', 'mauerturm', 'stadmauer', 'stadtmaurer', 'befestigung', 'fortification',
   ],
   accuracy: 'eigenes',
-  difficulty: 2,
   description: 'Ein Abschnitt einer mittelalterlichen Stadtmauer, den du beliebig verlängern kannst: Mauerturm mit drei '
     + 'Stockwerken und Zinnenkranz, 19 Blöcke Mauer mit Wehrgang, Zinnen und Stützpfeilern auf der Feldseite. Auf der '
     + 'Stadtseite gliedern Bogennischen mit Schießscharten die Mauer, eine breite Steintreppe führt zum Wehrgang hinauf. '
     + 'Die Anleitung zeigt, wie du Turm und Mauerstück immer wieder aneinandersetzt.',
-  facts: [
-    'Ein Modul = Turm (7 Blöcke) + Mauerstück (19 Blöcke) = 26 Blöcke; der nächste Turm beginnt direkt am Mauerende.',
-    'Mauer 4 Blöcke dick, der Wehrgang liegt 10 Blöcke über der Gasse, die Zinnen ragen 2 Blöcke darüber.',
-    'Der Wehrgang führt durch den Turm hindurch; eine Leiter verbindet die drei Stockwerke und das Turmdach.',
-    'Stützpfeiler auf der Feldseite stehen an den Pfeilern der Bogennischen, damit die Kreuzscharten frei bleiben.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -47,8 +40,6 @@ const STAIR_X = 13; // Treppe zum Wehrgang (Mitte)
 const TOWER = { x1: -3, x2: 3, z1: -2, z2: 4, top: 14 };
 const TOWER_FLOORS = [5, 9]; // Zwischendecke und Wehrgang-Ebene im Turm
 const LADDER = [-2, 3];
-const BASE = -2; // unterste Geländeebene = „Ebene 1“ der Anleitung
-const lvl = (y) => y - BASE + 1;
 
 function wallStone(b, y) {
   if (y <= 3) return b.pickWeighted([[stone.block, 5], [stone.mossy, 3], [stone.rough, 2], ['mossy_cobblestone', 1]]);
@@ -81,11 +72,7 @@ function weatherNew(b, [x1, y1, z1, x2, y2, z2], share, draw) {
 }
 
 function ground(b) {
-  b.phase('Gelände und Fundament', 'Leg zuerst eine ebene Wiese an. Auf der Stadtseite (Norden) läuft eine gepflasterte '
-    + 'Gasse parallel zur Mauer, dazwischen ein Kiesweg zur Turmtür. Dann gräbst du das Fundament ein: eine Reihe Bruchstein '
-    + 'unter der ganzen Mauer (4 breit) und unter dem Turm.', {
-    tips: ['Spann die Mauerflucht zuerst mit einer Reihe Blöcke auf der ganzen Länge – dann laufen Mauer, Pfeiler und Zinnen später sicher gerade.'],
-  });
+  b.phase('Gelände und Fundament');
   terrain(b, { x: -16, y: -2, z: -16, width: 41, depth: 28, height: 2, surface: 'gras', seed: 'stadtmauer' });
   for (const [x1, x2] of SECTIONS) b.fill(x1, 0, TOWN, x2, 0, FIELD, stone.rough);
   b.fill(TOWER.x1, 0, TOWER.z1, TOWER.x2, 0, TOWER.z2, stone.rough);
@@ -97,33 +84,14 @@ function ground(b) {
 }
 
 function wallBody(b) {
-  b.phase('Mauer bis zum Wehrgang', `Zieh die Mauer 4 Blöcke dick bis Ebene ${lvl(TOP)} hoch – östlich vom Turm 19 Blöcke lang, `
-    + 'westlich ein Anschlussstück von 7 Blöcken. Unten mischst du Bruchstein und bemoosten Stein unter die Steinziegel. '
-    + `Die oberste Ebene (Ebene ${lvl(TOP)}) ist gleich der Boden des Wehrgangs.`
-    + ' Die Bogennischen auf der Stadtseite kommen später.', {
-    tips: [
-      'Verlängern: Ein Modul ist Turm (7) + Mauerstück (19) = 26 Blöcke. Bau am Ostende direkt den nächsten Turm an '
-        + '(Turmwand auf das Feld nach dem letzten Mauerblock), dann wieder 19 Blöcke Mauer – so oft du willst.',
-      'Auch nach Westen geht es weiter: Das Anschlussstück ist das Ende eines Mauerstücks. Verlängere es auf 19 Blöcke und setz '
-        + 'dort den nächsten Turm. Nischen, Pfeiler und Treppe wiederholen sich im selben Abstand.',
-      'Für Ecken drehst du das Mauerstück um 90° und lässt es in einen Turm münden – Türme sind die natürlichen Eckpunkte.',
-    ],
-  });
+  b.phase('Mauer bis zum Wehrgang');
   for (const [x1, x2] of SECTIONS) {
     for (let y = 1; y <= TOP; y++) for (let z = TOWN; z <= FIELD; z++) for (let x = x1; x <= x2; x++) b.set(x, y, z, wallStone(b, y));
   }
-  b.note(SECTIONS[1][1], TOP, 0, 'Mauerende: hier setzt du den nächsten Turm an');
-  b.note(SECTIONS[0][0], TOP, 0, 'Anschluss an das vorige Mauerstück');
 }
 
 function buttresses(b) {
-  b.phase('Stützpfeiler und Sockel', 'Auf der Feldseite (Süden) stützen vier Pfeiler die Mauer: unten 2 Blöcke tief und 5 '
-    + `hoch, dann 1 Block tief bis Ebene ${lvl(8)}, der Absatz`
-    + ' mit einer Treppe abgedeckt (hohe Seite zur Mauer). Oben tragen die '
-    + 'Pfeiler später die vorspringende Brüstung. Dazwischen läuft ein '
-    + 'Sockel aus Bruchsteintreppen am Mauerfuß entlang.', {
-    tips: ['Die Pfeiler stehen genau hinter den Pfeilern der Bogennischen – so bleiben die Schießscharten in der Mitte frei.'],
-  });
+  b.phase('Stützpfeiler und Sockel');
   for (const x of BUTTRESSES) {
     for (let y = 1; y <= 5; y++) for (const z of [FIELD + 1, FIELD + 2]) b.set(x, y, z, wallStone(b, y));
     b.stairs(x, 6, FIELD + 2, stone.stairs, { facing: 'north' });
@@ -136,12 +104,7 @@ function buttresses(b) {
 
 function tower(b) {
   const { x1, x2, z1, z2, top } = TOWER;
-  b.phase('Mauerturm', 'Der Turm (7 × 7) steht 3 Blöcke vor der Feldseite der Mauer und schließt auf der Stadtseite bündig '
-    + `ab. Mauere ihn bis Ebene ${lvl(TOWER.top)} hoch. Auf Ebene ${lvl(TOWER_FLOORS[0])} und Ebene ${lvl(TOWER_FLOORS[1])} legst `
-    + `du Holzböden ein (Ebene ${lvl(TOWER_FLOORS[1])} liegt auf Wehrganghöhe), je mit einem Leiterloch in der Südwestecke. `
-    + `Oben schließt eine Steindecke auf Ebene ${lvl(TOWER.top)} ab.`, {
-    tips: ['Mauere den Turm gleich mit der Mauer hoch – dann verzahnen sich die Steine an den Anschlussstellen.'],
-  });
+  b.phase('Mauerturm');
   for (let y = 1; y <= top; y++) {
     for (let x = x1; x <= x2; x++) {
       for (let z = z1; z <= z2; z++) {
@@ -164,15 +127,7 @@ function tower(b) {
 }
 
 function walkway(b) {
-  b.phase('Wehrgang und Zinnen', 'Auf der Feldseite springt die Brüstung einen Block vor: Setz zuerst eine Reihe umgedrehter '
-    + `Steinziegeltreppen als Konsolen auf Ebene ${lvl(TOP)} vor die Mauer (hohe Seite zur Mauer), darauf die Brüstung `
-    + `(Ebene ${lvl(TOP + 1)}) mit `
-    + 'Zinnen und Lücken im Wechsel, oben je eine Steinziegelstufe. '
-    + 'Auf der Stadtseite sichert ein Fichtenzaun den Wehrgang; nur über der Treppe bleibt er offen. '
-    + 'Auf jeden sechsten Zaunpfosten kommt eine Laterne. Der Turm bekommt einen vorspringenden Zinnenkranz auf Konsolen und '
-    + 'einen Fahnenmast mit blauem Banner.', {
-    tips: ['Zinnen zählst du am besten von der Turmseite aus: Zinne, Lücke, Zinne … – das Mauerende ist immer eine Zinne.'],
-  });
+  b.phase('Wehrgang und Zinnen');
   for (const [x1, x2] of SECTIONS) {
     battlements(b, { x: x1, y: TOP + 1, z: FIELD, facing: 'south', length: x2 - x1 + 1, block: stone.block, cap: stone.slab, corbels: stone.stairs });
     for (let x = x1; x <= x2; x++) {
@@ -198,20 +153,12 @@ function walkway(b) {
 }
 
 function stairsUp(b) {
-  b.phase('Treppe zum Wehrgang', 'Von der Gasse führt eine 3 Blöcke breite Steintreppe senkrecht auf die Mauer zu: 9 Stufen '
-    + 'mit der hohen Seite nach Süden, darunter voll gemauert, links und rechts eine Wange mit Steinziegelmauer als Geländer. '
-    + 'Die oberste Stufe liegt auf Höhe des Wehrgangs.', {
-    tips: ['Setz zuerst die Wangen als Treppenlinie (je Block eine Ebene höher), dann füllst du die Stufen dazwischen.'],
-  });
+  b.phase('Treppe zum Wehrgang');
   straightStairs(b, { x: STAIR_X, y: 1, z: TOWN - 9, facing: 'south', width: 3, height: 9, stairs: stone.stairs, support: stone.block, railing: stone.wall });
-  b.note(STAIR_X, TOP + 1, TOWN - 1, 'Hier betrittst du den Wehrgang');
 }
 
 function openings(b) {
-  b.phase('Nischen, Türen und Schießscharten', 'Jetzt schlägst du die Öffnungen in die fertige Mauer: auf der Stadtseite drei '
-    + 'Rundbogennischen (5 breit, 5 hoch, 2 tief), aus jeder führt eine Kreuzscharte durch die restliche Mauer zum Feld. Der '
-    + `Turm bekommt eine Tür zur Stadt, Durchgänge für den Wehrgang auf Ebene ${lvl(TOP + 1)} und Schießscharten auf allen `
-    + 'Feldseiten.');
+  b.phase('Nischen, Türen und Schießscharten');
   // Nur die neuen Bogensteine altern; die Mauer selbst ist schon gemischt gemauert und bleibt in ihrem Kapitel.
   weatherNew(b, [-16, 1, TOWN - 1, 24, 8, TOWN + 1], 0.15, () => {
     for (const x of NICHES) {
@@ -240,15 +187,11 @@ function openings(b) {
 
 function interior(b) {
   const { x1, x2, z1, z2 } = TOWER;
-  b.phase('Turm einrichten', 'Jetzt richtest du die drei Stockwerke ein. Der Durchgang des Wehrgangs (die zwei Reihen an der '
-    + 'Nordseite im obersten Stock) bleibt frei.', {
-    tips: ['Schau beim Setzen der Leiter nach Süden auf die Wand – dann hängt sie richtig.'],
-  });
-  b.step('Leiter', 'Setz die Leiter in der Südwestecke an die Südwand, vom Boden durch beide Leiterlöcher bis unter die Falltür im Turmdach.');
+  b.phase('Turm einrichten');
+  b.step();
   for (let y = 1; y < TOWER.top; y++) b.set(LADDER[0], y, LADDER[1], 'ladder[facing=north]');
 
-  b.step('Erdgeschoss: Lager', 'Unten lagert die Wache Vorräte: Doppeltruhen und ein Fass an der Ostwand, Heuballen und ein Fass '
-    + 'neben der Leiter. In der Mitte hängt eine Laterne an einer Kette.');
+  b.step();
   storage(b, { x: x2 - 1, y: 1, z: z1 + 1, facing: 'west', width: 4, height: 2 });
   b.set(x1 + 2, 1, z2 - 1, 'hay_block[axis=y]');
   b.set(x1 + 2, 2, z2 - 1, 'hay_block[axis=x]');
@@ -256,8 +199,7 @@ function interior(b) {
   hangingLantern(b, { x: 0, y: 4, z: 1, chain: 1 });
   lightRoom(b, { x1: x1 + 1, y1: 1, z1: z1 + 1, x2: x2 - 1, y2: 4, z2: z2 - 1 });
 
-  b.step('Erster Stock: Waffenkammer', 'Im ersten Stock ist die Waffenkammer: Werkbank, Schmiedetisch und Amboss an der Ostwand, '
-    + 'Schleifstein und Fass gegenüber, Truhe und Fass an der Südwand.');
+  b.step();
   workshop(b, { x: x2 - 1, y: 6, z: z1 + 1, facing: 'west', width: 3, wood: 'fichte', shelves: false });
   b.set(x2 - 1, 6, z2 - 1, 'barrel[facing=up]');
   b.set(x2 - 2, 6, z2 - 1, 'chest[facing=north,type=single]');
@@ -266,8 +208,7 @@ function interior(b) {
   hangingLantern(b, { x: 0, y: 8, z: 1, chain: 0 });
   lightRoom(b, { x1: x1 + 1, y1: 6, z1: z1 + 1, x2: x2 - 1, y2: 8, z2: z2 - 1 });
 
-  b.step('Zweiter Stock: Wachstube', 'Oben auf Wehrganghöhe sitzt die Wache: Tisch mit zwei Stühlen in der Südostecke, ein Fass mit '
-    + 'Laterne, ein roter Läufer über den Durchgang.');
+  b.step();
   b.set(x2 - 1, TOP + 1, z2 - 1, spruce.fence);
   b.set(x2 - 1, TOP + 2, z2 - 1, spruce.pressurePlate);
   b.stairs(x2 - 1, TOP + 1, z2 - 2, spruce.stairs, { facing: 'north' });
@@ -279,8 +220,7 @@ function interior(b) {
 }
 
 function surroundings(b) {
-  b.phase('Umgebung', 'Zum Schluss stellst du Laternenpfähle an die Gasse, setzt Fässer und Heu an den Turm und lässt auf '
-    + 'der Feldseite Büsche, Felsen und hohes Gras wachsen.');
+  b.phase('Umgebung');
   for (const x of [-9, 5, 21]) lampPost(b, { x, y: 1, z: -11, facing: 'east', height: 3, style: 'double', post: stone.wall, base: stone.chiseled });
   b.set(-3, 1, -3, 'barrel[facing=up]');
   b.set(-2, 1, -3, 'barrel[facing=north]');

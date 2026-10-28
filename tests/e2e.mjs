@@ -1,7 +1,7 @@
 // Klick-Test der ganzen Seite im echten Chrome gegen den echten Katalog (data/catalog.json):
 //   node tests/e2e.mjs [--gpu hardware|swiftshader] [--out tmp/integration/e2e] [--only start,bau,erstellen,handy]
 // Start → Kategorie (Filter, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Dorfhaus aus dem
-// Spiel, ein Redstone-Bau: Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Maßstab) →
+// Spiel, eine Farm: Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Maßstab) →
 // „Selber erstellen“ (Freitext, Upload je Fixture-Format) → Handy 390 × 844. Screenshots nach --out, Leistungswerte
 // (Ladezeit, Bildrate beim Drehen) am Ende. Konsolenfehler zählen als Fehler. Exit-Code 1, wenn eine Prüfung fehlschlägt,
 // 2 bei falschen Optionen oder fehlenden Spieldaten.
@@ -10,6 +10,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../scripts/serve.mjs';
+import { CATEGORY_SLUGS } from '../js/ui/shared.js';
 import { launchBrowser } from './browser.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -224,7 +225,10 @@ async function startFlow(server) {
     check('Start: Gesamtzahl der Bauten', total.replace(/[.'’\s]/g, '').includes(String(catalog.counts.total)), total.trim().slice(0, 120));
     const tileCounts = await page.eval("Object.fromEntries([...document.querySelectorAll('#home-categories .category-tile')].map((t) => [t.dataset.category, t.querySelector('.category-tile__count').textContent.replace(/\\D/g, '')]))");
     const wrongTiles = Object.entries(catalog.counts.byCategory).filter(([slug, n]) => tileCounts[slug] !== String(n));
-    check('Start: Anzahl je Kategorie-Kachel', wrongTiles.length === 0, wrongTiles.map(([slug, n]) => `${slug} ${tileCounts[slug]} statt ${n}`).join(', ') || '8 Kacheln');
+    check('Start: Anzahl je Kategorie-Kachel', wrongTiles.length === 0, wrongTiles.map(([slug, n]) => `${slug} ${tileCounts[slug]} statt ${n}`).join(', ') || `${CATEGORY_SLUGS.length} Kacheln`);
+    check('Start: sieben Kategorien, keine Kategorie Redstone', Object.keys(tileCounts).join(',') === CATEGORY_SLUGS.join(',') && !('redstone' in catalog.counts.byCategory)
+      && catalog.builds.every((build) => build.category !== 'redstone'), Object.keys(tileCounts).join(', '));
+    check('Start: Karten ohne Schwierigkeit', await page.eval("document.querySelectorAll('.difficulty').length === 0 && !/Schwierigkeit/.test(document.querySelector('main').textContent)"));
     const brokenImages = await loadLazyImages(page);
     const thumbCount = await page.eval("document.querySelectorAll('#home-sections img.build-card__img').length");
     check('Start: alle Vorschaubilder geladen', brokenImages === 0 && thumbCount > 0, `${thumbCount} Vorschaubilder, ${brokenImages} kaputt`);
@@ -237,6 +241,9 @@ async function startFlow(server) {
     const houses = expectedCategory('haeuser');
     const countText = await page.eval("document.getElementById('category-result-count').textContent");
     check('Kategorie Häuser: Trefferzahl', countText.replace(/\D/g, '').startsWith(String(houses.length)), countText.trim());
+    const sorts = await page.eval("[...document.querySelectorAll('#category-sort option')].map((o) => o.value)");
+    const filterNames = await page.eval("[...new Set([...document.querySelectorAll('#category-filters input')].map((i) => i.name))]");
+    check('Kategorie: weder Filter noch Sortierung nach Schwierigkeit', !sorts.some((key) => key.startsWith('schwierigkeit')) && !filterNames.includes('schwierigkeit'), `${sorts.join(', ')} · ${filterNames.join(', ')}`);
     await fullShot(page, 'desktop-02-kategorie', { lazy: false });
 
     // Filter Herkunft „Original aus dem Spiel“
@@ -275,12 +282,21 @@ async function startFlow(server) {
 
     // Übersicht aller Kategorien und unbekannte Kategorie
     await page.goto(`${server.url}/kategorie.html`);
-    await page.waitFor("document.querySelectorAll('#category-overview-list .category-tile').length === 8", 10000);
-    check('Übersicht aller Kategorien', true);
+    await page.waitFor(`document.querySelectorAll('#category-overview-list .category-tile').length === ${CATEGORY_SLUGS.length}`, 10000);
+    check('Übersicht aller Kategorien', await page.eval("document.querySelectorAll('#category-overview-list [data-category=\"redstone\"]').length === 0"));
     await fullShot(page, 'desktop-04-kategorien');
     await page.goto(`${server.url}/kategorie.html?k=gibtsnicht`);
     await page.waitFor("document.querySelector('#category-status .state--error')", 10000);
     check('Unbekannte Kategorie: Fehlerhinweis', true);
+    // Alte Adresse der Kategorie Redstone: derselbe Hinweis wie bei jeder unbekannten Kategorie
+    await page.goto(`${server.url}/kategorie.html?k=redstone`);
+    await page.waitFor("document.querySelector('#category-status .state--error')", 10000);
+    check('Kategorie Redstone gibt es nicht mehr: Hinweis „unbekannt“', await page.eval("/gibt es nicht/.test(document.querySelector('#category-status').textContent)"));
+    // Alte Adresse mit Schwierigkeit: still auf den Standard zurück
+    await page.goto(`${server.url}/kategorie.html?k=haeuser&schwierigkeit=2&sort=schwierigkeit-auf`);
+    await page.waitFor("document.querySelectorAll('#category-list .build-card').length > 0", 20000);
+    check('Alte Adresse mit Schwierigkeit: Standard-Sortierung, alle Häuser', await page.eval("document.getElementById('category-sort').value === 'name' && location.search === '?k=haeuser'")
+      && (await page.eval("document.getElementById('category-result-count').textContent")).replace(/\D/g, '').startsWith(String(houses.length)), await page.eval('location.search'));
     checkConsole(page, 'Übersicht');
   } finally {
     await page.close();
@@ -291,7 +307,23 @@ async function startFlow(server) {
 
 const DORFHAUS_ID = catalog.builds.find((build) => build.structure === 'village__plains__houses__plains_small_house_1.json')?.id
   ?? catalog.builds.find((build) => build.category === 'haeuser' && build.id.startsWith('spiel-'))?.id;
-const REDSTONE_ID = byId.has('lauflicht') ? 'lauflicht' : catalog.builds.find((build) => build.category === 'redstone')?.id;
+// Eine Farm mit eigenem Modul (nicht im Spiel getestet, tested: false)
+const FARM_ID = byId.get('kaktusfarm')?.tested === false ? 'kaktusfarm'
+  : catalog.builds.find((build) => build.category === 'farmen' && build.module && build.tested === false)?.id;
+
+// Anleitung und Player nach dem Aufräumen: Kapitel mit Nummer und Titel, Schritte nur mit Nummer, Blockzahl und Ebene –
+// keine Schritt-Namen, Schritt-Texte, Tipps, Notizen oder Schwierigkeit.
+async function checkGuideWithoutTexts(page, label) {
+  const found = await page.eval(`(() => {
+    const removed = document.querySelectorAll('.bv-step__title, .bv-step__text, .bv-chapter__text, .bv-tips, .bv-note, .bv-notes, .bv-marker, .difficulty').length;
+    const steps = [...document.querySelectorAll('.bv-step')];
+    const badSteps = steps.filter((b) => b.children.length !== 2 || !/^[\\d.]+ (?:Block|Blöcke)( · y = -?\\d+)?$/.test(b.querySelector('.bv-step__meta')?.textContent ?? '')).length;
+    const chapters = [...document.querySelectorAll('.bv-chapter__title')].filter((h) => h.textContent.trim() !== '').length;
+    return { removed, badSteps, chapters, total: document.querySelectorAll('.bv-chapter').length };
+  })()`);
+  check(`${label}: Anleitung ohne Schritt-Namen, Texte, Tipps und Notizen`, found.removed === 0 && found.badSteps === 0 && found.chapters === found.total && found.total > 0,
+    `${found.removed} alte Elemente, ${found.badSteps} Schritte mit mehr als Nummer/Blockzahl/Ebene, ${found.chapters}/${found.total} Kapitel mit Titel`);
+}
 
 function expectedVariant(build, scale) {
   if (scale !== null && build.variants?.[String(scale)]) return build.variants[String(scale)];
@@ -318,6 +350,7 @@ async function buildFlow(page, server, { id, scale = null, label, measureFps = f
   check(`${label}: geladen`, result.blocks === expected.blocks && result.steps === expected.steps,
     `${result.blocks.toLocaleString('de-CH')} Blöcke, ${result.steps} Schritte, ${loadSeconds.toFixed(1)} s bis fertig gezeichnet`);
   check(`${label}: Anleitung zeigt alle Schritte`, await page.eval(`document.querySelectorAll('.bv-step').length === ${expected.steps}`));
+  await checkGuideWithoutTexts(page, label);
   if (scale !== null) check(`${label}: Maßstab ${scale}`, await page.eval(`window.__buildView.context.scale === ${scale}`));
   await shot(page, `bau-${id}-01-fertig`);
   const perfEntry = { label, id, scale, blocks: result.blocks, steps: result.steps, loadSeconds, viewer: stats };
@@ -374,6 +407,8 @@ async function buildFlow(page, server, { id, scale = null, label, measureFps = f
   await page.click('[data-tab="info"]');
   await sleep(200);
   check(`${label}: Infos zeigen den Titel`, await page.eval(`document.querySelector('.bv-panels').textContent.includes(${JSON.stringify(build.title)}) || document.title.includes(${JSON.stringify(build.title)})`));
+  const infoText = await page.eval("document.querySelector('.bv-info')?.textContent ?? ''");
+  check(`${label}: Infos ohne Schwierigkeit und Wissenswertes`, infoText !== '' && !/Schwierigkeit|Wissenswert/.test(infoText));
   await shot(page, `bau-${id}-06-infos`);
 
   // Neu laden: Haken und Schritt bleiben
@@ -443,13 +478,15 @@ async function buildPagesFlow(server) {
     await buildFlow(page, server, { id: 'tokyo-skytree', scale: 1, label: 'Tokyo Skytree 1:1', measureFps: true, scaleSwitch: 0.5 });
     await buildFlow(page, server, { id: 'infinity-castle', label: 'Infinity Castle', measureFps: true });
     await buildFlow(page, server, { id: DORFHAUS_ID, label: `Dorfhaus ${DORFHAUS_ID}` });
-    await buildFlow(page, server, { id: REDSTONE_ID, label: `Redstone ${REDSTONE_ID}` });
-    const untested = byId.get(REDSTONE_ID)?.tested === false;
-    if (untested) {
-      await page.goto(`${server.url}/bau.html?id=${REDSTONE_ID}`);
-      await page.waitFor(BUILD_READY, 60000);
-      check('Redstone: Chip „Nicht im Spiel getestet“', await page.eval("/Nicht im Spiel getestet/.test(document.getElementById('build-chips').textContent)"));
-    }
+    await buildFlow(page, server, { id: FARM_ID, label: `Farm ${FARM_ID}` });
+    await page.goto(`${server.url}/bau.html?id=${FARM_ID}`);
+    await page.waitFor(BUILD_READY, 60000);
+    check('Farm: Chip „Nicht im Spiel getestet“', byId.get(FARM_ID)?.tested === false
+      && await page.eval("/Nicht im Spiel getestet/.test(document.getElementById('build-chips').textContent)"));
+    // Ein alter Link auf einen Redstone-Bau zeigt den Hinweis „nicht gefunden“
+    await page.goto(`${server.url}/bau.html?id=lauflicht`);
+    await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
+    check('Alter Redstone-Bau (lauflicht): Fehlerzustand', !byId.has('lauflicht'));
     await page.goto(`${server.url}/bau.html?id=gibt-es-nicht`);
     await page.waitFor("document.querySelector('#build-status .state--error')", 15000);
     check('Unbekannte Bau-ID: Fehlerzustand', true);
@@ -569,7 +606,7 @@ async function mobileFlow(server) {
     check('Handy Start: kein waagrechtes Scrollen', await noHorizontalScroll(page));
     await fullShot(page, 'handy-01-start');
 
-    await page.goto(`${server.url}/kategorie.html?k=redstone`);
+    await page.goto(`${server.url}/kategorie.html?k=farmen`);
     await page.waitFor("document.querySelectorAll('#category-list .build-card').length > 0", 20000);
     check('Handy Kategorie: kein waagrechtes Scrollen', await noHorizontalScroll(page));
     await fullShot(page, 'handy-02-kategorie', { lazy: false });
@@ -577,8 +614,8 @@ async function mobileFlow(server) {
     await sleep(300);
     check('Handy: Filter klappen auf', await page.eval("document.getElementById('category-filter-toggle').getAttribute('aria-expanded') === 'true'"));
     await shot(page, 'handy-03-filter');
-    await page.click('#category-filters label.filter-option:has(input[name="schwierigkeit"])');
-    await page.waitFor("location.search.includes('schwierigkeit=')", 5000);
+    await page.click('#category-filters label.filter-option:has(input[name="test"])');
+    await page.waitFor("location.search.includes('test=')", 5000);
     await page.click('#category-filters-done');
     await sleep(300);
     check('Handy: Filter wirkt, „Bauten anzeigen“ klappt zu', await page.eval("document.getElementById('category-filter-toggle').getAttribute('aria-expanded') === 'false'"));

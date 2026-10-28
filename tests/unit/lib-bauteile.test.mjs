@@ -253,7 +253,7 @@ dataTest('Fachwerk, Bodenmuster und Kopfband', () => {
 dataTest('Bauteile setzen über b: Kapitel, Schritte und verschachtelte transform wirken', () => {
   const b = new Builder();
   b.phase('Fenster');
-  b.step('Eins');
+  b.step();
   b.transform({ offset: [10, 0, 0], rotate: 90 }, () => parts.window(b, { x: 0, y: 1, z: 0, facing: 'south', style: 'framed' }));
   const r = b.finalize();
   assert.equal(r.steps.length, 1);

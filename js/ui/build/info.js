@@ -1,9 +1,9 @@
-// Infos: Beschreibung, Fakten, Herkunft, „nicht im Spiel getestet“, Quellen (nur https), Credits,
+// Infos: Beschreibung, Herkunft, „nicht im Spiel getestet“, Quellen (nur https), Credits,
 // Kennzahlen, Maßstab-Auswahl (bei scales) und der eigene Fortschritt mit „Zurücksetzen“.
 import { el, isSafeUrl } from '../dom.js';
 import {
-  formatNumber, formatSize, accuracyLabel, difficultyLabel, createAccuracyChip, createUntestedChip, createCategoryChip,
-  createChip, createDifficulty, findCategory, icon,
+  formatNumber, formatSize, accuracyLabel, createAccuracyChip, createUntestedChip, createCategoryChip,
+  createChip, findCategory, icon,
 } from '../shared.js';
 import { formatScale, variantFor, isHttpsUrl } from './entry.js';
 import { phaseCount, shownStep } from './step-model.js';
@@ -21,7 +21,6 @@ export function buildFacts(entry, result, scale) {
     ['Schritte', Number.isInteger(steps) ? formatNumber(steps) : null, true],
     ['Kapitel', Number.isInteger(phases) ? formatNumber(phases) : null, true],
     ['Maßstab', scale ? formatScale(scale) : null, true],
-    ['Schwierigkeit', entry?.difficulty ? `${difficultyLabel(entry.difficulty)} (${entry.difficulty} von 5)` : null, false],
     ['Herkunft', entry?.accuracy ? accuracyLabel(entry.accuracy) : null, false],
     ['Im Spiel getestet', entry?.tested === true ? 'Ja' : entry?.tested === false ? 'Nein' : null, false],
   ].filter(([, value]) => value);
@@ -63,14 +62,11 @@ export class InfoPanel {
     return el('div', { class: 'bv-info' },
       chips.length ? el('ul', { class: 'chip-list', role: 'list', 'aria-label': 'Einordnung' }, chips.map((chip) => el('li', null, chip))) : null,
       entry.description ? el('p', { class: 'bv-info__description' }, entry.description) : null,
-      Array.isArray(entry.facts) && entry.facts.length ? el('section', { class: 'bv-info__section' },
-        el('h3', { class: 'bv-info__heading' }, 'Wissenswert'),
-        el('ul', { class: 'bv-info__facts' }, entry.facts.map((fact) => el('li', null, fact)))) : null,
       this.#scaleSection(),
       el('section', { class: 'bv-info__section' },
         el('h3', { class: 'bv-info__heading' }, 'Kennzahlen'),
         el('dl', { class: 'facts' }, facts.map(([term, value, mono]) => el('div', null, el('dt', null, term),
-          el('dd', { class: [mono && 'mono', term === 'Schwierigkeit' && 'bv-info__difficulty'] }, term === 'Schwierigkeit' ? createDifficulty(entry.difficulty) : null, value))))),
+          el('dd', { class: mono ? 'mono' : null }, value))))),
       sources.length ? el('section', { class: 'bv-info__section' },
         el('h3', { class: 'bv-info__heading' }, 'Quellen'),
         el('ul', { class: 'bv-info__sources' }, sources.map((source) => el('li', null, externalLink(source.url, source.title || new URL(source.url).hostname))))) : null,

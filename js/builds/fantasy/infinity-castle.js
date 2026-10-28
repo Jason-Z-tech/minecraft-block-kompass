@@ -16,22 +16,12 @@ export const meta = {
     'infinity-castle', 'infinitycastle', 'infinty castle', 'infinity castel', 'demonslayer', 'kimetsu', 'dämonenjäger',
   ],
   accuracy: 'nachempfunden',
-  difficulty: 5,
   description: 'Nachempfundener Ausschnitt der Anderraum-Festung aus „Demon Slayer: Kimetsu no Yaiba“: ein 193 Blöcke tiefer '
     + 'Schacht mit Säulenhalle und Wasserspiegel am Grund, 19 Galerie-Geschossen aus Schwarzeiche mit Fusuma und leuchtenden '
     + 'Shoji, Brücken und Treppen in alle Richtungen, kopfstehenden und gekippten Räumen, vier Kampfstätten und Nakimes '
     + 'schwebender Bühne. Belegt sind nur die Grundzüge (endlose Holzräume, Gänge, Treppen, Lampenlicht, Dunkelheit, '
     + 'Säulen-Labyrinth, Wassergarten, Figuren kopfüber an Wänden); Grundriss, Maße, Tatami, Schiebetüren und die Gestaltung '
     + 'der Kampfstätten sind eigene Interpretation – die Burg hat im Werk weder Bauplan noch Außenansicht.',
-  facts: [
-    'Belegt: Im Anime erscheint die Burg zuerst in Staffel 1, Folge 26 „New Mission“ (28.09.2019) – als Ort, an dem Muzan die Unteren Monde versammelt.',
-    'Belegt: Kameramann Yūichi Terao nennt für Folge 26 einen 3D-Raum von etwa 100 × 100 m, für den Schmiededorf-Auftakt „about two kilometers squared“.',
-    'Belegt: Die erste Renderschätzung für den Film lag bei „10 Jahren“; Film Teil 1 („Akazas Rückkehr“) läuft 155 Minuten.',
-    'Belegt: Die Burg ist ein Anderraum ohne Außenansicht. Nakime verschiebt Räume, Gänge und Treppen mit ihrer Biwa; oben, unten und Schwerkraft gelten nicht.',
-    'Interpretation: 1 Block ≈ 1 m. Der 100-×-100-m-Raum aus Folge 26 passt fast 1:1 in den Grundriss von 145 × 145; die „hunderte Stockwerke“ deuten 19 gleiche Geschosse und ein 193 Blöcke tiefer Blick an.',
-    'Interpretation: Tatami, Fusuma/Shoji, Laternen, die Lotushalle, Akazas Schneeflocke und Kokushibos Säulenhalle stammen aus Werkkenntnis bzw. eigenen Entscheidungen. Kokushibos Bereich gibt es bisher nur im Manga.',
-    'Ähnlich, aber ausdrücklich kein Vorbild: die Lobby des Ryokan Ōkawasō in Fukushima mit einer schwebenden Bühne im Atrium.',
-  ],
   sources: [
     { title: 'Kimetsu no Yaiba – offizielle Seite, Film „無限城編“: Einführung', url: 'https://kimetsu.com/anime/mugenjyohen_movie/intro/' },
     { title: 'Kimetsu no Yaiba – offizielle Seite, Film „無限城編“: Staff/Cast', url: 'https://kimetsu.com/anime/mugenjyohen_movie/staffcast/' },
@@ -67,10 +57,7 @@ const STOREY_HEIGHT = 8;
 const MIRROR_STOREY_Y = 112;
 const SIDE_LENGTH = 137; // eine Ringseite x 0–136, die nächste Seite übernimmt die Ecke
 // Die Vordächer (Kapitel 16) ragen 1 Block über x/z 0 hinaus; finalize() verschiebt alles um 1.
-// Texte nennen deshalb x/z + 1 (so stehen die Werte im Ebenen-Plan).
 const EAVE = 1;
-const tx = (v) => v + EAVE;
-const span = (a, b) => `${a + EAVE}–${b + EAVE}`;
 
 const P = Object.freeze({
   planks: 'dark_oak_planks',
@@ -181,7 +168,7 @@ function sideToWorld(side, x, z) {
 
 const key = (x, y, z) => `${x},${y},${z}`;
 
-// --- Pläne der Einbauten (für Geländer-Öffnungen und Texte) ---
+// --- Pläne der Einbauten (für Geländer-Öffnungen) ---
 
 const HALL_STAIR = { first: 90, landing: [129, 131], z: [8, 10], railZ: 11 }; // Nord-Koordinaten, steigt nach Osten
 const EMPORE = { x: [65, 79], z: [2, 11], y: 24, stairX: [71, 73] };
@@ -534,12 +521,6 @@ function buildFloatingStair(b, s) {
 // --- M5 Raumwürfel (11 × 9 × 11, lokal) ---
 
 const CUBE_SIZE = [11, 9, 11];
-
-function cubeWorldBox(cube) {
-  const [x, y, z] = cube.at;
-  const tilted = cube.orient.startsWith('tilt');
-  return { min: [x, y, z], max: [x + (tilted ? 8 : 10), y + (tilted ? 10 : 8), z + 10] };
-}
 
 function buildRoomCube(b, cube) {
   const f = makeFrame(b, cube.at, CUBE_SIZE, cube.orient);
@@ -972,198 +953,105 @@ export default function build(b) {
   for (let x = ZENITSU.x[0]; x <= ZENITSU.x[1]; x++) zenitsuBreaks.push(b.rngInt(2, 4));
 
   b.transform({ offset: [EAVE, 0, EAVE] }, () => {
-    b.phase('Grund und Wasserspiegel', `Lege den Boden der Säulenhalle auf y 0 (Ebene 1): eine Fläche von 145 × 145 Schwarzeichenholzbrettern, x ${span(0, MAX)}, z ${span(0, MAX)}. `
-      + `In der Mitte bleibt ein Feld von 25 × 25 (x und z ${span(60, 84)}) für den Wasserspiegel: Dort kommt Polierter Schwarzstein als Beckenboden hin. `
-      + `Auf y 1 (Ebene 2) setzt du um das Becken einen Rand aus entrindetem Schwarzeichenstamm (x und z ${tx(59)} bzw. ${tx(85)}, liegend entlang der Kante) und füllst die 25 × 25 Felder darin mit Wasserquellen. Auf den Rand stellst du an allen vier Seiten alle 6 Blöcke eine Laterne (bei ${[60, 66, 72, 78, 84].map(tx).join(', ')}). `
-      + 'Der schwarze Grund und das Wasser spiegeln später das Laternenlicht – das „Bodenlose“ des Schachts.', {
-      tips: [
-        'Baue in einer Flachwelt ab y −60 oder in der Normalwelt ab y 64: Der Bau ist 193 Blöcke hoch und passt so unter die Weltgrenze y 319.',
-        'Wasser zuletzt eingießen: Setze in jeder zweiten Reihe in jedes zweite Feld eine Quelle. Eine Stelle zwischen zwei Quellen wird von selbst zur Quelle – so füllt sich das Becken mit etwa einem Viertel der Eimer.',
-      ],
-    });
+    b.phase('Grund und Wasserspiegel');
     buildHallFloor(b);
 
-    b.phase('Säulenwald', `Stelle die Säulen der Halle der Oberen Monde: je 2 × 2 entrindete Schwarzeichenstämme (stehend) von y 1 bis y 38 im Raster 12 – die Südwest-Ecken liegen bei x und z = ${PILLAR_GRID.map(tx).join(', ')}. `
-      + `Im Wasserspiegel, dort, wo später Muzans Empore samt Treppe steht (x ${span(EMPORE.x[0], EMPORE.x[1])}, z ${span(1, 35)}, dazu ein freier Platz vor dem Treppenfuß bis z ${tx(EMPORE_STAIR_FOOT[1][1])}), und dort, wo die vier Aufgänge an den Wänden laufen (Kapitel 3), entfallen sie – es bleiben ${pillarPositions().filter((p) => !p.blocked).length} Säulen. `
-      + `An jedem Rasterpunkt stellst du zwei Laternen auf den Boden, auch dort, wo eine Säule entfällt (nur nicht auf Empore, Treppen und Aufgängen): schräg vor die Nordwest-Ecke (x − 1, z − 1) und schräg hinter die Südost-Ecke (x + 2, z + 2). `
-      + `Auf y 39 verbindet ein Balkenrost die Säulenreihen: 2 Blöcke breite Balken aus liegenden Stämmen entlang aller Säulenreihen von x ${tx(2)} bis ${tx(142)} (und ebenso in z) – die Felder dazwischen bleiben offen, damit der Blick nach oben frei ist. Auf jede Balkenkreuzung außerhalb der Mitte (x und z ${span(56, 88)}) kommt eine stehende Laterne (y 40). `
-      + `Unter die Balken entlang x hängst du in jeder Spannweite (x = ${span(18, 126)} in 12er-Schritten) eine Laterne an 3 Eisenketten (Laterne auf y 35). Weil über dem Wasser die Laternen auf den Kreuzungen fehlen, hängen dort zusätzlich sechs Laternen genauso unter den Balken entlang z (x = ${CENTER_BEAMS.map(tx).join(', ')}, z = ${tx(66)} und ${tx(78)}).`, {
-      tips: [
-        'Die Säulen sind 38 Blöcke hoch: Stelle dich auf Gerüst und baue Säule für Säule, oder setze die Balken zuerst von einem Gerüst-Turm aus.',
-        'Monster spawnen in 26.2 nur bei Blocklicht 0. Die Laternen am Boden halten die ganze Halle hell genug.',
-        'Die Hängelaternen kommen im Ebenen-Plan vor ihren Ketten dran (Ebene 36). Eine hängende Laterne braucht beim Setzen schon den Block über sich: Setze sie erst, wenn Ketten und Balkenrost darüber stehen.',
-      ],
-    });
+    b.phase('Säulenwald');
     buildPillarForest(b);
 
-    b.phase('Muzans Empore und Aufgänge', `Die Halle bekommt eine doppelte Wand bis y 39: außen (x bzw. z = ${tx(0)} und ${tx(MAX)}) Schwarzeichenholzbretter mit einem stehenden Stamm alle 8 Blöcke, innen (${tx(1)} und ${tx(143)}) ein Raster aus Schiebetüren – Stützen alle 4, waagrechte Balken auf y 8, 16, 24, 32 und 39, dazwischen je ein Sockel aus Brettern und Felder aus Blasseichenholzbrettern (Fusuma) oder Ockernem Froschlicht (leuchtende Shoji). `
-      + `Muzans Empore (Interpretation) liegt an der Nordwand: Boden auf y ${EMPORE.y}, x ${span(EMPORE.x[0], EMPORE.x[1])}, z ${span(EMPORE.z[0], EMPORE.z[1])}, vorne ein Kantenbalken, in der Mitte 3 × 3 Bambusmosaik (x ${span(71, 73)}, z ${span(3, 5)}). Zwei Stämme an den vorderen Ecken tragen sie, ein Schwarzeichenholzzaun umgibt sie, vorne bleibt x ${span(71, 73)} frei für die Treppe: 24 Schwarzeichenholztreppen (hohe Seite nach Norden) laufen von z ${tx(12)} (y 24) nach Süden bis z ${tx(35)} (y 1), darunter ein Träger aus Fichtenholzbrettern; an beiden Seiten (x ${tx(70)} und ${tx(74)}) läuft eine Wange aus denselben Treppen auf Fichtenholzbrettern mit, darauf ein Zaun mit einer Laterne alle 6 Stufen. Licht: je eine Laterne auf den vorderen Zaunecken, zwei unter der Empore (x ${tx(68)}/${tx(76)}, z ${tx(6)}) und drei unter der Treppe (x ${tx(72)}, z ${tx(16)}, ${tx(22)}, ${tx(28)}). `
-      + `Vier Aufgänge führen zur ersten Galerie (y 40), einer an jeder Wand und um die Mitte gedreht. Der nördliche: 39 Schwarzeichenholztreppen, 3 breit auf z ${span(8, 10)}, von x ${tx(90)} (y 1) bis x ${tx(128)} (y 39), hohe Seite nach Osten; dann ein Podest aus Brettern auf y 40 bei x ${span(129, 132)}, z ${span(8, 11)}. Unter jede Stufe kommt ein Fichtenholzbrett. An der Schachtseite (z ${tx(11)}) läuft bis zur 38. Stufe eine Wange aus denselben Treppen auf Fichtenholzbrettern mit, darauf ein Zaun bis zur 37. Stufe (darüber liegt der Balkenrost) mit einer Laterne alle 8 Stufen; im Gang hinter dem Aufgang (z ${tx(5)}) steht alle 12 Blöcke eine Laterne (x ${[92, 104, 116, 128].map(tx).join(', ')}). `
-      + `Die anderen drei Aufgänge liegen gedreht an Ost-, Süd- und Westwand (Ost: x ${span(134, 136)}, z ${span(90, 128)}; Süd: z ${span(134, 136)}, x ${span(16, 54)}; West: x ${span(8, 10)}, z ${span(16, 54)}).`, {
-      tips: [
-        'Baue die Aufgänge von unten nach oben: Jede Treppe steht auf ihrem Fichtenholz-Träger, so brauchst du kein Gerüst.',
-        'Die inneren Wandfelder kannst du frei mischen – etwa jedes dritte leuchtend wirkt am besten.',
-      ],
-    });
+    b.phase('Muzans Empore und Aufgänge');
     onSide(b, 0, () => buildHallWallSide(b));
     onSide(b, 1, () => buildHallWallSide(b));
     onSide(b, 2, () => buildHallWallSide(b));
     onSide(b, 3, () => buildHallWallSide(b));
     buildEmpore(b);
-    b.note(72, EMPORE.y + 1, 4, 'Muzans Platz auf der Empore (Interpretation)');
     for (let side = 0; side < 4; side++) onSide(b, side, () => buildHallStair(b));
 
-    const storeyText = (from, to, extra) => `Jetzt wächst die Schachtwand: ein Ring, 8 Blöcke tief, um den freien Schacht (x und z ${span(8, 136)}). Jedes Geschoss ist 8 Blöcke hoch; hier die Geschosse mit Boden auf y ${from} bis y ${to}. `
-      + `Am Beispiel der Nordseite (die anderen drei Seiten genauso, um die Mitte gedreht), Geschoss mit Boden auf y = Y: `
-      + `Boden auf Y aus Schwarzeichenholzbrettern über die ganze Ringtiefe (z ${span(0, 7)}); in der Raumzone z ${span(1, 3)} Bambusmosaik als Tatami. `
-      + `Außenwand z ${tx(0)} von Y+1 bis Y+7 aus Brettern mit einem stehenden Stamm alle 8 (x = ${tx(0)}, ${tx(8)}, ${tx(16)} …) und einem Pilzlicht auf Y+5 in jedem Raum. Die Räume (3 tief) trennen Fusuma-Wände alle 12 Blöcke (x = ${tx(4)}, ${tx(16)}, ${tx(28)} …): Sockel aus Brettern, darüber Blasseichenholzbretter, oben ein Stamm. `
-      + `Die Shoji-/Fusuma-Wand auf z ${tx(4)}: stehende Stämme alle 4 (x = ${tx(4)}, ${tx(8)} …), auf Y+7 ein liegender Balken; dazwischen Felder, 3 breit: Sockel aus Brettern auf Y+1, Feld Y+2 bis Y+5 – etwa 60 % zu (Blasseichenholzbretter), 30 % leuchtend (Ockernes Froschlicht), 10 % offen (Luft, dahinter der Raum) –, auf Y+6 ein Oberlicht aus liegendem geschältem Bambusblock (beim leuchtenden Feld Froschlicht). `
-      + `Die Galerie (z ${span(5, 7)}) bekommt an der Schachtkante z ${tx(7)} Stützen alle 4 von Y+1 bis Y+6, einen Kantenbalken auf Y+7 und dazwischen einen Schwarzeichenholzzaun auf Y+1. Unter den Kantenbalken hängt alle 6 Blöcke (x = ${tx(9)}, ${tx(15)}, ${tx(21)} …) eine Laterne an einer Eisenkette (Kette Y+6, Laterne Y+5). `
-      + `An den Stellen, wo Treppen, Brücken und Hallen anschließen, lässt du den Zaun weg (die Stützen bleiben). ${extra}`;
-
-    b.phase('Schachtwände, Geschosse 1–6', storeyText(40, 80, `In Geschoss 1 (y 40) liegen die vier Treppenpodeste aus Kapitel 3 direkt an der Galerie; sein Raumboden bleibt aus Brettern, weil er über der Säulenhalle hängt und man ihn von unten sieht.`), {
-      tips: [
-        'Baue ein Geschoss erst rundherum fertig, bevor du das nächste beginnst – die Galerie des unteren Geschosses ist dein Gerüst.',
-        'Die Verteilung der Felder ist Zufall (wiederholbar). Du kannst sie frei ändern, solange etwa jedes zehnte Feld offen bleibt.',
-        'Licht: Laternen alle 6 Blöcke, die leuchtenden Felder und ein Pilzlicht je Raum halten jede begehbare Stelle über Blocklicht 0 – im ganzen Bau, auch auf den Hallenbalken und den Dächern der Raumwürfel.',
-        'Die Galerie-Laternen (Y+5) hängen an ihrer Kette (Y+6): Im Ebenen-Plan sind sie eine Ebene früher dran, setzen kannst du sie aber erst, wenn Kette und Kantenbalken darüber stehen. Das gilt in allen Geschossen außer dem Spiegel-Geschoss.',
-      ],
-    });
+    b.phase('Schachtwände, Geschosse 1–6');
     buildStoreys(b, 40, 80, openings);
 
-    const repeatText = (from, to, extra) => `Baue die Geschosse mit Boden auf y ${from} bis y ${to} genau wie in Kapitel 4 beschrieben: Boden mit Tatami-Räumen, Außenwand mit Pilzlicht je Raum, Trennwände alle 12, Shoji-/Fusuma-Wand mit Feldern (etwa 60 % zu, 30 % leuchtend, 10 % offen), Galerie mit Stützen alle 4, Zaun, Kantenbalken und Laternen alle 6. Wo Treppen, Brücken und Hallen anschließen, bleibt der Zaun weg. ${extra}`;
-    b.phase('Schachtwände, Geschosse 7–13', repeatText(88, 136, `Geschoss 10 (y ${MIRROR_STOREY_Y}–${MIRROR_STOREY_Y + 7}) ist das Spiegel-Geschoss: Baue alles genau umgekehrt – Boden mit Tatami oben auf y ${MIRROR_STOREY_Y + 7}, Kantenbalken unten auf y ${MIRROR_STOREY_Y}, der Zaun hängt auf y ${MIRROR_STOREY_Y + 6}, die Oberlichter liegen unten, und die Laternen stehen auf ihren Ketten (Kette y ${MIRROR_STOREY_Y + 1}, Laterne y ${MIRROR_STOREY_Y + 2}). Damit man trotzdem gehen kann, füllst du die Lücken auf y ${MIRROR_STOREY_Y} mit Brettern (Laufboden, Interpretation).`), {
-      tips: [
-        'Im Spiegel-Geschoss alle Zäune, Treppen und Oberlichter von oben setzen: Stell dich auf den Laufboden und baue an der Decke.',
-        'Ab hier lohnt sich ein Wasserfall oder Elytra als schneller Weg nach unten.',
-      ],
-    });
+    b.phase('Schachtwände, Geschosse 7–13');
     buildStoreys(b, 88, 136, openings);
 
-    b.phase('Schachtwände, Geschosse 14–19', repeatText(144, 184, `Das oberste Geschoss endet mit dem Kantenbalken auf y 191 direkt unter der Sturzdecke.`), {
-      tips: ['Von der obersten Galerie aus erreichst du später die Sturzdecke ohne Gerüst.'],
-    });
+    b.phase('Schachtwände, Geschosse 14–19');
     buildStoreys(b, 144, 184, openings);
 
-    b.phase('Brücken', 'Fünf Brücken spannen sich quer durch den Schacht, jede 3 breit auf Höhe eines Galerie-Bodens. Das Deck ist aus Schwarzeichenholzbrettern, links und rechts liegt ein Stamm als Randbalken, darauf ein Zaun. Alle 8 Blöcke steht ein Pfosten: bei offenen Brücken 2 hoch mit einer Laterne obenauf, bei überdachten 4 hoch mit einem Querbalken und einem Satteldach aus Tiefenschieferfliesen. Die Brücken liegen um 1 versetzt gegenüber dem Vorschlag der Recherche, damit sie genau zwischen zwei Geländerstützen anschließen.', {
-      tips: ['Brücken baust du von einer Galerie aus nach vorne: Setze zuerst die Randbalken, dann das Deck – jeder neue Block hält am vorherigen.'],
-    });
+    b.phase('Brücken');
     for (const br of BRIDGES) {
-      const u = br.axis === 'z' ? `x ${span(br.c - 1, br.c + 1)}` : `z ${span(br.c - 1, br.c + 1)}`;
-      const v = br.axis === 'z' ? `von der Nord- zur Süd-Galerie (z ${span(8, 136)})` : `von der West- zur Ost-Galerie (x ${span(8, 136)})`;
-      b.step(`Brücke ${br.name}${br.covered ? ' (überdacht)' : ''}`, `Deck auf y ${br.y}, ${u}, ${v}; Randbalken auf ${br.axis === 'z' ? 'x' : 'z'} ${tx(br.c - 2)} und ${tx(br.c + 2)}. `
-        + (br.covered
-          ? `Pfostenpaare alle 8 Blöcke von y ${br.y + 1} bis ${br.y + 4}, Querbalken auf y ${br.y + 5} mit einer hängenden Laterne darunter, Satteldach aus Tiefenschieferfliesentreppen ab y ${br.y + 6} mit Firststufen auf y ${br.y + 8}; die Giebel an den Enden mit Brettern schließen.`
-          : `Pfosten alle 8 Blöcke 2 hoch (y ${br.y + 1}–${br.y + 2}), obenauf eine Laterne.`));
+      b.step();
       buildBridge(b, br);
     }
 
-    b.phase('Schwebetreppen', `Acht Treppen schweben frei vor den Galerien, je 3 breit, ${STAIR_RUN} hoch und ${STAIR_RUN} lang. Vier sind begehbar (Fichtenholztreppen auf einem Träger aus Fichtenholzbrettern) und verbinden eine Galerie mit der drei Geschosse höheren. Vier stehen kopf: Die Treppen liegen umgedreht (obere Hälfte) unter dem Träger, als ginge jemand an der Decke hinauf – im Werk stehen Dämonen kopfüber an Wänden und Decken. An der Schachtseite läuft bei allen eine Wange mit (eine vierte Reihe derselben Treppen auf Brettern); auf ihr steht der Zaun, bei den kopfstehenden hängt er darunter. An der Galerie fehlt der Zaun nur neben den ersten und letzten zwei Stufen.`, {
-      tips: ['Kopfstehende Treppen setzt du, indem du beim Bauen auf die obere Hälfte eines Blocks zielst. Ein Gerüst-Turm daneben hilft.'],
-    });
+    b.phase('Schwebetreppen');
     for (const s of FLOATING_STAIRS) {
-      const end = s.start + s.dir * (STAIR_RUN - 1);
-      const corners = [sideToWorld(s.side, s.start, 8), sideToWorld(s.side, s.start, 11), sideToWorld(s.side, end, 8), sideToWorld(s.side, end, 11)];
-      const xs = corners.map((c) => c[0]);
-      const zs = corners.map((c) => c[1]);
-      const where = `x ${span(Math.min(...xs), Math.max(...xs))}, z ${span(Math.min(...zs), Math.max(...zs))}`;
-      const [sx, sz] = sideToWorld(s.side, s.start, 9);
-      const [ex, ez] = sideToWorld(s.side, end, 9);
-      const text = s.upside
-        ? `Kopfstehende Treppe im Feld ${where}: oben bei x ${tx(sx)}, z ${tx(sz)} auf y ${s.y + STAIR_RUN}, unten bei x ${tx(ex)}, z ${tx(ez)} auf y ${s.y + 1}. Jede Stufe ist eine Fichtenholztreppe in der oberen Hälfte, direkt darüber ein Fichtenholzbrett; die Wange an der Schachtseite ebenso, unter ihr hängt ein Fichtenholzzaun.`
-        : `Begehbare Treppe im Feld ${where}: erste Stufe bei x ${tx(sx)}, z ${tx(sz)} auf y ${s.y + 1} (Galerie y ${s.y}), letzte bei x ${tx(ex)}, z ${tx(ez)} auf y ${s.y + STAIR_RUN} (Galerie y ${s.y + STAIR_RUN}). Unter jede Stufe ein Fichtenholzbrett; die Wange an der Schachtseite ebenso, darauf ein Fichtenholzzaun.`;
-      b.step(`Treppe ${s.name}${s.upside ? ' (kopfstehend)' : ''}`, text);
+      b.step();
       onSide(b, s.side, () => buildFloatingStair(b, s));
     }
 
-    b.phase('Raumwürfel', 'Zehn Räume schweben im Schacht, jeder 11 × 9 × 11 außen: Tatami-Boden aus Bambusmosaik mit zwei Streifen aus geschältem Bambus, Rand aus liegenden Stämmen, Wände mit Eckstämmen, Sockel aus Brettern, Fusuma-Feldern und einem Oberlicht aus Ockernem Froschlicht, Decke aus Brettern mit einem Pilzlicht in der Mitte. Jeder Raum hat eine offene Fusuma-Hälfte. Vier stehen normal, vier kopf (Tatami oben mit einem Pilzlicht in der Mitte, das auch das Dach hell hält; die Laternen stehen auf der Decke, die jetzt unten ist), zwei liegen auf der Seite (Boden an der West- bzw. Ostwand; dort gibt es nur Vollblöcke und Stämme).', {
-      tips: ['Schwebende Räume baust du von einem Gerüst-Turm aus. Gerüst lässt sich von unten mit einem Schlag abbauen.'],
-    });
+    b.phase('Raumwürfel');
     for (const cube of CUBES) {
-      const box = cubeWorldBox(cube);
-      const kind = { normal: 'normal', upside: 'kopfstehend', tiltWest: 'gekippt, Boden an der Westseite', tiltEast: 'gekippt, Boden an der Ostseite' }[cube.orient];
-      const openName = { north: 'Norden', south: 'Süden', east: 'Osten', west: 'Westen' }[cube.open];
-      b.step(`Raum ${cube.name} (${kind})`, `Raum von x ${span(box.min[0], box.max[0])}, y ${box.min[1]}–${box.max[1]}, z ${span(box.min[2], box.max[2])}, ${kind}. Die offene Fusuma-Hälfte liegt in der Wand nach ${openName}${cube.orient.startsWith('tilt') ? ' (im gekippten Raum: die Wand, die im Raum nach Norden bzw. Süden zeigt)' : ''}.`);
+      b.step();
       buildRoomCube(b, cube);
     }
 
-    b.phase('Zenitsus Sturzraum', `Vor der Süd-Galerie hängt ein Raum in den Schacht (x ${span(ZENITSU.x[0], ZENITSU.x[1])}, y ${ZENITSU.y}–${ZENITSU.y + 7}, z ${span(ZENITSU.z[0], ZENITSU.z[1])}) – Anklang an Zenitsus Kampf gegen Kaigaku, der laut Quelle „無限城を落ちゆく中“ stattfindet – im Fallen durch die Burg. Seine Bodenkante zum Schacht ist 2–4 Blöcke tief unregelmäßig ausgebrochen; unter der Bruchkante hängen umgedrehte Treppen als Bruchstücke (Interpretation).`, {
-      tips: [`Lass den Boden an der Bruchkante bewusst ungleich: Jede Spalte beginnt erst 2, 3 oder 4 Blöcke hinter z ${tx(ZENITSU.z[0])}.`],
-    });
-    b.step('Boden mit Bruchkante', `Tatami (Bambusmosaik) auf y ${ZENITSU.y}, x ${span(ZENITSU.x[0] + 1, ZENITSU.x[1] - 1)}, Randstämme bei x ${tx(ZENITSU.x[0])} und ${tx(ZENITSU.x[1])}, hinten zur Galerie (z ${tx(ZENITSU.z[1])}) eine Schwelle aus liegenden Stämmen; vorne bricht er unregelmäßig ab. Darunter tragen Stämme alle 4 Blöcke (y ${ZENITSU.y - 1}). An der Galerie z ${tx(MAX - 7)} entfällt der Zaun.`);
+    b.phase('Zenitsus Sturzraum');
+    b.step();
     buildZenitsuFloor(b, zenitsuBreaks);
-    b.step('Seitenwände', `Fusuma-Wände bei x ${tx(ZENITSU.x[0])} und ${tx(ZENITSU.x[1])} von y ${ZENITSU.y + 1} bis ${ZENITSU.y + 6}: Stützen alle 4, Felder aus Blasseichenholzbrettern, Oberlicht Ockernes Froschlicht; vorne an der Bruchkante sind einige Felder halb zerrissen.`);
+    b.step();
     buildZenitsuWalls(b, zenitsuBreaks);
-    b.step('Decke und Licht', `Decke aus Brettern auf y ${ZENITSU.y + 7} (bricht vorne etwas weniger tief ab), Balken alle 4, ein Pilzlicht in der Decke und zwei Hängelaternen auf y ${ZENITSU.y + 6}.`);
+    b.step();
     buildZenitsuCeiling(b, zenitsuBreaks);
 
-    b.phase('Akazas Halle', `An der West-Galerie schwebt Akazas Kampfstätte (x ${span(AKAZA.x[0], AKAZA.x[1])}, y ${AKAZA.y}–${AKAZA.y + 13}, z ${span(AKAZA.z[0], AKAZA.z[1])}): eine offene Halle von 41 × 41 mit 12 Blöcke hohen Wänden. In den Holzboden ist eine sechsarmige Schneeflocke aus Packeis eingelassen – Anklang an Akazas Technik „破壊殺・羅針“, deren Kompassmuster am Boden erscheint (Form und Armzahl nicht geprüft). Einige Wandfelder sind herausgebrochen, wie nach Akazas Angriffen.`, {
-      tips: ['Packeis schmilzt nicht und lässt sich wie normale Blöcke in den Boden setzen.'],
-    });
-    b.step('Hallenboden', `Schwarzeichenholzbretter auf y ${AKAZA.y}, x ${span(AKAZA.x[0], AKAZA.x[1])}, z ${span(AKAZA.z[0], AKAZA.z[1])}, mit Randstämmen an den drei Schachtseiten; darunter Tragbalken alle 8 Blöcke (y ${AKAZA.y - 1}). Zur Galerie hin (x ${tx(7)}) entfällt der Zaun.`);
+    b.phase('Akazas Halle');
+    b.step();
     buildAkazaFloor(b);
-    b.step('Schneeflocke', `Packeis in den Boden: Mitte x ${tx(AKAZA.flake[0])}, z ${tx(AKAZA.flake[1])}, sechs Arme mit 12 Blöcken Länge (Ø 25) in 60°-Schritten, an jedem Arm zwei Seitenzweige bei 5 und 8–9 Blöcken Abstand.`);
+    b.step();
     buildSnowflake(b);
-    b.note(AKAZA.flake[0], AKAZA.y + 1, AKAZA.flake[1], 'Mitte der Schneeflocke (Akazas Kompassmuster, Interpretation)');
-    b.step('Wände', `Wände im Norden (z ${tx(AKAZA.z[0])}), Süden (z ${tx(AKAZA.z[1])}) und Osten (x ${tx(AKAZA.x[1])}), y ${AKAZA.y + 1}–${AKAZA.y + 12}: Stützen alle 4, Sockel, zwei Reihen Felder (y ${AKAZA.y + 2}–${AKAZA.y + 5} und ${AKAZA.y + 7}–${AKAZA.y + 10}) mit Balken dazwischen, Oberlicht aus Ockernem Froschlicht auf y ${AKAZA.y + 11}, Balken obenauf. Vier Felder sind herausgebrochen – dort bleiben nur Reste stehen.`);
+    b.step();
     buildAkazaWalls(b);
-    b.step('Balkenrost und Licht', `Offener Balkenrost auf y ${AKAZA.y + 13}: Balken alle 8 in beide Richtungen. An den inneren Kreuzungen hängt je eine Laterne an 6 Ketten (Laterne auf y ${AKAZA.y + 6}).`);
+    b.step();
     buildAkazaRoof(b);
 
-    b.phase('Domas Lotushalle', `An der Ost-Galerie liegt Domas Halle (x ${span(DOMA.x[0], DOMA.x[1])}, y ${DOMA.y}–${DOMA.y + 11}, z ${span(DOMA.z[0], DOMA.z[1])}): ein Wasserbecken mit Seerosen, eine Mittelinsel mit Goldrand und vier „Eis-Lotus“-Skulpturen – Anklang an Domas goldene Fächer und seine Eis- und Lotus-Techniken (Interpretation; der Raum ist nicht per Quelle geprüft).`, {
-      tips: ['Setze das Wasser erst, wenn Beckenboden und Rand fertig sind – sonst läuft es aus dem Schacht.'],
-    });
-    b.step('Boden und Becken', `Bretter auf y ${DOMA.y} mit Randstämmen, darunter Tragbalken alle 8 (y ${DOMA.y - 1}). Becken 21 × 21 (x ${span(DOMA.pool[0], DOMA.pool[1])}, z ${span(DOMA.pool[2], DOMA.pool[3])}): Boden aus Poliertem Schwarzstein auf y ${DOMA.y - 1}, Wasser auf y ${DOMA.y}, Rand aus liegenden Stämmen. Zur Galerie hin (x ${tx(MAX - 7)}) entfällt der Zaun.`);
+    b.phase('Domas Lotushalle');
+    b.step();
     buildDomaFloor(b);
-    b.step('Insel, Lotus und Seerosen', `Mittelinsel 5 × 5 (x ${span(120, 124)}, z ${span(70, 74)}) aus Goldblöcken mit 3 × 3 Brettern innen und einer Laterne. Eis-Lotus an vier Stellen (x ${tx(115)}/${tx(129)}, z ${tx(65)}/${tx(79)}): zwei Blaueis übereinander, darauf ein Kreuz aus Packeis (Arme 2), darüber ein 3 × 3-Kranz um ein Blaueis, oben ein Packeis. Seerosenblätter verteilt aufs Wasser.`);
+    b.step();
     buildDomaPool(b);
-    b.step('Wände', `Fusuma-Wände im Norden, Süden und Westen, y ${DOMA.y + 1}–${DOMA.y + 10}: Stützen alle 4, Sockel aus Brettern, Felder aus Blasseichenholzbrettern, auf y ${DOMA.y + 6} eine Leiste aus Goldblöcken, Oberlicht aus Ockernem Froschlicht auf y ${DOMA.y + 9}, Balken obenauf.`);
+    b.step();
     buildDomaWalls(b);
-    b.step('Decke mit Pilzlicht', `Decke aus Brettern auf y ${DOMA.y + 11}; alle 4 Blöcke ein Pilzlicht als Feld (Raster ab x ${tx(DOMA.x[0] + 2)}, z ${tx(DOMA.z[0] + 2)}); sie leuchten auch das Dach von oben aus.`);
+    b.step();
     buildDomaCeiling(b);
 
-    b.phase('Kokushibos Säulenhalle', `An der Nord-Galerie liegt Kokushibos Halle (x ${span(KOKUSHIBO.x[0], KOKUSHIBO.x[1])}, y ${KOKUSHIBO.y}–${KOKUSHIBO.y + 12}, z ${span(KOKUSHIBO.z[0], KOKUSHIBO.z[1])}) mit Tatami-Boden, zwei Säulenreihen, von denen drei Säulen „durchtrennt“ sind, und einer Mondsichel aus Perlmutternem Froschlicht in der Decke – Anklang an Kokushibos Mond-Atmung. Dieser Ort beruht nur auf dem Manga; im Anime ist er noch nicht erschienen.`, {
-      tips: ['Für die schrägen Schnittkanten der Säulen setzt du je eine Treppe auf den Stumpf und eine umgedrehte unter den Deckenstumpf.'],
-    });
-    b.step('Tatami-Boden', `Bambusmosaik auf y ${KOKUSHIBO.y}, Randstämme, alle 4 Blöcke ein Streifen aus geschältem Bambus (Tatami-Kanten), darunter Tragbalken alle 8. Zur Galerie hin (z ${tx(7)}) entfällt der Zaun.`);
+    b.phase('Kokushibos Säulenhalle');
+    b.step();
     buildKokushiboFloor(b);
-    b.step('Wände', `Wände im Westen, Osten und Süden, y ${KOKUSHIBO.y + 1}–${KOKUSHIBO.y + 11}: Stützen alle 4, untere Felder Fusuma (in der Südwand zwei offene Felder mit Blick in den Schacht), obere Felder Fusuma oder Perlmutternes Froschlicht als kühles Mondlicht.`);
+    b.step();
     buildKokushiboWalls(b);
-    b.step('Decke mit Mondsichel', `Decke aus Brettern auf y ${KOKUSHIBO.y + 12} mit Balken alle 8; sie liegt auf den drei Wänden. Mondsichel aus Perlmutternem Froschlicht: Kreis mit Radius 6 um x ${tx(72)}, z ${tx(20)}, ohne den Kreis mit Radius 5 um x ${tx(74)}, z ${tx(18)}; die Sichel ist auch von oben zu sehen und hält das Dach hell. Acht Laternen hängen an je einer Kette.`);
+    b.step();
     buildKokushiboCeiling(b);
-    b.step('Säulen', `Zwei Reihen à 5 Säulen (stehende Stämme, 11 hoch, vom Boden bis unter die Decke) bei z ${tx(16)} und ${tx(24)}, x ${[60, 66, 72, 78, 84].map(tx).join(', ')}. Durchtrennt sind die Säulen bei x ${tx(66)}/z ${tx(16)}, x ${tx(78)}/z ${tx(24)} und x ${tx(84)}/z ${tx(16)}: unten ein Stumpf mit einer Treppe als schräger Schnitt, oben ein Stumpf, der an der Decke hängt, mit umgedrehter Treppe. Neben jeder Säule eine Laterne (bei den durchtrennten eine Stufe als „Bruchstück“).`);
+    b.step();
     buildKokushiboPillars(b);
 
-    b.phase('Nakimes Bühne', `Mitten im Schacht schwebt Nakimes Bühne (x ${span(NAKIME.x[0], NAKIME.x[1])}, y ${NAKIME.y}, z ${span(NAKIME.z[0], NAKIME.z[1])}) – von hier steuert sie die Burg mit ihrer Biwa. Die schwebende Bühne im Atrium ist ein Anklang an das Ōkawasō (kein offizielles Vorbild).`, {
-      tips: ['Baue die Bühne von einem Gerüst-Turm aus. Die Ketten setzt du danach von der Bühne aus Glied für Glied nach oben bis y 191 – die Sturzdecke aus dem nächsten Kapitel liegt dann direkt auf ihnen.'],
-    });
-    b.step('Bühne', `Boden 7 × 7 auf y ${NAKIME.y} aus Brettern mit Randstämmen, darunter 5 × 5 Bretter und eine Hängelaterne. Fichtenholzzaun am Rand mit einer Lücke im Süden (x ${span(71, 73)}; in ihrer Mitte hängt später die südliche Kette), ein Notenblock in der Mitte als Biwa-Zeichen, vier Laternen an den inneren Ecken.`);
+    b.phase('Nakimes Bühne');
+    b.step();
     buildNakimeStage(b);
-    b.note(CENTER, NAKIME.y + 1, CENTER, 'Notenblock als Zeichen für Nakimes Biwa');
-    b.step('Ketten zur Decke', `Vier Eisenketten von y ${NAKIME.y + 1} bis y ${TOP_Y - 1}, an den Mitten der vier Bühnenseiten (x ${tx(CENTER)}/z ${tx(NAKIME.z[0])}, x ${tx(CENTER)}/z ${tx(NAKIME.z[1])}, x ${tx(NAKIME.x[0])}/z ${tx(CENTER)}, x ${tx(NAKIME.x[1])}/z ${tx(CENTER)}). Sie enden unter den Balken der Sturzdecke (Kapitel 15).`);
+    b.step();
     buildNakimeChains(b);
 
-    b.phase('Sturzdecke', `Oben schließt die Decke auf y ${TOP_Y}: ein Balkenrost aus liegenden Stämmen alle 4 Blöcke über die ganze Fläche, die Felder dazwischen aus Blasseichenholzbrettern. Die Mitte (x und z ${span(41, 103)}) bleibt offen; dort hängen an jedem Feld aufgeklappte Blasseichenholzfalltüren – hier sind die Dämonenjäger hereingefallen („Nakime opens doors into the Infinity Castle beneath them“).`, {
-      tips: [
-        'Die Decke baust du von der obersten Galerie aus mit Gerüst nach innen. Zum Schluss das Gerüst abbauen – der Blick fällt dann 190 Blöcke tief bis zum Wasserspiegel.',
-        'Die aufgeklappten Falltüren hängen frei im Feld, neben ihnen ist kein Block zum Anklicken. Setz je Falltür einen Hilfsblock direkt hinter ihre Kante (unter den Balken bzw. eine Ebene tiefer), klick dessen Seite in der oberen Hälfte an (dann sitzt die Falltür oben), klapp sie mit Rechtsklick auf und bau den Hilfsblock wieder ab. Die Falltür bleibt hängen.',
-      ],
-    });
-    b.step('Balkenrost', `Liegende Stämme auf y ${TOP_Y} alle 4 Blöcke (x und z = ${tx(0)}, ${tx(4)}, ${tx(8)} … ${tx(MAX)}), in beide Richtungen.`);
+    b.phase('Sturzdecke');
+    b.step();
     buildCeilingBeams(b);
-    b.step('Felder', `Alle Felder außerhalb der offenen Mitte (x und z ${span(41, 103)}) mit Blasseichenholzbrettern füllen.`);
+    b.step();
     buildCeilingFields(b);
-    b.step('Aufgeklappte Türen', `In jedem offenen Feld eine Reihe von 3 Blasseichenholzfalltüren, 2 hoch (y ${TOP_Y - 2} und ${TOP_Y - 1}), aufgeklappt an der Nord- oder Westkante – abwechselnd wie ein Schachbrett.`);
+    b.step();
     buildCeilingFlaps(b);
-    b.step('Laternen an langen Ketten', 'An einzelnen Balkenkreuzungen über dem Schacht hängen Laternen an 3 bis 10 Ketten. Die Mittelachse bleibt frei.');
+    b.step();
     buildCeilingLanterns(b);
 
-    b.phase('Außenhaut und Vordächer', `Zum Schluss bekommt die Außenwand ein Vordach je Geschoss: eine umlaufende Reihe Tiefenschieferfliesenstufen (obere Hälfte) 1 Block vor der Wand (x bzw. z = 0 und ${tx(MAX) + 1}), jeweils auf der Höhe der Kantenbalken (y 39, 47, 55 … 191). Optional – im Werk hat die Burg keine Außenansicht.`, {
-      tips: ['Die Vordächer kannst du auch weglassen; dann beginnen alle Koordinaten der Anleitung bei 1.'],
-    });
-    b.step('Vordächer y 39–111', 'Die Reihen auf y 39, 47, 55, 63, 71, 79, 87, 95, 103 und 111.');
+    b.phase('Außenhaut und Vordächer');
+    b.step();
     buildEavesRange(b, 0, 9);
-    b.step('Vordächer y 119–191', 'Die Reihen auf y 119, 127, 135, 143, 151, 159, 167, 175, 183 und 191.');
+    b.step();
     buildEavesRange(b, 10, 19);
   });
 }

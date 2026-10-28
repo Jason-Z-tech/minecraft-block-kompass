@@ -15,9 +15,7 @@ export const meta = {
   tags: ['Test', 'Bibliothek'],
   aliases: ['schaukasten bauteile'],
   accuracy: 'eigenes',
-  difficulty: 2,
   description: 'Fachwerkhaus mit Fenstern, Tür, Gaube und Schornstein, ein Stück Burgmauer mit Tor, Zinnen und Schießscharten, Säulen, ein Marktstand und Bodenmuster.',
-  facts: ['Testmodul für die Hilfsbibliothek'],
   sources: [],
   credits: null,
   tested: null,
@@ -28,12 +26,12 @@ const spruce = WOOD.fichte;
 const stone = STONE.steinziegel;
 
 function ground(b) {
-  b.phase('Gelände', 'Lege die Wiese aus.');
+  b.phase('Gelände');
   b.fill(-4, -1, -4, 56, -1, 22, 'grass_block');
 }
 
 function house(b) {
-  b.phase('Fachwerkhaus', 'Fundament, vier Fachwerkwände und das Dach.');
+  b.phase('Fachwerkhaus');
   b.fill(0, 0, 0, 12, 0, 8, 'cobblestone');
   b.fill(1, 0, 1, 11, 0, 7, spruce.planks);
   timberWall(b, { x: 0, y: 1, z: 8, facing: 'south', length: 13, height: 5, pattern: 'diagonal' });
@@ -42,7 +40,7 @@ function house(b) {
   timberWall(b, { x: 12, y: 1, z: 8, facing: 'east', length: 9, height: 5, pattern: 'plain', fill: 'mud_bricks' });
   b.roof({ x1: 0, z1: 0, x2: 12, z2: 8, y: 5, type: 'gable', axis: 'x', stairs: oak.stairs, slab: oak.slab, full: oak.planks, overhang: 1 });
 
-  b.phase('Fenster und Tür', 'Setze Fenster, Türen, Gaube und Schornstein in die fertigen Wände.');
+  b.phase('Fenster und Tür');
   window(b, { x: 2, y: 2, z: 8, facing: 'south', width: 1, height: 2, shutters: spruce.trapdoor, flowerBox: true });
   window(b, { x: 10, y: 2, z: 8, facing: 'south', width: 1, height: 2, shutters: spruce.trapdoor, flowerBox: { flowers: ['cornflower', 'allium', 'azure_bluet'] } });
   doorway(b, { x: 6, y: 1, z: 8, facing: 'south', door: spruce.door, frame: null, canopy: oak.stairs, step: 'cobblestone_stairs' });
@@ -59,14 +57,14 @@ function house(b) {
   wallLantern(b, { x: 0, y: 3, z: 4, facing: 'west', style: 'bracket', arm: oak.fence });
   hangingLantern(b, { x: 6, y: 4, z: 4, chain: 1 });
 
-  b.phase('Vorgarten', 'Zaun mit Torpfosten, Laternen und Weg.');
+  b.phase('Vorgarten');
   gardenFence(b, { x: -1, y: 0, z: 11, facing: 'south', width: 15, depth: 6, sides: ['front', 'left', 'right'], posts: spruce.strippedLog, lanterns: true });
   floorPattern(b, { x: 6, y: -1, z: 9, width: 1, depth: 10, pattern: 'random', blocks: [['dirt_path', 3], ['coarse_dirt', 1], ['gravel', 1]] });
   lampPost(b, { x: 4, y: 0, z: 19, facing: 'east', height: 3, style: 'arm', post: oak.fence, base: 'mossy_cobblestone' });
 }
 
 function castle(b) {
-  b.phase('Burgmauer', 'Mauer mit Tor, Schießscharten und Zinnen.');
+  b.phase('Burgmauer');
   b.fill(16, 0, 2, 32, 6, 3, stone.block);
   arch(b, { x: 24, y: 0, z: 3, facing: 'south', width: 3, height: 4, style: 'pointed', depth: 2, block: stone.block, stairs: stone.stairs });
   arrowSlit(b, { x: 19, y: 2, z: 3, facing: 'south', style: 'cross', depth: 2 });
@@ -78,7 +76,7 @@ function castle(b) {
   lampPost(b, { x: 22, y: 0, z: 6, facing: 'south', height: 4, style: 'double', post: 'stone_brick_wall', base: stone.chiseled });
   lampPost(b, { x: 26, y: 0, z: 6, height: 3, style: 'top', post: 'stone_brick_wall' });
 
-  b.phase('Säulen und Bögen', 'Eine Säulenreihe und ein Rundbogen-Durchgang.');
+  b.phase('Säulen und Bögen');
   column(b, { x: 36, y: 0, z: 3, height: 5 });
   column(b, { x: 40, y: 0, z: 3, height: 5, shaft: 'polished_deepslate', base: 'polished_deepslate', capital: 'chiseled_deepslate', trim: 'deepslate_brick_stairs' });
   column(b, { x: 44, y: 0, z: 3, height: 5, shaft: 'stripped_birch_log', base: 'smooth_sandstone', capital: 'chiseled_sandstone', trim: null });
@@ -88,7 +86,7 @@ function castle(b) {
 }
 
 function stall(b) {
-  b.phase('Marktstand', 'Pfosten mit Kopfbändern, Balken und Dach.');
+  b.phase('Marktstand');
   for (const [x, z] of [[48, 2], [53, 2], [48, 6], [53, 6]]) supportPost(b, { x, y: 0, z, height: 3, log: oak.log, braces: oak.stairs });
   for (const z of [2, 6]) b.fill(47, 3, z, 54, 3, z, `${oak.log}[axis=x]`);
   b.fill(47, 4, 1, 54, 4, 7, spruce.slab);
@@ -100,7 +98,7 @@ function stall(b) {
 }
 
 function floors(b) {
-  b.phase('Bodenmuster', 'Sieben Muster nebeneinander.');
+  b.phase('Bodenmuster');
   const patterns = [
     ['checker', ['polished_andesite', 'polished_diorite']],
     ['herringbone', [WOOD.eiche.strippedLog, oak.strippedLog]],

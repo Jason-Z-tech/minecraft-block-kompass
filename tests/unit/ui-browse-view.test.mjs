@@ -11,7 +11,7 @@ import { searchCatalog } from '../../js/create/search.js';
 import { createBrowseIndex, computeView, initialShown, nextShown, BATCH_SIZE } from '../../js/ui/browse/view.js';
 import { emptyFilters } from '../../js/ui/browse/filters.js';
 import { parseBrowseState, browseSearch } from '../../js/ui/browse/url-state.js';
-import { sizeClassForBlocks } from '../../js/ui/browse/model.js';
+import { sizeClassForBlocks, sizeClassOf } from '../../js/ui/browse/model.js';
 import { selectHomeSections, catalogTotals, diversify, HOME_SECTIONS, SECTION_SIZE } from '../../js/ui/browse/home-sections.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -29,7 +29,9 @@ test('Test-Katalog: gültiges Format von Runde 2, alle Einträge übernommen', (
   assert.equal(catalog.builds.length, raw.counts.total);
   assert.ok(catalog.builds.length >= 150);
   for (const slug of CATEGORY_SLUGS) assert.equal(inCategory(slug).length, raw.counts.byCategory[slug], slug);
+  assert.deepEqual(Object.keys(raw.counts.byCategory).sort(), [...CATEGORY_SLUGS].sort(), 'keine Kategorie Redstone mehr');
   for (const build of raw.builds) {
+    assert.ok(!Object.hasOwn(build, 'difficulty') && !Object.hasOwn(build, 'facts'), `${build.id}: keine Schwierigkeit, kein Wissenswertes`);
     assert.equal(build.sizeClass, sizeClassForBlocks(build.blocks), `${build.id}: Größenklasse`);
     assert.ok(build.blocks <= build.size[0] * build.size[1] * build.size[2], `${build.id}: Blöcke passen in die Größe`);
     if (build.id.startsWith('spiel-')) {
@@ -40,7 +42,9 @@ test('Test-Katalog: gültiges Format von Runde 2, alle Einträge übernommen', (
     if (build.scales) assert.deepEqual(Object.keys(build.variants), build.scales.map(String));
   }
   assert.ok(catalog.builds.some((build) => build.thumb) && catalog.builds.some((build) => !build.thumb), 'mit und ohne Vorschaubild');
-  assert.ok(catalog.builds.some((build) => build.tested === false) && catalog.builds.some((build) => build.tested === true));
+  // tested: true hatten nur die Redstone-Bauten; „getestet“ prüfen die Logik-Tests (ui-browse-logic) mit eigenen Einträgen
+  assert.ok(catalog.builds.some((build) => build.tested === false) && catalog.builds.some((build) => build.tested === null));
+  assert.ok(catalog.builds.filter((build) => build.tested === false).every((build) => build.category === 'farmen'), 'ungetestet sind nur Farmen');
   // data.js übernimmt die neuen Felder
   const skytree = catalog.builds.find((build) => build.id === 'tokyo-skytree');
   assert.equal(skytree.sizeClass, 'riesig');
@@ -65,33 +69,34 @@ test('Textsuche über searchCatalog (js/create/search.js): Vertrag und Einsatz i
 });
 
 test('Ansicht: Suche → Filter → Sortierung, Zählung je Option', () => {
-  const index = createBrowseIndex(inCategory('klein'));
-  const all = computeView(index, state(''));
-  assert.equal(all.total, 41);
-  assert.equal(all.results.length, 41);
-  assert.equal(all.results[0].title, 'Aquarium');
-  const garden = computeView(index, state('?q=garten&schwierigkeit=1&sort=bloecke-ab'), { category: 'klein' });
-  assert.equal(garden.searched, 13);
-  assert.ok(garden.results.length > 0 && garden.results.length < garden.searched);
-  assert.ok(garden.results.every((build) => build.difficulty === 1));
-  for (let i = 1; i < garden.results.length; i++) assert.ok(garden.results[i - 1].blocks >= garden.results[i].blocks);
-  assert.equal(garden.counts.schwierigkeit['1'], garden.results.length);
-  assert.equal(garden.counts.schwierigkeit['1'] + garden.counts.schwierigkeit['2'], garden.searched);
-  assert.equal(garden.activeFilters, 1);
+  const klein = computeView(createBrowseIndex(inCategory('klein')), state(''));
+  assert.equal(klein.total, 41);
+  assert.equal(klein.results.length, 41);
+  assert.equal(klein.results[0].title, 'Aquarium');
+  const index = createBrowseIndex(inCategory('haeuser'));
+  const wood = computeView(index, state('?q=holz&groesse=mittel&sort=bloecke-ab'), { category: 'haeuser' });
+  assert.equal(wood.searched, 7);
+  assert.ok(wood.results.length > 0 && wood.results.length < wood.searched);
+  assert.ok(wood.results.every((build) => sizeClassOf(build) === 'mittel'));
+  for (let i = 1; i < wood.results.length; i++) assert.ok(wood.results[i - 1].blocks >= wood.results[i].blocks);
+  assert.equal(wood.counts.groesse.mittel, wood.results.length);
+  assert.equal(wood.counts.groesse.klein + wood.counts.groesse.mittel, wood.searched);
+  assert.deepEqual(Object.keys(wood.counts), ['groesse', 'herkunft', 'test'], 'keine Zählung nach Schwierigkeit');
+  assert.equal(wood.activeFilters, 1);
   // Nichts passt → leere Liste, keine Ausnahme
   assert.deepEqual(computeView(index, state('?q=zzzz')).results, []);
 });
 
 test('Ansicht: fremde Suchfunktion nach dem Vertrag von searchCatalog wird genutzt und geprüft', () => {
-  const builds = inCategory('redstone');
+  const builds = inCategory('farmen');
   const index = createBrowseIndex(builds);
   const calls = [];
   const fake = (cat, query, options) => {
     calls.push({ count: cat.builds.length, query, options });
     return [{ entry: builds[3], score: 2 }, { entry: { id: 'fremd' }, score: 9 }, { entry: builds[1], score: 5 }, { entry: builds[1], score: 1 }];
   };
-  const view = computeView(index, state('?q=irgendwas'), { search: fake, category: 'redstone' });
-  assert.deepEqual(calls, [{ count: builds.length, query: 'irgendwas', options: { limit: builds.length, category: 'redstone' } }]);
+  const view = computeView(index, state('?q=irgendwas'), { search: fake, category: 'farmen' });
+  assert.deepEqual(calls, [{ count: builds.length, query: 'irgendwas', options: { limit: builds.length, category: 'farmen' } }]);
   assert.deepEqual(view.results.map((build) => build.id), [builds[1].id, builds[3].id], 'unbekannte und doppelte Treffer fallen weg');
   assert.throws(() => computeView(index, state('?q=x'), { search: () => null }), /keine Trefferliste/);
 });
@@ -100,7 +105,7 @@ test('Ansicht: über 300 Einträge schnell genug, Nachladen in Schritten', () =>
   const many = Array.from({ length: 1200 }, (_, i) => ({ ...catalog.builds[i % catalog.builds.length], id: `bau-${i}`, title: `${catalog.builds[i % catalog.builds.length].title} ${i}` }));
   const start = performance.now();
   const index = createBrowseIndex(many);
-  for (const search of ['', '?q=turm', '?groesse=klein&schwierigkeit=1&schwierigkeit=2', '?q=haus&sort=bloecke-ab&herkunft=eigenes']) computeView(index, state(search));
+  for (const search of ['', '?q=turm', '?groesse=klein&herkunft=eigenes&herkunft=original', '?q=haus&sort=bloecke-ab&herkunft=eigenes']) computeView(index, state(search));
   const ms = performance.now() - start;
   assert.ok(ms < 1000, `zu langsam: ${ms.toFixed(0)} ms`);
   assert.equal(BATCH_SIZE % 12, 0);
@@ -121,12 +126,24 @@ test('Startseite: feste Auswahl aus echten Daten, kein Bau doppelt, gleiche Eing
   for (const section of sections) assert.ok(section.builds.length > 0 && section.builds.length <= SECTION_SIZE);
   assert.deepEqual(selectHomeSections([...catalog.builds].reverse()).map((s) => s.builds.map((b) => b.id)), sections.map((s) => s.builds.map((b) => b.id)), 'unabhängig von der Reihenfolge im Katalog');
   const byId = Object.fromEntries(sections.map((section) => [section.id, section]));
+  assert.deepEqual(sections.map((section) => section.title), ['Riesenbauten', 'Klein & schnell gebaut', 'Original aus dem Spiel', 'Nach echten Maßen', 'Farmen']);
   assert.equal(byId.riesig.builds[0].id, 'cheops-pyramide', 'die meisten Blöcke zuerst');
-  assert.ok(byId.schnell.builds.every((build) => build.blocks < 1000 && build.difficulty <= 2));
+  // Klein & schnell gebaut: Größenklasse klein, die kleinsten zuerst (bei gleicher Zahl nach Titel)
+  const smallest = catalog.builds.filter((build) => sizeClassOf(build) === 'klein').sort((a, b) => a.blocks - b.blocks || a.title.localeCompare(b.title, 'de'));
+  assert.equal(byId.schnell.total, smallest.length);
+  assert.ok(byId.schnell.builds.every((build) => sizeClassOf(build) === 'klein' && build.blocks < 1000));
+  assert.equal(byId.schnell.builds[0].id, smallest[0].id);
   assert.ok(byId.original.builds.every((build) => build.accuracy === 'original'));
   assert.equal(byId.original.total, 13);
   assert.ok(byId.massstab.builds.every((build) => build.accuracy === 'massstab'));
-  assert.ok(byId.technik.builds.every((build) => ['redstone', 'farmen'].includes(build.category)));
+  // Farmen: nur die Kategorie Farmen, die größten zuerst
+  assert.equal(byId.farmen.total, inCategory('farmen').length);
+  assert.ok(byId.farmen.builds.every((build) => build.category === 'farmen'));
+  for (let i = 1; i < byId.farmen.builds.length; i++) assert.ok(byId.farmen.builds[i - 1].blocks >= byId.farmen.builds[i].blocks);
+  // Weder Abschnitte noch ihre Links nutzen die Schwierigkeit
+  for (const section of HOME_SECTIONS) {
+    assert.ok(!Object.hasOwn(section.filters, 'schwierigkeit') && !section.sort.startsWith('schwierigkeit'), section.id);
+  }
   assert.ok(new Set(byId.original.builds.map((build) => build.category)).size >= 3, 'abwechselnd aus mehreren Kategorien');
   // Leerer Katalog oder ein Bau: keine leeren Abschnitte
   assert.deepEqual(selectHomeSections([]), []);
@@ -151,12 +168,12 @@ test('Startseite: Links „N Bauten in …“ führen auf genau diese Auswahl de
 
 test('Startseite: Gesamtzahlen und reihum-Auswahl', () => {
   const totals = catalogTotals(catalog.builds);
-  assert.equal(totals.builds, 175);
-  assert.equal(totals.categories, 8);
+  assert.equal(totals.builds, 155);
+  assert.equal(totals.categories, 7);
   assert.equal(totals.originals, 13);
   assert.equal(totals.blocks, catalog.builds.reduce((sum, build) => sum + build.blocks, 0));
   assert.equal(totals.untested, catalog.builds.filter((build) => build.tested === false).length);
   assert.deepEqual(diversify(['a1', 'a2', 'a3', 'b1', 'c1', 'b2'], (x) => x[0], 4), ['a1', 'b1', 'c1', 'a2']);
   assert.deepEqual(diversify(['a1', 'a2'], (x) => x[0], 4), ['a1', 'a2']);
-  assert.deepEqual(emptyFilters(), { groesse: [], schwierigkeit: [], herkunft: [], test: [] });
+  assert.deepEqual(emptyFilters(), { groesse: [], herkunft: [], test: [] });
 });

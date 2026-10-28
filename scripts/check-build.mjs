@@ -1,4 +1,4 @@
-// Prüft ein Bau-Modul (§9, §10): baut es, prüft Zustände, Grenzen, Texte und meta, gibt Kennzahlen aus.
+// Prüft ein Bau-Modul (§9, §10): baut es, prüft Zustände, Grenzen und meta, gibt Kennzahlen aus.
 // Aufruf: node scripts/check-build.mjs <modulpfad> [--scale <zahl>] [--json] [--data <ordner>]
 // Exit-Code 1 bei Fehlern.
 
@@ -11,9 +11,11 @@ import { Builder } from '../js/core/builder.js';
 import { formatAmount, stackSize } from '../js/core/materials.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'redstone', 'farmen', 'infrastruktur'];
+export const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur'];
 export const ACCURACIES = ['original', 'massstab', 'vorlage', 'nachempfunden', 'eigenes'];
-const META_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'difficulty', 'description', 'facts', 'sources', 'credits', 'scales', 'tested'];
+const META_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources', 'credits', 'scales', 'tested'];
+// Felder, die es früher gab: stehen sie noch im Modul, ist das ein Fehler.
+const REMOVED_META_KEYS = ['difficulty', 'facts'];
 const ID_PATTERN = /^[a-z0-9-]{2,80}$/;
 const TOP_MATERIALS = 20;
 
@@ -84,21 +86,23 @@ export function validateMeta(meta, { fileId, folderCategory = null }) {
   const errors = [];
   const warnings = [];
   if (!meta || typeof meta !== 'object') return { errors: ['Das Modul exportiert kein meta-Objekt.'], warnings };
-  for (const key of Object.keys(meta)) if (!META_KEYS.includes(key)) warnings.push(`meta.${key} ist unbekannt und wird ignoriert.`);
+  for (const key of Object.keys(meta)) {
+    if (REMOVED_META_KEYS.includes(key)) errors.push(`meta.${key} gibt es nicht mehr.`);
+    else if (!META_KEYS.includes(key)) warnings.push(`meta.${key} ist unbekannt und wird ignoriert.`);
+  }
   if (typeof meta.id !== 'string' || !ID_PATTERN.test(meta.id)) errors.push('meta.id muss aus 2–80 Zeichen a–z, 0–9 und - bestehen.');
   else if (meta.id !== fileId) errors.push(`meta.id „${meta.id}“ muss dem Dateinamen „${fileId}“ entsprechen.`);
   for (const key of ['title', 'subtitle', 'description']) if (!isNonEmptyText(meta[key])) errors.push(`meta.${key} fehlt oder ist leer.`);
   if (!CATEGORIES.includes(meta.category)) errors.push(`meta.category muss eine von ${CATEGORIES.join(', ')} sein.`);
   else if (folderCategory && folderCategory !== meta.category) errors.push(`meta.category „${meta.category}“ passt nicht zum Ordner „${folderCategory}“.`);
   if (!ACCURACIES.includes(meta.accuracy)) errors.push(`meta.accuracy muss eine von ${ACCURACIES.join(', ')} sein.`);
-  if (!Number.isInteger(meta.difficulty) || meta.difficulty < 1 || meta.difficulty > 5) errors.push('meta.difficulty muss eine ganze Zahl von 1 bis 5 sein.');
-  for (const key of ['tags', 'aliases', 'facts']) checkTextList(meta, key, errors);
+  for (const key of ['tags', 'aliases']) checkTextList(meta, key, errors);
   if (Array.isArray(meta.aliases) && meta.aliases.some((a) => typeof a === 'string' && a !== a.toLowerCase())) warnings.push('meta.aliases sollten klein geschrieben sein (für die Suche).');
   checkSources(meta, errors);
   checkCredits(meta, errors);
   checkScales(meta, errors);
   if (meta.tested !== null && meta.tested !== undefined && typeof meta.tested !== 'boolean') errors.push('meta.tested muss null, true oder false sein.');
-  if (['redstone', 'farmen'].includes(meta.category) && typeof meta.tested !== 'boolean') warnings.push('Redstone/Farmen: meta.tested sollte false sein („nicht im Spiel getestet“), solange es niemand im Spiel geprüft hat.');
+  if (meta.category === 'farmen' && typeof meta.tested !== 'boolean') warnings.push('Farmen: meta.tested sollte false sein („nicht im Spiel getestet“), solange es niemand im Spiel geprüft hat.');
   if (isNonEmptyText(meta.description) && meta.description.length > 700) warnings.push('meta.description ist lang – gedacht sind 2–4 Sätze.');
   return { errors, warnings };
 }
@@ -212,10 +216,9 @@ function checkResult(result, errors, warnings) {
   }
   if (result.blockCount === 0) errors.push('Der Bau enthält keine Blöcke.');
   for (const phase of result.phases) {
-    if (!phase.text) warnings.push(`Kapitel „${phase.title}“ hat keinen Text.`);
     if (phase.steps.length === 0) warnings.push(`Kapitel „${phase.title}“ hat keine Schritte (keine Blöcke).`);
   }
-  for (const step of result.steps) if (step.blockCount === 0) warnings.push(`Schritt „${step.title}“ setzt keine Blöcke.`);
+  for (const step of result.steps) if (step.blockCount === 0) warnings.push(`Schritt ${step.index + 1} (Kapitel „${result.phases[step.phase].title}“) setzt keine Blöcke.`);
   warnings.push(...result.warnings);
 }
 

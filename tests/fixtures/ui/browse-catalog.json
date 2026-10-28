@@ -2,14 +2,13 @@
  "generatedAt": "2026-10-22T20:00:00.000Z",
  "version": "26.2",
  "counts": {
-  "total": 175,
+  "total": 155,
   "byCategory": {
    "haeuser": 27,
    "wahrzeichen": 17,
    "fantasy": 17,
    "mittelalter": 22,
    "klein": 41,
-   "redstone": 20,
    "farmen": 17,
    "infrastruktur": 14
   }
@@ -31,9 +30,7 @@
     "erstes haus"
    ],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Gemütliche Starterhütte aus Eiche mit Kamin. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -98,9 +95,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Zweistöckiges Haus mit sichtbarem Balkenwerk. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -166,9 +161,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Fichtenstämme, Grasdach und eine überdachte Veranda. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -234,9 +227,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Flachdach, große Fenster und ein Pool auf der Terrasse. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -301,9 +292,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Wohnhaus, Stall und Heuboden um einen Hof. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -368,9 +357,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Kleine Hütte aus Birke über dem Wasser. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -435,9 +422,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Plattform mit Hütte und Strickleiter in einem großen Baum. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -505,9 +490,7 @@
     "japan haus"
    ],
    "accuracy": "nachempfunden",
-   "difficulty": 3,
    "description": "Schiebetüren, Bambus und ein kleiner Steingarten. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -572,9 +555,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Schmales Reihenhaus mit Geschäft im Erdgeschoss. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -639,9 +620,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Steinsockel, Holzbalkon und Satteldach für steile Hänge. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -706,9 +685,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Kleines Steinhaus an der Küste. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -773,9 +750,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Weißer Beton, Glas und ein Dachgarten. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -841,9 +816,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Gläserne Halbkugel zum Wohnen am Meeresgrund. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -908,9 +881,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Weiße Wände, Terrakotta-Dach und Innenhof. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -975,9 +946,7 @@
    ],
    "aliases": [],
    "accuracy": "nachempfunden",
-   "difficulty": 3,
    "description": "Langes Holzhaus mit geschwungenem Dachfirst. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1042,9 +1011,7 @@
    ],
    "aliases": [],
    "accuracy": "nachempfunden",
-   "difficulty": 2,
    "description": "Holzhaus in Falunrot mit weißen Fensterrahmen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1110,9 +1077,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Zwölf Stockwerke mit Treppenhaus und Dachterrasse. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1177,9 +1142,7 @@
    ],
    "aliases": [],
    "accuracy": "nachempfunden",
-   "difficulty": 3,
    "description": "Backstein und tief gezogenes Strohdach. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1245,9 +1208,7 @@
    ],
    "aliases": [],
    "accuracy": "nachempfunden",
-   "difficulty": 3,
    "description": "Holzbalkone mit Geranien und flach geneigtem Dach. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1312,9 +1273,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Bruchstein, Eichenbalken und ein Gemüsegarten. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1379,9 +1338,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 1,
    "description": "Die Struktur „village/plains/houses/plains_small_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1447,9 +1404,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 2,
    "description": "Die Struktur „village/plains/houses/plains_library_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1514,9 +1469,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 2,
    "description": "Die Struktur „village/plains/houses/plains_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1581,9 +1534,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 2,
    "description": "Die Struktur „village/taiga/houses/taiga_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1648,9 +1599,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 1,
    "description": "Die Struktur „village/snowy/houses/snowy_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1715,9 +1664,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 1,
    "description": "Die Struktur „village/desert/houses/desert_medium_house_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1782,9 +1729,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 1,
    "description": "Die Struktur „igloo/top“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -1854,11 +1799,7 @@
     "tokyo sky tree"
    ],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Fernseh- und Aussichtsturm in Tokio. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [
-    "634 m hoch, seit 2012 in Betrieb"
-   ],
    "sources": [
     {
      "title": "Wikipedia: Tokyo Skytree",
@@ -1963,9 +1904,7 @@
     "tour eiffel"
    ],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Eisenfachwerk-Turm auf dem Marsfeld in Paris. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Eiffelturm",
@@ -2061,9 +2000,7 @@
     "koelner dom"
    ],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Gotische Kathedrale mit zwei 157 Meter hohen Türmen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Kölner Dom",
@@ -2158,9 +2095,7 @@
     "elizabeth tower"
    ],
    "accuracy": "massstab",
-   "difficulty": 4,
    "description": "Uhrturm am Westminster-Palast in London. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Elizabeth Tower",
@@ -2243,9 +2178,7 @@
    ],
    "aliases": [],
    "accuracy": "massstab",
-   "difficulty": 3,
    "description": "Klassizistisches Stadttor in Berlin. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Brandenburger Tor",
@@ -2329,9 +2262,7 @@
     "statue of liberty"
    ],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Statue auf Liberty Island in New York. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Freiheitsstatue",
@@ -2426,9 +2357,7 @@
     "kolloseum"
    ],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Amphitheater im Zentrum Roms. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Kolosseum",
@@ -2523,9 +2452,7 @@
     "zeitglockenturm"
    ],
    "accuracy": "massstab",
-   "difficulty": 3,
    "description": "Zeitglockenturm in der Berner Altstadt. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Zytglogge",
@@ -2610,9 +2537,7 @@
     "grossmunster zürich"
    ],
    "accuracy": "massstab",
-   "difficulty": 4,
    "description": "Romanische Kirche mit Doppeltürmen in Zürich. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Grossmünster",
@@ -2698,9 +2623,7 @@
     "gizeh"
    ],
    "accuracy": "massstab",
-   "difficulty": 4,
    "description": "Größte der Pyramiden von Gizeh. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Cheops-Pyramide",
@@ -2804,9 +2727,7 @@
     "pisa"
    ],
    "accuracy": "massstab",
-   "difficulty": 4,
    "description": "Glockenturm mit knapp vier Grad Neigung. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Schiefer Turm von Pisa",
@@ -2889,9 +2810,7 @@
    ],
    "aliases": [],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Höchstes Gebäude der Welt in Dubai. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Burj Khalifa",
@@ -2983,9 +2902,7 @@
    ],
    "aliases": [],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Mausoleum aus weißem Marmor in Agra. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Taj Mahal",
@@ -3079,9 +2996,7 @@
     "sagrada familia"
    ],
    "accuracy": "nachempfunden",
-   "difficulty": 5,
    "description": "Basilika von Antoni Gaudí in Barcelona. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3148,9 +3063,7 @@
     "oper sydney"
    ],
    "accuracy": "nachempfunden",
-   "difficulty": 5,
    "description": "Opernhaus mit Segeldächern am Hafen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3215,9 +3128,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Gigantischer Baum mit Wurzelhöhle und Baumhaus-Dorf. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3282,9 +3193,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Rad aus Ketten und Gondeln am Jahrmarkt. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3354,9 +3263,7 @@
     "muzan"
    ],
    "accuracy": "nachempfunden",
-   "difficulty": 5,
    "description": "Endloses Labyrinth aus Räumen und Treppen aus Demon Slayer. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3421,9 +3328,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Schiefer Turm mit Sternwarte und Bibliothek. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3488,9 +3393,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Höhle mit Goldschatz und schlafendem Drachen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3556,9 +3459,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Geschwungene Brücken zwischen Baumkronen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3623,9 +3524,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Felsbrocken mit Wasserfall und kleinem Tempel. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3690,9 +3589,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Wohnhaus im Stiel eines Riesenpilzes. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3757,9 +3654,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Schiefes Haus auf Stelzen mit Kesseln und Kräutern. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3827,9 +3722,7 @@
     "beutelsend"
    ],
    "accuracy": "nachempfunden",
-   "difficulty": 2,
    "description": "Runde Tür im Hügel, nach dem Auenland. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3894,9 +3787,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Palast aus Amethyst und getöntem Glas. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -3961,9 +3852,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Verfallenes Portal mit Obsidian und Magma. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4028,9 +3917,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 3,
    "description": "Die Struktur „end_city/ship“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4095,9 +3982,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 1,
    "description": "Die Struktur „ruined_portal/portal_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4163,9 +4048,7 @@
    ],
    "aliases": [],
    "accuracy": "nachempfunden",
-   "difficulty": 2,
    "description": "Holzhaus in den Bergen aus Demon Slayer. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4234,9 +4117,7 @@
     "spirited away"
    ],
    "accuracy": "vorlage",
-   "difficulty": 5,
    "description": "Verschachteltes Badehaus mit roten Brücken. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": {
     "author": "Beispiel-Vorlage",
@@ -4305,9 +4186,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Kuppel mit Teleskop aus Kupfer. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4372,9 +4251,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Prismarin-Tempel mit Wächterstatuen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4439,9 +4316,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Fünf winzige Häuser unter Farnen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4508,9 +4383,7 @@
     "ritterburg"
    ],
    "accuracy": "eigenes",
-   "difficulty": 5,
    "description": "Ringmauer, Torhaus und ein 40 Blöcke hoher Bergfried. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4575,9 +4448,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Runder Steinturm mit Zinnen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4642,9 +4513,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Zwei Tortürme und ein Wehrgang. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4709,9 +4578,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Offene Werkstatt mit Esse, Amboss und Schleifstein. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4779,9 +4646,7 @@
     "wirtshaus"
    ],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Schankraum, Gästezimmer und Weinkeller. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4846,9 +4711,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Holzmühle mit großen Flügeln. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4913,9 +4776,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Kirche, Garten und Zellen um einen Innenhof. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -4980,9 +4841,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Brunnen, Stände und Fachwerkfassaden. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5047,9 +4906,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Torhaus mit Zugbrücke über einem Graben. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5114,9 +4971,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Große Halle mit Kamin und Wappen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5181,9 +5036,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Kleine Steinkirche mit spitzem Turm. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5248,9 +5101,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Mühlrad am Bach und Mahlstube. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5315,9 +5166,7 @@
    ],
    "aliases": [],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Burg mit acht Türmen über dem Elzbachtal. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Burg Eltz",
@@ -5401,9 +5250,7 @@
     "neuschwanstein"
    ],
    "accuracy": "nachempfunden",
-   "difficulty": 5,
    "description": "Märchenschloss bei Füssen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5468,9 +5315,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Eingestürzter Turm mit Efeu. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5535,9 +5380,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Spitze Pfähle um ein kleines Lager. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5602,9 +5445,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Lehmhaus mit Strohdach und Stall. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5669,9 +5510,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Turm mit Zellen und Wendeltreppe. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5736,9 +5575,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 5,
    "description": "Spitzbögen, Strebepfeiler und Rosettenfenster. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5803,9 +5640,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 2,
    "description": "Die Struktur „pillager_outpost/watchtower“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5870,9 +5705,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 1,
    "description": "Die Struktur „trail_ruins/tower/tower_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -5937,9 +5770,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 3,
    "description": "Die Struktur „woodland_mansion/entrance“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6004,9 +5835,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Zaunpfahl mit hängender Laterne. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6051,9 +5880,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Bank aus Treppen und Schildern. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6098,9 +5925,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Dorfbrunnen mit Dach und Eimer. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6164,9 +5989,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Kleiner Briefkasten aus Fass und Schild. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6211,9 +6034,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Futterhäuschen auf einem Pfahl. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6278,9 +6099,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Hochbeet mit Karotten, Kartoffeln und Roter Bete. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6345,9 +6164,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Ofen aus Ziegeln mit Rauch vom Lagerfeuer. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6412,9 +6229,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Gestell aus Zäunen mit Ketten und Sitz. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6475,9 +6290,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Stand mit Markise aus Wolle und Kisten. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6542,9 +6355,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Kleiner Teich mit Seerosen und Schilf. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6609,9 +6420,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Bootssteg mit Laternen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6676,9 +6485,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Tanne mit Lichtern und Geschenken. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6743,9 +6550,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Handkarren mit Kürbissen und Heuballen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6810,9 +6615,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Vier Varianten für Fensterbank und Terrasse. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6853,9 +6656,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Achteckiger Pavillon mit Rankpflanzen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6920,9 +6721,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Sitzkreis aus Baumstämmen um ein Lagerfeuer. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -6987,9 +6786,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Herd, Spüle und Schränke für innen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7054,9 +6851,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Bücherregale, Sessel und Stehlampe. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7121,9 +6916,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Bett mit Vorhängen aus Wolle. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7188,9 +6981,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Runder Brunnen mit Fontäne. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7255,9 +7046,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Rüstung auf einem Sockel aus Steinziegeln. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7321,9 +7110,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Scheunen-Deko mit Mistgabel. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7388,9 +7175,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Weinfässer im Keller. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7455,9 +7240,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Laterne mit zwei Armen für breite Wege. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7518,9 +7301,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Bogen aus Laub und Rosensträuchern. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7585,9 +7366,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Pfahl mit Schildern in alle Richtungen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7632,9 +7411,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Tisch, Bänke und Sonnenschirm. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7699,9 +7476,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Bienenstöcke unter einem kleinen Dach. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7766,9 +7541,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Hütte mit Napf für deinen Wolf. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7833,9 +7606,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Kletterturm für Katzen mit Teppichen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7900,9 +7671,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Glasbecken mit Korallen und Tropenfischen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -7967,9 +7736,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Handgebauter Baum mit Blütenteppich. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8034,9 +7801,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Breiter Baum mit dichter Krone. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8101,9 +7866,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Zweispänner mit Rädern aus Falltüren. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8168,9 +7931,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Boot mit Netz und Laterne zum Hinstellen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8234,9 +7995,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Schneeblöcke mit geschnitztem Kürbis. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8281,9 +8040,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Verkaufswagen mit Markise. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8348,9 +8105,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Geräteschuppen mit Werkbank. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8414,9 +8169,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Komposter, Gießkannen und Pflanztische. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8461,9 +8214,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Sechs Bodenmuster aus Teppichen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8528,9 +8279,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Rankgerüst mit Leuchtbeeren. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -8585,1273 +8334,6 @@
    "thumb": null
   },
   {
-   "id": "kolbentuer-2x2",
-   "title": "Kolbentür 2×2",
-   "category": "redstone",
-   "subtitle": "Versteckte Tür aus klebrigen Kolben, öffnet per Hebel",
-   "tags": [
-    "Tür",
-    "Kolben",
-    "Versteckt"
-   ],
-   "aliases": [
-    "kolben tür",
-    "piston door",
-    "2x2 tür"
-   ],
-   "accuracy": "eigenes",
-   "difficulty": 3,
-   "description": "Versteckte Tür aus klebrigen Kolben, öffnet per Hebel. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/kolbentuer-2x2.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    6,
-    6,
-    4
-   ],
-   "blocks": 58,
-   "steps": 10,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     21
-    ],
-    [
-     "sticky_piston",
-     12
-    ],
-    [
-     "piston",
-     8
-    ],
-    [
-     "repeater",
-     5
-    ],
-    [
-     "observer",
-     4
-    ],
-    [
-     "smooth_stone",
-     3
-    ],
-    [
-     "comparator",
-     2
-    ],
-    [
-     "redstone_torch",
-     2
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "versteckte-treppe",
-   "title": "Versteckte Treppe",
-   "category": "redstone",
-   "subtitle": "Treppe, die aus dem Boden fährt",
-   "tags": [
-    "Versteckt",
-    "Kolben"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 4,
-   "description": "Treppe, die aus dem Boden fährt. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/versteckte-treppe.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    7,
-    6,
-    9
-   ],
-   "blocks": 132,
-   "steps": 10,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     48
-    ],
-    [
-     "sticky_piston",
-     26
-    ],
-    [
-     "piston",
-     17
-    ],
-    [
-     "repeater",
-     12
-    ],
-    [
-     "observer",
-     9
-    ],
-    [
-     "smooth_stone",
-     7
-    ],
-    [
-     "redstone_torch",
-     5
-    ],
-    [
-     "comparator",
-     4
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "geheimgang-buecherregal",
-   "title": "Geheimgang hinter dem Bücherregal",
-   "category": "redstone",
-   "subtitle": "Bücherregale schieben sich zur Seite",
-   "tags": [
-    "Versteckt",
-    "Tür"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 3,
-   "description": "Bücherregale schieben sich zur Seite. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/geheimgang-buecherregal.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    7,
-    6,
-    5
-   ],
-   "blocks": 96,
-   "steps": 10,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     35
-    ],
-    [
-     "sticky_piston",
-     19
-    ],
-    [
-     "piston",
-     12
-    ],
-    [
-     "repeater",
-     9
-    ],
-    [
-     "observer",
-     7
-    ],
-    [
-     "smooth_stone",
-     5
-    ],
-    [
-     "redstone_torch",
-     4
-    ],
-    [
-     "comparator",
-     3
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "automatische-beleuchtung",
-   "title": "Automatische Beleuchtung",
-   "category": "redstone",
-   "subtitle": "Lampen gehen bei Dunkelheit an",
-   "tags": [
-    "Licht",
-    "Tageslichtsensor"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 1,
-   "description": "Lampen gehen bei Dunkelheit an. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": true,
-   "module": "js/builds/redstone/automatische-beleuchtung.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    5,
-    3,
-    3
-   ],
-   "blocks": 12,
-   "steps": 5,
-   "phases": 1,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     4
-    ],
-    [
-     "piston",
-     2
-    ],
-    [
-     "sticky_piston",
-     2
-    ],
-    [
-     "observer",
-     1
-    ],
-    [
-     "redstone_torch",
-     1
-    ],
-    [
-     "repeater",
-     1
-    ],
-    [
-     "smooth_stone",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "kombinationsschloss",
-   "title": "Kombinationsschloss",
-   "category": "redstone",
-   "subtitle": "Tür öffnet nur mit der richtigen Hebel-Kombination",
-   "tags": [
-    "Tür",
-    "Schloss"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 4,
-   "description": "Tür öffnet nur mit der richtigen Hebel-Kombination. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/kombinationsschloss.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    11,
-    5,
-    7
-   ],
-   "blocks": 140,
-   "steps": 9,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     50
-    ],
-    [
-     "sticky_piston",
-     28
-    ],
-    [
-     "piston",
-     18
-    ],
-    [
-     "repeater",
-     13
-    ],
-    [
-     "observer",
-     10
-    ],
-    [
-     "smooth_stone",
-     7
-    ],
-    [
-     "redstone_torch",
-     6
-    ],
-    [
-     "comparator",
-     4
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "blasensaeulen-aufzug",
-   "title": "Blasensäulen-Aufzug",
-   "category": "redstone",
-   "subtitle": "Aufzug mit Seelensand und Magmablock",
-   "tags": [
-    "Aufzug",
-    "Wasser"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 2,
-   "description": "Aufzug mit Seelensand und Magmablock. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/blasensaeulen-aufzug.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    3,
-    24,
-    3
-   ],
-   "blocks": 120,
-   "steps": 28,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     43
-    ],
-    [
-     "sticky_piston",
-     24
-    ],
-    [
-     "piston",
-     16
-    ],
-    [
-     "repeater",
-     11
-    ],
-    [
-     "observer",
-     8
-    ],
-    [
-     "smooth_stone",
-     6
-    ],
-    [
-     "redstone_torch",
-     5
-    ],
-    [
-     "comparator",
-     4
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "t-flipflop",
-   "title": "T-Flipflop",
-   "category": "redstone",
-   "subtitle": "Ein Knopf schaltet abwechselnd an und aus",
-   "tags": [
-    "Schaltung",
-    "Grundlagen"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 2,
-   "description": "Ein Knopf schaltet abwechselnd an und aus. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": true,
-   "module": "js/builds/redstone/t-flipflop.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    3,
-    3,
-    4
-   ],
-   "blocks": 11,
-   "steps": 5,
-   "phases": 1,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     4
-    ],
-    [
-     "sticky_piston",
-     2
-    ],
-    [
-     "piston",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "beobachter-taktgeber",
-   "title": "Beobachter-Taktgeber",
-   "category": "redstone",
-   "subtitle": "Schneller Takt aus zwei Beobachtern",
-   "tags": [
-    "Takt",
-    "Grundlagen"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 1,
-   "description": "Schneller Takt aus zwei Beobachtern. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/beobachter-taktgeber.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    1,
-    2,
-    2
-   ],
-   "blocks": 4,
-   "steps": 4,
-   "phases": 1,
-   "variants": null,
-   "topMaterials": [
-    [
-     "piston",
-     1
-    ],
-    [
-     "redstone",
-     1
-    ],
-    [
-     "sticky_piston",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "item-sortierer",
-   "title": "Item-Sortierer",
-   "category": "redstone",
-   "subtitle": "Trichter sortieren Gegenstände in Truhen",
-   "tags": [
-    "Lager",
-    "Trichter"
-   ],
-   "aliases": [
-    "sortieranlage",
-    "sorter"
-   ],
-   "accuracy": "eigenes",
-   "difficulty": 4,
-   "description": "Trichter sortieren Gegenstände in Truhen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/item-sortierer.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    9,
-    6,
-    8
-   ],
-   "blocks": 186,
-   "steps": 10,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     67
-    ],
-    [
-     "sticky_piston",
-     37
-    ],
-    [
-     "piston",
-     24
-    ],
-    [
-     "repeater",
-     17
-    ],
-    [
-     "observer",
-     13
-    ],
-    [
-     "smooth_stone",
-     9
-    ],
-    [
-     "redstone_torch",
-     7
-    ],
-    [
-     "comparator",
-     6
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "tuer-druckplatten",
-   "title": "Tür mit Druckplatten",
-   "category": "redstone",
-   "subtitle": "Eisentür öffnet sich automatisch",
-   "tags": [
-    "Tür",
-    "Grundlagen"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 1,
-   "description": "Eisentür öffnet sich automatisch. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/tuer-druckplatten.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    3,
-    3,
-    3
-   ],
-   "blocks": 9,
-   "steps": 5,
-   "phases": 1,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     3
-    ],
-    [
-     "sticky_piston",
-     2
-    ],
-    [
-     "piston",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "zufallsgenerator",
-   "title": "Zufallsgenerator",
-   "category": "redstone",
-   "subtitle": "Ein Werfer wählt zufällig einen Ausgang",
-   "tags": [
-    "Schaltung",
-    "Werfer"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 3,
-   "description": "Ein Werfer wählt zufällig einen Ausgang. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/zufallsgenerator.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    5,
-    3,
-    5
-   ],
-   "blocks": 31,
-   "steps": 7,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     11
-    ],
-    [
-     "sticky_piston",
-     6
-    ],
-    [
-     "piston",
-     4
-    ],
-    [
-     "repeater",
-     3
-    ],
-    [
-     "observer",
-     2
-    ],
-    [
-     "smooth_stone",
-     2
-    ],
-    [
-     "comparator",
-     1
-    ],
-    [
-     "redstone_torch",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "lorenbahnhof",
-   "title": "Lorenbahnhof mit Abfahrtsknopf",
-   "category": "redstone",
-   "subtitle": "Stoppt Loren und startet sie per Knopf",
-   "tags": [
-    "Lore",
-    "Schiene"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 3,
-   "description": "Stoppt Loren und startet sie per Knopf. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/lorenbahnhof.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    7,
-    4,
-    15
-   ],
-   "blocks": 98,
-   "steps": 8,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     35
-    ],
-    [
-     "sticky_piston",
-     20
-    ],
-    [
-     "piston",
-     13
-    ],
-    [
-     "repeater",
-     9
-    ],
-    [
-     "observer",
-     7
-    ],
-    [
-     "smooth_stone",
-     5
-    ],
-    [
-     "redstone_torch",
-     4
-    ],
-    [
-     "comparator",
-     3
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "tuerklingel",
-   "title": "Türklingel",
-   "category": "redstone",
-   "subtitle": "Notenblock-Klingel mit Knopf",
-   "tags": [
-    "Notenblock",
-    "Grundlagen"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 1,
-   "description": "Notenblock-Klingel mit Knopf. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/tuerklingel.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    2,
-    2,
-    2
-   ],
-   "blocks": 5,
-   "steps": 4,
-   "phases": 1,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     2
-    ],
-    [
-     "piston",
-     1
-    ],
-    [
-     "sticky_piston",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "pfeilfalle",
-   "title": "Pfeilfalle im Gang",
-   "category": "redstone",
-   "subtitle": "Stolperdraht löst Werfer aus",
-   "tags": [
-    "Falle",
-    "Stolperdraht"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 2,
-   "description": "Stolperdraht löst Werfer aus. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/pfeilfalle.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    5,
-    4,
-    7
-   ],
-   "blocks": 44,
-   "steps": 8,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     16
-    ],
-    [
-     "sticky_piston",
-     9
-    ],
-    [
-     "piston",
-     6
-    ],
-    [
-     "repeater",
-     4
-    ],
-    [
-     "observer",
-     3
-    ],
-    [
-     "redstone_torch",
-     2
-    ],
-    [
-     "smooth_stone",
-     2
-    ],
-    [
-     "comparator",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "kolbentuer-3x3",
-   "title": "Kolbentür 3×3",
-   "category": "redstone",
-   "subtitle": "Flache Tür für große Eingänge",
-   "tags": [
-    "Tür",
-    "Kolben"
-   ],
-   "aliases": [
-    "3x3 tür",
-    "piston door 3x3"
-   ],
-   "accuracy": "eigenes",
-   "difficulty": 5,
-   "description": "Flache Tür für große Eingänge. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/kolbentuer-3x3.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    13,
-    9,
-    7
-   ],
-   "blocks": 312,
-   "steps": 17,
-   "phases": 4,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     112
-    ],
-    [
-     "sticky_piston",
-     62
-    ],
-    [
-     "piston",
-     41
-    ],
-    [
-     "repeater",
-     28
-    ],
-    [
-     "observer",
-     22
-    ],
-    [
-     "smooth_stone",
-     16
-    ],
-    [
-     "redstone_torch",
-     12
-    ],
-    [
-     "comparator",
-     9
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "lava-muelleimer",
-   "title": "Mülleimer mit Lava",
-   "category": "redstone",
-   "subtitle": "Gegenstände verschwinden in einem Lavaschacht",
-   "tags": [
-    "Lager",
-    "Grundlagen"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 1,
-   "description": "Gegenstände verschwinden in einem Lavaschacht. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/lava-muelleimer.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    3,
-    4,
-    3
-   ],
-   "blocks": 16,
-   "steps": 6,
-   "phases": 1,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     6
-    ],
-    [
-     "sticky_piston",
-     3
-    ],
-    [
-     "piston",
-     2
-    ],
-    [
-     "comparator",
-     1
-    ],
-    [
-     "observer",
-     1
-    ],
-    [
-     "redstone_torch",
-     1
-    ],
-    [
-     "repeater",
-     1
-    ],
-    [
-     "smooth_stone",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "komparator-zaehler",
-   "title": "Zähler mit Komparator",
-   "category": "redstone",
-   "subtitle": "Zählt Signale bis 15",
-   "tags": [
-    "Schaltung",
-    "Komparator"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 3,
-   "description": "Zählt Signale bis 15. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/komparator-zaehler.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    5,
-    2,
-    9
-   ],
-   "blocks": 42,
-   "steps": 6,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     15
-    ],
-    [
-     "sticky_piston",
-     8
-    ],
-    [
-     "piston",
-     5
-    ],
-    [
-     "repeater",
-     4
-    ],
-    [
-     "observer",
-     3
-    ],
-    [
-     "redstone_torch",
-     2
-    ],
-    [
-     "smooth_stone",
-     2
-    ],
-    [
-     "comparator",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "lichtorgel",
-   "title": "Lichtorgel",
-   "category": "redstone",
-   "subtitle": "Redstone-Lampen leuchten der Reihe nach",
-   "tags": [
-    "Licht",
-    "Takt"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 2,
-   "description": "Redstone-Lampen leuchten der Reihe nach. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/lichtorgel.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    9,
-    3,
-    3
-   ],
-   "blocks": 38,
-   "steps": 7,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     14
-    ],
-    [
-     "sticky_piston",
-     8
-    ],
-    [
-     "piston",
-     5
-    ],
-    [
-     "observer",
-     3
-    ],
-    [
-     "repeater",
-     3
-    ],
-    [
-     "redstone_torch",
-     2
-    ],
-    [
-     "smooth_stone",
-     2
-    ],
-    [
-     "comparator",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "tresor-geheimknopf",
-   "title": "Tresor mit Geheimknopf",
-   "category": "redstone",
-   "subtitle": "Truhe öffnet nur hinter einem versteckten Knopf",
-   "tags": [
-    "Versteckt",
-    "Lager"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 3,
-   "description": "Truhe öffnet nur hinter einem versteckten Knopf. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/tresor-geheimknopf.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    4,
-    4,
-    4
-   ],
-   "blocks": 29,
-   "steps": 6,
-   "phases": 1,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     10
-    ],
-    [
-     "sticky_piston",
-     6
-    ],
-    [
-     "piston",
-     4
-    ],
-    [
-     "repeater",
-     3
-    ],
-    [
-     "observer",
-     2
-    ],
-    [
-     "comparator",
-     1
-    ],
-    [
-     "redstone_torch",
-     1
-    ],
-    [
-     "smooth_stone",
-     1
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "abwaerts-aufzug",
-   "title": "Abwärts-Aufzug",
-   "category": "redstone",
-   "subtitle": "Blasensäule mit Magmablock zieht dich nach unten",
-   "tags": [
-    "Aufzug",
-    "Wasser"
-   ],
-   "aliases": [],
-   "accuracy": "eigenes",
-   "difficulty": 1,
-   "description": "Blasensäule mit Magmablock zieht dich nach unten. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
-   "sources": [],
-   "credits": null,
-   "tested": false,
-   "module": "js/builds/redstone/abwaerts-aufzug.js",
-   "structure": null,
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    3,
-    20,
-    3
-   ],
-   "blocks": 96,
-   "steps": 24,
-   "phases": 2,
-   "variants": null,
-   "topMaterials": [
-    [
-     "redstone",
-     35
-    ],
-    [
-     "sticky_piston",
-     19
-    ],
-    [
-     "piston",
-     12
-    ],
-    [
-     "repeater",
-     9
-    ],
-    [
-     "observer",
-     7
-    ],
-    [
-     "smooth_stone",
-     5
-    ],
-    [
-     "redstone_torch",
-     4
-    ],
-    [
-     "comparator",
-     3
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
    "id": "weizenfarm-automatisch",
    "title": "Automatische Weizenfarm",
    "category": "farmen",
@@ -9862,9 +8344,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Dorfbewohner ernten, Trichter sammeln ein. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -9929,9 +8409,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Kolben ernten Zuckerrohr, sobald es wächst. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -9996,9 +8474,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Beobachter, Kolben und ein Wasserstrom zur Sammelstelle. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10066,9 +8542,7 @@
     "golemfarm"
    ],
    "accuracy": "vorlage",
-   "difficulty": 5,
    "description": "Dorfbewohner, ein Zombie und Golems. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10133,9 +8607,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Eier fallen automatisch in eine Truhe. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10200,9 +8672,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Kakteen brechen am Zaun und fallen in Trichter. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10267,9 +8737,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Beobachter und Kolben ernten Bambus als Brennstoff. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10334,9 +8802,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Unterwasserfarm mit Beobachtern. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10401,9 +8867,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Bienenstöcke mit Werfern und Scheren. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10468,9 +8932,7 @@
    ],
    "aliases": [],
    "accuracy": "vorlage",
-   "difficulty": 4,
    "description": "Betten, Felder und ein Sammelbecken. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10535,9 +8997,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Felder mit Wasserrinnen, ganz ohne Technik. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -10602,9 +9062,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Fichten-Setzlinge in Reihen mit Wegen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -10669,9 +9127,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Werfer mit Scheren scheren die Schafe. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10739,9 +9195,7 @@
     "mobfarm"
    ],
    "accuracy": "vorlage",
-   "difficulty": 5,
    "description": "Ein Wasserstrom bringt Monster zur Falle. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10806,9 +9260,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Dschungelstämme mit Kolben-Ernte. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": false,
@@ -10873,9 +9325,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Myzel und wenig Licht für Pilze. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -10941,9 +9391,7 @@
    ],
    "aliases": [],
    "accuracy": "original",
-   "difficulty": 1,
    "description": "Die Struktur „village/savanna/houses/savanna_large_farm_1“ aus Minecraft Java 26.2, Block für Block aus den Spieldateien übernommen.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11008,9 +9456,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Drei Bögen aus Steinziegeln. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11075,9 +9521,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Holzplanken an Ketten über einer Schlucht. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11142,9 +9586,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Wartehalle, Gleise und Uhrenturm. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11209,9 +9651,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Kai, Lagerhaus und ein Kran. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11277,9 +9717,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Rot-weißer Turm mit begehbarer Laterne. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11345,9 +9783,7 @@
    ],
    "aliases": [],
    "accuracy": "massstab",
-   "difficulty": 5,
    "description": "Hängebrücke über das Golden Gate in San Francisco. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Golden Gate Bridge",
@@ -11440,9 +9876,7 @@
    ],
    "aliases": [],
    "accuracy": "massstab",
-   "difficulty": 4,
    "description": "Gedeckte Holzbrücke mit Wasserturm in Luzern. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [
     {
      "title": "Wikipedia: Kapellbrücke",
@@ -11524,9 +9958,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Eingang für eine Bahnstrecke im Berg. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11592,9 +10024,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 2,
    "description": "Eisstraße mit Dach für schnelle Bootsfahrten. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11659,9 +10089,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 4,
    "description": "Wasserschleuse zum Heben von Booten. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11726,9 +10154,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Kreuzung mit Ampeln und Zebrastreifen. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11793,9 +10219,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 1,
    "description": "Wartehäuschen mit Bank und Fahrplan. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11860,9 +10284,7 @@
    ],
    "aliases": [],
    "accuracy": "nachempfunden",
-   "difficulty": 4,
    "description": "Bogenbrücke aus Ziegeln für Lorenstrecken. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,
@@ -11927,9 +10349,7 @@
    ],
    "aliases": [],
    "accuracy": "eigenes",
-   "difficulty": 3,
    "description": "Talstation mit Kettengerüst. Testeintrag für die Seiten Start und Kategorie.",
-   "facts": [],
    "sources": [],
    "credits": null,
    "tested": null,

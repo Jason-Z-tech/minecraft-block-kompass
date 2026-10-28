@@ -15,25 +15,12 @@ export const meta = {
     'aegypten pyramide', 'königskammer', 'koenigskammer', 'große galerie',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Die Große Pyramide von Gizeh so, wie sie heute dasteht: 230 m Grundseite, 139 m hoch, mit dem '
     + 'abgetreppten Kernmauerwerk, der fehlenden Spitze und den Verkleidungsresten an der Nordseite. Innen sind der '
     + 'absteigende und der aufsteigende Gang, die Granitpfropfen, der Grabräubertunnel, die Große Galerie, Königinnen- '
     + 'und Königskammer mit den Entlastungskammern nach den veröffentlichten Maßen eingebaut. Geschätzt sind die '
     + 'genaue Lage der Kammern (± 3 m) und die Höhe der Kammern über der Entlastung; die Gänge sind 2 Blöcke hoch, '
     + 'damit du gehen kannst (echt rund 1,2 m).',
-  facts: [
-    'Grundseite 230,33 m (440 Königsellen), ursprünglich 146,6 m hoch (280 Ellen), heute rund 138,5–138,75 m.',
-    'Neigung 51° 50′ 40″ (Seked 5½ Handbreit) – im Modell weicht jede Ebene rundum um 0,79 Blöcke zurück.',
-    'Die Seiten weichen im Mittel nur 3′ 38″ von den Himmelsrichtungen ab.',
-    'Rund 2,3 Millionen Steinblöcke und etwa 2,6 Millionen m³ Volumen; heute noch 203 Steinlagen.',
-    'Die weiße Verkleidung aus Tura-Kalkstein ist fast ganz abgetragen; Reste der untersten Lage gibt es vor allem an der Nordseite.',
-    'Der ursprüngliche Eingang liegt 16,98 m hoch und 7,29 m östlich der Mittelachse unter doppelten Giebelsteinen.',
-    'Der Grabräubertunnel (al-Ma\'mun) beginnt etwa 7 m hoch und ist heute der Besuchereingang.',
-    'Große Galerie: 46,7 m lang, 8,6 m hoch, unten 2,1 m und oben 1,05 m breit (sieben Kragsteinlagen).',
-    'Königskammer aus Rosengranit: 10,49 × 5,24 m, 5,84 m hoch, darüber fünf Entlastungskammern.',
-    'Nicht im Modell: die Felsenkammer rund 30 m unter der Basis, die Schächte (nur 20 cm breit), der 2023 entdeckte Hohlraum hinter den Giebelsteinen.',
-  ],
   sources: [
     { title: 'Wikipedia (de): Cheops-Pyramide', url: 'https://de.wikipedia.org/wiki/Cheops-Pyramide' },
     { title: 'Wikipedia (en): Great Pyramid of Giza', url: 'https://en.wikipedia.org/wiki/Great_Pyramid_of_Giza' },
@@ -97,7 +84,6 @@ class CellPlan {
   constructor(geo) {
     this.geo = geo;
     this.cells = new Map();
-    this.notes = [];
   }
 
   put(x, y, z, state, prio) {
@@ -111,7 +97,6 @@ class CellPlan {
   solid(x, y, z, state) { this.put(x, y, z, state, PRIO_SOLID); }
   air(x, y, z) { this.put(x, y, z, 'air', PRIO_AIR); }
   detail(x, y, z, state) { this.put(x, y, z, state, PRIO_DETAIL); }
-  note(x, y, z, text) { this.notes.push({ x, y, z, text }); }
 
   byLayer() {
     const layers = new Map();
@@ -119,12 +104,7 @@ class CellPlan {
       if (!layers.has(cell.y)) layers.set(cell.y, []);
       layers.get(cell.y).push(cell);
     }
-    const notes = new Map();
-    for (const note of this.notes) {
-      if (!notes.has(note.y)) notes.set(note.y, []);
-      notes.get(note.y).push(note);
-    }
-    return { layers, notes };
+    return layers;
   }
 }
 
@@ -258,7 +238,6 @@ function planInterior(geo) {
     }
   }
   plan.detail(qx0, ftQ, qz0, 'lantern[hanging=false]');
-  plan.note(px, ftQ, qz0, 'Königinnenkammer: 5,23 × 5,76 m mit Satteldach. Die Kammer liegt genau auf der Ost-West-Achse der Pyramide; in der Ostwand sitzt die Kragnische.');
 
   // Große Galerie: 46,7 m lang, 8,6 m hoch, steigt 21 m.
   let kG = Math.round(41.45 * s);
@@ -276,7 +255,6 @@ function planInterior(geo) {
     for (let y = ftQ; y <= Math.floor(galleryFt(zLadder)) + 1; y++) plan.air(px + 1, y, zLadder);
     for (let y = ftQ; y <= Math.floor(galleryFt(zLadder)); y++) plan.detail(px + 1, y, zLadder, 'ladder[facing=west]');
   }
-  plan.note(px, ftQ, zG, 'Fuß der Großen Galerie: Geradeaus führt der waagrechte Gang zur Königinnenkammer, die Galerie steigt nach Süden an.');
 
   // Großer Absatz, Vorkammer mit Granitblatt, Gang und Königskammer.
   const zStep = zTop + 1;
@@ -292,7 +270,6 @@ function planInterior(geo) {
     for (let z = zAnte; z < zAnte + ante; z++) for (const x of [px - 1, px + 1]) for (let y = ftTop - 1; y <= ftTop + 1; y++) plan.solid(x, y, z, GRANITE);
     plan.detail(px, ftTop + 2, zAnte, GRANITE);
     plan.detail(px, ftTop + 1, zAnte + 1, 'wall_torch[facing=east]');
-    plan.note(px, ftTop + 2, zAnte, 'Vorkammer: Das Granitblatt hängt noch in seinen Führungsschlitzen – darunter musst du dich ducken (im Modell 2 Blöcke frei).');
   } else {
     rampCells(plan, { x0: px, x1: px, zFrom: zAnte, zTo: zAnte, ftAt: () => ftTop, clear: 2 });
   }
@@ -312,16 +289,11 @@ function planInterior(geo) {
   // Stehende Laternen an der Südwand (hängende kämen in der Ebenen-Anleitung vor ihrer Decke dran).
   plan.detail(kx0 + Math.floor(kEw / 4), ftTop, kz1, 'lantern[hanging=false]');
   plan.detail(kx1 - Math.floor(kEw / 4), ftTop, kz1, 'lantern[hanging=false]');
-  plan.note(sarcoX, ftTop, kz0, 'Königskammer aus Rosengranit (10,49 × 5,24 m, 5,84 m hoch). Am Westende steht der deckellose Sarkophag (2,28 × 0,98 m).');
 
   if (detailed) planRelievingChambers(plan, { x0: kx0, x1: kx1, z0: kz0, z1: kz1, ceilingY: ftTop + kH });
 
   // Eingang: doppelte Giebelsteine über der Gangmündung.
   if (detailed) planEntranceNiche(plan, geo, px, yE);
-  plan.note(px, yE, zFace, `Ursprünglicher Eingang auf 16,98 m Höhe, 7,29 m östlich der Mitte. Der absteigende Gang fällt im Verhältnis 1:2 (26,5°) nach Süden.`);
-  plan.note(xR, yR, zFaceR, 'Grabräubertunnel (al-Ma\'mun), heute der Besuchereingang: 27 m nach Süden, dann nach Osten zum aufsteigenden Gang – an den Granitpfropfen vorbei.');
-  plan.note(px, Math.floor(ascFt(zJ + 1)), zJ + 1, 'Die Granitpfropfen verschließen noch heute das untere Ende des aufsteigenden Gangs.');
-  plan.note(px, Math.floor(descFt(zDescEnd)), zDescEnd, 'Hier führt der absteigende Gang im Fels weiter – rund 70 m bis zur Felsenkammer 30 m unter der Basis. Die baust du nur, wenn du in den Boden graben willst; im Modell endet der Gang hier.');
   return plan;
 }
 
@@ -359,7 +331,6 @@ function planGrandGallery(plan, { px, zG, zTop, ftQ, galleryFt }) {
       plan.detail(west ? px - 1 : px + 1, base + 2, z, `wall_torch[facing=${west ? 'east' : 'west'}]`);
     }
   }
-  plan.note(px, galleryFt(zTop), zTop, 'Oberes Ende der Großen Galerie mit dem großen Absatz. Dahinter: niedriger Gang, Vorkammer, Königskammer.');
 }
 
 // Fünf Entlastungskammern: Granitbalken mit niedrigen Hohlräumen, oben ein Giebel aus Kalksteinbalken.
@@ -372,7 +343,6 @@ function planRelievingChambers(plan, { x0, x1, z0, z1, ceilingY }) {
     const h = last ? 2 : 1;
     roomCells(plan, { x0, x1, z0, z1, floorTop: y, h, wall: FINE, floor: GRANITE_ROUGH, ceiling: last ? FINE : GRANITE_ROUGH });
     plan.detail(midX, y, midZ, 'lantern[hanging=false]');
-    if (chamber === 0) plan.note(midX, y, midZ, 'Fünf Entlastungskammern über der Königskammer: Granitbalken mit niedrigen Hohlräumen dazwischen. Stell in jeden Hohlraum eine Laterne, damit dort keine Monster spawnen.');
     if (last) {
       for (let x = x0; x <= x1; x++) {
         plan.air(x, y + h, z0 + 1);
@@ -385,7 +355,6 @@ function planRelievingChambers(plan, { x0, x1, z0, z1, ceilingY }) {
         plan.air(x, y + h + 1, midZ);
         plan.solid(x, y + h + 2, midZ, FINE);
       }
-      plan.note(midX, y + h, midZ, 'Oberste Entlastungskammer (Campbell-Kammer) mit Giebeldach aus schräg gestellten Kalksteinbalken.');
     }
     y += h + 1;
   }
@@ -408,93 +377,29 @@ function planEntranceNiche(plan, geo, px, yE) {
     [0, 6, `${FINE_SLAB}[type=bottom]`],
   ];
   for (const [dx, dy, state] of beams) plan.detail(px + dx, yE + dy, back, state);
-  plan.note(px, yE + 3, back, 'Die doppelten Giebelsteine über dem Eingang: zwei Paare riesiger Kalksteinbalken, die den Druck vom Gang ableiten. Heute liegen sie frei, weil die Verkleidung davor fehlt.');
 }
 
 // --- Kapitel ---
 function chapterList(geo, interior, detailed) {
   const m = (meters) => Math.round(meters * geo.s);
   const top = geo.layers - 1;
-  const widthAt = (y) => geo.span[y].hi - geo.span[y].lo + 1;
-  const sameWidth = geo.span.filter((row, y) => y > 0 && row.lo === geo.span[y - 1].lo).length;
-  const stepTip = `Fast jede Ebene ist rundum 1 Block schmaler als die darunter; ${sameWidth} von ${geo.layers} Ebenen bleiben gleich breit. So entsteht die Neigung von 51,8°.`;
   const list = [
-    {
-      from: -1,
-      title: 'Gelände: Pflaster und Sand',
-      text: `Markiere zuerst den Bauplatz: Die unterste Kernebene ist ein Quadrat mit ${widthAt(0)} × ${widthAt(0)} Blöcken, die alte Grundfläche mit Verkleidung ${geo.side} × ${geo.side}. Rund um diese Grundfläche legst du das Pflaster aus feinem Kalkstein (Glatter Sandstein) und außen den Wüstensand. Die Seiten zeigen genau nach Norden, Osten, Süden und Westen.`,
-      tips: ['Setze zuerst die vier Eckpunkte des Quadrats und spanne die Seiten mit einer Blockreihe ab – bei über 200 Blöcken Seitenlänge verzählt man sich sonst leicht.'],
-    },
-    {
-      from: 0,
-      title: interior ? 'Unterbau mit Verkleidungsresten' : 'Unterer Kern',
-      text: `Baue das Kernmauerwerk Ebene für Ebene: unten ${widthAt(0)} × ${widthAt(0)} Blöcke. Außen mischst du Sandstein, Glatten und Geschnittenen Sandstein für den verwitterten Kalkstein; das Innere ist voll. An der Nordseite liegen die letzten Steine der weißen Verkleidung auf dem Pflaster: unten ein voller Block und davor eine Treppe mit der hohen Seite zur Pyramide.${interior ? ' Schon in den untersten Ebenen lässt du das untere Ende des absteigenden Gangs frei: 1 Block breit, in der Achse des Eingangs (gut 7 Blöcke östlich der Mitte) im nördlichen Drittel – die Markierung zeigt dir die Stelle. Boden abwechselnd voller Block und untere Stufe, Decke abwechselnd voller Block und obere Stufe.' : ''}`,
-      tips: [stepTip, 'Das Innere sieht niemand: Wenn dir der Sandstein ausgeht, kannst du es mit jedem anderen Block füllen.'],
-    },
+    { from: -1, title: 'Gelände: Pflaster und Sand' },
+    { from: 0, title: interior ? 'Unterbau mit Verkleidungsresten' : 'Unterer Kern' },
   ];
   if (interior) {
     list.push(
-      {
-        from: m(6),
-        title: 'Grabräubertunnel und absteigender Gang',
-        text: `Auf etwa 7 m Höhe beginnt an der Nordseite der Grabräubertunnel, ${detailed ? '2 Blöcke breit und 3 hoch' : '1 Block breit und 2 hoch'}, und läuft 27 m nach Süden. Lass ihn beim Bauen der Ebenen einfach frei. Darunter siehst du schon den absteigenden Gang: Er fällt 1 Block pro 2 Blöcke nach Süden, Boden abwechselnd Block und untere Stufe, Decke abwechselnd Block und obere Stufe.`,
-        tips: ['Leg dir die Gangachse (Eingang, 7 Blöcke östlich der Mitte) mit einer Reihe andersfarbiger Blöcke auf dem Pflaster aus – dann findest du die Gänge in jeder neuen Ebene sofort wieder.', 'Fackeln an der Westwand alle 10 Blöcke halten die Gänge monsterfrei.'],
-      },
-      {
-        from: m(16),
-        title: 'Eingang und aufsteigender Gang',
-        text: `Auf 16,98 m Höhe öffnet sich der ursprüngliche Eingang, 7,29 m östlich der Mitte. Darüber setzt du die doppelten Giebelsteine als Treppen, die sich zur Mitte hin aufrichten. Im Inneren steigt der aufsteigende Gang wieder mit 1:2 nach Süden; sein unteres Ende verschließen die Granitpfropfen (Polierter Granit).`,
-        tips: ['Der aufsteigende Gang beginnt genau über der Stelle, an der der Grabräubertunnel ankommt – so kommst du an den Pfropfen vorbei.'],
-      },
-      {
-        from: m(22),
-        title: 'Königinnenkammer und Fuß der Großen Galerie',
-        text: `Am oberen Ende des aufsteigenden Gangs zweigt waagrecht der Gang zur Königinnenkammer ab. Die Kammer ist ${detailed ? '6 × 5 Blöcke groß, die Wände 5 Blöcke hoch, darüber ein flaches Satteldach aus oberen Treppen' : 'klein und schlicht'}. ${detailed ? 'In die Ostwand kommt die Kragnische: unten 3 Blöcke breit, oben 1.' : ''}`.trim(),
-        tips: [detailed
-          ? 'Die ersten Meter der Galerie haben keine Rampe – der Gang darunter ist nach oben offen. Geh über die Seitenbänke nach oben.'
-          : 'Die ersten Blöcke der Galerie haben keine Rampe – der Gang darunter ist nach oben offen. Die Leiter an der Ostseite bringt dich auf die Rampe.'],
-      },
-      {
-        from: m(30),
-        title: 'Große Galerie',
-        text: detailed
-          ? 'Die Galerie steigt 21 Blöcke auf 42 Blöcken Länge. Unten ist sie 3 Blöcke breit (Mittelrampe plus zwei Bänke, eine halbe Stufe höher), 4 Blöcke über der Rampe springen die Wände mit oberen Treppen nach innen vor, darüber bleibt ein 1 Block breiter, hoher Schacht – so wirkt die Kragsteindecke.'
-          : 'Die Galerie ist hier ein hoher, 1 Block breiter Schacht, der mit 1:2 nach Süden ansteigt.',
-        tips: ['Setze die Kragsteintreppen mit der hohen Seite zur Wand, also auf der Westseite nach Westen und auf der Ostseite nach Osten.'],
-      },
-      {
-        from: m(42),
-        title: 'Königskammer',
-        text: detailed
-          ? 'Hinter dem großen Absatz folgen ein niedriger Gang, die Vorkammer mit dem hängenden Granitblatt und ein Granitgang. Die Königskammer ist 10 × 5 Blöcke groß und 6 hoch, ganz aus Poliertem Granit, die Decke aus Granitbalken. Der Sarkophag steht am Westende.'
-          : 'Am oberen Ende der Galerie liegt die Königskammer aus Granit mit dem Sarkophag am Westende.',
-        tips: ['Stell die beiden Laternen an die Südwand der Kammer, bevor du die Decke schließt – dann ist die Kammer hell genug gegen Monster.'],
-      },
+      { from: m(6), title: 'Grabräubertunnel und absteigender Gang' },
+      { from: m(16), title: 'Eingang und aufsteigender Gang' },
+      { from: m(22), title: 'Königinnenkammer und Fuß der Großen Galerie' },
+      { from: m(30), title: 'Große Galerie' },
+      { from: m(42), title: 'Königskammer' },
     );
-    if (detailed) {
-      list.push({
-        from: m(50),
-        title: 'Entlastungskammern',
-        text: 'Über der Königskammer liegen fünf Lagen Granitbalken mit 1 Block hohen Hohlräumen dazwischen – die Entlastungskammern. Die oberste ist 2 Blöcke hoch und hat ein Giebeldach aus schräg gestellten Kalksteinbalken (obere Treppen). Stell in jeden Hohlraum eine Laterne.',
-        tips: ['Die Hohlräume sind abgeschlossen. Ohne Licht spawnen dort Spinnen, deshalb die Laternen.'],
-      });
-    }
+    if (detailed) list.push({ from: m(50), title: 'Entlastungskammern' });
   }
   list.push(
-    {
-      from: m(interior ? 64 : 50),
-      title: interior ? 'Obere Pyramide' : 'Mittlerer und oberer Kern',
-      text: `Jetzt nur noch Kernmauerwerk: Ebene für Ebene rundum einen Block einrücken, bis die Fläche auf ${widthAt(top - 1)} × ${widthAt(top - 1)} Blöcke geschrumpft ist. An den Stufenkanten sind einzelne Steine abgewittert (Treppen mit der hohen Seite nach innen).`,
-      tips: [stepTip, 'Bau eine Treppe oder Gerüst an einer Ecke mit: An den Kanten ist die Stufung am regelmäßigsten.'],
-    },
-    {
-      from: top,
-      title: 'Plattform heute',
-      text: `Die oberste Ebene ist eine Plattform von ${widthAt(top)} × ${widthAt(top)} Blöcken (heute rund 10 × 10 m) mit ein paar Steinen der nächsten Lage. Hier endet die Pyramide heute bei 138,75 m.`,
-      tips: [
-        'Ursprüngliche Form: Die Pyramide war 146,6 m hoch und lief spitz zu. Rundum lag eine glatte, weiße Verkleidung aus Tura-Kalkstein, etwa 1,35 m dick. Willst du sie so bauen, setz auf jede Stufe außen eine Reihe aus Glattem Sandstein und Glatte-Sandstein-Treppen und führe die Ebenen weiter, bis oben ein einzelner Block bleibt (8 Ebenen mehr).',
-      ],
-    },
+    { from: m(interior ? 64 : 50), title: interior ? 'Obere Pyramide' : 'Mittlerer und oberer Kern' },
+    { from: top, title: 'Plattform heute' },
   );
   return list;
 }
@@ -506,7 +411,7 @@ export default function build(b, { scale = 1 } = {}) {
   const interior = s >= 0.5;
   const detailed = s >= 1;
   const plan = interior ? planInterior(geo) : new CellPlan(geo);
-  const { layers: planLayers, notes: planNotes } = plan.byLayer();
+  const planLayers = plan.byLayer();
   const chapters = chapterList(geo, interior, detailed);
   const casing = casingStretches(b, geo);
 
@@ -515,7 +420,7 @@ export default function build(b, { scale = 1 } = {}) {
     while (chapter + 1 < chapters.length && y >= chapters[chapter + 1].from) {
       chapter++;
       const c = chapters[chapter];
-      b.phase(c.title, c.text, { tips: c.tips });
+      b.phase(c.title);
     }
     if (y === -1) buildGround(b, geo, s);
     else buildCoreLayer(b, geo, y);
@@ -524,7 +429,6 @@ export default function build(b, { scale = 1 } = {}) {
       if (cell.state === 'air') b.remove(cell.x, cell.y, cell.z);
       else b.set(cell.x, cell.y, cell.z, cell.state);
     }
-    for (const note of planNotes.get(y) ?? []) b.note(note.x, note.y, note.z, note.text);
     if (y === geo.layers - 1) buildSummit(b, geo, y);
   }
 }
@@ -610,5 +514,4 @@ function buildSummit(b, geo, y) {
   const mid = Math.floor((lo + hi) / 2);
   const stones = geo.s >= 1 ? [[mid - 2, mid - 1], [mid - 1, mid - 1], [mid - 2, mid], [mid + 1, mid + 2]] : [[mid, mid]];
   for (const [x, z] of stones) b.set(x, y + 1, z, b.pickWeighted(CORE_MIX));
-  b.note(mid, y + 1, mid, 'Hier endet die Pyramide heute (138,75 m). Ursprünglich ging sie noch rund 8 m höher bis zur Spitze auf 146,6 m; die Spitze (Pyramidion) fehlte schon in der Antike.');
 }

@@ -4,7 +4,7 @@
 //   #home-total        Gesamtzahlen des Katalogs (Bauten, Kategorien, Original-Strukturen, Blöcke, Stand)
 //   #home-status       Lade-, Leer- und Fehlerzustand des Katalogs
 //   #home-categories   Kategorie-Kacheln (aus CATEGORIES, Anzahl aus dem Katalog)
-//   #home-sections     Abschnitte aus echten Katalogdaten (Riesenbauten, Schnell gebaut …), siehe browse/home-sections.js
+//   #home-sections     Abschnitte aus echten Katalogdaten (Riesenbauten, Klein & schnell gebaut …), siehe browse/home-sections.js
 import { el, clear, requireElement, sitePath } from './dom.js';
 import { loadCatalog, countByCategory } from './data.js';
 import {

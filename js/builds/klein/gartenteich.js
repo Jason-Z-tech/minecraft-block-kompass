@@ -17,14 +17,7 @@ export const meta = {
     'garden pond', 'pond', 'pond with bridge', 'garden bridge', 'wooden bridge', 'small bridge', 'lily pond', 'koi pond',
   ],
   accuracy: 'eigenes',
-  difficulty: 2,
   description: 'Ein Gartenteich aus zwei Becken, die sich in der Mitte zu einer schmalen Stelle verengen. Dort führt eine kleine Bogenbrücke aus Fichtenholz mit Schwarzeichen-Geländer hinüber, auf ihren Endpfosten stehen Laternen. Am Ufer liegen bemooste Steine, im Wasser schwimmen Seerosenblätter, an den Enden wächst Schilf aus Zuckerrohr, und am Grund wiegt sich Seegras. Kieswege, eine Birke und Wiesenblumen machen den Garten fertig.',
-  facts: [
-    'Das Wasser besteht nur aus Quellblöcken: in der Mitte der Becken 2 tief, am Rand und unter der Brücke 1 tief – nichts fließt.',
-    'Zuckerrohr wächst nur auf Gras, Erde oder Sand direkt neben Wasser; deshalb steht es genau an der Uferkante.',
-    'Seerosenblätter liegen auf Wasserquellen, Seegras steht nur dort, wo zwei Blöcke Wasser übereinander sind.',
-    'Die Brücke ist 9 Blöcke lang und 3 breit; ihr Laufsteg steigt über Treppen und Bretter um eine Ebene an, darunter bleibt ein Bogen frei.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -119,12 +112,7 @@ export default function build(b) {
   const stones = shore.filter(([x, z]) => !isBridgeZone(x, z) && !isReedShore(x, z) && rand01(x, 0, z, 11) <= 0.55);
 
   // --- Gelände, Mulde, Ufer und Wege ---
-  b.phase('Gelände, Teichmulde und Wege', 'Der Garten ist eine ovale Rasenfläche, 30 Blöcke lang (West–Ost) und 21 breit, vier Ebenen dick. Darin liegt die Mulde für den Teich: zwei runde Becken, links etwa 12 und rechts 11 Blöcke lang und bis zu 9 Blöcke breit, dazwischen eine Engstelle, die unter der Brücke genau 5 Blöcke breit ist. Am Rand ist die Mulde einen Block tief, in der Mitte der Becken zwei (plus je eine Ebene für den Grund). Etwa jeder zweite Block der Uferkante ist ein Stein – Stein, Bruchstein, bemooster Bruchstein, Andesit oder Tuffstein –, an den Schilfstellen und Brückenköpfen bleibt Gras. Von Norden und Süden führt je ein Kiesweg zur Brücke.', {
-    tips: [
-      'Stecke zuerst die Engstelle ab (x −1 … 1, fünf Blöcke breit) – dort steht später die Brücke, die Becken baust du von ihr aus.',
-      'Grabe die Mulde eine Ebene tiefer als das Wasser später steht: die unterste Schicht füllst du im nächsten Kapitel mit Sand, Kies und Ton.',
-    ],
-  });
+  b.phase('Gelände, Teichmulde und Wege');
   terrain(b, { x: W.x1, y: 0, z: W.z1, width: W.x2 - W.x1 + 1, depth: W.z2 - W.z1 + 1, height: WATER_Y, shape: 'rund', seed: 8 });
   anchorGravel(b, { x1: W.x1, x2: W.x2, z1: W.z1, z2: W.z2, y: 0 });
   for (const { x, z, deep } of pond.values()) {
@@ -135,27 +123,20 @@ export default function build(b) {
   path(b, { x: 0, y: WATER_Y, z: -5, facing: 'north', length: 6, width: 3, mix: 'kies', wiggle: 0.6, seed: 3 });
 
   // --- Grund und Findlinge ---
-  b.phase('Teichgrund und Findlinge', 'Jetzt kleidest du die Mulde aus: Sand, Kies und Ton am Grund halten das Wasser. Danach legst du auf einige Ufersteine einen zweiten Stein oder eine Stufe, so wirkt das Ufer wie aus Findlingen.', {
-    tips: ['Kies und Sand fallen herunter, wenn darunter Luft ist – setze sie immer auf festen Boden.'],
-  });
-  b.step('Teichgrund', 'Lege den Boden der Mulde mit Sand, Kies und Ton in Flecken aus: unter flachem Wasser auf Ebene 3, in den tiefen Becken auf Ebene 2. Die Wände der tiefen Becken bildet der Grund der flachen Ränder.');
+  b.phase('Teichgrund und Findlinge');
+  b.step();
   for (const { x, z, deep } of pond.values()) {
     const y = deep ? WATER_Y - 2 : WATER_Y - 1;
     b.set(x, y, z, pickWeighted(SEDIMENT, rand01(Math.floor(x / 2), y, Math.floor(z / 2), 5)));
   }
-  b.step('Findlinge am Ufer', 'Setze auf etwa jeden dritten Uferstein einen bemoosten Bruchstein, Stein, Andesit oder eine Steinstufe.');
+  b.step();
   for (const [x, z] of stones) {
     if (rand01(x, 2, z, 13) > 0.3) continue;
     b.set(x, WATER_Y + 1, z, BOULDERS[hashPosition(x, 3, z, 14) % BOULDERS.length]);
   }
 
   // --- Wasser ---
-  b.phase('Wasser', 'Fülle den Teich mit Wasserquellen. Am Grund der tiefen Becken stehen Seegras-Büschel.', {
-    tips: [
-      'Gieß zuerst zwei Eimer in zwei Ecken eines Beckens: dazwischen entstehen neue Quellen, die du mit dem leeren Eimer wieder schöpfen kannst.',
-      'Seegras setzt du direkt unter Wasser auf Sand oder Kies; es braucht einen Block Wasser darüber.',
-    ],
-  });
+  b.phase('Wasser');
   let seagrass = 0;
   for (const { x, z, deep } of pond.values()) {
     for (let y = deep ? WATER_Y - 1 : WATER_Y; y <= WATER_Y; y++) {
@@ -167,17 +148,12 @@ export default function build(b) {
   if (seagrass === 0) throw new Error('Gartenteich: kein Seegras gesetzt.');
 
   // --- Brücke ---
-  b.phase('Brücke', 'Die Brücke überquert die Engstelle von Norden nach Süden: 9 Blöcke lang, 3 breit. Der Laufsteg in der Mitte steigt über Treppen an, die Seiten sind ein Block höher als der Steg und tragen das Geländer. Unter der Mitte bleibt ein Bogen frei.', {
-    tips: [
-      'Baue die Brücke von beiden Ufern zur Mitte hin – so steht jeder neue Block an einem schon gesetzten.',
-      'Die Treppen des Stegs zeigen mit der hohen Seite zur Brückenmitte, die Treppen unter dem Bogen mit der hohen Seite zum Ufer.',
-    ],
-  });
+  b.phase('Brücke');
   const P = 'spruce_planks';
   const ST = 'spruce_stairs';
   const POST = 'stripped_dark_oak_log[axis=y]';
   const FENCE = 'dark_oak_fence';
-  b.step('Brückenköpfe und Endpfosten', 'An beiden Ufern liegen direkt an der Wasserkante je drei Fichtenholzbretter quer (Ebene 5), außen davor stehen Pfosten aus entrindetem Schwarzeichenstamm, zwei Blöcke hoch. In der Mitte der äußersten Reihe ist die Antrittsstufe: eine Fichtenholztreppe, hohe Seite zur Brücke.');
+  b.step();
   for (const sz of [-1, 1]) {
     for (const x of [-1, 0, 1]) b.set(x, 4, 3 * sz, P);
     for (const x of [-1, 1]) {
@@ -186,16 +162,16 @@ export default function build(b) {
     }
     b.stairs(0, 4, 4 * sz, ST, { facing: sz < 0 ? 'south' : 'north' });
   }
-  b.step('Bogen', 'Über dem Wasser setzt du an die Bretter je drei Fichtenholztreppen (umgedreht, obere Hälfte) mit der hohen Seite zum Ufer – das ist die Rundung des Bogens. Darauf liegt die mittlere Ebene der Brücke.');
+  b.step();
   for (const sz of [-1, 1]) for (const x of [-1, 0, 1]) b.stairs(x, 4, 2 * sz, ST, { facing: sz < 0 ? 'north' : 'south', half: 'top' });
-  b.step('Laufsteg', 'Auf Ebene 6: Über den Bogentreppen liegt in der Mitte je eine Treppe (hohe Seite zur Brückenmitte), daneben Bretter. Über dem Scheitel (die drei mittleren Reihen) liegen nur Bretter.');
+  b.step();
   for (let z = -2; z <= 2; z++) {
     for (const x of [-1, 0, 1]) {
       if (x === 0 && Math.abs(z) === 2) b.stairs(0, 5, z, ST, { facing: z < 0 ? 'south' : 'north' });
       else b.set(x, 5, z, P);
     }
   }
-  b.step('Geländer und Laternen', 'Setze auf die Seitenbretter Schwarzeichenholzzäune: auf Ebene 6 über den Brückenköpfen, auf Ebene 7 über dem Scheitel; an den Brückenköpfen zwei übereinander, damit das Geländer durchläuft. Auf zwei schräg gegenüberliegende Endpfosten stellst du je eine Laterne.');
+  b.step();
   for (const x of [-1, 1]) {
     for (let z = -3; z <= 3; z++) {
       if (Math.abs(z) === 3) {
@@ -206,13 +182,10 @@ export default function build(b) {
   }
   b.set(1, 6, 4, 'lantern[hanging=false]');
   b.set(-1, 6, -4, 'lantern[hanging=false]');
-  b.note(0, 5, 0, 'Scheitel der Brücke: Laufsteg auf Ebene 6');
 
   // --- Pflanzen und Wege ---
-  b.phase('Seerosen, Schilf und Garten', 'Zum Schluss kommen die Pflanzen: Seerosenblätter auf das Wasser, Zuckerrohr als Schilf an die Ufer, eine Birke, ein Busch, ein bemooster Felsen und Wiesenblumen.', {
-    tips: ['Zuckerrohr wächst nur, wenn der Block darunter direkt an Wasser grenzt – setze es genau an die Uferkante.'],
-  });
-  b.step('Seerosen', 'Lege Seerosenblätter in kleinen Gruppen auf das Wasser, nicht unter die Brücke und nicht direkt ans Ufer.');
+  b.phase('Seerosen, Schilf und Garten');
+  b.step();
   let lilies = 0;
   for (const { x, z } of pond.values()) {
     if (Math.abs(x) <= 2 || !DIRS4.every(([dx, dz]) => isWater(x + dx, z + dz))) continue;
@@ -222,7 +195,7 @@ export default function build(b) {
     lilies++;
   }
   if (lilies === 0) throw new Error('Gartenteich: keine Seerosen gesetzt.');
-  b.step('Schilf', 'An fünf Stellen am Ufer wächst Zuckerrohr, ein bis drei Blöcke hoch. Setze es auf die Grasblöcke direkt am Wasser.');
+  b.step();
   let reeds = 0;
   for (const [x, z] of shore) {
     if (!isReedShore(x, z) || isBridgeZone(x, z) || b.get(x, WATER_Y + 1, z) !== 'air') continue;
@@ -232,10 +205,10 @@ export default function build(b) {
     reeds++;
   }
   if (reeds === 0) throw new Error('Gartenteich: kein Zuckerrohr gesetzt.');
-  b.step('Birke, Busch und Felsen', 'Pflanze nordöstlich des Teichs eine Birke, im Südwesten einen Busch und lege nordwestlich des Teichs einen bemoosten Felsen auf die Wiese.');
+  b.step();
   tree(b, { x: 9, y: WATER_Y + 1, z: -6, species: 'birke', size: 'mittel', seed: 4 });
   bush(b, { x: -10, y: WATER_Y + 1, z: 6, size: 'mittel', leaves: 'eiche', seed: 1 });
   rock(b, { x: -9, y: WATER_Y + 1, z: -7, size: 'mittel', material: 'stein', sink: 0, rubble: true, seed: 3 });
-  b.step('Wiese', 'Rund um den Teich wachsen Gras, Farn und Wiesenblumen – am Ufer etwas dichter.');
+  b.step();
   vegetation(b, { x: W.x1, y: WATER_Y + 1, z: W.z1, width: W.x2 - W.x1 + 1, depth: W.z2 - W.z1 + 1, mix: 'blumen', density: 0.3, shape: 'eckig', seed: 5 });
 }

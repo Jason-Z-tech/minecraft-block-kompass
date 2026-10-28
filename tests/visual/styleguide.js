@@ -4,7 +4,7 @@ import { el, requireElement } from '../../js/ui/dom.js';
 import { loadJson, CATALOG_PATH } from '../../js/ui/data.js';
 import {
   initPage, CATEGORIES, ACCURACY_KEYS, ICON_NAMES, icon, createCategoryChip, createAccuracyChip, createUntestedChip,
-  createChip, createDifficulty, renderCategoryGrid, setTileCount, createBuildCard, createSkeletonCards, createState,
+  createChip, renderCategoryGrid, setTileCount, createBuildCard, createSkeletonCards, createState,
   renderError, initTabs, initSlider, syncSlider, setXpProgress, createToast, showToast, attachTooltip, tooltipContent,
   linkButton, contrastRatio, mixHex, formatNumber,
 } from '../../js/ui/shared.js';
@@ -19,10 +19,10 @@ const SWATCHES = [
 
 // Beispieldaten – keine echten Bauten
 const SAMPLE_BUILDS = [
-  { id: 'beispiel-turm', title: 'Beispiel: Wachturm', category: 'mittelalter', subtitle: 'Beispieldaten für den Styleguide, ohne Vorschaubild.', accuracy: 'eigenes', difficulty: 3, size: [9, 24, 9], blocks: 1284, steps: 24, tested: null, thumb: null },
-  { id: 'beispiel-tuer', title: 'Beispiel: Kolbentür', category: 'redstone', subtitle: 'Zeigt den Hinweis für ungetestete Schaltungen.', accuracy: 'nachempfunden', difficulty: 4, size: [6, 5, 4], blocks: 96, steps: 12, tested: false, thumb: null },
-  { id: 'beispiel-haus', title: 'Beispiel: Haus mit Vorschaubild', category: 'haeuser', subtitle: 'Das Bild ist eine im Browser gezeichnete Pixel-Szene.', accuracy: 'vorlage', difficulty: 2, size: [12, 10, 14], blocks: 2312, steps: 18, tested: null, thumb: null },
-  { id: 'beispiel-riese', title: 'Beispiel: Sehr langer Titel für einen Riesenbau mit Zeilenumbruch', category: 'wahrzeichen', subtitle: 'Lange Titel und große Zahlen bleiben lesbar.', accuracy: 'massstab', difficulty: 5, size: [120, 634, 120], blocks: 1234567, steps: 412, tested: null, thumb: null },
+  { id: 'beispiel-turm', title: 'Beispiel: Wachturm', category: 'mittelalter', subtitle: 'Beispieldaten für den Styleguide, ohne Vorschaubild.', accuracy: 'eigenes', size: [9, 24, 9], blocks: 1284, steps: 24, tested: null, thumb: null },
+  { id: 'beispiel-farm', title: 'Beispiel: Kaktusfarm', category: 'farmen', subtitle: 'Zeigt den Hinweis für ungetestete Farmen.', accuracy: 'nachempfunden', size: [6, 5, 4], blocks: 96, steps: 12, tested: false, thumb: null },
+  { id: 'beispiel-haus', title: 'Beispiel: Haus mit Vorschaubild', category: 'haeuser', subtitle: 'Das Bild ist eine im Browser gezeichnete Pixel-Szene.', accuracy: 'vorlage', size: [12, 10, 14], blocks: 2312, steps: 18, tested: null, thumb: null },
+  { id: 'beispiel-riese', title: 'Beispiel: Sehr langer Titel für einen Riesenbau mit Zeilenumbruch', category: 'wahrzeichen', subtitle: 'Lange Titel und große Zahlen bleiben lesbar.', accuracy: 'massstab', size: [120, 634, 120], blocks: 1234567, steps: 412, tested: null, thumb: null },
 ];
 
 const SAMPLE_SLOTS = [
@@ -131,13 +131,12 @@ function renderChips() {
     createUntestedChip(),
     createChip('Java 26.2', { className: 'chip--version' }),
     createChip('Schlagwort'),
-    ...[1, 2, 3, 4, 5].map((level) => createDifficulty(level)),
   );
 }
 
 function renderTiles() {
   const tiles = renderCategoryGrid(requireElement('sg-tiles'));
-  const sampleCounts = { haeuser: 12, wahrzeichen: 1, fantasy: undefined, mittelalter: 0, klein: 27, redstone: null, farmen: 5, infrastruktur: 3 };
+  const sampleCounts = { haeuser: 12, wahrzeichen: 1, fantasy: undefined, mittelalter: 0, klein: 27, farmen: null, infrastruktur: 3 };
   for (const [slug, tile] of tiles) setTileCount(tile, sampleCounts[slug]);
 }
 

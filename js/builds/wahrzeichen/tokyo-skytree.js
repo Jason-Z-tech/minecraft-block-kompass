@@ -14,26 +14,12 @@ export const meta = {
     '東京スカイツリー', 'スカイツリー',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Der 634 m hohe Turm in Tokio, 1 Block = 1 m (oder 1:2, 1:4). Exakt nach Quellen gebaut: alle Höhen '
     + '(Beine bis 50 m, Tembo Deck 340/345/350 m, Galleria 445–450 m, Turmkörper bis 497 m, Spitze 634 m), das '
     + 'Fuß-Dreieck mit 68 m Seite, die Mittelsäule (⌀ 8 m, 375 m), der Mast-⌀ 6 m und die Ringe alle 12,5 m. '
     + 'Geschätzt sind die Breiten zwischen diesen Höhen und die Plattform-Durchmesser (an einer Zeichnung vermessen), '
     + 'der Übergang vom Dreieck zum Kreis, Zahl der Diagonalen, Aufbau der Beine, Schacht, Antennenstufen und Kopf. '
     + 'Vereinfacht: Eine Ecke zeigt genau nach Norden (echt 6,5° gedreht).',
-  facts: [
-    '634 m hoch bis zur Spitze des Blitzableiters; das Stahlfachwerk (Turmkörper) endet bei 497 m.',
-    'Am Boden ein gleichseitiges Dreieck mit ca. 68 m Seitenlänge; an jeder Ecke ein Bein aus 4 Rohrstützen.',
-    'Die drei Beine laufen schräg nach innen und vereinigen sich auf 50 m Höhe.',
-    'Der Querschnitt wandelt sich vom Dreieck unten zum Kreis auf Höhe des Aussichtsdecks.',
-    'Mittelsäule aus Stahlbeton: ⌀ 8 m, 375 m hoch, innen die Nottreppe; bis 125 m fest mit dem Stahlturm verbunden, darüber über Öldämpfer.',
-    'Ringfachwerk alle 12,5 m; die größten Rohre unten an den Kanten haben ⌀ 2,3 m bei 100 mm Wand.',
-    'Tembo Deck mit Etagen auf 340, 345 und 350 m, schüsselförmig nach oben auskragend, mit 2 × 3 m Glasboden auf 340 m.',
-    'Tembo Galleria: gläserne Spiralrampe von 445 auf 450 m; höchster Besucherpunkt Sorakara Point auf 451,2 m.',
-    'Gain Tower (Antennenmast) mit Sechseck-Grundriss aus 6 Stützen, ⌀ ca. 6 m; im Kopf zwei Schwingungstilger mit 25 t und 40 t.',
-    'Farbe „Skytree White“ auf Basis von Aijiro, dem hellsten traditionellen Indigo-Ton.',
-    'Rund 36.000 t Stahl inklusive Plattformen.',
-  ],
   sources: [
     { title: 'Tokyo Skytree: Outline (Betreiber)', url: 'https://en.tokyo-skytree.jp/about/outline/' },
     { title: 'Tokyo Skytree: Specifications', url: 'https://en.tokyo-skytree.jp/about/spec/' },
@@ -75,7 +61,6 @@ const DECK_ROOF = 364; // G Dach des Tembo Deck (Zeichnung)
 const GALLERIA_LOW = 445; // B
 const GALLERIA_HIGH = 450; // B
 const GALLERIA_RAMP_LENGTH = 110; // S
-const SORAKARA = 451.2; // B
 const GAIN_HEAD = 620; // R/G Unterkante Kopf (634 − 14)
 const HEAD_ROOF = 628; // I Dach des zweigeschossigen Kopfes
 const FOOT_SIDE = 68; // B Seite des Fuß-Dreiecks
@@ -285,11 +270,9 @@ function memberY(h, s, thickness) {
 // Sammelt alle Blöcke, bevor sie kapitelweise (nach Höhe) gesetzt werden. Späteres Setzen gewinnt; null = Luft.
 function createStore() {
   const layers = new Map();
-  const notes = [];
   const key = (x, z) => (x + 512) * 1024 + (z + 512);
   return {
     layers,
-    notes,
     put(x, y, z, state) {
       if (y < 0) return;
       if (Math.abs(x) > 500 || Math.abs(z) > 500) throw new Error(`Skytree: Block außerhalb des Bereichs (${x}, ${z}).`);
@@ -302,21 +285,6 @@ function createStore() {
     },
     get(x, y, z) {
       return layers.get(y)?.get(key(x, z)) ?? null;
-    },
-    // Breite der Ebene in x-Richtung (Blick von Süden), wie sie gebaut ist.
-    width(y) {
-      let min = Infinity;
-      let max = -Infinity;
-      for (const [k, state] of layers.get(y) ?? []) {
-        if (state === null) continue;
-        const x = Math.floor(k / 1024) - 512;
-        min = Math.min(min, x);
-        max = Math.max(max, x);
-      }
-      return max >= min ? max - min + 1 : 0;
-    },
-    note(x, y, z, text) {
-      notes.push({ x, y, z, text });
     },
   };
 }
@@ -838,11 +806,6 @@ function buildDeck(store, geo, cfg) {
       for (let y = floors[0] - 1; y >= y1; y--) if (store.get(x, y, z) === M.panel) store.put(x, y, z, M.glass);
     }
   }
-  store.note(x0, floors[0], zEnd, 'Glasboden auf Etage 340 (2 × 3 m): Die Schüssel darunter ist an dieser Stelle auch verglast – du blickst senkrecht hinunter.');
-
-  const top = floors[floors.length - 1];
-  const noteZ = Math.floor(AXIS + radiusAtY(top + 1)) - 2;
-  store.note(0, top + 1, noteZ, 'Tembo Deck, Etage 350: Rundum-Verglasung. Darunter liegen die Etagen 345 und 340, alle in der nach oben auskragenden Schüssel.');
 }
 
 // Lampenringe im Boden einer Deck-Etage: Mitte zwischen Schacht und Fassade, bei genug Platz auch an der Fassade.
@@ -950,9 +913,6 @@ function buildGalleriaTube(store, g, cfg) {
     const lamp = c.depth === lampDepth && lampAt(f, c.d);
     store.put(c.x, y0 + g.hi, c.z, lamp ? M.light : frame ? M.steel : M.glass);
   }
-  const endPhi = g.start + g.sweep - 1.5 / g.rMid;
-  const p = polarPoint(endPhi, g.rMid, 0);
-  store.note(Math.round(p[0]), yEnd, Math.round(p[2]), `Tembo Galleria: Ende der gläsernen Spiralrampe auf 450 m. Gleich daneben liegt der Sorakara Point (${String(SORAKARA).replace('.', ',')} m), der höchste Punkt für Besucher.`);
 }
 
 // ---------------------------------------------------------------- Gain Tower, Kopf, Spitze
@@ -1035,146 +995,33 @@ function buildGainTower(store, geo, cfg) {
     else for (const c of circleCells(r, Infinity, hc, hc)) store.put(c.x, y, c.z, M.panel);
   }
   store.put(0, top, 0, M.rod);
-  store.note(0, top, 0, 'Spitze: Blitzableiter auf 634 m – der höchste Punkt des Turms.');
 }
 
 // ---------------------------------------------------------------- Kapitel
 
-function fmt(value) {
-  const rounded = Math.round(value * 10) / 10;
-  return String(rounded).replace('.', ',');
-}
+// Kapitel nach Höhe in Metern: from bis unter to, das letzte reicht bis zur Spitze.
+const CHAPTERS = [
+  { from: 0, to: H_LEGS, title: 'Fuß und Beine (0–50 m)' },
+  { from: H_LEGS, to: 150, title: 'Turmkörper 50–150 m' },
+  { from: 150, to: 250, title: 'Turmkörper 150–250 m' },
+  { from: 250, to: H_CIRCLE, title: 'Turmkörper 250–320 m' },
+  { from: H_CIRCLE, to: H_COLUMN, title: 'Tembo Deck (320–375 m)' },
+  { from: H_COLUMN, to: 425, title: 'Turmkörper 375–425 m' },
+  { from: 425, to: 460, title: 'Tembo Galleria (425–460 m)' },
+  { from: 460, to: H_BODY, title: 'Turmkörper 460–497 m' },
+  { from: H_BODY, to: GAIN_HEAD, title: 'Gain Tower (497–620 m)' },
+  { from: GAIN_HEAD, to: H_TOP, title: 'Spitze (620–634 m)' },
+];
 
-// Länge in Metern → Blöcke im Maßstab (mindestens 1).
-function toBlocks(m, s) {
-  return Math.max(1, Math.round(m * s));
-}
-
-function chapterPlan(store, geo, cfg) {
-  const { s } = cfg;
-  const n = (m) => toBlocks(m, s);
-  const lvl = (h) => geo.yOf(h) + 1; // Ebene N = y + 1
-  // Breite des Umrisses (Recherche-Profil × Maßstab); Fuß, Ring auf 50 m und Deck wie gebaut gemessen.
-  const width = (h) => n(geo.bodyWidth(h));
-  const footWidth = store.width(0);
-  const ring50Width = Math.max(store.width(geo.yOf(H_LEGS) - 1), store.width(geo.yOf(H_LEGS)));
-  const narrows = (a, b, wa = width(a)) => (wa === width(b) ? `Die Breite bleibt bei ${wa} Blöcken` : `Die Breite nimmt von ${wa} auf ${width(b)} Blöcke ab`);
-  let deckWidth = 0;
-  for (let y = geo.yOf(322); y < geo.yOf(DECK_ROOF); y++) deckWidth = Math.max(deckWidth, store.width(y));
-  const twoDeckRings = deckLightRings(geo, cfg, deckFloorYs(geo)[0]).length === 2;
-  const scaleText = s === 1 ? '1:1' : `1:${fmt(1 / s)}`;
-  const ringLow = Math.floor(cfg.ringStep * s);
-  const ringHigh = Math.ceil(cfg.ringStep * s);
-  const ringEvery = ringLow === ringHigh ? `alle ${ringLow} Ebenen` : `abwechselnd alle ${ringLow} und ${ringHigh} Ebenen`;
-  const ringText = cfg.ringStep === 12.5
-    ? `Die Ringe liegen wie im Original alle 12,5 m – im Maßstab ${scaleText} ${ringEvery}.`
-    : `Die Ringe liegen in diesem Maßstab nur alle 25 m (${ringEvery}); die Zwischenringe entfallen.`;
-  const tubeText = cfg.fine
-    ? `Die Kanten-Rohre sind ${cfg.ridgeT} Blöcke dick, Ringe und Diagonalen ${cfg.memberT} Blöcke.`
-    : 'Alle Rohre sind hier 1 Block dick.';
-  const commonTips = [
-    'Baue im Kreativmodus und fliege (zweimal Leertaste); mit F3 siehst du deine Koordinaten.',
-    'Die Turmachse liegt auf einer Blockkante (zwischen zwei Blöcken): Mittelsäule, Schacht und Kopf haben gerade Durchmesser.',
-  ];
-  const g = galleriaLayout(geo, cfg);
-  const floors = deckFloorYs(geo).map((y) => y + 1);
-  const top = geo.yOf(H_TOP);
-  const spokeText = `Alle ${fmt(cfg.spokeStep)} m (${n(cfg.spokeStep)} Ebenen) verbinden waagrechte Speichen den Ring mit dem Schacht.`;
-  const rampLength = Math.round(g.sweep * g.rMid);
-  const halfSteps = Math.max(1, Math.round(2 * (g.surface(1) - g.surface(0))));
-  const coreText = cfg.fine
-    ? ' In der Säule beginnt die Nottreppe: eine Stufe pro Ebene im Kreis um einen Kern, jede auf einem Block aus poliertem Andesit; alle 8 Ebenen sitzt eine Seelaterne im Kern.'
-    : cfg.mid ? ' In der hohlen Säule läuft eine Leiter an der Westwand nach oben (für die Nottreppe ist hier kein Platz).' : '';
-  return [
-    {
-      from: 0, to: H_LEGS,
-      title: 'Fuß und Beine (0–50 m)',
-      text: `Hier entstehen die drei Beine an den Ecken des Fuß-Dreiecks: Seite ${footWidth} Blöcke (echt ca. 68 m), eine Ecke zeigt nach Norden, die Südseite läuft von West nach Ost. `
-        + `Jedes Bein besteht aus 4 schrägen Rohrstützen (${cfg.legT} ${cfg.legT === 1 ? 'Block' : 'Blöcke'} dick, unten ${n(LEG_SPACING)} Blöcke auseinander – dieser Abstand ist eine Annahme) mit Riegeln und ${cfg.fine ? 'Kreuzstreben' : 'Zickzack-Streben'}. `
-        + `Die Beine laufen nach innen und vereinigen sich auf 50 m (Ebene ${lvl(50)}) in einem Ring von ${ring50Width} Blöcken Breite. `
-        + `In der Mitte wachsen die graue Mittelsäule (⌀ ${n(8)} Blöcke) und der helle Schacht mit.${coreText}`,
-      tips: [...commonTips, 'Spanne vor dem Bauen Hilfslinien aus Wolle von der Achse zu den drei Ecken und entferne sie danach.'],
-    },
-    {
-      from: H_LEGS, to: 150,
-      title: 'Turmkörper 50–150 m',
-      text: `Ab hier ist der Turm ein geschlossenes Rohrgitter: Ringe, Diagonalen als Rautennetz (${cfg.kLower} Felder je Richtung – Annahme) und drei dicke Kanten-Rohre an den Ecken. ${ringText} `
-        + `${narrows(H_LEGS, 150, ring50Width)} (geschätzt nach einer Zeichnung), die Ecken runden sich langsam. ${tubeText} `
-        + `${spokeText} Bis 125 m (Ebene ${lvl(125)}) ist die Mittelsäule im Original fest mit dem Stahlturm verbunden, darüber nur über Dämpfer.`,
-      tips: [...commonTips, 'Baue zuerst die Ringe einer Lage, dann die Diagonalen dazwischen – so bleibt die Form sauber.'],
-    },
-    {
-      from: 150, to: 250,
-      title: 'Turmkörper 150–250 m',
-      text: `Der Querschnitt wird zum gerundeten Dreieck. ${narrows(150, 250)} (geschätzt). `
-        + 'Ringe, Rautennetz und Kanten-Rohre laufen weiter; die Diagonalen werden steiler, weil der Umfang kleiner wird.',
-      tips: [...commonTips, 'Die Kanten-Rohre liegen genau über den drei Ecken des Fuß-Dreiecks – peile sie von unten an.'],
-    },
-    {
-      from: 250, to: H_CIRCLE,
-      title: 'Turmkörper 250–320 m',
-      text: `Auf 320 m (Ebene ${lvl(H_CIRCLE)}) ist der Querschnitt ein Kreis mit ⌀ ${width(H_CIRCLE)} Blöcken. Die Kreis-Höhe stammt aus Sekundärquellen (eine nennt 350 m), der Durchmesser ist geschätzt. `
-        + `${narrows(250, H_CIRCLE)}.`,
-      tips: [...commonTips],
-    },
-    {
-      from: H_CIRCLE, to: H_COLUMN,
-      title: 'Tembo Deck (320–375 m)',
-      text: `Die Schüssel des Tembo Deck wächst ab 322 m nach außen und kragt nach oben weiter aus, bis ⌀ ${deckWidth} Blöcke (geschätzt). `
-        + `Böden auf Ebene ${floors.join(', ')} (${floors.length === 3 ? 'Etagen 340, 345 und 350 m' : 'Etagen 340 und 350 m; 345 m passt in diesem Maßstab nicht dazwischen'}), dazwischen Glasbänder mit weißen Pfosten. Auf 340 m liegt ein Glasboden; darunter ist auch die Schüssel verglast, damit du wirklich nach unten schaust. `
-        + `Seelaternen in den Böden (${twoDeckRings ? 'je ein Ring in der Mitte und an der Fassade' : 'ein Ring je Etage'}) und, wo nötig, auf den Simsen unter dem Dach halten alle Etagen hell – Monster spawnen nur bei Blocklicht 0. `
-        + `Das Dach liegt auf ${DECK_ROOF} m (Ebene ${lvl(DECK_ROOF) - 1}, geschätzt); darüber verjüngt sich der Turm auf ${width(H_COLUMN)} Blöcke. Die Mittelsäule endet auf 375 m (Ebene ${lvl(H_COLUMN) - 1}).`,
-      tips: [...commonTips, 'Setze zuerst Böden und Pfosten, dann das Glas dazwischen – so triffst du die Form der Schüssel leichter.'],
-    },
-    {
-      from: H_COLUMN, to: 425,
-      title: 'Turmkörper 375–425 m',
-      text: `Schlanker Turmkörper über dem Deck: ${narrows(H_COLUMN, 425).replace('Die Breite', 'die Breite')} (geschätzt), das Rautennetz hat hier ${cfg.kUpper} Felder je Richtung (Annahme). ${tubeText}`,
-      tips: [...commonTips],
-    },
-    {
-      from: 425, to: 460,
-      title: 'Tembo Galleria (425–460 m)',
-      text: `Die zweite Schüssel trägt den Boden der Etage 445 (Ebene ${g.lowFloor + 1}). Außen steigt die gläserne Röhre als Spiralrampe einmal rund um den Turm von 445 auf 450 m: `
-        + `${fmt(halfSteps / 2)} ${halfSteps === 2 ? 'Block' : 'Blöcke'} Höhe auf rund ${rampLength} Blöcke Weg, also etwa alle ${Math.round(rampLength / halfSteps)} Blöcke eine halbe Stufe. `
-        + `Oben liegt die Halle der Etage 450 (Boden auf Ebene ${g.hallFloor + 1}, ⌀ ${n(31.5)} Blöcke – geschätzt) mit Glaswand und Dach. `
-        + 'Licht: Seelaternen mittig in der Glasdecke der Röhre, je ein Lampenring im Boden der Etagen 445 und 450.',
-      tips: [...commonTips, 'Lege die Rampe mit glatten Quarzstufen: Stufe, Vollblock, Stufe … jeweils eine halbe Höhe weiter.'],
-    },
-    {
-      from: 460, to: H_BODY,
-      title: 'Turmkörper 460–497 m',
-      text: `Der oberste Teil des Stahlturms bis 497 m (Ebene ${lvl(H_BODY) - 1}), oben ${width(H_BODY)} Blöcke breit (geschätzt). In der Mitte bleibt der Hohlraum (⌀ ${2 * (cfg.cavityR - 1)} Blöcke), durch den der Mast hochgeschoben wurde. `
-        + `Auf der obersten Ebene trägt ${cfg.fine ? 'ein Stern aus sechs Trägern' : 'eine Platte'} über dem Hohlraum den Mastfuß (Annahme: im Original reicht der Mast bis etwa 469 m in den Hohlraum hinein, wie er dort gehalten wird, ist nicht veröffentlicht).`,
-      tips: [...commonTips],
-    },
-    {
-      from: H_BODY, to: GAIN_HEAD,
-      title: 'Gain Tower (497–620 m)',
-      text: cfg.fine
-        ? `Der Antennenmast: Sechseck aus 6 Stützen mit ⌀ ${n(6)} Blöcken, Riegel alle 10 m, Diagonalen in jedem Feld. Die 4 Antennenstufen aus Eisengittern (⌀ ${n(8)} Blöcke) sind eine Annahme – Zahl und Höhe der Stufen sind nicht veröffentlicht.`
-        : `Der Antennenmast als Säule aus ${nearestOdd(6 * s)} × ${nearestOdd(6 * s)} Blöcken (echt ⌀ 6 m). Die Eisenblock-Abschnitte stehen für die Antennenstufen (Zahl und Höhe sind eine Annahme).`,
-      tips: [...commonTips, 'Ab hier wird es eng: stelle dich zum Bauen auf den Mast und arbeite von innen nach außen.'],
-    },
-    {
-      from: GAIN_HEAD, to: H_TOP,
-      title: 'Spitze (620–634 m)',
-      text: `Der Kopf (⌀ ${cfg.fine ? 10 : nearestOdd(10 * s)} Blöcke, geschätzt) enthält im Original zwei Schwingungstilger. ${cfg.fine ? 'Im Modell stehen sie als Eisenblöcke in den zwei Geschossen, oben auf jedem eine Seelaterne. ' : 'Eine Seelaterne im Kopf hält ihn hell. '}Darüber folgen Dachkegel, Mast und der Blitzableiter als oberster Block auf Ebene ${top}`
-        + `${top === 634 * s ? ' – genau 634 m.' : ` (634 m × ${fmt(s)} = ${fmt(634 * s)}, gerundet).`}`,
-      tips: [...commonTips],
-    },
-  ];
-}
-
-function emitPhases(b, store, geo, cfg) {
-  const plan = chapterPlan(store, geo, cfg);
+function emitPhases(b, store, geo) {
+  const plan = CHAPTERS;
   const lastY = geo.yOf(H_TOP) - 1;
   const ys = [...store.layers.keys()];
   if (Math.max(...ys) > lastY) throw new Error('Skytree: Blöcke über der Spitze.');
   plan.forEach((chapter, index) => {
     const from = geo.yOf(chapter.from);
     const to = index === plan.length - 1 ? lastY : geo.yOf(chapter.to) - 1;
-    b.phase(chapter.title, chapter.text, { tips: chapter.tips });
+    b.phase(chapter.title);
     for (let y = from; y <= to; y++) {
       const layer = store.layers.get(y);
       if (!layer) continue;
@@ -1183,7 +1030,6 @@ function emitPhases(b, store, geo, cfg) {
         b.set(Math.floor(key / 1024) - 512, y, (key % 1024) - 512, state);
       }
     }
-    for (const n of store.notes) if (n.y >= from && n.y <= to) b.note(n.x, n.y, n.z, n.text);
   });
 }
 
@@ -1198,5 +1044,5 @@ export default function build(b, { scale = 1 } = {}) {
   buildGalleria(store, geo, cfg);
   buildGainTower(store, geo, cfg);
   lightInteriors(store, geo, cfg);
-  emitPhases(b, store, geo, cfg);
+  emitPhases(b, store, geo);
 }

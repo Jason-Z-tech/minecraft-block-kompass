@@ -62,6 +62,9 @@ dataTest('Bau-Module: meta wird übernommen, Fehler werden verständlich gemelde
   const result = buildModule(mod, {}, 'tests/fixtures/core/example-house.js');
   assert.equal(result.meta.id, 'example-house');
   assert.ok(result.blockCount > 300 && result.steps.length > 10);
+  assert.ok(result.phases.every((p) => Object.keys(p).sort().join() === 'steps,title' && p.title !== ''), 'Kapitel nur mit Titel');
+  assert.ok(result.steps.every((s) => !('title' in s) && !('text' in s) && !('tips' in s)), 'Schritte ohne Titel und Text');
+  assert.equal('notes' in result, false, 'keine Notizen');
   rejects(() => buildModule({}, {}, 'js/builds/x.js'), /ist kein Bau-Modul/);
   rejects(() => buildModule({ default: (b) => b.set(0, 0, 0, 'gibtsnicht') }, {}, 'js/builds/x.js'), /Das Bau-Modul „js\/builds\/x\.js“ konnte nicht gebaut werden: .*gibtsnicht/);
   rejects(() => buildModule({ default: async () => {} }, {}, 'js/builds/x.js'), /synchron/);
@@ -77,7 +80,10 @@ dataTest('Original-Struktur → BuildResult mit Kapitel „Aufbau“ in Ebenen',
   assert.equal(result.blockCount, solid);
   assert.equal(result.phases.length, 1);
   assert.equal(result.phases[0].title, 'Aufbau');
-  assert.deepEqual(result.steps.map((s) => s.title), result.steps.map((s) => `Ebene ${s.layerY + 1}`));
+  // Kapitel nur mit Titel, Schritte ohne Titel und Text, keine Notizen
+  assert.deepEqual(result.phases, [{ title: 'Aufbau', steps: result.steps.map((s) => s.index) }]);
+  for (const step of result.steps) assert.deepEqual(Object.keys(step).sort(), ['blockCount', 'index', 'layerY', 'materials', 'phase']);
+  assert.equal('notes' in result, false);
   assert.ok(result.steps.every((s, i) => i === 0 || s.layerY > result.steps[i - 1].layerY), 'Ebenen von unten nach oben');
   assert.deepEqual(result.structure.size, data.size);
   assert.equal(result.structure.file, file);
@@ -92,6 +98,10 @@ dataTest('Galerie: alle Gruppen ohne Warnungen, „all“ zeigt jeden Block gena
     const result = buildGallery(group);
     assert.deepEqual(result.warnings, [], `${group}: ${result.warnings.join(' | ')}`);
     assert.ok(result.gallery.items.length > 0 && result.gallery.rows.length === result.steps.length, group);
+    // Den Namen einer Reihe trägt gallery.rows, nicht der Schritt
+    assert.ok(result.gallery.rows.every((row) => typeof row.title === 'string' && row.title !== ''), group);
+    assert.ok(result.steps.every((s) => !('title' in s)), group);
+    assert.deepEqual(result.phases.map((p) => p.title), [`Galerie: ${group}`]);
     for (const row of result.gallery.rows) assert.ok(row.min.every((v, a) => v >= 0 && v <= row.max[a] && row.max[a] < result.size[a]), `${group}: ${row.title}`);
   }
   const pages = galleryPageCount('all');
@@ -199,6 +209,10 @@ dataTest('Engine: bauen, Texturen binden, Chunks, Schritt und Kappe meshen, Erge
   assert.ok(cap.solid.quadCount > 0, 'Schnitt durch Ebene 2 hat Deckflächen');
   const { result: plain, volume, transferList } = serializeResult(result);
   assert.equal(plain.volume, undefined);
+  // Worker-Nachricht „built“: ohne notes, Kapitel nur mit Titel, Schritte ohne Titel und Text
+  assert.equal('notes' in plain, false);
+  assert.ok(plain.phases.length >= 2 && plain.phases.every((p) => Object.keys(p).sort().join() === 'steps,title'));
+  for (const step of plain.steps) assert.deepEqual(Object.keys(step).sort(), ['blockCount', 'index', 'layerY', 'materials', 'phase']);
   assert.equal(transferList.length, volume.chunks.length * 2);
   assert.equal(BlockVolume.fromTransfer(volume).count, result.blockCount);
 });

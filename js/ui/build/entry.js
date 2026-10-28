@@ -1,5 +1,6 @@
 // Katalog-Eintrag für die Bau-Seite: die zusätzlichen Felder des Katalogs aus Runde 2 prüfen (Beschreibung,
-// Fakten, Quellen, Credits, Maßstäbe, Varianten …), Maßstab aus der Adresse auflösen, Quelle für den Viewer.
+// Quellen, Credits, Maßstäbe, Varianten …), Maßstab aus der Adresse auflösen, Quelle für den Viewer.
+// Alte Felder (z. B. difficulty, facts) werden nicht übernommen.
 // Ohne DOM-Zugriff beim Laden, daher in Node testbar.
 import { loadJson, loadLocalThumbIds, applyThumbs, normalizeCatalog, findBuild, CATALOG_PATH } from '../data.js';
 import { isSafeUrl, isSafeSitePath } from '../dom.js';
@@ -94,7 +95,6 @@ export function normalizeBuildDetails(raw) {
   const defaultScale = typeof raw.defaultScale === 'number' ? findScale(scales, raw.defaultScale) : null;
   return {
     description: cleanText(raw.description, 3000),
-    facts: cleanTextList(raw.facts, 24, 400),
     sources: cleanSources(raw.sources),
     credits: cleanCredits(raw.credits),
     module: typeof raw.module === 'string' && MODULE_PATH_PATTERN.test(raw.module) ? raw.module : null,
@@ -178,10 +178,8 @@ export function viewEntry(raw) {
     subtitle: cleanText(source.subtitle, 200),
     category: CATEGORY_SLUGS.includes(source.category) ? source.category : null,
     accuracy: ACCURACY_KEYS.includes(source.accuracy) ? source.accuracy : null,
-    difficulty: cleanInteger(source.difficulty, 1, 5),
     tested: source.tested === true || source.tested === false ? source.tested : null,
     description: cleanText(source.description, 3000),
-    facts: cleanTextList(source.facts, 24, 400),
     sources: cleanSources(source.sources),
     credits: cleanCredits(source.credits),
     tags: cleanTextList(source.tags, 12, 40),

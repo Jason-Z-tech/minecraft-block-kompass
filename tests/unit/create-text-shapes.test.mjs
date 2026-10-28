@@ -153,7 +153,13 @@ describe('buildShape – alle Formen bauen', () => {
         assert.deepEqual(result.size, shapeSize(id, check.params), id);
         assert.equal(result.offset[1], 0, 'Formen beginnen auf Ebene 1');
         assert.ok(result.phases.length >= 1);
-        for (const phase of result.phases) assert.ok(phase.text.length > 30, `${id}: Kapiteltext „${phase.title}“ zu kurz`);
+        // Kapitel nur mit Titel und Schrittliste, ohne Text und Tipps; Schritte ohne Titel und Text; keine Notizen
+        for (const phase of result.phases) {
+          assert.deepEqual(Object.keys(phase).sort(), ['steps', 'title'], `${id}: Kapitel „${phase.title}“`);
+          assert.ok(phase.title.trim().length > 0);
+        }
+        for (const step of result.steps) assert.deepEqual(Object.keys(step).sort(), ['blockCount', 'index', 'layerY', 'materials', 'phase'], `${id}: Schritt ${step.index}`);
+        assert.equal('notes' in result, false, `${id}: keine Notizen`);
         assert.deepEqual(result.warnings, []);
       }
     });
@@ -173,7 +179,11 @@ describe('buildShape – alle Formen bauen', () => {
     assert.equal(v.has(7, 7, 7), false, 'innen hohl');
     assert.equal(outsideReaches(v, result.size, [7, 7, 7]), false, 'Hülle dicht');
     assert.equal(result.steps.length, 15, 'eine Ebene pro Schritt');
-    assert.match(result.phases[0].text, /Jede Ebene ist ein Kreis/);
+    const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+    assert.deepEqual(result.phases, [
+      { title: 'Kugel: Untere Hälfte (Ebene 1–7)', steps: range(0, 6) },
+      { title: 'Kugel: Obere Hälfte (Ebene 8–15)', steps: range(7, 14) },
+    ], 'Kapitel nur mit Titel und Schritten');
   });
 
   test('gerader Durchmesser bleibt exakt', () => {
@@ -229,7 +239,7 @@ describe('buildShape – alle Formen bauen', () => {
       const dir = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] }[facing];
       assert.deepEqual([b.x - a.x, b.z - a.z], dir, 'hohe Seite zeigt zur nächsten Treppe');
     }
-    assert.equal(result.notes.length, 1);
+    assert.equal('notes' in result, false, 'keine Notiz „Hier beginnt die Treppe“ mehr');
   });
 
   test('Bogen: Öffnung unten in der Mitte, Scheitel geschlossen', () => {

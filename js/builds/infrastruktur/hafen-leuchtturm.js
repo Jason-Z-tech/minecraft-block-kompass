@@ -16,17 +16,9 @@ export const meta = {
     'leuchturm', 'leuchtturn', 'hafn', 'lighthous',
   ],
   accuracy: 'eigenes',
-  difficulty: 4,
   description: 'Ein kleiner Hafen für deine Küste: Kaimauer und Molen aus Steinziegeln umschließen ein Becken mit zwei Holzstegen, '
     + 'Pollern und Leitern. Auf dem Molenkopf steht ein rot-weißer Leuchtturm mit Wendeltreppe, Galerie und Lichtraum mit Seelaterne '
     + 'und Leuchtstein. An Land warten ein Lagerhaus mit Fässern und Kisten, ein hölzerner Hafenkran und ein Fischstand.',
-  facts: [
-    'Das Becken ist ganz von Mauern umschlossen, damit kein Wasser ausläuft. Liegt dein Hafen am Meer, brich an der Markierung in der Südmole eine Einfahrt auf.',
-    'Der Leuchtturm ragt 26 Blöcke über den Molenkopf: eine Wendeltreppe mit 18 Stufen um einen Kern aus Fichtenholz, oben Galerie mit Gitter und Lichtraum unter einem Kupferdach.',
-    'Alle begehbaren Innenräume (Leuchtturm, Lichtraum, Lagerhaus) haben Blocklicht über 0 – dort spawnen keine Monster.',
-    'Das gewachste Kupferdach und der Blitzableiter bleiben grün und laufen nicht weiter an.',
-    'Fässer und Truhen im Lagerhaus sind echte Behälter; Komposter dienen als Holzkisten.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -515,106 +507,69 @@ function buildGreen(b) {
 // ---------------------------------------------------------------- Kapitel
 
 export default function build(b) {
-  const lvl = (y) => y + 1;
-  const { cx, cz } = LIGHTHOUSE;
-
-  b.phase('Gelände und Hafenbecken', `Der Hafen ist ${SIZE} × ${SIZE} Blöcke groß. Im Norden liegt das Land (Oberkante Ebene ${lvl(GROUND)}), `
-    + `im Süden das Becken: Grund auf Ebene ${lvl(SEABED)}, darüber 3 Ebenen Wasser bis Ebene ${lvl(WATER_TOP)}.`, {
-    tips: ['Baust du an einer echten Küste, grab das Becken einfach 4 Blöcke tief aus und spar dir die Aufschüttung.',
-      'Sand und Kies im Becken liegen auf einer Steinschicht – so fällt nichts nach unten weg.'],
-  });
-  b.step('Land aufschütten', `Fülle das Land im Norden (z 0 … 12) und den Uferstreifen im Westen: unten Stein, dann 2 Schichten Erde, oben Gras. Die Böschung zum Becken (x = 3) setzt du aus Bruchstein.`);
+  b.phase('Gelände und Hafenbecken');
+  b.step();
   buildLand(b);
-  b.step('Meeresboden', 'Lege den Beckengrund: eine Lage Stein und darauf Sand mit etwas Kies und Ton.');
+  b.step();
   buildSeabed(b);
 
-  b.phase('Kaimauer und Molen', 'Die Mauern aus Steinziegeln reichen vom Grund bis zur Geländeoberkante. Unter Wasser mischst du mehr bemooste Steinziegel ein – das sieht nach altem Hafen aus.', {
-    tips: ['Setze erst die äußeren Kanten jeder Mauer als Linie, dann füllst du dazwischen.',
-      'Der Molenkopf ist ein Kreis mit 13 Blöcken Durchmesser – setz zuerst die vier äußersten Punkte, 6 Blöcke von der Mitte.'],
-  });
-  b.step('Kaimauer', `Zwei Blöcke dick (z 13 … 14), oben vorne eine Kante aus Poliertem Andesit. Davor pflasterst du den Kai (z 10 … 13) mit Steinziegeln und Andesit.`);
+  b.phase('Kaimauer und Molen');
+  b.step();
   buildQuay(b);
-  b.step('Molen', 'Die Südmole (z 37 … 40) und die Ostmole (x 38 … 40) schließen das Becken. Außen bekommen sie eine Brüstung: ein Steinziegel und darauf eine Steinziegelstufe.');
+  b.step();
   buildMoles(b);
-  b.note(20, WALK, 39, 'Hier kannst du eine Einfahrt aufbrechen, wenn hinter der Mole echtes Meer liegt – sonst läuft das Becken aus.');
-  b.step('Molenkopf', `Runder Sockel für den Leuchtturm mit Mitte bei x ${cx}, z ${cz}, Radius 6, Rand aus Poliertem Andesit.`);
+  b.step();
   buildPlatform(b);
-  b.step('Steinschüttung', 'Vor die Außenseiten der Molen kommen lose Steine in unterschiedlicher Höhe – sie brechen im Original die Wellen.');
+  b.step();
   buildRiprap(b);
 
-  b.phase('Holzstege', `Zwei Stege aus Fichtenholz auf Pfählen: ein gerader (x 9 … 11) und ein T-förmiger (x 22 … 30). Der Belag liegt auf Ebene ${lvl(GROUND)}, genau auf Kaihöhe.`, {
-    tips: ['Setze erst die Pfähle vom Grund bis unter den Belag, dann die Randbalken (liegende geschälte Stämme) und zuletzt die Bretter.'],
-  });
-  b.step('Pfähle', 'Fichtenstämme stehend vom Grund (Ebene 3) bis Ebene 5 an den Rändern und Ecken der Stege.');
+  b.phase('Holzstege');
+  b.step();
   buildPiers(b);
-  b.step('Poller', 'Poller aus Polierter-Schwarzstein-Mauer auf den Stegköpfen, an der Kaikante neben den Stegen und auf den Molen.');
+  b.step();
   buildBollards(b);
 
-  b.phase('Wasser', 'Jetzt flutest du das Becken: nur Wasserquellen, keine fließenden Blöcke.', {
-    tips: ['Mit zwei Quellen in einer Ecke entsteht eine unendliche Quelle – daraus schöpfst du beliebig viele Eimer.',
-      'Fülle Lage für Lage von unten nach oben; stehen Quellen in jeder Zelle, bleibt die Oberfläche glatt.'],
-  });
-  b.step('Becken fluten', `Wasserquellen von Ebene ${lvl(SEABED + 1)} bis ${lvl(WATER_TOP)} im ganzen Becken.`);
+  b.phase('Wasser');
+  b.step();
   buildWater(b);
-  b.note(6, WATER_TOP, 15, 'Leitern an der Kaimauer: Wer ins Becken fällt, kommt hier wieder heraus.');
 
-  b.phase('Leuchtturm: Schaft und Wendeltreppe', `Der Schaft ist ein Rohr mit 9 Blöcken Durchmesser und 2 Blöcken Wandstärke, innen bleibt ein 5 × 5-Feld. `
-    + `Unten 2 Ebenen Steinziegel als Sockel, darüber Bänder aus Rotem und Weißem Beton zu je 3 Ebenen. Die Treppe läuft im Uhrzeigersinn um einen 3 × 3-Kern aus geschälten Fichtenstämmen.`, {
-    tips: ['Setze in jeder Ebene zuerst die Wand, dann die eine Treppenstufe – so stehst du immer auf der letzten Stufe und baust bequem weiter.',
-      'Die Fenster sitzen innen in der Wand: außen bleibt eine Nische frei, dahinter die Glasscheibe.',
-      'Im Kern steckt alle 4 Ebenen ein Pilzlicht – es leuchtet den ganzen Treppenturm aus.'],
-  });
+  b.phase('Leuchtturm: Schaft und Wendeltreppe');
   buildTowerShaft(b);
   buildTowerDoor(b);
   buildSpiral(b);
-  b.note(cx, WALK, cz - 2, 'Die Wendeltreppe beginnt direkt hinter der Tür und geht im Uhrzeigersinn nach oben.');
 
-  b.phase('Leuchtturm: Galerie und Lichtraum', `Oben trägt ein Kranz aus umgedrehten Steinziegeltreppen die Galerie auf Ebene ${lvl(TOWER.floor)}. `
-    + 'Der Lichtraum ist ein Glaszylinder mit Seelaterne und Leuchtstein, darüber ein grünes Kupferdach.', {
-    tips: ['Die Konsolen-Treppen setzt du umgedreht: schau beim Setzen zum Turm und klicke auf die obere Hälfte der Turmwand – dann sitzt die Treppe oben im Block.',
-      'Gewachstes Kupfer bleibt so grün, wie es ist. Ungewachstes würdest du erst mit der Axt abkratzen müssen.'],
-  });
-  b.step('Konsolen und Galerieboden', `Ring aus oberen Steinziegeltreppen auf Ebene ${lvl(TOWER.floor - 1)} (hohe Seite zum Turm), darauf der Boden aus Glattem Stein mit 11 Blöcken Durchmesser. Über den letzten beiden Treppenstufen bleiben zwei Felder offen – dort kommst du hoch.`);
+  b.phase('Leuchtturm: Galerie und Lichtraum');
+  b.step();
   buildGallery(b);
-  b.step('Lichtraum', 'Glasring mit 7 Blöcken Durchmesser und 3 Ebenen Höhe, nach Süden eine Tür auf die Galerie. In der Mitte: Gemeißelter Steinziegel als Sockel, darauf Seelaterne und Leuchtstein.');
+  b.step();
   buildLanternRoom(b);
-  b.note(cx, TOWER.floor + 2, cz, 'Seelaterne und Leuchtstein: das Leuchtfeuer. Beide leuchten mit Stärke 15 auch durch das Glas.');
-  b.step('Dach und Laternen', 'Traufe aus gewachsten oxidierten Kupferstufen, darüber ein Kegeldach aus drei Ringen gewachster oxidierter geschnittener Kupfertreppen (hohe Seite zur Mitte), oben ein Kupferblock mit Blitzableiter. Unter die Traufe hängst du vier Laternen.');
+  b.step();
   buildDome(b);
-  b.step('Brüstung am Molenkopf', 'Steinziegelmauer am Rand des Molenkopfs, überall dort, wo Wasser angrenzt.');
+  b.step();
   buildPlatformRailing(b);
 
-  b.phase('Lagerhaus', `Das Lagerhaus (${WAREHOUSE.x2 - WAREHOUSE.x1 + 1} × ${WAREHOUSE.z2 - WAREHOUSE.z1 + 1}) steht hinter dem Kai: ein Sockel aus Steinziegeln, Wände aus Fichtenbrettern und ein Fachwerk-Gerippe aus geschälten Schwarzeichenstämmen.`, {
-    tips: ['Setze zuerst alle Pfosten (Ecken und je zwei auf den Längsseiten), dann füllst du die Felder dazwischen.',
-      'An den beiden Zugbalken quer durch den Raum hängen später die Laternen.'],
-  });
-  b.step('Boden, Sockel und Wände', 'Boden aus Fichtenbrettern, eine Ebene Steinziegel als Sockel, darauf 3 Ebenen Bretterwand mit Pfosten, oben ein Kranz aus liegenden Stämmen.');
+  b.phase('Lagerhaus');
+  b.step();
   buildWarehouseShell(b);
-  b.step('Satteldach', 'Satteldach aus Schwarzeichentreppen mit 1 Block Überstand, First als Stufen. Die Giebel im Westen und Osten füllst du mit Fichtenbrettern.');
+  b.step();
   buildWarehouseRoof(b);
-  b.step('Tor und Fenster', 'Zweiflügelige Tür nach Süden zum Kai mit Vordach, Fenster mit Fensterbank und Läden, im Ostgiebel eine Ladeluke mit Kranbalken.');
+  b.step();
   buildWarehouseOpenings(b);
-  b.step('Einrichtung und Licht', 'Truhen und Fässer an der Nordwand, Fassstapel und Kisten (Komposter) in der Ecke, Seetangballen im Westen und ein Pult für den Hafenmeister. Die Laternen hängen an Ketten.');
+  b.step();
   buildWarehouseInterior(b);
 
-  b.phase('Hafenkran', 'Ein Drehkran aus Holz auf dem Kai: Mast aus Fichtenstamm, Ausleger bis über das Wasser, hinten ein Gegengewicht aus Bruchstein.', {
-    tips: ['Setze zuerst den Mast ganz hoch, dann den Ausleger obendrauf – die Streben kommen zuletzt.'],
-  });
-  b.step('Mast, Ausleger und Streben', 'Plattform 3 × 3 aus Fichtenbrettern, Mast 11 Blöcke hoch, am Fuß ein Kranz aus Fichtentreppen (hohe Seite zum Mast) und Stufen in den Ecken. '
-    + 'Obendrauf der 12 Blöcke lange Ausleger, darunter zwei schräge Streben aus geschältem Fichtenholz, jede Stufe unten mit einer umgedrehten Fichtentreppe ausgefüllt. Der Schleifstein daneben ist die Winde.');
+  b.phase('Hafenkran');
+  b.step();
   buildCrane(b);
-  b.note(CRANE.x, WALK + 6, CRANE.z + 8, 'Am Kranhaken hängt ein Fass über dem Wasser – wie beim Entladen eines Schiffs.');
 
-  b.phase('Umgebung', 'Zum Schluss Ladung, Licht und Grün: Fässer und Kisten auf Kai und Stegen, ein Fischstand mit Räucherofen, Laternenmasten, ein Kiesweg, Baum und Büsche.', {
-    tips: ['Laternenmasten stehen auf einem Steinziegel – so wirken sie wie gusseiserne Hafenlampen.'],
-  });
-  b.step('Fässer und Kisten', 'Gruppen aus Fässern und Kompostern (Kisten) vor dem Lagerhaus, auf dem T-Steg und am Ostende des Kais.');
+  b.phase('Umgebung');
+  b.step();
   buildCargo(b);
-  b.step('Fischstand', 'Vier Zaunpfosten, ein Dach aus roter und weißer Wolle, vorne Fässer und ein Räucherofen als Theke.');
+  b.step();
   buildStall(b);
-  b.step('Laternen', 'Laternenmasten an der Kaikante, auf den Molen und an den Stegköpfen.');
+  b.step();
   buildLamps(b);
-  b.step('Weg und Grün', 'Kiesweg vom Land zum Kai, eine kleine Eiche, Büsche, Felsen und Blumen auf dem Uferstreifen.');
+  b.step();
   buildGreen(b);
 
   assertLit(b);

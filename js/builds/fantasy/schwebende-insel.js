@@ -17,16 +17,9 @@ export const meta = {
     'schwebeinsel', 'insel in der luft', 'schwebende insle', 'schwebende inzel', 'luftinsel', 'insel mit wasserfall',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Eine Insel schwebt hoch in der Luft: unten läuft sie kegelförmig und zerklüftet aus Stein mit Erzadern, Tropfstein, '
     + 'Leuchtbeeren und hängenden Wurzeln aus, oben wachsen Gras, Blumen und eine große Eiche auf einem kleinen Hügel. Am Rand steht '
     + 'ein Fachwerkhäuschen mit Schornstein, daneben ein Teich, dessen Wasser durch eine Rinne über die Kante stürzt.',
-  facts: [
-    'Insel etwa 27 × 23 Blöcke, Unterseite bis 18 Blöcke tief.',
-    'Gebaut wird von oben nach unten: erst die Oberfläche auf einer Hilfssäule, dann Lage für Lage die Unterseite.',
-    'Der Wasserfall entsteht im Spiel von selbst: du setzt nur Wasserquellen in die Rinne, die letzte direkt an der Kante.',
-    'Das Häuschen ist 7 × 7 Blöcke groß, innen 5 × 5 mit Bett, Kochecke, Tisch und Truhe.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -107,79 +100,39 @@ export default function build(b) {
   const cols = islandColumns();
   const minBottom = Math.min(...cols.map((c) => c.bottom));
 
-  b.phase('Oberfläche', 'Eine schwebende Insel baust du von oben nach unten. Bau zuerst eine Hilfssäule aus Erde bis zur gewünschten Höhe '
-    + 'und leg dann die Grasfläche (etwa 27 × 23 Blöcke, Ellipse mit welligem Rand) in die Luft. Im Nordwesten steigt ein kleiner '
-    + 'Hügel 2 Blöcke an, der Rand fällt an manchen Stellen eine Stufe ab.', {
-    tips: [
-      'Lege erst eine Kreuzlinie durch die Mitte (27 Blöcke Ost–West, 23 Nord–Süd) und arbeite dich von dort nach außen.',
-      'Unter dem Gras kommt später Erde – du kannst die Grasblöcke auch erst ganz zum Schluss mit Gras überziehen lassen.',
-    ],
-  });
-  b.step('Grasfläche und Hügel', 'Die oberste Lage aus Grasblöcken, auf dem Hügel mit Erde darunter.');
+  b.phase('Oberfläche');
+  b.step();
   for (const c of cols) for (let y = c.top; y >= Math.min(c.top, 0); y--) b.set(c.x, y, c.z, y === c.top ? 'grass_block' : 'dirt');
 
-  b.phase('Unterseite', 'Jetzt arbeitest du dich Lage für Lage nach unten. Stell dich auf die Insel, schleich an den Rand und setz die '
-    + 'Blöcke an die Unterseite. Unter dem Gras liegen 2–3 Lagen Erde, darunter Stein mit Andesit, Tuff, Bruchstein und ein paar Erzen '
-    + '(Kohle, Eisen, Kupfer). Jede Lage ist etwas kleiner als die darüber, die Spitze ganz unten ist aus Tiefenschiefer.', {
-    tips: [
-      'Mit Schleichen (Shift) fällst du nicht von der Kante und kannst Blöcke unter dir setzen.',
-      'Die Unterseite soll zerklüftet aussehen: lass ruhig einzelne Zapfen 2–3 Blöcke tiefer hängen.',
-    ],
-  });
+  b.phase('Unterseite');
   const maxUnder = -1;
   for (let y = maxUnder; y >= minBottom; y--) {
     const layer = cols.filter((c) => c.bottom <= y && c.top > y);
     if (layer.length === 0) continue;
-    b.step(`Lage ${-y} unter der Oberfläche`, layerText(y, layer.length));
+    b.step();
     for (const c of layer) b.set(c.x, y, c.z, underBlock(c.x, y, c.z, c.top - y, c.rho, minBottom));
   }
 
-  b.phase('Teich und Wasserfall', 'Im Osten liegt ein Teich (7 × 6) mit gemischtem Ufer, Seerosen und Schilf. Von seinem Ostrand führt eine '
-    + 'Rinne bis an die Inselkante. Füll Teich und Rinne nur mit Wasserquellen – die letzte Quelle sitzt direkt an der Kante, dort läuft '
-    + 'das Wasser im Spiel von selbst hinunter und bildet den Wasserfall.', {
-    tips: ['Ein Wassereimer macht eine Quelle. Zwei Quellen nebeneinander und ein Eimer daraus ergeben eine unendliche Wasserquelle.'],
-  });
+  b.phase('Teich und Wasserfall');
   buildPond(b);
 
-  b.phase('Häuschen: Fundament und Fachwerk', 'Im Südwesten steht ein Fachwerkhäuschen von 7 × 7 Blöcken. Leg das Fundament aus Bruchstein '
-    + 'und bemoostem Bruchstein in die Grasschicht, innen einen Boden aus Fichtenbrettern. Darauf kommen vier Fachwerkwände, 5 Blöcke hoch: '
-    + 'Rahmen aus geschältem Schwarzeichenstamm (Schwelle, Rähm und Ständer alle 3 Blöcke), die Felder dazwischen aus hellem Calcit.', {
-    tips: ['Setze zuerst die vier Eckpfosten und die Ständer alle 3 Blöcke, dann die Schwelle unten und den Rähm oben, zuletzt die Felder.'],
-  });
+  b.phase('Häuschen: Fundament und Fachwerk');
   buildHouseShell(b);
 
-  b.phase('Häuschen: Dach', 'Das Satteldach aus Schwarzeichentreppen hat den First in Ost-West-Richtung und steht 1 Block über. Die Giebel im Osten '
-    + 'und Westen füllst du mit Schwarzeichenbrettern. Am Westgiebel steigt ein Schornstein aus Bruchstein mit einem Lagerfeuer obenauf.', {
-    tips: ['Schau beim Setzen der Dachtreppen zum First – dann zeigt die hohe Seite automatisch nach innen.'],
-  });
+  b.phase('Häuschen: Dach');
   buildHouseRoof(b);
 
-  b.phase('Häuschen: Fenster und Tür', 'Setz die Fenster mit Fensterläden aus Fichtenfalltüren und Blumenkästen, im Osten die Fichtentür mit '
-    + 'einem kleinen Vordach und daneben eine Laterne.');
+  b.phase('Häuschen: Fenster und Tür');
   buildHouseOpenings(b);
 
-  b.phase('Häuschen: Einrichtung', 'Innen ist Platz für ein Bett in der Nordwestecke mit Nachttisch, eine Kochecke mit Ofen und Räucherofen, '
-    + 'einen kleinen Tisch (Zaun mit Druckplatte) mit zwei Stühlen aus Treppen – die Lehne zeigt jeweils vom Tisch weg –, Truhe und '
-    + 'Bücherregal. Häng zum Schluss eine Laterne an die Decke.');
+  b.phase('Häuschen: Einrichtung');
   furnishHouse(b);
 
-  b.phase('Baum, Garten und Weg', 'Auf dem Hügel wächst eine große Eiche. Vom Haus führt ein Trampelpfad zum Teich, dazu ein paar Büsche, '
-    + 'ein bemooster Fels, Gras und Blumen.', {
-    tips: ['Große Bäume baust du am einfachsten selbst: Stamm, ein paar Äste aus Eichenholz und darum Laub – oder du pflanzt einen Setzling und düngst ihn.'],
-  });
+  b.phase('Baum, Garten und Weg');
   buildGarden(b);
 
-  b.phase('Ranken und Hängendes', 'Zum Schluss wird die Unterseite lebendig: an der Inselkante hängen Ranken herab, unter der Insel '
-    + 'Höhlenranken mit Leuchtbeeren, Hängende Wurzeln und an der Spitze Tropfsteinzapfen.', {
-    tips: ['Tropfstein hängt nur unter einem festen Block. Setz zuerst den dicken Teil oben an und dann die Spitze darunter.'],
-  });
+  b.phase('Ranken und Hängendes');
   buildHanging(b, cols);
-}
-
-function layerText(y, count) {
-  if (y === -1) return `Direkt unter dem Gras: ${count} Blöcke, vor allem Erde.`;
-  if (y >= -3) return `Noch eine Lage Erde und am Rand schon Stein (${count} Blöcke).`;
-  return `${count} Blöcke Stein, Andesit, Tuff und Erz.`;
 }
 
 // ---------------------------------------------------------------- Teich und Rinne
@@ -198,7 +151,6 @@ function buildPond(b) {
     if (b.get(x, 1, CHANNEL_Z) !== 'air') b.remove(x, 1, CHANNEL_Z);
     x++;
   }
-  b.note(x - 1, 0, CHANNEL_Z, 'Letzte Wasserquelle an der Kante: Hier stürzt das Wasser im Spiel von selbst als Wasserfall hinunter.');
 }
 
 // ---------------------------------------------------------------- Häuschen
@@ -276,7 +228,7 @@ function buildGarden(b) {
 const SIDES = [['north', 0, -1], ['south', 0, 1], ['west', -1, 0], ['east', 1, 0]];
 
 function buildHanging(b, cols) {
-  b.step('Ranken an der Kante', 'An den Inselrand kommen Ranken, die 2–6 Blöcke an der Felswand hinunterhängen.');
+  b.step();
   for (const c of cols) {
     if (c.rho < 0.82) continue;
     for (const [face, dx, dz] of SIDES) {
@@ -294,7 +246,7 @@ function buildHanging(b, cols) {
       }
     }
   }
-  b.step('Unter der Insel', 'Unter der Insel hängen Höhlenranken (mit Leuchtbeeren), Hängende Wurzeln und an der tiefsten Stelle Tropfsteinzapfen.');
+  b.step();
   for (const c of cols) {
     const below = c.bottom - 1;
     if (b.get(c.x, below, c.z) !== 'air') continue;

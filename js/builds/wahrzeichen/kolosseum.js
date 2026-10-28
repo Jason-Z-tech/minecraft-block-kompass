@@ -16,7 +16,6 @@ export const meta = {
     'römisches amphitheater', 'roemisches amphitheater', 'gladiatoren arena', 'gladiatorenarena', 'rom', 'rome', 'roma',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Das Kolosseum als Ruine, so wie es heute dasteht: 188 × 156 m Ellipse, die Außenfassade mit vier '
     + 'Geschossen (dorisch, ionisch, korinthisch, Attika mit Fenstern und Konsolen) nur an der Nordseite von Bogen '
     + 'XXIII bis LIV, gestützt von den Ziegelpfeilern von Stern und Valadier. Im Süden bildet der zweite Ring die '
@@ -24,18 +23,6 @@ export const meta = {
     + 'Geschätzt sind die Ruinenhöhen im Süden, der Innenaufbau unter den Rängen und die Form der Stützpfeiler; '
     + 'vereinfacht: echte Ellipse statt Vier-Zentren-Oval, Längsachse genau Ost–West (echt etwa WNW–OSO), '
     + 'im Maßstab 1:2 ein voll gemauerter Unterbau unter den Rängen.',
-  facts: [
-    'Ellipse 188 × 156 m (Achsen, Wikipedia de/en: 188–189 × 156 m), Fassade 48,5 m hoch.',
-    'Arena 86 × 54 m, umgeben vom Podium etwa 4 m über dem Arenaboden.',
-    'Je Geschoss 80 Bögen; unten 4,20 m breit und 7,05 m hoch, darüber 6,45 m und 6,40 m hoch.',
-    'Säulenordnungen von unten: dorisch (toskanisch), ionisch, korinthisch; darüber die geschlossene Attika mit korinthischen Pilastern.',
-    'In der Attika saßen 240 Konsolen für die Masten des Sonnensegels (Velarium) – drei pro Joch.',
-    'Außenwand aus Travertin ohne Mörtel, zusammengehalten von rund 300 t Eisenklammern; innen Tuff, Ziegel und römischer Beton.',
-    'Nach dem Erdbeben von 1349 stürzte die Südseite des Außenrings ein; erhalten sind die Bögen XXIII bis LIV im Norden.',
-    'Die Enden der erhaltenen Fassade stützen Ziegelpfeiler von Raffaele Stern (1806/07, Osten) und Giuseppe Valadier (1823, Westen).',
-    'Das Hypogäum unter der Arena ist rund 6 m tief, mit einem Mittelgang entlang der Längsachse und zwölf gebogenen Gängen.',
-    '76 nummerierte Eingänge für das Volk, dazu 4 Haupteingänge an den Achsen; Platz für etwa 50.000 Zuschauer.',
-  ],
   sources: [
     { title: 'Wikipedia (de): Kolosseum', url: 'https://de.wikipedia.org/wiki/Kolosseum' },
     { title: 'Wikipedia (en): Colosseum', url: 'https://en.wikipedia.org/wiki/Colosseum' },
@@ -288,8 +275,7 @@ export default function build(b, { scale = 1 } = {}) {
   for (const phase of PHASES) {
     const cells = out.get(phase.key);
     if (cells.length === 0) continue;
-    const texts = phaseTexts(phase.key, geo, detailed);
-    b.phase(phase.title, texts.text, { tips: texts.tips });
+    b.phase(phase.title);
     const put = ([x, y, z, state]) => {
       if (state === 'air') b.remove(x, y, z);
       else b.set(x, y, z, state);
@@ -298,14 +284,12 @@ export default function build(b, { scale = 1 } = {}) {
       for (const group of LIGHT_GROUPS) {
         const groupCells = cells.filter((cell) => cell[4] === group.key);
         if (groupCells.length === 0) continue;
-        const step = lightStepText(group.key, geo, detailed);
-        b.step(step.title, step.text);
+        b.step();
         groupCells.forEach(put);
       }
     } else {
       cells.forEach(put);
     }
-    for (const note of notesFor(phase.key, ctx)) b.note(note[0], note[1], note[2], note[3]);
   }
 }
 
@@ -851,104 +835,4 @@ function lightHypogeum(ctx, c, once) {
   if (!inCorridor) return;
   const floorY = G0 - Math.round(HYPOGEUM_DEPTH_M * ctx.s) - 1;
   once(c.x, floorY + 1, c.z, 'lantern[hanging=false]', null, 'hypo');
-}
-
-// --- Texte ---
-function phaseTexts(key, geo, detailed) {
-  const s = geo.s;
-  const m = (meters) => Math.max(1, Math.round(meters * s));
-  const texts = {
-    hypo: {
-      text: `Fang unten an: Grabe die Arena-Ellipse (${m(86)} × ${m(54)} Blöcke) ${m(HYPOGEUM_DEPTH_M)} Blöcke tief aus. Unten kommt ein Boden aus Festem Schlamm, Tuff und Grober Erde, darauf die gebogenen Mauern des Hypogäums: alle ${m(4)} Blöcke eine Mauer parallel zum Arenarand, in der Mitte bleibt ein Gang entlang der Längsachse (Ost–West). Unten Tuff, oben Ziegel; in jede dritte Mauer kommen Durchgänge.`,
-      tips: ['Steck zuerst die beiden Achsen mit einer Blockreihe ab (Ost–West und Nord–Süd) und markiere die Enden der Ellipse – alle Ringe richten sich danach.'],
-    },
-    base: {
-      text: `Rund um den Bau liegt ein ${m(PAVEMENT_M)} Blöcke breites Travertinpflaster, darauf zwei Stufen (eine Stufe als untere Platte, dann ein voller Block). Unter dem ganzen Bau bis zur Arena kommt eine Lage Tuff als Fundament, darüber der Boden der Umgänge. Im Osten stehen am Rand des Pflasters fünf Grenzsteine.`,
-      tips: ['Die Außenellipse misst ' + `${m(188)} × ${m(156)} Blöcke. Baue sie aus vier gleichen Vierteln: Was du im Nordosten setzt, spiegelst du in die anderen Viertel.`],
-    },
-    s1: {
-      text: `Das Erdgeschoss: Die Außenwand steht nur im Norden (Bögen XXIII bis LIV). Jeder der ${BAYS} Bögen ist ${m(ARCH_WIDTH_M)} Blöcke breit und ${m(7.05)} hoch, der Pfeiler dazwischen rund ${m(2.4)} breit${detailed ? '; vor jedem Pfeiler steht eine dorische Halbsäule aus Sandsteinmauer mit einer oberen Platte als Kapitell' : ''}. Dahinter folgen der äußere Umgang, der zweite Ring mit Bögen, der innere Umgang und der dritte Ring aus Tuff. ${detailed ? `Unter den Rängen tragen ${BAYS} Radialmauern; zwei Ringmauern mit Türen teilen die Kammern.` : 'Unter den Rängen ist der Unterbau in diesem Maßstab voll gemauert (die echten Kammern wären nur 1 Block breit); frei bleiben nur die Durchgänge an der Längsachse.'} Die Gewölbe der Umgänge schließen bei ${m(10.5)} Blöcken.`,
-      tips: ['Setze die Bogenränder als obere Treppen, deren volle Seite zum Pfeiler zeigt – so wird der Bogen rund.', detailed
-        ? 'Laternen an Ketten in jedem zweiten Joch der Umgänge, in jeder Kammer unter den Rängen und im Achsdurchgang halten den Bau monsterfrei.'
-        : 'Laternen an Ketten in jedem zweiten Joch der Umgänge und im Achsdurchgang halten den Bau monsterfrei.'],
-    },
-    s2: {
-      text: `Zweites Geschoss: Über dem Gesims (obere Treppen, volle Seite zur Wand) kommt ein glatter Sockelstreifen, darüber die ionischen Bögen, ${m(6.45)} Blöcke hoch. ${detailed ? 'Die Halbsäulen stehen auf kleinen Sockeln und tragen als Kapitell eine obere Treppe. ' : ''}Im Süden steht nur noch der zweite Ring – unregelmäßig abgebrochen, er bildet dort heute die Außenwand.`,
-      tips: ['Die Leitern im äußeren Umgang (vier Pfeiler im Norden) führen dich nach oben.'],
-    },
-    s3: {
-      text: `Drittes Geschoss mit den korinthischen Bögen (${m(6.4)} Blöcke hoch) – Aufbau wie darunter. Die Gewölbe dieses Geschosses tragen den Boden der Attika.`,
-      tips: ['Arbeite Joch für Joch rund um die Ellipse, nicht Ebene für Ebene über den ganzen Bau – so bleiben die Bögen sauber übereinander.'],
-    },
-    attic: {
-      text: `Die Attika ist eine geschlossene Wand bis ${m(FACADE_TOP_M)} Blöcke über dem Boden${detailed ? ', gegliedert durch korinthische Pilaster über jeder Halbsäule (Sandsteinmauer auf einem Sockelblock, oben ein Block Geschnittener Sandstein als Kapitell)' : ''}. Unten sitzt über jedem zweiten Bogen ein kleines Fenster, oben in den anderen Jochen ein größeres. ${detailed ? 'Kurz unter dem Abschlussgesims stehen drei Konsolen pro Joch (obere Treppen); darüber hat das Gesims Lücken – dort gingen die Masten für das Sonnensegel durch.' : ''}`.trim(),
-      tips: ['Das Abschlussgesims ist eine Reihe oberer Treppen mit der vollen Seite zur Wand.'],
-    },
-    cavea: {
-      text: `Die Ränge steigen vom Podium (${m(PODIUM_M)} Blöcke über der Arena) mit etwa 37° nach außen an: auf 4 Blöcke nach außen rund 3 Blöcke höher. Die Marmorsitze sind längst weg; was bleibt, ist eine abgetreppte Schale aus Ziegeln auf den Radialmauern. Im Norden ist sie fast ganz erhalten, im Süden nur der untere Teil.`,
-      tips: ['Baue die Schale von unten (Podium) nach oben: Jede Stufe liegt auf den Radialmauern darunter.'],
-    },
-    buttress: {
-      text: 'An den Enden der erhaltenen Fassade stehen die Stützpfeiler aus dem 19. Jahrhundert: im Osten der Ziegelkeil von Raffaele Stern (1806/07), der die letzten Bögen einmauert und schräg zum Boden abfällt, im Westen der Pfeiler von Giuseppe Valadier (1823), der die Bögen in Ziegel nachbaut und stufenweise niedriger wird.',
-      tips: ['Setz die Ziegelpfeiler gleich nach dem Ende der Travertinfassade – sie halten sie zusammen.'],
-    },
-    arena: {
-      text: 'Zum Schluss der nachgebaute Arenaboden im Osten: Fichtenbretter auf der Höhe des Erdgeschosses, darunter Balken aus Entrindetem Fichtenholz quer über den Gängen. Am offenen Rand ein Geländer aus Fichtenzaun. Der Rest des Hypogäums bleibt offen, wie heute.',
-      tips: ['Unter dem Holzboden stehen Laternen in den Gängen (die hast du schon beim Hypogäum gesetzt) – sonst spawnen dort Monster.'],
-    },
-    light: {
-      text: `Zum Schluss das Licht, damit in den überdachten Teilen keine Monster spawnen – Geschoss für Geschoss, jeweils Kette und Laterne zusammen: In jedem zweiten Joch der Umgänge hängt in der Mitte eine Laterne an einer Eisenkette, 3 Blöcke über dem Boden des Geschosses – die Kette beginnt direkt unter dem Gewölbe.${detailed ? ' In jede Kammer unter den Rängen kommt eine Laterne auf den Boden, je Kammerreihe eine.' : ''} Im Durchgang an der Längsachse steht alle ${m(10)} Blöcke eine Laterne.`,
-      tips: ['Häng erst die Kette ans Gewölbe und dann die Laterne unten an die Kette – mit Rechtsklick an die Unterseite der Kette.'],
-    },
-  };
-  return texts[key];
-}
-
-function lightStepText(key, geo, detailed) {
-  const m = (meters) => Math.max(1, Math.round(meters * geo.s));
-  const storeyNames = { 'amb-1': 'Erdgeschoss', 'amb-2': 'zweites Geschoss', 'amb-3': 'drittes Geschoss' };
-  if (storeyNames[key]) {
-    return {
-      title: `Umgänge: ${storeyNames[key]}`,
-      text: `Geh durch beide Umgänge (${storeyNames[key]}) und häng in jedem zweiten Joch mittig eine Laterne auf: erst die Eisenkette direkt unter das Gewölbe, Glied für Glied nach unten, dann die Laterne mit Rechtsklick an die Unterseite der untersten Kette – sie hängt 3 Blöcke über dem Boden. Neben den Leitern bleibt das Joch frei.`,
-    };
-  }
-  if (key === 'axis') {
-    return {
-      title: 'Durchgänge an der Längsachse',
-      text: `Stell in den beiden Durchgängen an der Längsachse (Ost und West) alle ${m(10)} Blöcke eine Laterne mitten auf den Boden.`,
-    };
-  }
-  return {
-    title: 'Kammern unter den Rängen',
-    text: detailed
-      ? 'In jede Kammer unter den Rängen kommt eine Laterne auf den Boden, auf jeder Ebene der Kammer eine – auch in die Kammern über den Achsdurchgängen.'
-      : 'In die Kammern unter den Rängen kommt je eine Laterne auf den Boden.',
-  };
-}
-
-function notesFor(key, ctx) {
-  const { geo } = ctx;
-  const at = (u, dm, hm) => {
-    const theta = geo.arcs.thetaAt(u * geo.bayLen);
-    const [X, Z] = geo.pointAt(theta, dm * geo.s);
-    let y = G0;
-    while (ctx.hm(y) < hm) y++;
-    return [Math.floor(X), y, Math.floor(Z)];
-  };
-  switch (key) {
-    case 'hypo': return [[...at(10, ARENA_EDGE_M + 10, -3), 'Das Hypogäum: Hier warteten Tiere, Kulissen und Gladiatoren; Aufzüge hoben sie durch Falltüren in die Arena.']];
-    case 's1': return [
-      [...at(60, 1, 1), 'Nordeingang (Haupteingang an der kurzen Achse, zwischen den Bögen XXXVIII und XXXIX).'],
-      [...at(0, 30, 1), 'Durchgang an der Längsachse: Hier ging es direkt in die Arena.'],
-    ];
-    case 's2': return [[...at(20, 6.5, 12), 'Im Süden ist der Außenring eingestürzt (Erdbeben 1349). Der zweite Ring bildet hier heute die Außenwand.']];
-    case 'attic': return ctx.detailed ? [[...at(60, -0.5, 42), 'Drei Konsolen pro Joch trugen die 240 Masten des Sonnensegels (Velarium).']] : [];
-    case 'buttress': return [
-      [...at(77.5, 1, 6), 'Stern-Pfeiler (1806/07): ein schlichter Ziegelkeil ohne Bögen.'],
-      [...at(42, 1, 6), 'Valadier-Pfeiler (1823): die Bögen in Ziegel nachgebaut, stufenweise niedriger.'],
-    ];
-    case 'arena': return [[...at(0, ARENA_EDGE_M + 8, 0), 'Nachgebauter Teil des Arenabodens. Lage und Größe geschätzt.']];
-    default: return [];
-  }
 }

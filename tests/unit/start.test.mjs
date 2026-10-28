@@ -111,6 +111,9 @@ test('checkCatalog: Fingerabdruck statt Dateizeiten, fehlende Module werden geme
   fs.mkdirSync(path.join(dir, 'js', 'builds', 'haeuser'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'js', 'builds', 'haeuser', 'haus.js'), 'export const meta = {};');
   fs.writeFileSync(path.join(dir, 'js', 'builds', 'haeuser', 'turm.js'), 'export const meta = {};');
+  // Redstone ist keine Kategorie mehr: ein übrig gebliebener Ordner zählt nicht als fehlendes Modul
+  fs.mkdirSync(path.join(dir, 'js', 'builds', 'redstone'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'js', 'builds', 'redstone', 'lauflicht.js'), 'export const meta = {};');
   const file = path.join(dir, 'catalog.json');
   const inputs = { code: 'c1', data: 'd1' };
   try {

@@ -2,23 +2,29 @@
 // Beispielhaus aus tests/fixtures/core (Builder + Test-Blockdaten).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadFixtureData } from '../fixtures/core/setup.mjs';
 import { Builder } from '../../js/core/builder.js';
 import buildHouse from '../fixtures/core/example-house.js';
+import * as stepModel from '../../js/ui/build/step-model.js';
 import {
   shownStep, clampProgress, previousTarget, nextTarget, progressForStep, phaseSegments, segmentFill, phaseNumber, phaseCount,
-  stepAnnouncement, stepInstruction, notesByStep, dominantLayer, shortcutAllowed,
+  stepAnnouncement, stepMeta, dominantLayer, shortcutAllowed,
 } from '../../js/ui/build/step-model.js';
 import { advancePlayback, stepLabel, SPEEDS } from '../../js/ui/build/step-player.js';
-import { stepMeta, noteWhere } from '../../js/ui/build/guide.js';
+import * as guide from '../../js/ui/build/guide.js';
 import { buildFacts } from '../../js/ui/build/info.js';
-import { projectPoint, viewerErrorState, VIEW_LABELS } from '../../js/ui/build/stage.js';
+import * as stage from '../../js/ui/build/stage.js';
+import { viewerErrorState, VIEW_LABELS } from '../../js/ui/build/stage.js';
 import {
   materialsForScope, hintsByItem, extrasByItem, foldSearch, materialMatches, amountText, slotCount, summarizeMaterials,
 } from '../../js/ui/build/material-data.js';
-import { mat4 } from '../../js/render/mat.js';
 import { positionText, blockTooltipParts } from '../../js/ui/build/kit.js';
 import { idSegments } from '../../js/ui/build/materials.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 loadFixtureData();
 const result = (() => {
@@ -61,26 +67,24 @@ test('Kapitel-Segmente füllen sich mit dem Fortschritt', () => {
   assert.equal(phaseNumber(result, 3), 4);
 });
 
-test('Ansagen und Anleitungstexte', () => {
-  assert.match(stepAnnouncement(result, 0), /^Start/);
-  assert.match(stepAnnouncement(result, 1), /^Schritt 1 von 18: Ebene 1 \(Fundament\)\.$/);
-  assert.match(stepAnnouncement(result, n), /Der Bau ist fertig\.$/);
-  assert.equal(stepInstruction(result, 0), 'Setze alle 63 Blöcke der Ebene 1 (y = 0).');
-  const single = result.steps.findIndex((step) => step.layerY !== null && step.blockCount === 1);
-  assert.ok(single >= 0);
-  assert.match(stepInstruction(result, single), /^Setze den einen Block der Ebene/);
-  const door = result.steps.find((step) => step.title === 'Tür einsetzen');
-  assert.equal(stepInstruction(result, door.index), door.text);
-  assert.equal(stepInstruction(result, 999), '');
+test('Ansagen nennen Schritt, Gesamtzahl und Kapitel – keinen Schritt-Namen', () => {
+  assert.equal(stepAnnouncement(result, 0), 'Start – noch kein Block gesetzt. 18 Schritte.');
+  assert.equal(stepAnnouncement(result, 1), 'Schritt 1 von 18 (Fundament).');
+  assert.equal(stepAnnouncement(result, 1.4), 'Schritt 2 von 18 (Wände).', 'laufender Schritt');
+  assert.equal(stepAnnouncement(result, n), 'Schritt 18 von 18 (Vorgarten). Der Bau ist fertig.');
+  assert.equal(stepAnnouncement({ steps: [], phases: [] }, 0), 'Der Bau hat keine Schritte.');
+  // Anleitungssätze und Notizen gibt es nicht mehr
+  for (const name of ['stepInstruction', 'notesByStep']) assert.equal(Object.hasOwn(stepModel, name), false, name);
+  assert.equal(Object.hasOwn(guide, 'noteWhere'), false);
+  assert.equal(Object.hasOwn(result, 'notes'), false);
+  assert.ok(result.steps.every((step) => !Object.hasOwn(step, 'title') && !Object.hasOwn(step, 'text')));
 });
 
-test('Notizen je Schritt und häufigste Ebene eines Schritts', () => {
-  const notes = notesByStep(result);
-  const door = result.steps.find((step) => step.title === 'Tür einsetzen');
-  assert.deepEqual(notes.get(door.index).map((note) => note.text), ['Eingang']);
-  assert.equal(noteWhere(notes.get(door.index)[0]), `x ${notes.get(door.index)[0].x} · Ebene 2 · z ${notes.get(door.index)[0].z}`);
+test('Häufigste Ebene eines Schritts', () => {
+  const door = result.phases.find((phase) => phase.title === 'Tür und Fenster').steps[0];
   assert.equal(dominantLayer(result, 0), 0);
-  assert.equal(dominantLayer(result, door.index), 1, 'Tür: untere Hälfte und obere Hälfte, die untere zählt zuerst');
+  assert.equal(dominantLayer(result, door), 1, 'Tür: untere Hälfte und obere Hälfte, die untere zählt zuerst');
+  assert.equal(dominantLayer(result, 999), null);
 });
 
 test('Tastenkürzel nur außerhalb von Eingabefeldern und nicht im Lauf-Modus', () => {
@@ -112,13 +116,14 @@ test('Schritt-Label', () => {
   assert.equal(stepLabel(0, 0).main, 'Keine Schritte');
 });
 
-test('Kurzinfo eines Schritts in der Anleitung', () => {
+test('Kurzinfo eines Schritts in Anleitung und Player', () => {
   assert.equal(stepMeta(result.steps[0]), '63 Blöcke · y = 0');
   assert.equal(stepMeta({ blockCount: 1, layerY: null }), '1 Block');
   assert.equal(stepMeta({ blockCount: 1234, layerY: null }), '1.234 Blöcke');
 });
 
 test('Kennzahlen der Infos: aus dem Bau, sonst aus dem Eintrag und seiner Variante', () => {
+  // difficulty als altes Feld: wird nicht mehr gezeigt
   const entry = { difficulty: 2, accuracy: 'massstab', tested: false, size: [10, 20, 30], blocks: 999, steps: 9, variants: { 0.5: { size: [5, 10, 15], blocks: 120, steps: 4 } } };
   const fromResult = Object.fromEntries(buildFacts(entry, result, null).map(([term, value]) => [term, value]));
   assert.equal(fromResult['Blöcke'], '348');
@@ -130,19 +135,22 @@ test('Kennzahlen der Infos: aus dem Bau, sonst aus dem Eintrag und seiner Varian
   assert.equal(fromVariant['Größe (B × H × L)'], '5 × 10 × 15 Blöcke');
   assert.equal(fromVariant['Blöcke'], '120');
   assert.equal(fromVariant.Maßstab, '1:2');
-  assert.equal(fromVariant.Schwierigkeit, 'Leicht (2 von 5)');
+  assert.equal(fromVariant.Schwierigkeit, undefined, 'keine Schwierigkeit mehr');
+  assert.deepEqual(buildFacts(entry, result, null).map(([term]) => term), ['Größe (B × H × L)', 'Blöcke', 'Schritte', 'Kapitel', 'Herkunft', 'Im Spiel getestet']);
 });
 
-test('Projektion eines Punkts auf die Bildfläche', () => {
-  const view = mat4.lookAt(mat4.create(), [0, 0, 10], [0, 0, 0], [0, 1, 0]);
-  const projection = mat4.perspective(mat4.create(), Math.PI / 2, 2, 0.1, Infinity);
-  const m = mat4.multiply(mat4.create(), projection, view);
-  const center = projectPoint(m, 0, 0, 0, 800, 400);
-  assert.ok(Math.abs(center.x - 400) < 1e-6 && Math.abs(center.y - 200) < 1e-6);
-  const up = projectPoint(m, 0, 5, 0, 800, 400);
-  assert.ok(up.y < 200, 'oben im Bild');
-  assert.equal(projectPoint(m, 0, 0, 20, 800, 400), null, 'hinter der Kamera');
-  assert.equal(projectPoint(m, 500, 0, 0, 800, 400), null, 'außerhalb');
+test('Bau-Seite ohne Schritt-Namen, Texte, Tipps, Notizen, Schwierigkeit und Wissenswertes', () => {
+  // Die 3D-Bühne hat keine Notiz-Markierungen mehr (projectPoint diente nur ihnen)
+  assert.equal(Object.hasOwn(stage, 'projectPoint'), false);
+  const dir = path.join(ROOT, 'js/ui/build');
+  const files = [...readdirSync(dir).filter((name) => name.endsWith('.js')).map((name) => path.join(dir, name)), path.join(ROOT, 'js/ui/build-view.js')];
+  for (const file of files) {
+    // Kommentare dürfen die alten Felder nennen (z. B. „difficulty wird nicht übernommen“)
+    const source = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const name = path.relative(ROOT, file);
+    assert.doesNotMatch(source, /step\??\.(?:title|text)\b|phase\??\.(?:text|tips)\b|\.notes\b|stepTitle|stepInstruction/, `${name}: Schritt-Texte, Tipps oder Notizen`);
+    assert.doesNotMatch(source, /bv-marker|bv-note|bv-tips|difficulty|Schwierigkeit|\.facts\b|Wissenswert/, `${name}: Notizen, Schwierigkeit oder Wissenswertes`);
+  }
 });
 
 test('Fehler des Viewers werden verständlich, Spieldaten ohne Befehle', () => {
@@ -195,9 +203,10 @@ test('Material: Hinweise und Zusatz-Gegenstände aus der Palette', () => {
 
 test('Block-Tooltip: Koordinaten ohne Tausenderpunkt, Schritt 1-basiert', () => {
   assert.equal(positionText(1200, 3, -4), 'Position x 1200 · y 3 · z -4');
-  const parts = blockTooltipParts('oak_log[axis=y]', { step: 3, stepTitle: 'Ebene 4', coords: positionText(1, 3, 3) });
+  const parts = blockTooltipParts('oak_log[axis=y]', { step: 3, coords: positionText(1, 3, 3) });
   assert.equal(parts.meta, 'minecraft:oak_log');
-  assert.deepEqual(parts.lines.map((line) => line.text).slice(-2), ['Schritt 4 · Ebene 4', 'Position x 1 · y 3 · z 3']);
+  assert.deepEqual(parts.lines.map((line) => line.text).slice(-2), ['Schritt 4', 'Position x 1 · y 3 · z 3'], 'nur die Nummer, kein Schritt-Name');
+  assert.deepEqual(blockTooltipParts('stone', { step: 0 }).lines.map((line) => line.text), ['Schritt 1']);
 });
 
 test('Material-ID: Umbruch-Stellen nach dem Namensraum und nach Unterstrichen, Text bleibt gleich', () => {

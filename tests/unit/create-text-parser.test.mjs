@@ -79,7 +79,6 @@ describe('Bauten aus dem Katalog', () => {
     ['Schloss Neuschwanstein', 'neuschwanstein', null],
     ['Leuchtturm', 'leuchtturm', null],
     ['Hobbit Höhle', 'hobbit-hoehle', null],
-    ['kolbentür', 'kolbentuer-2x2', null],
     ['iron farm', 'eisenfarm', null],
     ['Sakura', 'kirschbluetenbaum', null],
     ['Dorfhaus', 'spiel-plains-small-house-1', null],
@@ -272,6 +271,13 @@ describe('nicht gefunden – ehrlich', () => {
   for (const text of ['Raumschiff Enterprise', 'Burj Khalifa 1:1', 'Mondbasis aus Käse']) {
     test(`„${text}“ → none`, () => assert.equal(parse(text).kind, 'none'));
   }
+
+  test('Redstone-Bauten gibt es nicht mehr: „kolbentür“ → none', () => {
+    assert.ok(catalog.builds.every((b) => b.category !== 'redstone'), 'Fixture ohne Kategorie redstone');
+    const r = parse('kolbentür');
+    assert.equal(r.kind, 'none');
+    assert.equal(r.reason, 'Für „kolbentür“ gibt es noch keinen geprüften Bauplan.');
+  });
 
   test('ohne Katalog: Formen gehen, Bauten nicht', () => {
     assert.equal(parseRequest('Tokyo Skytree', { names: NAMES, blocks: BLOCKS }).kind, 'none');

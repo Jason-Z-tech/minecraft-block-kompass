@@ -13,22 +13,11 @@ export const meta = {
     'parlament london', 'great clock', 'westminster clock', 'st stephens tower', 'big ben london',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Der 96 m hohe Uhrturm des britischen Parlaments im Maßstab 1:1: quadratischer Schaft aus hellem '
     + 'Kalkstein mit Lisenen, Spitzbogenfenstern und Gesimsen, darüber das Uhrengeschoss mit vier 7-m-Zifferblättern, '
     + 'die Glockenstube mit der großen Glocke und den vier Viertelstunden-Glocken und der gusseiserne Spitzhelm mit '
     + 'Gauben, Ayrton-Laterne und Kreuzblume. Innen führt eine Wendeltreppe bis in die Uhrenstube. Die Höhen der oberen '
     + 'Bauteile stammen aus dem 3D-Modell von OpenStreetMap und sind deshalb Schätzungen.',
-  facts: [
-    'Höhe 96 m, Grundfläche rund 12 × 12 m (Wikipedia); im Bau 13 × 13 Blöcke Schaft und 97 Ebenen inklusive Pflaster.',
-    'Die vier Zifferblätter haben 7 m Durchmesser, ihre Mitte liegt rund 55 m über dem Boden.',
-    'Bis 61 m hoch ist der Turm aus Ziegeln mit einer Verkleidung aus Anston-Kalkstein, darüber besteht der Helm aus Gusseisen.',
-    'Die große Glocke „Big Ben“ wiegt 13,7 t; dazu kommen vier Viertelstunden-Glocken (Westminster-Schlag).',
-    'Entworfen von Charles Barry und Augustus Pugin im neugotischen Perpendicular-Stil, fertig 1859.',
-    'Bis zur Glockenstube sind es 334 Stufen; im Bau ist die Wendeltreppe kürzer, weil 1 Block = 1 m Höhe ist.',
-    'Die Ayrton-Laterne über der Glockenstube leuchtet, solange das Unterhaus nach Einbruch der Dunkelheit tagt.',
-    'Unsicher: die Höhen von Glockenstube, Laterne und Spitze (OpenStreetMap-Schätzung); im echten Turm schließt der Palast im Süden an.',
-  ],
   sources: [
     { title: 'Wikipedia (en): Big Ben', url: 'https://en.wikipedia.org/wiki/Big_Ben' },
     { title: 'Wikipedia (de): Elizabeth Tower', url: 'https://de.wikipedia.org/wiki/Elizabeth_Tower' },
@@ -75,88 +64,36 @@ export default function build(b, { scale = 1 } = {}) {
   if (!L) throw new Error(`Maßstab ${scale} wird nicht unterstützt (erlaubt: 1 und 0,5).`);
   const detail = scale === 1;
 
-  b.phase('Fundament und Platz', `Lege zuerst den Platz: ein Pflaster aus poliertem Andesit von ${2 * L.plaza + 1} × ${2 * L.plaza + 1} `
-    + `Blöcken mit Steinziegel-Rand. Der Turm steht genau in der Mitte auf ${2 * L.hw + 1} × ${2 * L.hw + 1} Feldern. `
-    + 'Markiere dir die vier Ecken des Turms mit einem Block, bevor du weiterbaust – jede Fassade ist symmetrisch zur Mitte.', {
-    tips: ['Baue die Mitte als Bezugspunkt: Der Turm reicht von der Mitte aus 6 Blöcke in jede Richtung (bei 0,5: 3 Blöcke).'],
-  });
+  b.phase('Fundament und Platz');
   buildPlaza(b, L);
 
-  b.phase('Sockel', `Der Sockel ist ${L.plinthTop} Ebenen hoch und ganz geschlossen. Unten läuft eine abgeschrägte Sockelkante `
-    + 'aus Treppen mit der hohen Seite zum Turm. Im Sockel liegen Lisenen (glatter Sandstein) und Felder (geschnittener Sandstein) '
-    + 'noch bündig – aber das Raster der Lisenen gilt schon: an ihm richtest du später alle Fenster aus.', {
-    tips: [L.hw === 6
-      ? 'Lisenen stehen bei jedem dritten Block ab der Mitte: Mitte, ±3 und die Ecken ±6.'
-      : 'Lisenen stehen in der Mitte und an den Ecken (±3).'],
-  });
+  b.phase('Sockel');
   buildPlinth(b, L, detail);
 
-  b.phase('Turmschaft', 'Jetzt wächst der Schaft Ebene für Ebene. Zwischen den Lisenen liegen eingerückte Felder aus geschnittenem '
-    + 'Sandstein; in den mittleren Feldern sitzen zweiflüglige Spitzbogenfenster, in den äußeren Blendbogen. Die Spitzbögen '
-    + 'formst du mit zwei umgedrehten Treppen, deren volle Seite jeweils nach außen zeigt. Waagrechte Gesimse aus umgedrehten '
-    + (detail ? 'Treppen gliedern den Schaft in drei Abschnitte. Innen baust du die Wendeltreppe gleich mit – sie ist dein Gerüst '
-      + 'und führt einmal rundherum pro 32 Ebenen. Die Wandfackeln an den Lisenen halten den Treppenschacht hell.'
-      : 'Treppen gliedern den Schaft in drei Abschnitte. Bei Maßstab 0,5 ist der Schaft innen voll.'), {
-    tips: detail
-      ? ['Setze jede Steinziegeltreppe so, dass ihre hohe Seite in Laufrichtung (im Uhrzeigersinn) zeigt.',
-        'Unter jede Treppe kommt eine umgedrehte Treppe – so sieht die Wendeltreppe von unten wie eine echte Steintreppe aus.']
-      : ['Bau den Kern einfach voll, das spart das Gerüst.'],
-  });
+  b.phase('Turmschaft');
   buildShaft(b, L, detail);
 
-  b.phase('Uhrengeschoss', 'Auf dem Schaft kragt ein Gesims aus umgedrehten Treppen vor; darüber steht das Uhrengeschoss bündig '
-    + `mit den Lisenen. Lass in jeder Fassade die Fläche für das Zifferblatt frei (${2 * L.dialR + 1} Blöcke breit um die Mitte auf `
-    + `Ebene ${L.dialY + 1}). Unter dem Zifferblatt liegt das blaue Band der lateinischen Inschrift, oben schließt ein Kranzgesims ab.`
-    + (detail ? ' Der Boden der Uhrenstube liegt auf Ebene 49 – die Wendeltreppe kommt dort an.' : ''), {
-    tips: ['Baue alle vier Seiten gleichzeitig hoch, dann bleibt das Geschoss gerade.'],
-  });
+  b.phase('Uhrengeschoss');
   buildStage(b, L, detail);
 
-  b.phase('Zifferblätter', 'Die vier Zifferblätter sind das Herz des Turms. Baue sie Seite für Seite: erst die weiße Scheibe '
-    + '(sie steht für das Opalglas), dann Stundenmarken und Zeiger in Preußischblau und zuletzt den vorstehenden Rahmen mit den '
-    + 'vergoldeten Zwickeln.', {
-    tips: ['Die Uhr zeigt 3 Uhr: langer Zeiger nach oben, kurzer nach rechts.'],
-  });
+  b.phase('Zifferblätter');
   buildDials(b, L, detail);
 
-  b.phase('Glockenstube', 'Auf den Rand des Kranzgesimses setzt du eine durchbrochene Brüstung aus Sandsteinmauern mit vier '
-    + 'Eckfialen und goldenen Spitzen. Die Glockenstube steht direkt dahinter und ist auf jeder Seite einen Block schmaler als das '
-    + 'Uhrengeschoss; ihre Spitzbogen-Öffnungen schließt du mit Eisengittern, durch die der Klang nach draußen kann.' + (detail ? ' Die Deckenbalken aus Schwarzeiche tragen später die Glocken.' : ''), {
-    tips: ['Die Eckfialen setzt du zuerst – sie zeigen dir, wo die Brüstung endet.'],
-  });
+  b.phase('Glockenstube');
   buildBelfry(b, L, detail);
 
-  b.phase('Gusseiserner Helm', 'Der steile Helm aus Tiefenschiefer-Fliesen steht für die gusseisernen Dachplatten. Jede Lage '
-    + 'wird schmaler; wo sie zurückspringt, setzt du Treppen mit der hohen Seite zur Mitte. Auf den Dachflächen sitzen zwei Reihen '
-    + 'kleiner Gauben; eine gelbe Kerze auf jeder Gaube steht für die vergoldete Spitze.', {
-    tips: ['Baue den Helm innen voll – so gibt es keine dunklen Hohlräume.'],
-  });
+  b.phase('Gusseiserner Helm');
   buildRoof(b, L, detail);
 
-  b.phase('Ayrton-Laterne und Spitze', 'Auf dem Helm sitzt die Ayrton-Laterne: vier Goldpfeiler, dazwischen Glasscheiben und innen '
-    + 'eine Seelaterne als Licht. Darüber verjüngt sich die Spitze mit vergoldeten Rippen bis zur goldenen Kugel mit Kreuz.', {
-    tips: ['Ganz oben stehst du auf Ebene ' + (L.top + 1) + ' – nimm genug Gerüstblöcke mit und bau sie hinterher wieder ab.'],
-  });
+  b.phase('Ayrton-Laterne und Spitze');
   buildLanternAndSpire(b, L, detail);
 
   if (detail) {
-    b.phase('Einrichtung', 'Jetzt kommt das Innenleben: das Uhrwerk mit Zahnrädern und Pendel in der Uhrenstube, die Wellen zu den '
-      + 'vier Zifferblättern, eine Leiter in die Glockenstube, die große Glocke aus gewachstem Kupfer und die vier Viertelstunden-'
-      + 'Glocken unter den Balken. Hängende Laternen machen alle Räume hell.', {
-      tips: ['Glocken mit „an der Decke“: Klicke beim Setzen von unten an den Balken.'],
-    });
+    b.phase('Einrichtung');
     buildInterior(b, L);
   }
 
-  b.phase(detail ? 'Eingang und Umgebung' : 'Umgebung', (detail ? 'Zum Schluss setzt du die Eingangstür in der Südseite mit zwei '
-    + 'Laternen auf Konsolen und stellst ' : 'Zum Schluss stellst du ') + 'vier Laternenmasten an die Ecken des Platzes. Das '
-    + 'Eisengeländer lässt in der Mitte der Südseite eine Lücke frei.', {
-    tips: detail
-      ? ['Die Tür setzt du von außen mit Blick nach Norden.',
-        'Innen gehst du vom Eingang nach links (Westen) im Gang herum bis zur Mitte der Nordseite – dort beginnt die Wendeltreppe. '
-          + 'Rechts herum kommst du kurz vor der Nordmitte nicht weiter, weil dort die ersten Stufen den Gang versperren.']
-      : ['Die Masten stehen einen Block innerhalb des Geländers.'],
-  });
+  b.phase(detail ? 'Eingang und Umgebung' : 'Umgebung');
   buildEntranceAndSurroundings(b, L, detail);
 }
 
@@ -293,7 +230,6 @@ function buildSpiralStairs(b, L, path) {
       b.set(x, y + 2, z, `wall_torch[facing=${facingAway}]`);
     }
   }
-  b.note(path[0][0], 1, path[0][1], 'Start der Wendeltreppe: im Uhrzeigersinn nach oben.');
 }
 
 function buildStage(b, L, detail) {
@@ -355,11 +291,10 @@ function openStairwell(b, L) {
 
 function buildDials(b, L, detail) {
   const { hw, dialY, dialR, frameHalf } = L;
-  const sides = [['Nordseite', 0], ['Ostseite', 90], ['Südseite', 180], ['Westseite', 270]];
-  for (const [name, rotate] of sides) {
-    b.step(`Zifferblatt ${name}`, `Baue auf der ${name} die weiße Scheibe (${2 * dialR + 1} Blöcke Durchmesser, Mitte auf Ebene `
-      + `${dialY + 1}), setze die blauen Stundenmarken und Zeiger und dann den Rahmen ${2 * frameHalf + 1} × ${2 * frameHalf + 1} `
-      + 'eine Ebene vor der Wand.');
+  // Drehung je Seite: Nord, Ost, Süd, West
+  const sides = [0, 90, 180, 270];
+  for (const rotate of sides) {
+    b.step();
     b.transform({ rotate }, () => {
       const z = -hw;
       for (let dy = -dialR; dy <= dialR; dy++) {
@@ -397,7 +332,6 @@ function buildDials(b, L, detail) {
       }
     });
   }
-  b.note(0, dialY, -hw - 1, 'Mitte des Zifferblatts: rund 55 m über dem Boden.');
 }
 
 function buildBelfry(b, L, detail) {
@@ -471,8 +405,7 @@ function stepped(b, layers, halfAbove) {
 function buildLanternAndSpire(b, L, detail) {
   const [y1, y2] = L.lantern;
   const h = L.lanternHalf;
-  b.step('Ayrton-Laterne', `Setze den Boden der Laterne (${2 * h + 1} × ${2 * h + 1}), dann die vier Goldpfeiler an den Ecken, `
-    + 'die Glasscheiben dazwischen und in die Mitte die Seelaterne. Den Deckel schließt du mit einem Treppenring ab (hohe Seite zur Mitte).');
+  b.step();
   fillSquare(b, y1, h, IRON_ROOF);
   for (let y = y1 + 1; y < y2; y++) {
     onFourSides(b, () => {
@@ -481,25 +414,16 @@ function buildLanternAndSpire(b, L, detail) {
     });
     b.set(0, y, 0, 'sea_lantern');
   }
-  b.note(0, y1 + 1, 0, 'Ayrton-Laterne: leuchtet, wenn das Unterhaus nachts tagt.');
   // Deckel der Laterne, daraus wächst die Spitze
   fillSquare(b, y2, h, IRON_ROOF);
   stairRing(b, y2, h, IRON_STAIRS);
-  b.step('Spitze', detail
-    ? `Der untere Teil der Spitze ist 3 × 3 Blöcke breit (Ebenen ${L.spire[0][0] + 1}–${L.spire[0][0] + 3}): in der Mitte jeder `
-      + 'Seite ein Fliesenblock, an den Ecken Tiefenschiefer-Fliesenmauern – so wirkt die Spitze achteckig. Auf der mittleren Ebene '
-      + `sind die vier Seitenblöcke aus Gold (das vergoldete Band). Auf Ebene ${L.spire[0][0] + 4} schließt ein Kranz aus vier `
-      + 'Treppen ab, hohe Seite zur Mitte, mit einer gelben Kerze auf jeder Eckmauer. Darüber wächst die Spitze als einzelner '
-      + `Fliesenblock bis Ebene ${L.spire[L.spire.length - 1][0] + 1} und als schlanke Mauersäule bis Ebene ${L.spireThin[1] + 1}.`
-    : `Auf den Laternendeckel kommt eine schlanke Mauersäule bis Ebene ${L.spireThin[1] + 1}.`);
+  b.step();
   if (detail) buildSpireDetail(b, L);
   else stepped(b, L.spire, 0);
   const [t1, t2] = L.spireThin;
   for (let y = t1; y <= t2; y++) b.set(0, y, 0, 'deepslate_tile_wall');
   // Kugel, Hals und Kreuz
-  b.step(detail ? 'Kugel und Kreuz' : 'Kugel und Spitze', detail
-    ? `Auf Ebene ${L.orb + 1} sitzt die goldene Kugel, darüber zwei Glieder Eisenkette und das goldene Kreuz bis Ebene ${L.top + 1}.`
-    : `Auf Ebene ${L.orb + 1} sitzt die goldene Kugel, darüber eine Eisenkette bis Ebene ${L.top + 1}.`);
+  b.step();
   b.set(0, L.orb, 0, GOLD);
   const neckTop = detail ? L.orb + 2 : L.top;
   for (let y = L.orb + 1; y <= neckTop; y++) b.set(0, y, 0, 'iron_chain[axis=y]');
@@ -529,9 +453,7 @@ function buildSpireDetail(b, L) {
 
 function buildInterior(b, L) {
   const floor = L.corbel;
-  b.step('Pendel und Uhrwerk', `Grab in der Mitte der Uhrenstube einen Schacht (1 × 1) durch den Boden vier Blöcke tief in den `
-    + 'Ziegelkern. Setz unten einen Eisenblock als Pendelgewicht und darüber vier Glieder Eisenkette bis in den Boden. Darauf steht das Uhrwerk: ein Rahmen aus poliertem Schwarzstein (5 × 3), zwei '
-    + 'Schleifsteine als Zahnräder und zwei Eisenblöcke.');
+  b.step();
   // Pendel im Schacht unter dem Uhrwerk
   b.set(0, floor - 4, 0, 'iron_block');
   for (let y = floor - 3; y <= floor; y++) b.set(0, y, 0, 'iron_chain[axis=y]');
@@ -541,8 +463,7 @@ function buildInterior(b, L) {
   b.set(1, floor + 2, 0, 'grindstone[face=wall,facing=north]');
   b.set(0, floor + 2, 0, 'iron_block');
   b.set(0, floor + 3, 0, 'iron_block');
-  b.step('Wellen zu den Zifferblättern', `Vom Uhrwerk führt eine senkrechte Kette bis auf Ebene ${L.dialY + 1}. Dort sitzt ein `
-    + 'Eisenblock als Verteiler, von dem vier waagrechte Ketten bis hinter die Mitte jedes Zifferblatts laufen.');
+  b.step();
   for (let y = floor + 4; y < L.dialY; y++) b.set(0, y, 0, 'iron_chain[axis=y]');
   b.set(0, L.dialY, 0, 'iron_block');
   for (let d = 1; d <= L.hw - 1; d++) {
@@ -551,10 +472,7 @@ function buildInterior(b, L) {
     b.set(0, L.dialY, d, 'iron_chain[axis=z]');
     b.set(0, L.dialY, -d, 'iron_chain[axis=z]');
   }
-  b.note(0, floor + 2, 0, 'Das Uhrwerk („Great Clock“) treibt über Wellen alle vier Zeiger an.');
-  b.step('Licht und Leiter', 'Hänge vier Laternen unter die Decke der Uhrenstube und stell eine auf den Boden. In der '
-    + 'Südwestecke mauerst du einen Ziegelpfeiler (1 × 2) bis unter die Decke hoch; an seiner Ostseite führt eine Leiter bis in '
-    + 'den Boden der Glockenstube. Oben steigst du nach vorn auf den Boden.');
+  b.step();
   // Laternen in der Uhrenstube
   for (const [x, z] of [[-3, -3], [3, -3], [3, 3], [-3, 3]]) b.set(x, L.stageTop, z, 'lantern[hanging=true]');
   b.set(3, floor + 1, -3, 'lantern[hanging=false]');
@@ -564,9 +482,7 @@ function buildInterior(b, L) {
   // Die Leiter endet im Boden der Glockenstube: darüber liegt ein Gitterfenster, an dem keine Leiter hält.
   for (let y = floor + 1; y < y1; y++) b.set(-4, y, 4, 'ladder[facing=east]');
   // Glocken
-  b.step('Glocken', 'Die große Glocke baust du aus gewachstem angelaufenem Kupfer direkt unter den mittleren Balken: oben '
-    + 'eine Haube mit vier umgedrehten Treppen als Schultern, darunter ein Ring aus 8 Blöcken mit einer Kette als Klöppel. Unter '
-    + 'die beiden äußeren Balken kommen die vier Viertelstunden-Glocken, dazu hängen vier Laternen unter den Balken.');
+  b.step();
   // Glockenkörper: oben Haube mit Schultern, unten weiter Schlagring, innen hohl mit Klöppel
   b.set(0, y2 - 1, 0, 'waxed_exposed_cut_copper');
   for (const [dx, dz, facing] of [[1, 0, 'east'], [-1, 0, 'west'], [0, 1, 'south'], [0, -1, 'north']]) {
@@ -574,7 +490,6 @@ function buildInterior(b, L) {
   }
   b.walls(-1, y2 - 2, -1, 1, y2 - 2, 1, 'waxed_exposed_cut_copper');
   b.set(0, y2 - 2, 0, 'iron_chain[axis=y]');
-  b.note(0, y2 - 1, 0, 'Die große Glocke „Big Ben“ (13,7 t) hängt am mittleren Balken.');
   for (const [x, z] of [[-3, -3], [3, -3], [3, 3], [-3, 3]]) b.set(x, y2 - 1, z, 'bell[attachment=ceiling,facing=north]');
   for (const [x, z] of [[3, 0], [-3, 0], [0, 3], [0, -3]]) b.set(x, y2 - 1, z, 'lantern[hanging=true]');
 }
@@ -611,5 +526,4 @@ function buildEntranceAndSurroundings(b, L, detail) {
       b.set(x, 1, z, 'iron_bars');
     }
   }
-  if (detail) b.note(0, 1, doorZ, 'Eingang in der Südseite.');
 }

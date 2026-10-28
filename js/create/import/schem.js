@@ -51,7 +51,7 @@ function readPalette(palette, converter) {
  * Liest die Blöcke einer Sponge-Schematic in den Sammler.
  * ctx = { converter, collector, onProgress, warnings }. Rückgabe: Infos für result.upload.
  */
-export function readSchem(found, { converter, collector, onProgress, warnings, title = 'Aufbau', text = '' }) {
+export function readSchem(found, { converter, collector, onProgress, warnings, title = 'Aufbau' }) {
   const { schematic, version } = found;
   if (version < 1 || version > 3) {
     throw new ImportError('unsupported', `Sponge-Schematic Version ${version} wird nicht unterstützt (bekannt sind Version 1, 2 und 3).`);
@@ -73,7 +73,7 @@ export function readSchem(found, { converter, collector, onProgress, warnings, t
   const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
   const total = width * height * length;
   const tick = progressTicker(onProgress, 'Lese Blöcke', total);
-  collector.begin(title, text);
+  collector.begin(title);
   let offset = 0;
   let missing = 0;
   let x = 0, y = 0, z = 0;

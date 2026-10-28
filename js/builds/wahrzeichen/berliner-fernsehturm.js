@@ -12,17 +12,7 @@ export const meta = {
     'fernsehturm alexanderplatz', 'alex turm', 'alexanderplatz', 'telespargel', 'fernseturm', 'fernsehtrum', 'berlin turm',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Der Berliner Fernsehturm im Maßstab 1:1: 368 m hoch, ein Betonschaft, der sich von 16 m auf 9 m verjüngt, die 32 m große Kugel mit Aussichtsgeschoss und Telecafé hinter bronzefarbenen Fensterbändern und der 118 m lange Antennenträger mit rot-weißer Spitze. Im Schaft führt eine Wendeltreppe bis zur Aussichtsetage, unten stehen der Turmfuß mit Bullaugen und die Umbauung mit weißem Faltdach. Kugel, Geschosshöhen und Schaftmaße sind belegt; der genaue Verlauf der Verjüngung, die Form der Umbauung und die Einrichtung sind vereinfacht oder geschätzt.',
-  facts: [
-    'Höhe 368,03 m mit Antenne (seit 1997, vorher 365 m); der Betonschaft ist 248,78 m hoch.',
-    'Die Kugel misst 32 m, ihr Mittelpunkt liegt auf 213,78 m; sie hat sieben Geschosse.',
-    'Aussichtsetage auf 203,78 m (24 m Durchmesser), Telecafé auf 207,53 m (29 m Durchmesser, dreht sich).',
-    'Der Schaft verjüngt sich von 16 m auf 9 m; der Turmfuß ist am Boden 32 m breit und rund 20 m hoch.',
-    'Gebaut 1965–1969, eröffnet am 3. Oktober 1969; 986 Stufen führen zur Aussichtsetage.',
-    'Die Edelstahlhaut der Kugel besteht aus über 1000 Pyramiden – bei Sonne erscheint darauf ein Lichtkreuz.',
-    'Geschätzt (nicht belegt): gleichmäßige Verjüngung des Schafts, Form und Größe der Umbauung, rot-weiße Teilung der Spitze.',
-  ],
   sources: [
     { title: 'Wikipedia (de): Berliner Fernsehturm', url: 'https://de.wikipedia.org/wiki/Berliner_Fernsehturm' },
     { title: 'Wikipedia (en): Fernsehturm Berlin', url: 'https://en.wikipedia.org/wiki/Fernsehturm_Berlin' },
@@ -388,7 +378,7 @@ function buildSphereInterior(b, g, sphere, levels) {
     }
   };
 
-  b.step('Aussichtsetage', `Die Aussichtsetage liegt auf Ebene ${sphere.obs + 2} hinter dem unteren Fensterband. Stell innen am Schaft einen Tresen mit Hockern auf und häng Laternen unter die Decke; an den Fenstern bleibt der Rundgang frei.`);
+  b.step();
   const obsRoomTop = sphere.rest - 1;
   for (const [x, z, a] of ringPositions(shaftR(sphere.obs + 1) + 1.6, 12)) {
     if (b.get(x, sphere.obs + 1, z) !== 'air') continue;
@@ -401,7 +391,7 @@ function buildSphereInterior(b, g, sphere, levels) {
     if (b.get(x, obsRoomTop, z) === 'air' && b.get(x, obsRoomTop + 1, z) !== 'air') b.set(x, obsRoomTop, z, 'lantern[hanging=true]');
   }
 
-  b.step('Telecafé', `Das Drehrestaurant liegt eine Etage höher auf Ebene ${sphere.rest + 2}. Stell die Tische in einem Ring direkt an die Fenster, je mit zwei Stühlen (Treppen), und häng Laternen an Ketten von der Decke. Im Spiel dreht sich der Ring natürlich nicht.`);
+  b.step();
   const restR = horizontalRadiusAt(sphere, sphere.rest + 1) - 1.6;
   const tableCount = Math.max(6, Math.round(restR * 1.3));
   for (const [x, z, a] of ringPositions(restR, tableCount)) {
@@ -427,7 +417,7 @@ function buildSphereInterior(b, g, sphere, levels) {
     b.set(x, restCeiling - drop, z, 'lantern[hanging=true]');
   }
 
-  b.step('Technikgeschosse', 'In den Geschossen über dem Telecafé und unter der Aussichtsetage stehen Technik und Klimaanlage. Stell rund um den Schaft zwei Blöcke hohe Geräteschränke auf, abwechselnd aus Fässern und aus Eisenblöcken mit einem Hochofen darüber, und setz Laternen auf den Boden, damit dort keine Monster erscheinen.');
+  b.step();
   for (const yFloor of [levels.climate, ...levels.technical]) {
     lanternRing(yFloor, 6);
     const cabinets = ringPositions(shaftR(yFloor + 1) + 1.5, 8, 0.3);
@@ -444,8 +434,6 @@ function buildSphereInterior(b, g, sphere, levels) {
   }
 }
 
-const DIRECTION_NAMES = { '1,0': 'Osten', '-1,0': 'Westen', '0,1': 'Süden', '0,-1': 'Norden' };
-
 // Richtung, in die das Podest am Ende der Wendeltreppe aus dem Schaft führt.
 function stairExitAxis(yEnd) {
   const [lx, lz] = spiralCell(yEnd + 1);
@@ -460,18 +448,15 @@ function buildStairAccess(b, g, sphere) {
   const r = g.radius(shaftDiameterM(g.meters(yEnd + 1)));
   let x = lx;
   let z = lz;
-  let exit = null;
   for (let i = 0; i < 20 && inside(x, z, r); i++) {
     b.set(x, yEnd, z, P.floor);
     b.remove(x, yEnd + 1, z);
     b.remove(x, yEnd + 2, z);
-    exit = [x, z];
     x += axis.dx;
     z += axis.dz;
   }
   const torchAxis = AXES.find((a) => a.dx === axis.dz && a.dz === -axis.dx) ?? AXES[0];
   wallTorch(b, yEnd + 2, torchAxis);
-  b.note(exit[0], yEnd + 1, exit[1], 'Ende der Wendeltreppe: hier betrittst du die Aussichtsetage.');
   // Treppe von der Aussichtsetage zum Telecafé (Ostseite, läuft nach Süden hinauf)
   const sx = Math.round(CX + g.radius(shaftDiameterM(g.meters(yEnd + 1))) + 2);
   const rise = sphere.rest - sphere.obs;
@@ -482,7 +467,6 @@ function buildStairAccess(b, g, sphere) {
     for (let yy = sphere.obs + 1; yy < y; yy++) if (b.get(sx, yy, -1 + i) === 'air') b.set(sx, yy, -1 + i, 'stone_bricks');
   }
   for (let i = 0; i < rise - 1; i++) b.remove(sx, sphere.rest, -1 + i);
-  b.note(sx, sphere.rest, 0, 'Treppe von der Aussichtsetage hinauf ins Telecafé.');
 }
 
 function buildAntenna(b, g, yStart) {
@@ -567,7 +551,7 @@ function buildPavilionComplex(b, g) {
   const wallTop = (x, z) => (roofY.get(`${x},${z}`) ?? 2) - 1;
   const gallery = g.floorAt(ROOF.gallery);
 
-  b.step('Glaswände', `Die Umbauung ist ein Sechseck mit ${Math.round(2 * ROOF.wall * s)} Blöcken Eckmaß. Setze ringsum Glasscheiben bis unter das Dach; die sechs Ecken und ein Band auf Höhe der Galerie sind aus weißem Beton. An den vier schrägen Seiten setzt du die Scheiben treppenförmig und immer über Eck, damit jede Scheibe an der nächsten anschließt – sonst bleiben schmale Lücken, durch die Monster laufen. Lass auf der Südseite einen Eingang frei.`);
+  b.step();
   // Rand mit 8er-Nachbarschaft: an den schrägen Seiten stoßen die Scheiben über Flächen aneinander und verbinden sich
   const NEIGHBORS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
   const isWall = (x, z) => inHexagon(x, z, apothemWall) && NEIGHBORS8.some(([dx, dz]) => !inHexagon(x + dx, z + dz, apothemWall));
@@ -586,10 +570,9 @@ function buildPavilionComplex(b, g) {
   for (const [x, z] of wallCells) {
     if (z > CZ && Math.abs(x - CX) <= doorHalf + 0.5) for (let y = 1; y <= 3; y++) b.remove(x, y, z);
   }
-  b.note(0, 1, Math.round(apothemWall), 'Haupteingang der Umbauung (Südseite).');
 
   if (s >= 0.5) {
-    b.step('Galerie', `Auf Ebene ${gallery + 1} läuft innen eine Galerie an den Glaswänden entlang; zum Turmfuß hin bleibt der Raum zweigeschossig offen.`);
+    b.step();
     const galleryInner = Math.max(footR + 3, apothemWall - Math.round(7 * s));
     for (let x = -span2; x <= span2 + 1; x++) {
       for (let z = -span2; z <= span2 + 1; z++) {
@@ -613,7 +596,7 @@ function buildPavilionComplex(b, g) {
     for (let i = 0; i < gallery - 1; i++) b.remove(tx + i, gallery, 0);
   }
 
-  b.step('Faltdach', 'Das Dach aus glattem Quarz (für den weißen Beton) faltet sich in sechs Flügel: die Firste steigen mit 30 % Neigung bis auf 21 m an den Turmfuß, die Kehlen dazwischen fallen bis fast auf den Boden. Setze zuerst die sechs Firstlinien vom Turmfuß nach außen, dann die Kehlen, und fülle die Flächen dazwischen Reihe für Reihe. Wo die Fläche zwischen zwei Höhen liegt, glättet eine Quarzstufe den Absatz.');
+  b.step();
   for (const [key, y] of roofY) {
     const [x, z] = key.split(',').map(Number);
     let low = y;
@@ -670,7 +653,7 @@ function buildPavilionComplex(b, g) {
     }
   }
   if (lamps.length === 0 && ledgeLights.length === 0) return;
-  b.step('Einrichtung und Licht', 'Stell in der Halle Lampen auf (Andesitmauer mit Laterne) und zwei Tresen aus Quarzstufen neben dem Turmfuß. Auf der Galerie stehen Laternen direkt auf dem Boden, und auf den Absätzen des Turmfußes beleuchten Laternen die hohe Halle.');
+  b.step();
   for (const [x, z] of lamps) {
     b.set(x, 1, z, 'andesite_wall');
     b.set(x, 2, z, 'lantern');
@@ -706,7 +689,6 @@ function buildWaterAndLamps(b, g) {
       }
     }
   }
-  b.note(starts[2], 1, z0, 'Wasserbecken vor dem Haupteingang (im Original mit 560 Düsen).');
   const plazaR = g.radius(2 * 52) - 2;
   for (const [x, z] of ringPositions(plazaR, 12, Math.PI / 12)) {
     if (b.get(x, 1, z) !== 'air') continue;
@@ -728,35 +710,18 @@ export default function build(b, { scale = 1 } = {}) {
   const shaftTop = g.level(H.shaftTop) - 1;
   const obs = g.floorAt(H.observation);
 
-  b.phase('Platz und Fundament', `Der Turm steht mitten auf einem runden Platz mit ${2 * Math.round(52 * scale)} Blöcken Durchmesser. Lege die Platten aus glattem Stein, mit Ringen aus poliertem Andesit.`, {
-    tips: [
-      'Setze zuerst den Mittelpunkt: die Turmachse liegt genau zwischen vier Blöcken, alle Kreise haben gerade Durchmesser.',
-      'Für einen Bau dieser Höhe: Kreativmodus, Flugmodus und /fill sparen dir Tage.',
-    ],
-  });
+  b.phase('Platz und Fundament');
   buildPlaza(b, g);
 
-  b.phase('Turmfuß', `Der Fuß ist ein ${Math.round(H.footTop * scale)} Blöcke hoher Betonkegel aus poliertem Diorit, unten ${Math.round(D.foot * scale)} Blöcke breit, oben so breit wie der Schaft. Er zieht sich unten schnell und oben immer langsamer ein.${hollow ? ' Innen bleibt er hohl (Eingangshalle) mit einem Ring aus Bullaugen auf halber Höhe; der Eingang liegt im Süden. In der Mitte beginnt die Wendeltreppe: Aufzugskern aus grauem Beton, eine Stufe pro Ebene im Uhrzeigersinn, außen ein Gitterring mit dem Einstieg auf der Nordseite. Laternen am Boden und ab Ebene 5 alle drei Ebenen zwei Fackeln an der Innenwand halten Halle und Treppe hell.' : ''}`, {
-    tips: ['Prüfe jede Ebene mit der Ebenen-Ansicht: der Kreis wird pro Ebene nur um einen halben bis einen Block kleiner.'],
-  });
+  b.phase('Turmfuß');
   buildFoot(b, g, hollow);
   if (hollow) buildSpiral(b, 1, footTop);
 
-  b.phase('Schaft bis zur Kugel', `Der Betonschaft aus poliertem Diorit verjüngt sich gleichmäßig von ${Math.round(D.shaftBottom * scale)} auf rund ${Math.round(shaftDiameterM(197) * scale)} Blöcke unter der Kugel.${hollow ? ' Innen läuft die Wendeltreppe um den Aufzugskern bis unter die Kugel, ringsum geschützt von einem Ring aus Eisengittern (Abstand 3 von der Kernmitte); alle drei Ebenen hängen zwei Fackeln an gegenüberliegenden Wänden. Alle 45 Blöcke zeigt ein Ring aus Bullaugen ein Zwischengeschoss, ab 91 m leuchten rote Hindernisfeuer außen am Schaft.' : ''}`, {
-    tips: [
-      'Bei der Wendeltreppe zeigt die hohe Seite jeder Stufe in Laufrichtung – du gehst im Uhrzeigersinn nach oben.',
-      'Die roten Hindernisfeuer sind Redstone-Fackeln an der Außenwand.',
-    ],
-  });
+  b.phase('Schaft bis zur Kugel');
   buildShaftLevels(b, g, footTop + 1, sphereLow - 1, { hollow, stairs: hollow });
   if (hollow) buildSpiral(b, footTop + 1, sphereLow - 1);
 
-  b.phase('Die Kugel', `Die Kugel hat ${Math.round(H.sphereDiameter * scale)} Blöcke Durchmesser. Baue sie Ebene für Ebene von unten: Haut aus Eisenblöcken mit zwölf Längsfugen aus glattem Stein, die zwei Fensterbänder aus braunem Glas über der Aussichtsetage und dem Telecafé.${hollow ? ' Innen entstehen gleich die Böden der sieben Geschosse; der Schaft läuft mitten hindurch, und in ihm führt die Wendeltreppe samt Gitterring weiter bis zur Aussichtsetage.' : ''}`, {
-    tips: [
-      'Die Fensterbänder sitzen unter dem Äquator – deshalb schauen die Fenster leicht nach unten.',
-      'Die Kugel hat einen geraden Durchmesser: die Mitte liegt zwischen den Blöcken, jede Ebene ist symmetrisch zu dieser Mitte.',
-    ],
-  });
+  b.phase('Die Kugel');
   const sphere = buildSphere(b, g, hollow);
   const levels = { climate: g.floorAt(H.climate), technical: H.technical.map((h) => g.floorAt(h)) };
   if (hollow) {
@@ -785,21 +750,13 @@ export default function build(b, { scale = 1 } = {}) {
   }
 
   if (hollow) {
-    b.phase('Einrichtung der Kugel', 'Jetzt bekommt die Kugel ihr Innenleben: Treppenausgang, Aussichtsetage, Telecafé und Technikgeschosse. Jedes Geschoss bekommt Licht, damit dort nachts keine Monster erscheinen.', {
-      tips: ['Häng die Laternen erst, wenn die Decke darüber fertig ist – hängende Laternen brauchen einen Block darüber.'],
-    });
-    const exitAxis = stairExitAxis(obs);
-    b.step('Treppenausgang', `Die letzte Stufe der Wendeltreppe liegt auf Höhe des Bodens der Aussichtsetage. Leg daran bündig ein Podest aus glattem Stein nach ${DIRECTION_NAMES[`${exitAxis.dx},${exitAxis.dz}`]} und brich die Schaftwand dort zwei Blöcke hoch auf – das ist der Ausgang zur Aussichtsetage. Von dort führt eine Treppe an der Ostseite hinauf ins Telecafé.`);
+    b.phase('Einrichtung der Kugel');
+    b.step();
     buildStairAccess(b, g, sphere);
     buildSphereInterior(b, g, sphere, levels);
   }
 
-  b.phase('Schaft über der Kugel und Antennenträger', `Über der Kugel endet der Betonschaft auf ${Math.round(H.shaftTop * scale)} Blöcken. Darauf steht der Antennenträger aus Stahl, unten ${Math.round(D.antenna * scale) || 1} Blöcke breit, oben schmaler, mit rot-weißer Spitze bis auf 368 m.`, {
-    tips: [
-      'Baue den Antennenträger mit einer Säule aus Gerüsten daneben – oben ist sonst kein Platz zum Stehen.',
-      'Die Ringe der Spitze sind je ' + Math.max(1, Math.round(6 * scale)) + ' Blöcke hoch; fang ganz oben mit Weiß an.',
-    ],
-  });
+  b.phase('Schaft über der Kugel und Antennenträger');
   if (hollow) {
     buildShaftLevels(b, g, sphereHigh + 1, shaftTop - 1, { hollow: true, stairs: false });
     for (let y = sphereHigh + 1; y < shaftTop; y++) for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) b.set(dx, y, dz, P.core);
@@ -808,16 +765,11 @@ export default function build(b, { scale = 1 } = {}) {
     buildShaftLevels(b, g, sphereHigh + 1, shaftTop, { hollow: false, stairs: false });
   }
   buildDishPlatforms(b, g);
-  const yTop = buildAntenna(b, g, shaftTop + 1);
-  b.note(0, yTop, 0, 'Spitze auf 368 m über dem Platz.');
+  buildAntenna(b, g, shaftTop + 1);
 
-  b.phase('Umbauung mit Faltdach', 'Um den Turmfuß liegt die Umbauung: ein zweigeschossiger Glasbau unter einem weißen Faltdach aus Beton. Die Form ist hier vereinfacht: sechs gleiche Flügel um den Turm.', {
-    tips: ['Das Dach ist eine einzige, gefaltete Fläche – baue erst die Firste und Kehlen, dann füllst du die Dreiecke dazwischen viel leichter.'],
-  });
+  b.phase('Umbauung mit Faltdach');
   buildPavilionComplex(b, g);
 
-  b.phase('Wasserbecken und Laternen', 'Vor dem Haupteingang im Süden liegen vier Wasserbecken, rings um den Platz stehen Laternen.', {
-    tips: ['Setz das Wasser erst, wenn der Rand aus Quarz ringsum geschlossen ist – sonst läuft es aus.'],
-  });
+  b.phase('Wasserbecken und Laternen');
   buildWaterAndLamps(b, g);
 }

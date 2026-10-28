@@ -18,14 +18,7 @@ export const meta = {
     'baumhaus mit wendeltreppe', 'big tree house',
   ],
   accuracy: 'eigenes',
-  difficulty: 4,
   description: 'Eine Rieseneiche mit 5 Blöcke dickem Stamm und sechs mächtigen Ästen trägt auf 8 Blöcken Höhe eine runde Plattform mit einer kleinen Holzhütte – der Stamm wächst mitten durch ihre Rückwand. Eine Wendeltreppe windet sich um den Stamm hinauf, eine Leiter führt weiter zur Aussichtsplattform im Blätterdach. Von der unteren Plattform schwingt eine Hängebrücke mit Seilgeländer zu einer zweiten Eiche mit eigener kleiner Plattform.',
-  facts: [
-    'Stamm 5 × 5 Blöcke mit abgerundeten Ecken, darüber 3 × 3, Krone bis etwa 31 Blöcke hoch und gut 25 Blöcke breit',
-    'Die Äste sind unten 3 Blöcke dick und werden zum Ende hin dünner',
-    'Die Hängebrücke ist 10 Felder lang und hängt in der Mitte zwei Blöcke durch',
-    'Laternen auf Zaunpfosten, an den Balken und in der Hütte halten nachts Monster fern',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -184,16 +177,12 @@ function canopy(b, blobs, salt, keepOut) {
 }
 
 function ground(b) {
-  b.phase('Waldboden', 'Leg den Waldboden aus: Gras auf zwei Ebenen Erde. Die Rieseneiche steht ungefähr in der Mitte, die zweite Eiche für die Hängebrücke 20 Blöcke weiter westlich.', {
-    tips: ['Markier dir die beiden Stammmitten mit einem Block, bevor du anfängst – alle Maße hier gehen von ihnen aus.'],
-  });
+  b.phase('Waldboden');
   terrain(b, { x: PLOT.x1, y: -2, z: PLOT.z1, width: PLOT.x2 - PLOT.x1 + 1, depth: PLOT.z2 - PLOT.z1 + 1, height: 2, seed: 11 });
 }
 
 function trunk(b) {
-  b.phase('Stamm und Wurzeln', 'Bau den Stamm der Rieseneiche aus Eichenstämmen: bis Ebene 21 ist er 5 × 5 Blöcke mit abgeschnittenen Ecken, dann bis Ebene 26 3 × 3 und darüber noch drei einzelne Stämme. Am Fuß machen Eichenholz-Blöcke in den Ecken und Wurzeln, die über den Boden kriechen, den Stamm breiter.', {
-    tips: ['Setz zuerst einen Ring der untersten Ebene und kontrollier die Form von oben – danach ist jede Ebene bis zur Verjüngung gleich.', 'Eichenholz (Holz mit Rinde auf allen Seiten) sieht an Wurzeln und Ästen besser aus als Stämme, weil keine Jahresringe zu sehen sind.'],
-  });
+  b.phase('Stamm und Wurzeln');
   const trunkLayers = (y1, y2) => {
     for (let y = y1; y <= y2; y++) for (let z = -2; z <= 2; z++) for (let x = -2; x <= 2; x++) if (isTrunk(x, y, z)) b.set(x, y, z, log(oak.log));
   };
@@ -205,20 +194,18 @@ function trunk(b) {
     [0, 1, 3], [0, 2, 3], [1, 1, 3], [0, 1, 4], [-1, 1, 4], [-1, 1, 5],
     [3, 1, 0], [3, 2, 0], [4, 1, 0], [5, 1, 0], [5, 1, 1], [3, 1, -2], [3, 1, 2], [4, 1, 3],
   ];
-  b.step('Wurzelansatz', 'Ebene 4 bis 6: die ersten drei Ringe des Stamms (5 × 5 ohne die vier Ecken) und rundherum Wurzeln aus Eichenholz – in die Ecken des Stamms, als Stummel nach außen und als lange Wurzeln über den Boden.');
+  b.step();
   trunkLayers(1, 3);
   for (const [x, y, z] of flare) b.set(x, y, z, bark);
-  b.step('Stamm bis Ebene 21', 'Setz Ring für Ring weiter, jede Ebene sieht gleich aus wie die unterste: 21 Stämme pro Ring, bis der Stamm auf Ebene 21 steht.');
+  b.step();
   trunkLayers(4, 18);
-  b.step('Verjüngung und Spitze', 'Ab Ebene 22 wird der Stamm 3 × 3 (bis Ebene 26), darüber kommen noch drei einzelne Stämme übereinander in die Mitte.');
+  b.step();
   trunkLayers(19, 26);
 }
 
 function spiral(b) {
-  b.phase('Wendeltreppe um den Stamm', 'Die Wendeltreppe aus Fichtentreppen läuft im Abstand von einem Block um den Stamm: Start an der Nordseite, dann im Uhrzeigersinn nach Osten, jede Stufe einen Block höher, bis sie auf Ebene 11 in der Plattform ankommt. Unter jede Stufe kommt eine umgedrehte Fichtentreppe – sie trägt die nächste Stufe und gibt der Treppe von unten eine glatte Schräge. Außen stehen Zaunpfosten als Geländer, je zwei übereinander.', {
-    tips: ['Schau beim Setzen jeder Stufe in Laufrichtung, dann zeigt die hohe Seite richtig nach vorne.', 'Die Reihenfolge ist immer gleich: erst die umgedrehte Treppe neben die letzte Stufe, dann die neue Stufe obendrauf.'],
-  });
-  b.step('Stufen', 'Erste Stufe auf Ebene 4 direkt nördlich vom Stamm, Blick nach Osten. Die Eckstufe im Nordosten (Ebene 7) setzt du ebenfalls mit Blick nach Osten, erst danach drehst du dich nach Süden – so kommst du um die Ecke, ohne zu springen.');
+  b.phase('Wendeltreppe um den Stamm');
+  b.step();
   b.spiralStairs(0, 0, 1, P1_Y, 3, spruce.stairs);
   // Eckstufe zeigt in die Ankunftsrichtung: Nach Süden gedreht läge ihre hohe Hälfte quer im Weg (ein voller Block Absatz).
   b.set(3, 4, -3, st(spruce.stairs, 'east'));
@@ -233,9 +220,8 @@ function spiral(b) {
     }
   }
   for (const s of ring) if (s.y >= 2) b.set(s.x, s.y - 1, s.z, st(spruce.stairs, OPPOSITE[s.facing], 'top'));
-  b.note(0, 1, -3, 'Hier beginnt die Wendeltreppe: von Westen her auf die erste Stufe.');
 
-  b.step('Geländer', 'Neben jede Stufe zwei Fichtenzäune übereinander auf die Außenseite. Die Pfosten verbinden sich zu einem Geländer, das mit den Stufen ansteigt; zwei davon tragen eine Laterne.');
+  b.step();
   for (const s of ring) {
     if (s.y >= P1_Y - 1) continue;
     const outs = [];
@@ -262,39 +248,36 @@ function strut(b, x0, z0, dx, dz, outward, lift = 0) {
 }
 
 function lowerPlatform(b) {
-  b.phase('Untere Plattform', 'Die Plattform liegt auf Ebene 11. Erst kommt das Tragwerk: zwei Streben am Stamm (nach Westen und nach Norden), zwei Pfosten unter der Hütte und die Balken. Dann legst du den Boden aus Fichtenbrettern mit einem Rand aus Fichtenholz und setzt ringsum ein Zaungeländer. Über dem Ende der Wendeltreppe bleiben vier Felder frei – drei für die Kopffreiheit, in das vierte kommt die oberste Stufe.', {
-    tips: ['Die Streben sind Treppen aus Holzblöcken: Jeder Block berührt den vorigen mit einer Fläche, du kannst sie also ohne Hilfsblöcke vom Stamm aus hochbauen.', 'Den Boden baust du vom Stamm aus nach außen – jedes Brett klebt am vorigen.'],
-  });
-  b.step('Streben, Pfosten und Balken', 'Die Strebe nach Westen beginnt auf Ebene 6 direkt am Stamm, die nach Norden eine Ebene höher auf Ebene 7 – so stößt du am Fuß der Wendeltreppe nicht mit dem Kopf an. Die Pfosten unter den Südecken der Hütte reichen vom Boden bis Ebene 10, darauf liegen die Balken der Hütte.');
+  b.phase('Untere Plattform');
+  b.step();
   strut(b, -1, 0, 0, -1, 'north', 1);
   strut(b, 0, 0, -1, 0, 'west');
   for (const x of [HOUSE.x1, HOUSE.x2]) b.fill(x, 1, HOUSE.z2, x, P1_Y - 1, HOUSE.z2, log(spruce.log));
   for (const x of [HOUSE.x1, HOUSE.x2]) b.fill(x, P1_Y - 1, HOUSE.z1 + 1, x, P1_Y - 1, HOUSE.z2 - 1, log(spruce.log, 'z'));
   b.fill(HOUSE.x1 + 1, P1_Y - 1, HOUSE.z2, HOUSE.x2 - 1, P1_Y - 1, HOUSE.z2, log(spruce.log, 'x'));
 
-  b.step('Boden', 'Fichtenbretter auf die Balken, außen eine Reihe Fichtenholz als Rand.');
+  b.step();
   const list = cells(inP1, -7, -7, 7, 9);
   const edge = floorWithRim(b, inP1, list, P1_Y, (x, z) => isTrunk(x, P1_Y, z) || SPIRAL_HOLE.has(key(x, z)));
 
-  b.step('Geländer', 'Zaun auf den Rand. Im Westen bleibt die Lücke für die Hängebrücke, um das Treppenloch stehen fünf Zaunpfosten.');
+  b.step();
   for (const [x, z] of edge) {
     if (x <= -5 && z >= 0 && z <= 2) continue;
     b.set(x, P1_Y + 1, z, spruce.fence);
   }
   for (const [x, z] of [[4, -2], [4, -1], [4, 0], [3, -3], [2, -2]]) b.set(x, P1_Y + 1, z, spruce.fence);
-  b.note(3, P1_Y, 1, 'Ende der Wendeltreppe: Hier trittst du auf die Plattform.');
 }
 
 function cabin(b) {
-  b.phase('Hütte', 'Die Hütte steht auf der Südseite der Plattform, ihre Rückwand ist der Stamm selbst. Wände aus Fichtenbrettern mit Ecken aus Eichenstämmen, 4 Blöcke hoch. Das Satteldach aus Schwarzeichentreppen baust du um den Stamm herum.');
-  b.step('Wände', 'Erst die vier Eckstämme 4 hoch, dann die Bretter dazwischen. Wo die Nordwand auf den Stamm trifft, endet sie am Stamm.');
+  b.phase('Hütte');
+  b.step();
   const top = HOUSE_TOP;
   for (let y = P1_Y + 1; y <= top; y++) {
     for (let x = HOUSE.x1; x <= HOUSE.x2; x++) for (const z of [HOUSE.z1, HOUSE.z2]) if (!isTrunk(x, y, z)) b.set(x, y, z, spruce.planks);
     for (let z = HOUSE.z1; z <= HOUSE.z2; z++) for (const x of [HOUSE.x1, HOUSE.x2]) b.set(x, y, z, spruce.planks);
     for (const [x, z] of [[HOUSE.x1, HOUSE.z1], [HOUSE.x2, HOUSE.z1], [HOUSE.x1, HOUSE.z2], [HOUSE.x2, HOUSE.z2]]) b.set(x, y, z, log(oak.log));
   }
-  b.step('Fenster und Tür', 'Glasscheiben mit Läden aus Fichtenfalltüren, vorne ein Blumenkasten, die Tür auf der Ostseite und daneben eine Laterne am Wandarm.');
+  b.step();
   const shutters = spruce.trapdoor;
   window(b, { x: -2, y: P1_Y + 2, z: HOUSE.z2, facing: 'south', width: 2, height: 2, shutters, flowerBox: true });
   window(b, { x: 2, y: P1_Y + 2, z: HOUSE.z2, facing: 'south', width: 1, height: 2, shutters });
@@ -303,7 +286,7 @@ function cabin(b) {
   window(b, { x: HOUSE.x2, y: P1_Y + 2, z: 6, facing: 'east', width: 1, height: 2, shutters });
   wallLantern(b, { x: HOUSE.x2, y: P1_Y + 3, z: 3, facing: 'east', style: 'bracket', arm: spruce.fence });
 
-  b.step('Dach', 'Satteldach mit einem Block Überstand: Schwarzeichentreppen mit der hohen Seite zum First, der First aus Schwarzeichenstufen. Wo der Stamm durch das Dach geht, lässt du die Treppen weg. Die Giebel füllst du mit Fichtenbrettern und setzt je ein kleines Fenster hinein.');
+  b.step();
   gableRoofAroundTrunk(b, { x1: HOUSE.x1, z1: HOUSE.z1, x2: HOUSE.x2, z2: HOUSE.z2, y: top, overhang: 1 });
 }
 
@@ -326,40 +309,37 @@ function gableRoofAroundTrunk(b, { x1, z1, x2, z2, y, overhang }) {
 }
 
 function upperPlatform(b) {
-  b.phase('Leiter und Aussichtsplattform', 'Eine Leiter an der Nordseite des Stamms führt von der unteren Plattform hinauf zur Aussichtsplattform auf Ebene 20. Sie ist ein Halbkreis auf der Nordseite, ruht auf drei Konsolen am Stamm und hat ein Zaungeländer mit Laternen.');
-  b.step('Leiter', 'Häng die Leiter an die Nordseite des Stamms, von der Plattform bis ganz oben – das oberste Stück steckt im Loch der Aussichtsplattform.');
+  b.phase('Leiter und Aussichtsplattform');
+  b.step();
   for (let y = P1_Y + 1; y <= P2_Y; y++) b.set(0, y, -3, formatState('ladder', { facing: 'north' }));
-  b.step('Konsolen', 'Drei Streben aus Fichtenholz unter der Plattform, jeweils vom Stamm aus treppenförmig nach außen.');
+  b.step();
   const wood = log(spruce.wood);
   faceWalk(b, [-2, 14, -1], [-4, 16, -3], wood);
   faceWalk(b, [2, 14, -1], [4, 16, -3], wood);
   faceWalk(b, [1, 14, -3], [1, 16, -5], wood);
-  b.step('Boden und Geländer');
+  b.step();
   const list = cells(inP2, -6, -6, 6, -1);
   const edge = floorWithRim(b, inP2, list, P2_Y, (x, z) => isTrunk(x, P2_Y, z) || (x === 0 && z === -3));
   for (const [x, z] of edge) b.set(x, P2_Y + 1, z, spruce.fence);
   for (const [x, z] of [[-5, -2], [5, -2], [-2, -5], [2, -5]]) if (b.get(x, P2_Y + 1, z) === spruce.fence) b.set(x, P2_Y + 2, z, lantern());
   b.set(-1, P2_Y + 1, -3, spruce.fence);
   b.set(1, P2_Y + 1, -3, spruce.fence);
-  b.note(0, P2_Y, -3, 'Oberes Ende der Leiter.');
 }
 
 function secondTree(b) {
-  b.phase('Zweite Eiche, Plattform und Hängebrücke', 'Westlich steht eine zweite, kleinere Eiche mit einem Stamm in Kreuzform. Um sie kommt eine runde Plattform auf derselben Höhe wie die große, mit einer Leiter am Stamm. Dazwischen spannst du die Hängebrücke.', {
-    tips: ['Der Durchhang entsteht durch Stufen: oben, unten, eine Ebene tiefer oben, unten … bis zur Mitte und auf der anderen Seite wieder hinauf.'],
-  });
-  b.step('Stamm', 'Der Stamm ist ein Kreuz aus fünf Eichenstämmen bis Ebene 15, darüber ein einzelner Stamm. Ein paar Wurzeln aus Eichenholz am Fuß.');
+  b.phase('Zweite Eiche, Plattform und Hängebrücke');
+  b.step();
   for (let y = 1; y <= 15; y++) for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (isTrunk2(TREE2.x + dx, y, TREE2.z + dz)) b.set(TREE2.x + dx, y, TREE2.z + dz, log(oak.log));
   for (const [dx, dz] of [[1, 1], [-1, -1], [2, 0], [0, 2], [3, 0], [1, -1]]) b.set(TREE2.x + dx, 1, TREE2.z + dz, log(oak.wood));
 
-  b.step('Plattform', 'Unter die Plattform kommen umgedrehte Fichtentreppen rund um den Stamm als Konsolen. Dann Boden mit Holzrand, Zaungeländer mit der Lücke zur Brücke im Osten und die Leiter an der Westseite des Stamms bis hinunter zum Boden.');
+  b.step();
   for (const [dx, dz, f] of [[2, 0, 'west'], [0, -2, 'south'], [0, 2, 'north'], [1, 1, 'west'], [1, -1, 'west'], [-1, 1, 'east'], [-1, -1, 'east']]) b.set(TREE2.x + dx, P1_Y - 1, TREE2.z + dz, st(spruce.stairs, f, 'top'));
   const list = cells(inP3, TREE2.x - 4, TREE2.z - 4, TREE2.x + 4, TREE2.z + 4);
   const edge = floorWithRim(b, inP3, list, P1_Y, (x, z) => isTrunk2(x, P1_Y, z) || (x === LADDER2.x && z === LADDER2.z));
   for (let y = 1; y <= P1_Y; y++) b.set(LADDER2.x, y, LADDER2.z, formatState('ladder', { facing: 'west' }));
   for (const [x, z] of edge) if (!(x >= TREE2.x + 3 && z >= 0 && z <= 2)) b.set(x, P1_Y + 1, z, spruce.fence);
 
-  b.step('Hängebrücke', 'Zehn Felder lang und drei breit: Die mittlere Reihe ist der Laufweg, auf den Außenreihen läuft das Zaunseil. Wo das Seil eine Ebene springt, setzt du einen zweiten Zaun obendrauf, damit es durchgeht. An beiden Enden stehen Stammpfosten mit Laternen, unter dem Laufweg hängt eine Kette als Tragseil.');
+  b.step();
   const surface = [9, 8.5, 8, 7.5, 7, 7, 7.5, 8, 8.5, 9];
   const slabY = surface.map((s) => (Number.isInteger(s) ? s - 1 : s - 0.5));
   const rope = slabY.map((y) => y + 1);
@@ -377,7 +357,6 @@ function secondTree(b) {
     b.set(x, P1_Y + 2, z, spruce.fence);
     b.set(x, P1_Y + 3, z, lantern());
   }
-  b.note(-11, 6, 1, 'Tiefster Punkt der Hängebrücke.');
 }
 
 const LIMBS = [
@@ -399,15 +378,13 @@ const keepOutMain = (x, y, z) => y >= P2_Y && y <= P2_Y + 3 && z <= 0 && x * x +
 const keepOutSecond = (x, y, z) => y <= P1_Y + 3 && (x - TREE2.x) ** 2 + (z - TREE2.z) ** 2 <= 30;
 
 function crown(b) {
-  b.phase('Äste und Krone', 'Jetzt die Krone: Sechs dicke Äste aus Eichenholz wachsen schräg aus dem Stamm nach außen und oben – unten 3 Blöcke dick, am Ende nur noch einer. Darauf setzt du große Blätterwolken, die zusammen eine geschlossene Krone ergeben. Über der Aussichtsplattform bleibt ein Freiraum, damit du dort stehen kannst.', {
-    tips: ['Bau jeden Ast zuerst als einfache Linie aus Holzblöcken (jeder Block berührt den vorigen mit einer Fläche), dann machst du ihn mit weiteren Blöcken ringsum dick.', 'Selbst gesetztes Laub verrottet nicht. Für den ausgefransten Rand lässt du außen einfach jeden zweiten bis dritten Block weg.'],
-  });
-  b.step('Äste der Rieseneiche');
+  b.phase('Äste und Krone');
+  b.step();
   const skipMain = (x, y, z) => keepOutMain(x, y, z) || isTrunk(x, y, z);
   for (const { a, c } of LIMBS) limb(b, a, c, 1.3, 0.5, oak.wood, skipMain);
-  b.step('Äste der zweiten Eiche');
+  b.step();
   for (const { a, c } of LIMBS2) limb(b, a, c, 0.9, 0.5, oak.wood, (x, y, z) => isTrunk2(x, y, z));
-  b.step('Blätterdach der Rieseneiche', 'Um jedes Astende eine flache Wolke aus Eichenlaub (etwa 11 breit und 6 hoch), oben auf dem Stamm die größte. Zwischen den Ästen füllst du auf, bis keine Lücken mehr sind.');
+  b.step();
   const blobs = LIMBS.map(({ c }) => ({ c: [c[0], c[1] + 1.5, c[2]], rx: 5.5, ry: 3.2, rz: 5.5 }));
   blobs.push({ c: [0, 27, 0], rx: 7, ry: 4, rz: 7 });
   for (let i = 0; i < LIMBS.length; i++) {
@@ -416,15 +393,15 @@ function crown(b) {
     blobs.push({ c: [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2 + 1, (p[2] + q[2]) / 2], rx: 4.5, ry: 3, rz: 4.5 });
   }
   canopy(b, blobs, 101, keepOutMain);
-  b.step('Blätterdach der zweiten Eiche');
+  b.step();
   const blobs2 = LIMBS2.map(({ c }) => ({ c: [c[0], c[1] + 1, c[2]], rx: 4, ry: 2.6, rz: 4 }));
   blobs2.push({ c: [TREE2.x, 16, TREE2.z], rx: 4.5, ry: 3, rz: 4.5 });
   canopy(b, blobs2, 202, keepOutSecond);
 }
 
 function furnish(b) {
-  b.phase('Einrichtung', 'Richte die Hütte ein und stell auf die Plattformen ein paar Dinge zum Ausruhen. Unter der Hütte hängt eine Schaukel an Ketten.');
-  b.step('Hütte', 'Bett mit dem Kopfteil am Stamm, Nachttisch und Truhe, dazu ein Tisch mit zwei Stühlen, Werkbank, Fass, Bücherregal und ein Wandregal.');
+  b.phase('Einrichtung');
+  b.step();
   const y = P1_Y + 1;
   bedroom(b, { x: -3, y, z: 3, facing: 'south', width: 4, depth: 5, wood: 'fichte', color: 'gruen', rug: 'braun' });
   b.set(2, y, 6, slab(spruce.slab, 'top'));
@@ -437,7 +414,7 @@ function furnish(b) {
   b.set(3, y + 1, 3, 'potted_fern');
   b.set(0, y + 2, 3, formatState(spruce.shelf, { facing: 'south' }));
 
-  b.step('Plattformen', 'Unten eine Bank aus Treppen mit Blick nach Norden und ein Fass mit Topfpflanze, oben eine lange Bank und eine Truhe, auf der kleinen Plattform eine Bank am Geländer.');
+  b.step();
   for (const x of [-4, -3]) b.set(x, P1_Y + 1, -4, st(spruce.stairs, 'south'));
   b.set(-5, P1_Y + 1, -3, formatState('barrel', { facing: 'up' }));
   b.set(-5, P1_Y + 2, -3, 'potted_azalea_bush');
@@ -448,14 +425,14 @@ function furnish(b) {
   b.set(TREE2.x, P1_Y + 1, TREE2.z + 2, formatState('barrel', { facing: 'up' }));
   b.set(TREE2.x, P1_Y + 2, TREE2.z + 2, 'potted_red_mushroom');
 
-  b.step('Schaukel', 'Zwei Ketten hängen unter dem Südrand der Plattform, unten hält eine Reihe oberer Fichtenstufen als Sitz.');
+  b.step();
   for (const x of [-3, -1]) b.fill(x, 4, 9, x, P1_Y - 1, 9, formatState('iron_chain', { axis: 'y' }));
   b.fill(-3, 3, 9, -1, 3, 9, slab(spruce.slab, 'top'));
 }
 
 function lights(b) {
-  b.phase('Licht', 'Laternen gegen Monster: in der Hütte an der Decke, unter der Plattform an den Balken und auf den Geländerpfosten.');
-  b.step('Laternen');
+  b.phase('Licht');
+  b.step();
   lightRoom(b, { x1: HOUSE.x1 + 1, y1: P1_Y + 1, z1: HOUSE.z1 + 1, x2: HOUSE.x2 - 1, y2: HOUSE_TOP, z2: HOUSE.z2 - 1 });
   for (const [x, z] of [[-4, 4], [4, 6], [-7, 0], [-1, -7]]) b.set(x, P1_Y - 2, z, lantern(true));
   for (const [x, z] of [[-5, -3], [6, 3], [-4, 5], [4, -5], [-2, 6]]) if (b.get(x, P1_Y + 1, z) === spruce.fence) b.set(x, P1_Y + 2, z, lantern());
@@ -463,8 +440,8 @@ function lights(b) {
 }
 
 function surroundings(b) {
-  b.phase('Waldboden gestalten', 'Zum Schluss der Wald drumherum: ein Pfad zur Wendeltreppe, Felsen mit Moos, Büsche, Farne und Blumen und eine Feuerstelle mit Sitzbänken aus Stämmen.');
-  b.step('Pfad und Feuerstelle');
+  b.phase('Waldboden gestalten');
+  b.step();
   pathAlong(b, { y: 0, points: [[-3, PLOT.z1 + 1], [-4, -9], [-2, -4]], width: 2, mix: 'gemischt', wiggle: 1, seed: 3 });
   b.set(9, 0, -6, 'cobblestone');
   b.set(9, 1, -6, formatState('campfire', { lit: 'true', signal_fire: 'false', facing: 'south' }));
@@ -472,12 +449,12 @@ function surroundings(b) {
   b.set(9, 1, -8, log(spruce.log, 'x'));
   b.set(11, 1, -6, log(spruce.log, 'z'));
   b.set(11, 1, -5, log(spruce.log, 'z'));
-  b.step('Felsen, Büsche und Blumen');
+  b.step();
   rock(b, { x: -10, y: 1, z: -9, size: 'mittel', material: 'andesit', seed: 2 });
   rock(b, { x: 10, y: 1, z: 11, size: 'klein', seed: 5 });
   for (const [x, z, s] of [[-10, 10, 'mittel'], [10, 3, 'klein'], [-24, -10, 'mittel'], [-14, 11, 'klein'], [11, -12, 'klein'], [-25, 11, 'klein']]) bush(b, { x, y: 1, z, size: s, leaves: 'eiche', seed: x * 3 + z });
   flowerBed(b, { x: -3, y: 0, z: 12, width: 7, depth: 2, facing: 'south', palette: 'wiese', seed: 4 });
-  b.step('Bewuchs');
+  b.step();
   vegetation(b, { x: PLOT.x1, y: 0, z: PLOT.z1, width: PLOT.x2 - PLOT.x1 + 1, depth: PLOT.z2 - PLOT.z1 + 1, mix: 'wald', density: 0.3, shape: 'eckig', seed: 7 });
 }
 

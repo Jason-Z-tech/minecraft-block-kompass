@@ -1,7 +1,8 @@
 // Zustand der Kategorie-Seite in der Adresse (Teilen, Zurück-Taste):
-// kategorie.html?k=<slug>&q=<text>&groesse=klein&groesse=mittel&schwierigkeit=2&herkunft=original&test=ungetestet&sort=bloecke-ab
+// kategorie.html?k=<slug>&q=<text>&groesse=klein&groesse=mittel&herkunft=original&test=ungetestet&sort=bloecke-ab
 // Mehrfachwerte als wiederholte Parameter (wie ein Formular sie sendet); Komma-Listen werden auch gelesen.
-// Alles wird gegen Whitelists geprüft, Unbekanntes fällt weg. Rein und in Node testbar.
+// Alles wird gegen Whitelists geprüft, Unbekanntes fällt weg (auch alte Angaben wie sort=schwierigkeit-auf:
+// dann gilt die Standard-Sortierung). Rein und in Node testbar.
 import { normalizeSearchQuery } from '../shared.js';
 import { FILTER_KEYS, allowedFilterValues, emptyFilters } from './filters.js';
 import { defaultSort, isSortAvailable } from './sort.js';
@@ -19,7 +20,7 @@ export function categoryParam(search) {
 
 /**
  * Liest Suche, Filter und Sortierung. ignored nennt verworfene Angaben (für einen Hinweis in der Konsole).
- * → { query, filters: { groesse: [], schwierigkeit: [], herkunft: [], test: [] }, sort, ignored }
+ * → { query, filters: { groesse: [], herkunft: [], test: [] }, sort, ignored }
  */
 export function parseBrowseState(search) {
   const params = new URLSearchParams(search);
@@ -61,7 +62,7 @@ export function browseSearch(slug, { query = '', filters = emptyFilters(), sort 
   return text ? `?${text}` : '';
 }
 
-/** Seitenpfad der Kategorie-Seite mit Zustand, z. B. „kategorie.html?k=redstone&sort=bloecke-ab“ */
+/** Seitenpfad der Kategorie-Seite mit Zustand, z. B. „kategorie.html?k=farmen&sort=bloecke-ab“ */
 export function browseHref(slug, state = {}) {
   return `kategorie.html${browseSearch(slug, state)}`;
 }

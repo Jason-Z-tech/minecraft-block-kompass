@@ -46,16 +46,12 @@ function chapterCount(height, estimate) {
 
 const THIRD_NAMES = { 2: ['Untere Hälfte', 'Obere Hälfte'], 3: ['Unteres Drittel', 'Mittleres Drittel', 'Oberes Drittel'], 4: ['Unteres Viertel', 'Zweites Viertel', 'Drittes Viertel', 'Oberes Viertel'] };
 
-/**
- * Kapitel für Ebenen-Abschnitte: describe(part, index, count) → { title?, text, tips? }.
- * Ergebnis [{ from, title, text, tips }] für layerWriter.
- */
-function layerChapters(y0, y1, count, baseTitle, describe) {
+/** Kapitel für Ebenen-Abschnitte, nur mit Titel → [{ from, title }] für layerWriter. */
+function layerChapters(y0, y1, count, baseTitle) {
   const ranges = splitLayers(y0, y1, count);
   return ranges.map(([from, to], index) => {
-    const info = describe({ from, to }, index, ranges.length);
     const name = ranges.length === 1 ? baseTitle : `${baseTitle}: ${THIRD_NAMES[ranges.length][index]}`;
-    return { from: index === 0 ? -Infinity : from, title: info.title ?? `${name} (${layerRange(from, to)})`, text: info.text, tips: info.tips ?? [] };
+    return { from: index === 0 ? -Infinity : from, title: `${name} (${layerRange(from, to)})` };
   });
 }
 
@@ -67,18 +63,10 @@ function layerWriter(b, chapters) {
     while (target + 1 < chapters.length && y >= chapters[target + 1].from) target++;
     if (target !== current) {
       current = target;
-      const chapter = chapters[current];
-      b.phase(chapter.title, chapter.text, { tips: chapter.tips });
+      b.phase(chapters[current].title);
     }
     b.set(x, y, z, state);
   };
-}
-
-function hollowTips(params, closedText) {
-  if (!params.hollow) return [];
-  const tips = [closedText];
-  if (params.thickness > 1) tips.push(`Die Wand ist ${params.thickness} Blöcke dick – der Ebenen-Plan zeigt dir je Ebene die ganze Breite.`);
-  return tips;
 }
 
 // ------------------------------------------------------------------ Schätzungen
@@ -117,19 +105,7 @@ const sphere = {
   build(b, p) {
     const c = geometry.spanCenter(0, p.diameter);
     const r = geometry.spanRadius(p.diameter);
-    const half = Math.floor((p.diameter - 1) / 2);
-    const chapters = layerChapters(0, p.diameter - 1, chapterCount(p.diameter, this.estimate(p)), 'Kugel', (part, index, count) => {
-      const intro = 'Eine Kugel baust du Ebene für Ebene von unten nach oben. Jede Ebene ist ein Kreis – der Ebenen-Plan zeigt dir den genauen Umriss. Zähl die Blöcke je Reihe ab, dann sitzt die Form.';
-      if (count === 1) return { text: intro, tips: hollowTips(p, 'Die Hülle ist dicht: Kein Block im Inneren berührt die Außenluft.') };
-      const lower = part.to <= half;
-      const upper = part.from > half;
-      const text = lower
-        ? 'Unten sind die Kreise klein und werden mit jeder Ebene größer. Die unterste Ebene schwebt bei einer frei stehenden Kugel – stell dir eine Hilfssäule bis dorthin und bau sie am Ende wieder ab.'
-        : upper
-          ? 'Ab der Mitte werden die Kreise wieder kleiner. Jede Ebene rückt ein Stück nach innen – setz die Blöcke von der Ebene darunter aus an.'
-          : 'Hier liegt der Äquator: Die Kreise sind am größten und ändern sich von Ebene zu Ebene kaum.';
-      return { text: index === 0 ? `${intro} ${text}` : text, tips: index === 0 ? hollowTips(p, 'Die Hülle ist dicht: Kein Block im Inneren berührt die Außenluft.') : [] };
-    });
+    const chapters = layerChapters(0, p.diameter - 1, chapterCount(p.diameter, this.estimate(p)), 'Kugel');
     const put = layerWriter(b, chapters);
     geometry.sphere(c, c, c, r, { hollow: p.hollow, thickness: p.thickness }, (x, y, z) => put(x, y, z, p.block));
   },
@@ -148,14 +124,7 @@ const dome = {
     const r = geometry.spanRadius(p.diameter);
     const cy = p.diameter % 2 === 1 ? 0 : -0.5;
     const height = Math.ceil(p.diameter / 2);
-    const chapters = layerChapters(0, height - 1, chapterCount(height, this.estimate(p)), 'Kuppel', (part, index, count) => {
-      const intro = 'Eine Kuppel ist eine halbe Kugel. Die unterste Ebene ist der größte Kreis – sie liegt direkt auf dem Boden oder auf deinen Mauern. Nach oben werden die Kreise kleiner; der Ebenen-Plan zeigt dir jeden Umriss.';
-      const top = 'Oben wird die Kuppel flach: Die letzten Ebenen sind breite Scheiben, die sie schließen. Arbeite dich von außen nach innen vor.';
-      if (count === 1) return { text: intro, tips: hollowTips(p, 'Unten ist die Kuppel offen, sonst ist die Hülle dicht.') };
-      if (index === 0) return { text: intro, tips: hollowTips(p, 'Unten ist die Kuppel offen, sonst ist die Hülle dicht.') };
-      if (index === count - 1) return { text: top };
-      return { text: 'Die Kreise rücken jetzt schneller nach innen. Setz jede Ebene von der Kante der darunter aus an.' };
-    });
+    const chapters = layerChapters(0, height - 1, chapterCount(height, this.estimate(p)), 'Kuppel');
     const put = layerWriter(b, chapters);
     geometry.sphere(c, cy, c, r, { hollow: p.hollow, thickness: p.thickness, part: 'top' }, (x, y, z) => put(x, y, z, p.block));
   },
@@ -224,41 +193,31 @@ const cylinder = {
     const isTower = p.hollow && p.diameter >= 3;
     const name = isTower ? 'Mauer' : 'Säule';
     if (isTower && p.floor) {
-      b.phase('Boden (Ebene 1)', 'Leg zuerst den runden Boden als volle Scheibe. Der Ebenen-Plan zeigt dir den Kreis – sein Rand ist zugleich die erste Ebene der Mauer.');
+      b.phase('Boden (Ebene 1)');
       geometry.disc(c, 0, c, r, {}, (x, y, z) => b.set(x, y, z, p.block));
     }
-    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), name, (part, index) => {
-      if (index > 0) return { text: 'Weiter Ebene für Ebene genau auf die Ebene darunter. Ein Gerüst außen am Turm hilft dir, die Mauer gut zu erreichen.' };
-      const text = isTower
-        ? 'Jede Ebene ist derselbe Ring. Bau die erste Ebene sorgfältig nach dem Ebenen-Plan – alle weiteren setzt du genau darauf.'
-        : 'Jede Ebene ist dieselbe volle Kreisfläche. Bau die erste Ebene nach dem Ebenen-Plan und stapel dann einfach darauf.';
-      return { text, tips: isTower && p.thickness > 1 ? [`Die Mauer ist ${p.thickness} Blöcke dick.`] : [] };
-    });
+    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), name);
     const put = layerWriter(b, chapters);
     geometry.cylinder(c, 0, c, r, p.height, { hollow: p.hollow, thickness: p.thickness }, (x, y, z) => put(x, y, z, p.block));
 
     if (p.roof === 'flat') {
-      b.phase(`Flachdach (${layerRange(p.height, p.height)})`,
-        `Das Flachdach ist eine volle Kreisscheibe direkt auf der Mauer${p.battlements ? ' – auf ihren Rand kommen danach die Zinnen' : ''}.`);
+      b.phase(`Flachdach (${layerRange(p.height, p.height)})`);
       geometry.disc(c, p.height, c, r, {}, (x, y, z) => b.set(x, y, z, roofBlock));
     }
     if (p.battlements) {
       const y = p.height + (p.roof === 'flat' ? 1 : 0);
-      b.phase(`Zinnen (${layerRange(y, y)})`, 'Auf den äußeren Rand kommt jeder zweite Block – so entstehen die Zinnen. Der Ebenen-Plan zeigt dir, welche Plätze frei bleiben.');
+      b.phase(`Zinnen (${layerRange(y, y)})`);
       geometry.disc(c, y, c, r, { hollow: true, thickness: 1 }, (x, yy, z) => {
         if (((x + z) & 1) === 0) b.set(x, yy, z, p.block);
       });
     }
     const roofR = geometry.spanRadius(plan.diameter);
-    const where = plan.inset ? 'auf Höhe der Zinnen, einen Block nach innen gerückt' : 'direkt auf der Mauer';
     if (p.roof === 'cone') {
-      b.phase(`Kegeldach (${layerRange(plan.base, plan.base + plan.coneHeight - 1)})`,
-        `Das spitze Dach beginnt ${where}${plan.overhang ? ' und steht einen Block über' : ''}. Jede Ebene ist ein etwas kleinerer Kreis, bis oben ein einzelner Block die Spitze bildet.`);
+      b.phase(`Kegeldach (${layerRange(plan.base, plan.base + plan.coneHeight - 1)})`);
       geometry.cone(c, plan.base, c, roofR + plan.overhang, 0, plan.coneHeight, { hollow: p.hollow }, (x, y, z) => b.set(x, y, z, roofBlock));
     } else if (p.roof === 'dome') {
       const cy = plan.diameter % 2 === 1 ? plan.base : plan.base - 0.5;
-      b.phase(`Kuppeldach (${layerRange(plan.base, plan.base + plan.domeHeight - 1)})`,
-        `Die Kuppel sitzt ${where}: unten der volle Kreis, nach oben immer kleinere Kreise, ganz oben eine flache Scheibe.`);
+      b.phase(`Kuppeldach (${layerRange(plan.base, plan.base + plan.domeHeight - 1)})`);
       geometry.sphere(c, cy, c, roofR, { hollow: p.hollow, part: 'top' }, (x, y, z) => b.set(x, y, z, roofBlock));
     }
   },
@@ -280,15 +239,7 @@ const cone = {
   build(b, p) {
     const c = geometry.spanCenter(0, p.diameter);
     const r = geometry.spanRadius(p.diameter);
-    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), 'Kegel', (part, index, count) => {
-      if (index === 0) {
-        return {
-          text: 'Ein Kegel ist ein Stapel von Kreisen, die gleichmäßig kleiner werden: unten der volle Durchmesser, oben ein einzelner Block. Fang mit dem großen Kreis an – der Ebenen-Plan zeigt dir jeden Umriss.',
-          tips: p.hollow ? ['Hohl ist nur der Mantel gebaut, unten bleibt der Kegel offen.'] : [],
-        };
-      }
-      return { text: index === count - 1 ? 'Oben werden die Kreise winzig – die letzte Ebene ist die Spitze.' : 'Weiter Ebene für Ebene; jeder Kreis ist etwas kleiner als der darunter.' };
-    });
+    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), 'Kegel');
     const put = layerWriter(b, chapters);
     geometry.cone(c, 0, c, r, 0, p.height, { hollow: p.hollow, thickness: p.thickness }, (x, y, z) => put(x, y, z, p.block));
   },
@@ -318,16 +269,7 @@ const pyramid = {
   size: (p) => [p.width, Math.ceil(p.width / 2), p.width],
   build(b, p) {
     const height = Math.ceil(p.width / 2);
-    const chapters = layerChapters(0, height - 1, chapterCount(height, this.estimate(p)), 'Pyramide', (part, index, count) => {
-      const tip = p.width % 2 === 1 ? 'Ganz oben sitzt ein einzelner Block als Spitze.' : 'Bei gerader Breite endet die Spitze mit 2 × 2 Blöcken.';
-      if (index === 0) {
-        return {
-          text: `Jede Ebene ist ein Quadrat, das auf jeder Seite einen Block nach innen rückt. Leg zuerst die Grundfläche (${p.width} × ${p.width}) genau an – die Ecken zeigen dir dann jede weitere Ebene.`,
-          tips: [...(count === 1 ? [tip] : []), ...(p.hollow ? ['Hohl sind nur die Außenwände gebaut, unten bleibt die Pyramide offen.'] : [])],
-        };
-      }
-      return { text: index === count - 1 ? `Die Quadrate werden jetzt klein. ${tip}` : 'Weiter Ebene für Ebene: an jeder Kante einen Block nach innen rücken.' };
-    });
+    const chapters = layerChapters(0, height - 1, chapterCount(height, this.estimate(p)), 'Pyramide');
     const put = layerWriter(b, chapters);
     for (let k = 0; k < height; k++) pyramidLayerCells(p.width, k, p.hollow, p.thickness, (x, y, z) => put(x, y, z, p.block));
   },
@@ -335,13 +277,7 @@ const pyramid = {
 
 function buildBox(b, p, w, h, l, baseTitle) {
   const estimate = p.hollow ? w * h * l - Math.max(0, w - 2) * Math.max(0, h - 2) * Math.max(0, l - 2) : w * h * l;
-  const chapters = layerChapters(0, h - 1, chapterCount(h, estimate), baseTitle, (part, index) => {
-    if (index > 0) return { text: p.hollow ? 'Weiter mit den vier Wänden, Ebene für Ebene; die oberste Ebene ist wieder voll und schließt den Raum.' : 'Weiter Ebene für Ebene genau auf die darunter.' };
-    return {
-      text: `Leg zuerst die Grundfläche (${w} × ${l}) an und prüf die Ecken. Danach geht es Ebene für Ebene nach oben.`,
-      tips: p.hollow ? ['Hohl: Boden und Decke sind voll, dazwischen stehen nur die vier Wände.'] : [],
-    };
-  });
+  const chapters = layerChapters(0, h - 1, chapterCount(h, estimate), baseTitle);
   const put = layerWriter(b, chapters);
   for (let y = 0; y < h; y++) {
     const capLayer = y === 0 || y === h - 1;
@@ -428,12 +364,7 @@ const ellipsoid = {
   },
   size: (p) => [p.width, p.height, p.length],
   build(b, p) {
-    const half = Math.floor((p.height - 1) / 2);
-    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), 'Ellipsoid', (part, index) => {
-      const intro = 'Wie bei einer Kugel baust du Ebene für Ebene, nur sind die Ebenen hier Ellipsen statt Kreise. Der Ebenen-Plan zeigt dir den genauen Umriss jeder Ebene.';
-      if (index === 0) return { text: intro, tips: hollowTips(p, 'Die Hülle ist dicht: Kein Block im Inneren berührt die Außenluft.') };
-      return { text: part.from > half ? 'Ab der Mitte werden die Ellipsen wieder kleiner; setz jede Ebene von der Kante der darunter aus an.' : 'Die Ellipsen wachsen weiter bis zur Mitte.' };
-    });
+    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), 'Ellipsoid');
     const put = layerWriter(b, chapters);
     emitEllipsoid(p.width, p.height, p.length, p.hollow, p.thickness, (x, y, z) => put(x, y, z, p.block));
   },
@@ -464,15 +395,7 @@ const torus = {
     const limit = (r + 0.5) ** 2;
     const inside = (x, y, z) => (Math.hypot(x - extent, z - extent) - R) ** 2 + (y - r) ** 2 <= limit;
     const height = 2 * r + 1;
-    const chapters = layerChapters(0, height - 1, chapterCount(height, this.estimate(p)), 'Ring', (part, index) => {
-      if (index === 0) {
-        return {
-          text: 'Ein Ring (Torus) ist eine Röhre, die im Kreis läuft. Unten beginnt er als schmaler Kreisring, zur Mitte hin wird der Ring immer breiter. Der Ebenen-Plan zeigt dir je Ebene den inneren und äußeren Kreis.',
-          tips: p.hollow ? ['Hohl ist nur die Hülle der Röhre gebaut; sie ist dicht.'] : [],
-        };
-      }
-      return { text: part.from > r ? 'Ab der Mitte wird der Ring wieder schmaler, bis oben ein dünner Kreisring übrig bleibt.' : 'Der Ring wird breiter bis zur Mitte der Röhre.' };
-    });
+    const chapters = layerChapters(0, height - 1, chapterCount(height, this.estimate(p)), 'Ring');
     const put = layerWriter(b, chapters);
     const size = 2 * extent;
     for (let y = 0; y < height; y++) {
@@ -496,8 +419,7 @@ const circle = {
   size: (p) => [p.diameter, 1, p.diameter],
   build(b, p) {
     const c = geometry.spanCenter(0, p.diameter);
-    b.phase('Kreis (Ebene 1)', `Ein ${p.hollow ? 'Kreisring' : 'Kreis'} liegt flach auf einer Ebene. Zähl die Blöcke je Reihe im Ebenen-Plan ab; fang an einer Achse an und arbeite dich zu den Rundungen vor.`,
-      { tips: p.diameter % 2 === 1 ? ['Bei ungeradem Durchmesser liegt die Mitte genau auf einem Block – markier ihn, dann zählst du von dort aus.'] : ['Bei geradem Durchmesser liegt die Mitte zwischen vier Blöcken.'] });
+    b.phase('Kreis (Ebene 1)');
     geometry.disc(c, 0, c, geometry.spanRadius(p.diameter), { hollow: p.hollow, thickness: p.thickness }, (x, y, z) => b.set(x, y, z, p.block));
   },
 };
@@ -571,14 +493,9 @@ const arch = {
     const { arch: grid, legs } = archGrid(p.width, p.height, p.thickness);
     const chapters = [];
     if (legs > 0) {
-      chapters.push({ from: -Infinity, title: `Pfeiler (${layerRange(0, legs - 1)})`, text: `Die beiden Pfeiler sind gerade Säulen, ${p.thickness} Block${p.thickness > 1 ? 'e' : ''} dick und ${p.depth} tief. Miss den Abstand dazwischen genau ab – er bestimmt die Breite der Öffnung.`, tips: [] });
+      chapters.push({ from: -Infinity, title: `Pfeiler (${layerRange(0, legs - 1)})` });
     }
-    chapters.push({
-      from: legs > 0 ? legs : -Infinity,
-      title: `Bogen (${layerRange(legs, p.height - 1)})`,
-      text: 'Ab hier wölbt sich der Bogen nach innen, bis sich beide Seiten im Scheitel treffen. Der Ebenen-Plan zeigt dir je Ebene, wie weit der Bogen hereinragt.',
-      tips: ['Blöcke halten in Minecraft auch ohne Stütze – eine Hilfsreihe unter dem Scheitel macht das Setzen nur bequemer.'],
-    });
+    chapters.push({ from: legs > 0 ? legs : -Infinity, title: `Bogen (${layerRange(legs, p.height - 1)})` });
     const put = layerWriter(b, chapters);
     for (let y = 0; y < p.height; y++) {
       for (let z = 0; z < p.depth; z++) {
@@ -625,16 +542,7 @@ const spiralStairs = {
     const cx = p.radius + pad, cz = p.radius + pad;
     const ring = squareRing(cx, cz, p.radius);
     const path = p.clockwise ? ring : [ring[0], ...ring.slice(1).reverse()];
-    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), 'Wendeltreppe', (part, index) => {
-      if (index > 0) return { text: 'Weiter so: jede Ebene eine Treppe, immer einen Platz weiter im Kreis.' };
-      const tips = [`Eine Runde hat ${path.length} Treppen – danach hast du ${path.length - 1} Blöcke Kopffreiheit.`];
-      if (p.core) tips.push('Die Mittelsäule setzt du Ebene für Ebene mit; sie hält die Treppe übersichtlich.');
-      if (p.wall) tips.push('Die Außenwand wächst mit der Treppe mit – lass dir Fenster frei, wenn du möchtest.');
-      return {
-        text: `Pro Ebene kommt genau eine Treppe dazu, immer einen Platz weiter im Kreis (${p.clockwise ? 'im Uhrzeigersinn' : 'gegen den Uhrzeigersinn'}, von oben gesehen). Die hohe Seite jeder Treppe zeigt in Laufrichtung. Der Ebenen-Plan zeigt dir für jede Ebene die Stelle.`,
-        tips,
-      };
-    });
+    const chapters = layerChapters(0, p.height - 1, chapterCount(p.height, this.estimate(p)), 'Wendeltreppe');
     const put = layerWriter(b, chapters);
     for (let y = 0; y < p.height; y++) {
       const cell = path[y % path.length];
@@ -649,7 +557,6 @@ const spiralStairs = {
         for (const [x, z] of squareRing(cx, cz, p.radius + 1)) put(x, y, z, p.wall);
       }
     }
-    b.note(path[0][0], 0, path[0][1], 'Hier beginnt die Treppe.');
   },
 };
 

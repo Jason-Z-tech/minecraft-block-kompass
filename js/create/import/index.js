@@ -155,8 +155,7 @@ async function importNbtFamily(bytes, declared, name, ctx) {
   if (!isBlockDataLoaded()) throw new ImportError('data-missing', 'Die Blockdaten (Liste aller Blöcke) sind nicht geladen.');
   const converter = new StateConverter();
   const collector = new BlockCollector(limits);
-  const text = `Importiert aus „${name}“ – baue Ebene für Ebene von unten nach oben.`;
-  const readCtx = { converter, collector, onProgress, warnings, text };
+  const readCtx = { converter, collector, onProgress, warnings };
   let info;
   try {
     if (kind === 'litematic') info = readLitematic(root, readCtx);
@@ -234,7 +233,7 @@ async function importModel(bytes, format, ctx) {
   const entries = volume.palette.map((state, i) => (i === 0 ? null : converter.fromString(state)));
   const counts = new Float64Array(entries.length);
   const [w, h, l] = volume.size;
-  collector.begin('Aufbau', `Aus dem Modell „${ctx.name}“ erzeugt – baue Ebene für Ebene von unten nach oben.`);
+  collector.begin('Aufbau');
   const { data } = volume;
   let cell = 0;
   for (let y = 0; y < h; y++) {
@@ -308,7 +307,7 @@ export async function importFile({ format, name, data, params = {}, onProgress =
   checkSize(bytes, limits);
   const warnings = [];
   const route = routeFormat(format, sniffContent(bytes), warnings, cleanName);
-  const ctx = { limits, onProgress: typeof onProgress === 'function' ? onProgress : null, warnings, params, name: cleanName, loadBlockColors, importVoxelizer };
+  const ctx = { limits, onProgress: typeof onProgress === 'function' ? onProgress : null, warnings, params, loadBlockColors, importVoxelizer };
   const imported = route === 'nbt-family' ? await importNbtFamily(bytes, format, cleanName, ctx) : await importModel(bytes, route, ctx);
   const { finished, stats } = imported;
   const palette = compactPalette(finished.parts, imported.palette);
@@ -332,7 +331,7 @@ export function importToBuildResult(imported, { onProgress = null } = {}) {
   const b = new Builder({ seed: `upload-${imported.name}`, maxBlocks: IMPORT_LIMITS.maxBlocks, maxSize: IMPORT_LIMITS.maxEdge });
   const { palette } = imported;
   for (const part of imported.parts) {
-    b.phase(part.title, part.text);
+    b.phase(part.title);
     const { blocks } = part;
     for (let o = 0; o < blocks.length; o += 4) b.set(blocks[o], blocks[o + 1], blocks[o + 2], palette[blocks[o + 3]], { raw: true });
   }

@@ -16,16 +16,9 @@ export const meta = {
     'höhle mit see', 'unterirdischer see',
   ],
   accuracy: 'eigenes',
-  difficulty: 4,
   description: 'Ein grüner Hügel mit einem Felsportal, dahinter öffnet sich eine Höhlenkuppel von 23 × 21 Blöcken und bis zu 10 Blöcken Höhe. '
     + 'Zwei aufgebrochene Amethyst-Geoden glitzern am Fuß der Wände, von der Decke hängen Tropfsteine, und im Norden liegt ein '
     + 'unterirdischer See mit kleinem Steg. Ein Kiesweg mit Laternen führt durch den Tunnel hinein, Leuchtflechte schimmert an Decke und Wänden.',
-  facts: [
-    'Der Hügel ist rund 41 Blöcke breit und reicht bis Ebene 21; die Höhlenwände sind überall mindestens 3 Blöcke dick.',
-    'Jede Geode hat die Schichten wie im Spiel: Glatter Basalt außen, dann Kalzit, dann Amethyst mit knospendem Amethyst.',
-    'Tropfsteine haben je nach Länge die richtigen Formen: Ansatz, Mittelstück, Stumpf und Spitze; wo sich zwei treffen, verschmelzen die Spitzen.',
-    'Der See (12 × 9 Blöcke) ist bis zu 3 Blöcke tief und besteht nur aus Wasserquellen – nichts fließt aus.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -40,8 +33,8 @@ const TUNNEL_Z = 7;
 const LAKE = { x: -3, z: -4, rx: 6.5, rz: 4.5 };
 // Geoden sitzen am Wandfuß: halb in der Wand, halb im Boden, zur Höhle hin aufgebrochen.
 const GEODES = [
-  { name: 'West-Geode', x: -11, y: 0, z: 3, salt: 41 },
-  { name: 'Nordost-Geode', x: 8, y: 0, z: -8, salt: 42 },
+  { x: -11, y: 0, z: 3, salt: 41 }, // West-Geode
+  { x: 8, y: 0, z: -8, salt: 42 }, // Nordost-Geode
 ];
 const GEODE_R = { air: 2.2, amethyst: 3.2, calcite: 4.0, basalt: 4.7 };
 // Weg in der Höhle: vom Tunnel am See vorbei zur Nordost-Geode, Abzweig zur West-Geode.
@@ -224,71 +217,38 @@ function hillBlock(plan, x, y, z) {
 export default function build(b) {
   const plan = createPlan();
 
-  b.phase('Untergrund und Seebecken', 'Leg zuerst eine runde Wiese von etwa 49 Blöcken Durchmesser an. Unter dem späteren Hügel (rund 41 Blöcke breit) '
-    + 'kommt ein Sockel aus Stein, Andesit und Tuff bis Ebene 5, unten mit Tiefenschiefer. Im Norden der Höhle hebst du das Seebecken aus: '
-    + 'etwa 12 × 9 Blöcke, am Rand 1, in der Mitte 3 Blöcke tief. Den Grund belegst du mit Ton und Kies. Im Westen und Nordosten liegen '
-    + 'schon die unteren Hälften der beiden Geoden im Sockel: Kugelschalen aus Glattem Basalt, Kalzit und Amethyst um eine Mulde.', {
-    tips: [
-      'Die Höhlenmitte ist dein Bezugspunkt: Steck sie mit einem Block ab und miss alles von dort aus.',
-      'Das Becken bleibt vorerst leer – das Wasser kommt erst, wenn alles rundherum dicht ist.',
-    ],
-  });
+  b.phase('Untergrund und Seebecken');
   terrain(b, { x: -RANGE, y: BASE_Y, z: -RANGE, width: RANGE * 2 + 1, depth: RANGE * 2 + 1, height: GROUND_Y - BASE_Y, shape: 'rund', edge: 3, surface: 'gras', seed: 'kristall' });
   b.fill(-RANGE, BASE_Y, -RANGE, RANGE, BASE_Y, RANGE, 'stone', { replace: 'gravel' });
   removeIslands(b, -RANGE, BASE_Y, -RANGE, RANGE, GROUND_Y, RANGE);
   buildHillLayers(b, plan, BASE_Y, GROUND_Y);
   buildLakeBed(b, plan);
   buildMossyShore(b, plan);
-  b.note(LAKE.x, GROUND_Y - 2, LAKE.z, 'Tiefste Stelle des Sees: 3 Blöcke Wasser über dem Grund.');
 
-  b.phase('Höhlenwand und Geoden', 'Jetzt mauerst du Ebene für Ebene die Höhlenwand hoch. Innen bleibt eine Kuppel frei (am Boden etwa 23 × 21 Blöcke), '
-    + 'außen wird der Hügel nach oben schmaler. Im Westen und im Nordosten wachsen die beiden Geoden am Wandfuß weiter: außen Glatter Basalt, '
-    + 'dann Kalzit, innen Amethyst mit knospendem Amethyst – zur Höhle hin sind sie aufgebrochen. Im Süden bleibt der Tunnel frei '
-    + '(3 breit, 4 hoch, am Eingang 5 × 5).', {
-    tips: [
-      'Die äußerste Lage ist Gras, darunter zwei Lagen Erde, der Rest Stein. An steilen Stellen kommt der Stein bis an die Oberfläche.',
-      'Baue die Geoden gleich mit: Jede Schicht ist eine Kugelschale, die ganze Geode misst etwa 9 Blöcke, innen bleibt eine Kugel von 5 Blöcken Durchmesser frei.',
-    ],
-  });
+  b.phase('Höhlenwand und Geoden');
   buildHillLayers(b, plan, 0, 5);
-  for (const g of GEODES) b.note(g.x, g.y, g.z, `${g.name}: Basalt außen, Kalzit, Amethyst innen.`);
 
-  b.phase('Kuppel und Hügel', 'Die Kuppel schließt sich: Jede Ebene ragt etwas weiter nach innen, bis die Decke etwa auf Ebene 15 zu ist. '
-    + 'Darüber wölbst du den Hügel bis Ebene 21 und deckst ihn mit Gras. Über dem Eingang steht eine Felsnase aus Stein und bemoostem Bruchstein.', {
-    tips: [
-      'Überhänge kannst du einfach an die Seite des Blocks darunter setzen – Stein fällt nicht herunter.',
-      'Lass die Decke ruhig unregelmäßig: eine glatte Halbkugel wirkt nicht wie eine echte Höhle.',
-    ],
-  });
+  b.phase('Kuppel und Hügel');
   buildHillLayers(b, plan, 6, HILL.h + 6);
 
-  b.phase('Tropfstein', 'Tropfsteine wachsen in Gruppen. Setz zuerst Tropfsteinblöcke als Ansatz in Decke und Boden, dann die Spitzen.');
+  b.phase('Tropfstein');
   buildDripstone(b, plan);
 
-  b.phase('Amethyst-Kristalle', 'An den knospenden Amethystblöcken der Geoden wachsen Kristalle in die Höhle. Dazu kommen ein paar Kristallgruppen am Boden.', {
-    tips: ['Amethyst-Knospen und -Haufen zeigen immer vom Block weg, an dem sie wachsen. Ziel einfach auf die passende Seite des Blocks.'],
-  });
+  b.phase('Amethyst-Kristalle');
   buildAmethyst(b, plan);
 
-  b.phase('See und Steg', 'Der kleine Steg führt vom Weg aus in den See. Erst die Pfosten, dann das Wasser, dann der Stegboden.');
+  b.phase('See und Steg');
   buildLake(b, plan);
 
-  b.phase('Weg und Laternen', 'Ein Kiesweg führt vom Eingang durch den Tunnel am See entlang zur Nordost-Geode, ein schmaler Abzweig zur West-Geode. '
-    + 'Laternen auf Mauerpfosten säumen den Weg, im Tunnel und in der Kuppel hängen Laternen an Ketten.', {
-    tips: ['Ersetze dafür die obersten Bodenblöcke; der Kies liegt auf Stein und kann nicht herunterfallen.'],
-  });
-  b.step('Kiesweg', 'Ersetze entlang des Wegs die oberste Bodenschicht durch Kies, Bruchstein, Tuff und Andesit: vom Eingang 3 breit '
-    + 'durch den Tunnel bis zur Nordost-Geode, dazu der schmale Abzweig nach Westen.');
+  b.phase('Weg und Laternen');
+  b.step();
   buildCavePath(b, plan);
   buildLights(b, plan);
 
-  b.phase('Leuchtflechte und Moos', 'Leuchtflechte wächst in Flecken an Decke und Wänden und auf dem Seegrund. Sie leuchtet schwach (Stufe 7) und lässt die Höhle schimmern. Auf das Ufermoos legst du ein paar Moosteppiche.', {
-    tips: ['Leuchtflechte haftet an jeder Seite eines festen Blocks. Mit Knochenmehl breitet sie sich aus – praktisch für große Flächen.'],
-  });
+  b.phase('Leuchtflechte und Moos');
   buildLichen(b, plan);
 
-  b.phase('Umgebung', 'Draußen führt ein Kiesweg zum Felsportal, an dessen Seiten Laternen hängen. Ranken wachsen über den Eingang, '
-    + 'auf dem Hügel stehen Fichten, Birken und Büsche, dazu bemooste Felsen und Gras.');
+  b.phase('Umgebung');
   buildOutside(b, plan);
 }
 
@@ -412,30 +372,22 @@ function dripstoneSpots(plan) {
 
 function buildDripstone(b, plan) {
   const spots = dripstoneSpots(plan);
-  b.step('Tropfsteinblöcke als Ansatz', 'Ersetze an der Decke und am Boden die Steine über bzw. unter den späteren Tropfsteinen durch Tropfsteinblöcke. '
-    + 'Ein paar Blöcke mehr rundherum lassen die Gruppen natürlicher aussehen.');
+  b.step();
   for (const s of spots.hanging) setRoot(b, s.x, s.ceil, s.z, plan);
   for (const s of [...spots.standing, ...spots.columns]) setRoot(b, s.x, GROUND_Y, s.z, plan);
   for (const s of spots.columns) setRoot(b, s.x, s.ceil, s.z, plan);
 
-  b.step('Hängende Tropfsteine', 'Setz die Spitzen von oben nach unten an die Decke. Die Form ergibt sich aus der Länge: ein einzelner Tropfstein ist '
-    + 'eine Spitze, zwei sind Stumpf und Spitze, ab drei kommt oben der Ansatz dazu und dazwischen Mittelstücke. Im Spiel stellt sich die Form '
-    + 'von selbst ein, wenn du Tropfstein an Tropfstein setzt.');
+  b.step();
   for (const s of spots.hanging) pointed(b, s.x, s.ceil - 1, s.z, s.len, 'down');
 
-  b.step('Stehende Tropfsteine', 'Unter einigen hängenden Tropfsteinen wachsen kurze Tropfsteine aus dem Boden, mit der Spitze nach oben.');
+  b.step();
   for (const s of spots.standing) pointed(b, s.x, 0, s.z, s.len, 'up');
 
-  b.step('Tropfsteinsäulen', 'Wo ein hängender und ein stehender Tropfstein sich treffen, verschmelzen ihre Spitzen zu einer Säule. '
-    + 'Setz erst den stehenden Teil, dann den hängenden von der Decke aus, bis sich die Spitzen berühren.');
+  b.step();
   for (const s of spots.columns) {
     const up = Math.floor(s.ceil / 2);
     pointed(b, s.x, 0, s.z, up, 'up', true);
     pointed(b, s.x, s.ceil - 1, s.z, s.ceil - up, 'down', true);
-  }
-  if (spots.columns.length) {
-    const c = spots.columns[0];
-    b.note(c.x, Math.floor(c.ceil / 2), c.z, 'Tropfsteinsäule: hier berühren sich die Spitzen (Form „verschmolzene Spitze“).');
   }
 }
 
@@ -464,8 +416,7 @@ function budType(x, y, z) {
 }
 
 function buildAmethyst(b, plan) {
-  b.step('Kristalle in den Geoden', 'An jedem knospenden Amethyst, der zur Höhle oder in die Geode zeigt, wächst ein Kristall: Amethysthaufen, große, '
-    + 'mittlere oder kleine Knospen gemischt.');
+  b.step();
   for (const g of GEODES) {
     const r = Math.ceil(GEODE_R.amethyst);
     for (let y = g.y - r; y <= g.y + r; y++) {
@@ -484,7 +435,7 @@ function buildAmethyst(b, plan) {
       }
     }
   }
-  b.step('Kristallgruppen am Boden', 'Setz an drei Stellen knospenden Amethyst in den Boden, darauf Amethystblöcke und obenauf Haufen; Knospen an den Seiten.');
+  b.step();
   for (const [x, z] of [[-6, 8], [8, 2], [-9, -3]]) crystalGroup(b, plan, x, z);
 }
 
@@ -509,13 +460,13 @@ function crystalGroup(b, plan, cx, cz) {
 
 function buildLake(b, plan) {
   const posts = [[PIER.x1, PIER.z1], [PIER.x1, PIER.z2], [1, PIER.z1], [1, PIER.z2]];
-  b.step('Stegpfosten', 'Stell vier geschälte Fichtenstämme auf den Seegrund: zwei am Ende des Stegs, zwei in der Mitte. Sie reichen bis knapp unter die Wasseroberfläche.');
+  b.step();
   for (const [x, z] of posts) {
     const depth = plan.lakeDepth(x, z);
     for (let y = GROUND_Y - depth + 1; y < GROUND_Y; y++) b.set(x, y, z, 'stripped_spruce_log[axis=y]');
   }
 
-  b.step('Wasser einfüllen', 'Fülle das Becken mit Wassereimern – nur Quellen, Ebene für Ebene von unten. Weil ringsum Fels ist, fließt nichts aus.');
+  b.step();
   for (let z = -RANGE; z <= RANGE; z++) {
     for (let x = -RANGE; x <= RANGE; x++) {
       const depth = plan.lakeDepth(x, z);
@@ -525,10 +476,8 @@ function buildLake(b, plan) {
       }
     }
   }
-  b.note(LAKE.x, GROUND_Y, LAKE.z, 'Unterirdischer See: nur Wasserquellen, bis zu 3 tief.');
 
-  b.step('Stegboden und Geländer', 'Leg obere Fichtenholzstufen als Stegboden aufs Wasser (sie sind dann geflutet, das Wasser bleibt). '
-    + 'Ein Fichtenzaun läuft an beiden Seiten mit, am Ende stehen zwei Laternen auf dem Zaun.');
+  b.step();
   for (let z = PIER.z1; z <= PIER.z2; z++) {
     for (let x = PIER.x1; x <= PIER.x2; x++) {
       const water = plan.lakeDepth(x, z) > 0;
@@ -568,12 +517,11 @@ const POSTS = [[2, 8], [-2, 5], [6, 4], [3, 0], [7, -3], [4, -6], [-6, 6]];
 const CEILING_LANTERNS = [[0, 0, 4], [-4, -4, 3], [3, -5, 3], [-5, 2, 3]];
 
 function buildLights(b, plan) {
-  b.step('Laternenpfosten', 'Stell neben den Weg sieben Pfosten aus zwei Bruchtiefenschiefermauern und setz je eine Laterne obenauf.');
+  b.step();
   for (const [x, z] of POSTS) {
     lampPost(b, { x, y: 0, z, height: 2, post: 'cobbled_deepslate_wall', style: 'top' });
   }
-  b.step('Hängende Laternen', 'Im Tunnel hängen zwei Laternen direkt unter der Decke. In der Kuppel lässt du lange Ketten von der Decke '
-    + 'herab – setz die Kette von oben nach unten und häng die Laterne zum Schluss an das unterste Glied.');
+  b.step();
   // Im Tunnel hängen zwei Laternen an der Decke (Mitte, über Kopfhöhe).
   for (const z of [10, 13]) hangingLantern(b, { x: 0, y: 3, z, chain: 0 });
   // In der Kuppel: lange Ketten von der Decke.

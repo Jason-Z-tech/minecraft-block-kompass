@@ -176,7 +176,6 @@ function cleanVariants(value) {
 // Felder des Katalogs ab Runde 2; sie erscheinen im Ergebnis nur, wenn der Eintrag sie hat (ältere Kataloge bleiben gleich)
 const EXTENDED_FIELDS = {
   description: (value) => cleanText(value, 2000),
-  facts: (value) => cleanTextList(value, 30, 300),
   sources: cleanSources,
   credits: cleanCredits,
   defaultScale: cleanScale,
@@ -191,7 +190,8 @@ function extendedFields(entry) {
 
 /**
  * Prüft einen Katalog-Eintrag. Ohne gültige ID, Titel und Kategorie wird er verworfen;
- * andere ungültige Felder werden auf einen leeren Wert gesetzt.
+ * andere ungültige Felder werden auf einen leeren Wert gesetzt. Unbekannte Felder (z. B. das alte
+ * difficulty oder facts) werden nicht übernommen.
  */
 export function normalizeBuild(entry) {
   if (!isPlainObject(entry)) return { ok: false, reason: 'kein Objekt' };
@@ -209,7 +209,6 @@ export function normalizeBuild(entry) {
       tags: cleanTextList(entry.tags, 12, 40),
       aliases: cleanTextList(entry.aliases, 30, 80),
       accuracy: ACCURACY_KEYS.includes(entry.accuracy) ? entry.accuracy : null,
-      difficulty: cleanInteger(entry.difficulty, 1, 5),
       size: cleanSize(entry.size),
       blocks: cleanInteger(entry.blocks, 0, 3_000_000),
       steps: cleanInteger(entry.steps, 0, 65534),

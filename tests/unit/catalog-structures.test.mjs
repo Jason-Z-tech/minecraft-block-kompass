@@ -4,14 +4,16 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GAME_STRUCTURES, GAME_STRUCTURE_DEFAULTS, difficultyForBlocks } from '../../js/builds/game-structures.js';
+import * as gameStructures from '../../js/builds/game-structures.js';
+import { CATEGORIES as CHECK_CATEGORIES } from '../../scripts/check-build.mjs';
 import { validateStructureDefinition, structureFileName, catalogStructures, sizeClass } from '../../scripts/build-catalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DATA_DIR = path.join(ROOT, 'game-data');
 const INDEX_FILE = path.join(DATA_DIR, 'structures', 'index.json');
 const NO_DATA = existsSync(INDEX_FILE) ? false : 'game-data/ fehlt (node scripts/extract-game-data.mjs)';
-const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'redstone', 'farmen', 'infrastruktur'];
+const { GAME_STRUCTURES, GAME_STRUCTURE_DEFAULTS } = gameStructures;
+const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur'];
 
 test('Standardwerte: original, ohne Quellen, Mojang als Urheber, tested null', () => {
   assert.equal(GAME_STRUCTURE_DEFAULTS.accuracy, 'original');
@@ -30,6 +32,19 @@ test('Jeder Eintrag ist gültig, IDs, Titel und Vorlagen sind eindeutig', () => 
     assert.deepEqual(dupes, [], `doppelt: ${key}`);
   }
   for (const def of GAME_STRUCTURES) assert.ok(CATEGORIES.includes(def.category), def.id);
+});
+
+test('Ohne Schwierigkeit und Wissenswertes, ohne Redstone; Texte, Quellen und credits bleiben', () => {
+  assert.deepEqual(CHECK_CATEGORIES, CATEGORIES);
+  assert.deepEqual(Object.keys(gameStructures).sort(), ['GAME_STRUCTURES', 'GAME_STRUCTURE_DEFAULTS'], 'difficultyForBlocks gibt es nicht mehr');
+  for (const def of GAME_STRUCTURES) {
+    assert.equal('difficulty' in def, false, `${def.id}: difficulty`);
+    assert.equal('facts' in def, false, `${def.id}: facts`);
+    assert.notEqual(def.category, 'redstone', def.id);
+    for (const key of ['title', 'subtitle', 'description']) assert.ok(typeof def[key] === 'string' && def[key].trim() !== '', `${def.id}: ${key}`);
+  }
+  assert.equal('difficulty' in GAME_STRUCTURE_DEFAULTS || 'facts' in GAME_STRUCTURE_DEFAULTS, false);
+  assert.ok(GAME_STRUCTURE_DEFAULTS.credits && GAME_STRUCTURE_DEFAULTS.sources, 'credits und sources bleiben');
 });
 
 test('Texte: Beschreibung mit 2–4 Sätzen, Untertitel kurz, Aliases deutsch/englisch klein geschrieben', () => {
@@ -68,13 +83,12 @@ test('Dörfer: alle fünf Dorfarten mit Häusern und Dorfplatz, Berufe mit deuts
 describe('Abgleich mit den Spieldaten', { skip: NO_DATA }, () => {
   const index = NO_DATA ? null : new Map(JSON.parse(readFileSync(INDEX_FILE, 'utf8')).structures.map((s) => [s.path, s]));
 
-  test('Alle Vorlagen gibt es in game-data/structures/, Schwierigkeit passt zur Größe', () => {
+  test('Alle Vorlagen gibt es in game-data/structures/, keine ist zu klein', () => {
     for (const def of GAME_STRUCTURES) {
       const info = index.get(def.structure);
       assert.ok(info, `${def.id}: ${def.structure} fehlt in index.json`);
       assert.equal(info.file, structureFileName(def.structure));
       assert.ok(existsSync(path.join(DATA_DIR, 'structures', info.file)), `${def.id}: Datei fehlt`);
-      assert.equal(def.difficulty, difficultyForBlocks(info.blocks), `${def.id}: Schwierigkeit bei ${info.blocks} Blöcken`);
       assert.ok(info.blocks >= 30, `${def.id}: nur ${info.blocks} Blöcke – zu klein`);
     }
   });

@@ -18,7 +18,6 @@ const CATEGORY_TEXT = Object.freeze({
   fantasy: 'Fantasy Anime Film',
   mittelalter: 'Mittelalter Burgen',
   klein: 'Kleine Projekte Deko',
-  redstone: 'Redstone',
   farmen: 'Farmen Technik Farm',
   infrastruktur: 'Brücken Bahnhöfe Häfen',
 });

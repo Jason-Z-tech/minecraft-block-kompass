@@ -31,6 +31,12 @@ test('data/catalog.json ist vollständig gültig, ohne Vorschaubilder (online gi
   assert.equal(normalized.skipped, 0, 'kein Eintrag wird von der Seite verworfen');
   assert.equal(normalized.builds.length, catalog.builds.length);
   for (const build of catalog.builds) assert.equal(build.thumb, null, `${build.id}: kein Vorschaubild-Pfad im veröffentlichten Katalog`);
+  // Schwierigkeit, Wissenswertes und die Kategorie Redstone gibt es nicht mehr
+  for (const build of catalog.builds) {
+    assert.equal('difficulty' in build, false, `${build.id}: difficulty`);
+    assert.equal('facts' in build, false, `${build.id}: facts`);
+    assert.notEqual(build.category, 'redstone', build.id);
+  }
 });
 
 test('data/catalog.json enthält jedes Bau-Modul (ein Modul mit Fehlern fehlt sonst online, obwohl der Fingerabdruck passt)', async () => {

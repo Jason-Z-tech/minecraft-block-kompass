@@ -18,18 +18,10 @@ export const meta = {
     'magic tower', 'sorcerer tower', 'magierturn', 'magiertum', 'zauberturn', 'turm mit zaubertisch', 'fantasy turm',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Ein schlanker, runder Turm aus Tiefenschiefer- und Schwarzsteinziegeln mit spitzem Karmesin-Dach und Amethyst-Spitze. '
     + 'Innen liegen drei Geschosse: Brauküche, Schlaf- und Bibliotheksraum und ganz oben der hohe Zauberraum mit Zaubertisch '
     + '(Stufe 30) bis unter die Dachspitze. Eine Außentreppe windet sich um den Turm zur Tür des Zauberraums, '
     + 'ringsum wachsen Amethyst-Kristalle und vier Felsen schweben in der Luft.',
-  facts: [
-    'Turm 11 Blöcke breit (Innenraum 9), Mauerkrone auf Ebene 25, Dachspitze mit Amethyst auf Ebene 40 – das Gelände beginnt auf Ebene 1, der Turmboden auf Ebene 5.',
-    'Der Zaubertisch hat genau 15 Bücherregale im richtigen Abstand – das reicht für Verzauberungen der Stufe 30.',
-    'Die Außentreppe steigt in halben Stufen (Stufen-Blöcke) 13 Blöcke hoch und macht dabei eine Dreivierteldrehung.',
-    'Innen führt eine Leiter an der Westwand durch alle drei Geschosse.',
-    'Die schwebenden Felsen baust du mit einer Hilfssäule, die du danach wieder abbaust.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -49,10 +41,6 @@ const ROOF_Y = 21;
 const ROOF_R = 7;
 const ROOF_H = 15;
 const LADDER = { x: -4, z: 0 };
-const TERRAIN_BOTTOM = -4;  // unterste Geländelage = Ebene 1 der Anleitung
-
-// Ebenen-Nummer der Anleitung für eine Modul-Höhe y.
-const ebene = (y) => y - TERRAIN_BOTTOM + 1;
 
 const FACING_TO = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] };
 
@@ -97,110 +85,51 @@ function isByWall(x, z) {
 }
 
 export default function build(b) {
-  b.phase('Gelände und Fundament', 'Ebne eine runde Wiese von gut 30 Blöcken Durchmesser. In der Mitte kommt ein rundes Fundament aus '
-    + 'Bruchtiefenschiefer mit 13 Blöcken Durchmesser in die Grasschicht. Darauf legst du den Boden des Erdgeschosses (Durchmesser 9) '
-    + 'aus poliertem Tiefenschiefer mit einem Ring aus Tiefenschieferfliesen und den Sockelring aus polierten Schwarzsteinziegeln.', {
-    tips: [
-      'Setze erst die vier Punkte des Kreises auf den Achsen (je 6 Blöcke von der Mitte) – dann siehst du sofort, ob der Kreis rund wird.',
-      'Die Treppen auf dem Sockelring zeigen mit der hohen Seite zur Turmmitte, so läuft der Fuß schräg nach außen aus.',
-    ],
-  });
+  b.phase('Gelände und Fundament');
   buildGround(b);
   buildFoundation(b);
 
-  b.phase('Erdgeschoss-Mauer', `Mauere den Ring 6 Ebenen hoch (Ebene ${ebene(0)} bis ${ebene(5)}, Außendurchmesser 11, Wand 1 dick): `
-    + 'unten eine Lage polierte Schwarzsteinziegel, darüber Tiefenschieferziegel. Misch ein paar rissige Ziegel und Fliesen hinein, '
-    + 'das wirkt alt. Lass die '
-    + `Türöffnung im Süden und die Fensteröffnungen im Osten und Norden frei. Auf Ebene ${ebene(FLOOR_Y[1])} kommen der Ring aus `
-    + 'Schwarzsteinziegeln und der Boden des ersten Stocks aus Schwarzeichenbrettern – mit einem Loch im Westen für die Leiter.', {
-    tips: ['Die Mauer liegt genau dort, wo der Kreis mit Radius 5 verläuft: auf den Achsen 5 Blöcke von der Mitte, 5 Felder gerade Mauer.'],
-  });
+  b.phase('Erdgeschoss-Mauer');
   buildWalls(b, 0, FLOOR_Y[1]);
   buildFloor(b, FLOOR_Y[1], DARK.planks);
 
-  b.phase('Erster Stock', `Mauere weiter bis Ebene ${ebene(FLOOR_Y[2] - 1)}, wieder mit Fensteröffnungen im Norden, Osten und Süden. `
-    + `Auf Ebene ${ebene(FLOOR_Y[2])} folgen der nächste Schwarzsteinring und der Boden des Zauberraums: polierter Tiefenschiefer `
-    + 'mit einem Ring aus Amethystblöcken und einem gemeißelten Schwarzstein in der Mitte (dort kommt später der Zaubertisch hin).', {
-    tips: ['Lass im Boden auch hier das Leiterloch an der Westwand frei (4 Blöcke westlich der Mitte).'],
-  });
+  b.phase('Erster Stock');
   buildWalls(b, FLOOR_Y[1] + 1, FLOOR_Y[2]);
   buildMagicFloor(b);
 
-  b.phase('Zauberraum-Mauer und Gesims', `Der Zauberraum ist hoch: mauere bis Ebene ${ebene(WALL_TOP)}. Lass die Tür im Norden, `
-    + 'schmale Fenster im Osten und Westen und das runde Fenster im Süden offen. Oben kragt ein Gesims aus: erst ein Ring aus '
-    + `umgedrehten Treppen (hohe Seite zur Mauer) auf Ebene ${ebene(WALL_TOP - 1)}, darüber ein voller Ring aus Schwarzsteinziegeln `
-    + `auf Ebene ${ebene(WALL_TOP)}.`, {
-    tips: ['Umgedrehte Treppen setzt du, indem du auf die obere Hälfte des Blocks darunter bzw. an die Unterseite zielst.'],
-  });
+  b.phase('Zauberraum-Mauer und Gesims');
   buildWalls(b, FLOOR_Y[2] + 1, WALL_TOP);
   buildCornice(b);
 
-  b.phase('Spitzdach', 'Das Dach ist ein steiler Kegel aus Karmesinbrettern mit 15 Ebenen. Jede Ebene ist ein Ring von 2 Blöcken Dicke; '
-    + 'wo die nächste Ebene schmaler wird, setzt du Karmesintreppen mit der hohen Seite zur Mitte. Unten steht der Ring 2 Blöcke über '
-    + 'die Mauer hinaus. Ganz oben sitzt ein Amethystblock mit einer Amethyststufe.', {
-    tips: [
-      'Baue das Dach von innen: Der Zauberraum ist bis unter die Spitze offen, so stehst du immer auf der letzten Ebene.',
-      'Die Spitze erreichst du mit einem Gerüst aus Gerüstblöcken in der Raummitte – danach wieder abbauen.',
-    ],
-  });
+  b.phase('Spitzdach');
   buildSpire(b);
 
-  b.phase('Außentreppe', 'Die Treppe windet sich im Uhrzeigersinn von Osten über Süden und Westen nach Norden zur Tür des Zauberraums. '
-    + 'Sie ist 2 Blöcke breit und steigt mit Fichtenholzstufen in halben Schritten: untere Stufe, obere Stufe, nächste '
-    + 'Ebene untere Stufe … Außen läuft eine Wange aus geschältem Fichtenholz mit einem Fichtenzaun als Geländer mit. Die ersten '
-    + 'Stufen stehen auf einem Sockel aus Schwarzsteinziegeln; oben endet die Treppe auf einem Absatz aus Fichtenbrettern vor der Tür.', {
-    tips: [
-      'Baue Stufe für Stufe von unten nach oben – jede neue Stufe setzt du an die vorige, so brauchst du kein Gerüst.',
-    ],
-  });
+  b.phase('Außentreppe');
   const consoles = buildOuterStairs(b);
 
-  b.phase('Konsolen und Gesimsbänder', 'Jetzt, wo Stufen und Wange liegen, setzt du von unten umgedrehte Fichtentreppen als Konsolen '
-    + 'unter die innere Stufenreihe, unter die Wange und unter den Absatz – mit der hohen Seite zur Turmmauer. Wo die Treppe nicht '
-    + `vorbeiführt, läuft auf Ebene ${ebene(FLOOR_Y[1])} und ${ebene(FLOOR_Y[2])} ein schmales Gesims aus umgedrehten `
-    + 'Schwarzsteinziegeltreppen um den Turm.', {
-    tips: ['Umgedrehte Treppen setzt du, indem du an die Unterseite des Blocks darüber zielst.'],
-  });
+  b.phase('Konsolen und Gesimsbänder');
   for (const [x, y, z, state] of consoles) b.set(x, y, z, state);
   buildStringCourses(b);
 
-  b.phase('Fenster und Türen', 'Setz violette Glasscheiben in die Fenster: schmale Fenster mit Rahmen aus polierten Schwarzsteinziegeln, '
-    + 'im Süden des Zauberraums ein rundes Fenster mit Treppen in den Ecken. Unten kommt im Süden eine Schwarzeichentür mit Stufe davor '
-    + 'hinein, oben im Norden die Tür vom Treppenabsatz in den Zauberraum. Zum Schluss hängst du je zwei violette Banner neben das '
-    + `Rundfenster (Süden) und das Ostfenster des Zauberraums, auf Ebene ${ebene(18)} an die Mauer.`, {
-    tips: ['Türen setzt du von außen, dann gehen sie nach innen auf.'],
-  });
+  b.phase('Fenster und Türen');
   buildOpenings(b, true);
   buildBanners(b);
 
-  b.phase('Einrichtung', 'Jetzt wird es gemütlich – Geschoss für Geschoss von unten nach oben.');
-  b.step('Brauküche im Erdgeschoss', 'An der Nordwand steht eine Arbeitsplatte: Fass, gemeißelter Schwarzstein mit Braustand, Wasserkessel, '
-    + 'noch ein Braustand und ein Fass. Darüber hängen Schwarzeichen-Regale. Im Osten steht eine Doppeltruhe, im Westen führt die Leiter '
-    + 'nach oben (Leitern an die Westwand, 12 Stück bis in den Zauberraum).');
+  b.phase('Einrichtung');
+  b.step();
   furnishGroundFloor(b);
-  b.step('Schlafraum und Bibliothek im ersten Stock', 'An der Nordhälfte der Wand stehen drei Ebenen hoch Bücherregale, unter dem Nordfenster '
-    + 'ein Lesepult. Im Osten steht das violette Bett mit Nachttisch, im Süden ein Kartentisch und eine Truhe.');
+  b.step();
   furnishFirstFloor(b);
-  b.step('Zauberraum', 'Der Zaubertisch steht in der Mitte auf dem gemeißelten Schwarzstein. Die 15 Bücherregale stehen genau 2 Felder '
-    + 'entfernt: hinten 5 unten und 4 oben, an den Seiten je 3 – das Feld dazwischen bleibt frei, sonst wirken sie nicht. An den Wänden '
-    + 'wachsen Amethyst-Kristalle, im Südosten steht ein Lesepult.');
+  b.step();
   furnishMagicRoom(b);
-  b.step('Licht', 'Häng in jedes Geschoss eine Laterne an einer Kette mitten an die Decke. Im Zauberraum hängt ein langer Leuchter von der '
-    + 'Dachspitze, dazu Laternen an den Wänden – so bleibt kein Feld dunkel und es spawnen keine Monster.');
+  b.step();
   lightTower(b);
 
-  b.phase('Kristalle und schwebende Felsen', 'Um den Turm wachsen drei Amethyst-Gruppen aus dem Boden: Säulen aus Amethystblöcken und '
-    + 'knospendem Amethyst mit Calcit-Rand, oben Amethysthaufen. In der Luft schweben vier kleine Felsen mit Gras obenauf.', {
-    tips: [
-      'Für einen schwebenden Felsen baust du eine Hilfssäule aus Erde bis zur Unterseite, setzt den Felsen von unten nach oben und baust '
-        + 'die Säule danach ab – die Blöcke bleiben in der Luft.',
-      'Amethysthaufen und -knospen brauchen einen festen Block, an dem sie wachsen; setz sie auf die Oberseite oder an die Seiten.',
-    ],
-  });
+  b.phase('Kristalle und schwebende Felsen');
   buildCrystals(b);
   buildFloatingRocks(b);
 
-  b.phase('Umgebung', 'Zum Schluss ein Kiesweg von der Tür nach Süden, eine Fichte, ein paar bemooste Felsen, Büsche und Gras mit Blumen.');
+  b.phase('Umgebung');
   buildSurroundings(b);
 }
 
@@ -582,11 +511,7 @@ const ROCKS = [
 
 function buildFloatingRocks(b) {
   for (const rk of ROCKS) {
-    // Die unterste Felslage liegt bei y − (2r + 1), die Hilfssäule endet direkt darunter.
-    const lowest = rk.y - (rk.r * 2 + 1);
-    b.step(`Schwebender Fels bei x ${rk.x}, z ${rk.z}`, `Hilfssäule aus Erde bis Ebene ${ebene(lowest - 1)}, dann den Fels von unten `
-      + `nach oben bauen (Ebene ${ebene(lowest)} bis ${ebene(rk.y)}): Stein, Andesit und Tuff, die oberen zwei Lagen Erde mit Gras `
-      + `(Durchmesser ${rk.r * 2 + 1}). Danach die Säule abbauen.`);
+    b.step();
     floatingRock(b, rk);
   }
 }

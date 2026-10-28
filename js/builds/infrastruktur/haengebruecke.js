@@ -18,14 +18,7 @@ export const meta = {
     'hanging bridge', 'canyon bridge', 'jungle bridge',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Eine Hängebrücke aus Fichtenholz spannt sich 29 Blöcke weit über eine Felsschlucht mit Bach. Die Fahrbahn aus Fichtenstufen hängt als Kettenlinie durch – vier Blöcke tiefer in der Mitte als an den Enden –, getragen von Tragseilen aus Fichtenzäunen, die über zwei Holztore laufen und hinten im Fels verankert sind. Hängeseile, ein Zaungeländer und Laternen machen sie sicher; Fichten, Farne und Felsen geben den Klippen Bergstimmung.',
-  facts: [
-    'Freie Spannweite 29 Blöcke, Durchhang der Fahrbahn 4 Blöcke, die Felsen ragen 18 Blöcke über den Bach.',
-    'Die Fahrbahn folgt einer Kettenlinie (cosh-Kurve) – der Form, die ein hängendes Seil von selbst annimmt. Halbe Höhen entstehen aus oberen und unteren Stufen.',
-    'Tragseile und Rückhalteseile sind Fichtenzäune, die Hänger Eisenketten; die Tore sind 8 Blöcke hohe Fichtenstämme.',
-    'Alle Stufen der Fahrbahn sind höchstens einen halben Block höher als ihre Nachbarn – man läuft ohne Springen hinüber.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -134,17 +127,15 @@ function groundHeight(x, z) {
 }
 
 function cliffs(b) {
-  b.phase('Felsen und Schlucht', 'Die Brücke spannt sich über eine 27 Blöcke breite Schlucht zwischen zwei Felsen. Unten fließt ein schmaler Bach. Hast du schon eine Schlucht in deiner Welt, nimm einfach eine Stelle mit etwa dieser Breite und überspringe dieses Kapitel.', {
-    tips: ['Die Felskanten, an denen die Tore stehen, sollten auf gleicher Höhe liegen – sonst hängt die Brücke schief.'],
-  });
-  b.step('Felsen', 'Forme die beiden Felsen mit steilen Wänden aus Stein und Andesit, oben Gras. Die Felsoberkante liegt 18 Blöcke über dem Bachbett.');
+  b.phase('Felsen und Schlucht');
+  b.step();
   const width = AREA.x2 - AREA.x1 + 1;
   const depth = AREA.z2 - AREA.z1 + 1;
   terrain(b, {
     x: AREA.x1, y: 0, z: AREA.z1, width, depth, surface: 'gras', rocky: true, seed: 7,
     heightAt: (dx, dz) => groundHeight(AREA.x1 + dx, AREA.z1 + dz),
   });
-  b.step('Bach', 'Unten in der Schlucht liegt ein Bachbett aus Kies und Sand, darauf eine Ebene Wasserquellen.');
+  b.step();
   for (let x = AREA.x1; x <= AREA.x2; x++) {
     const band = streamBand(x);
     for (let z = band.z1; z <= band.z2; z++) {
@@ -157,30 +148,24 @@ function cliffs(b) {
 // --- Tore und Anker ---
 
 function gates(b) {
-  b.phase('Tore und Anker', 'Auf jeder Felskante steht ein Tor aus zwei Fichtenstämmen mit einem Querbalken. Hinter jedem Tor sitzen zwei Ankerblöcke im Fels, an denen später die Tragseile enden.', {
-    tips: [
-      'Grabe die Stämme zwei Blöcke tief in den Boden ein – so wirken sie fest verankert.',
-      'Die beiden Tore stehen genau 30 Blöcke auseinander, Mitte auf Mitte.',
-    ],
-  });
-  b.step('Torpfosten', 'Je zwei Fichtenstämme, 5 Blöcke auseinander (Mitte auf Mitte 4), stehen an der Felskante. Sie reichen von 2 Blöcken unter der Oberfläche bis 8 Blöcke darüber.');
+  b.phase('Tore und Anker');
+  b.step();
   for (const z of POSTS) {
     for (const s of SIDES) b.fill(2 * s, ROCK_TOP - 2, z, 2 * s, POST_TOP, z, `${spruce.log}[axis=y]`);
   }
-  b.step('Querbalken', 'Oben verbindet ein liegender, geschälter Fichtenstamm die Pfosten und steht auf jeder Seite einen Block über. Darunter stützen umgedrehte Treppen die Ecken.');
+  b.step();
   for (const z of POSTS) {
     b.fill(-3, POST_TOP, z, 3, POST_TOP, z, `${spruce.strippedLog}[axis=x]`);
     for (const s of SIDES) b.stairs(1 * s, POST_TOP - 1, z, spruce.stairs, { facing: s > 0 ? 'east' : 'west', half: 'top' });
     for (const s of SIDES) b.stairs(3 * s, POST_TOP - 1, z, spruce.stairs, { facing: s > 0 ? 'west' : 'east', half: 'top' });
   }
-  b.step('Ankerblöcke', 'Fünf Blöcke hinter jedem Pfosten setzt du einen Anker aus bemoostem Bruchstein in den Boden, darauf einen Steinziegel. Daran werden die Rückhalteseile befestigt.');
+  b.step();
   for (const z of ANCHORS) {
     for (const s of SIDES) {
       b.set(2 * s, ROCK_TOP, z, 'mossy_cobblestone');
       b.set(2 * s, ROCK_TOP + 1, z, 'chiseled_stone_bricks');
     }
   }
-  b.note(2, POST_TOP, POSTS[0], 'Tragseil liegt hier auf dem Pfosten auf');
 }
 
 // --- Seile ---
@@ -195,17 +180,12 @@ function ropeLine(b, x, points) {
 }
 
 function cables(b) {
-  b.phase('Tragseile', 'Die beiden Tragseile aus Fichtenzäunen hängen von den Torpfosten in einer Kettenlinie durch – an den Toren steil, in der Mitte flach. Hinter den Toren laufen sie schräg hinunter zu den Ankern.', {
-    tips: [
-      'Zäune verbinden sich von selbst mit dem Nachbarzaun und mit dem Torpfosten. Wo das Seil eine Ebene springt, stapelst du die Zäune senkrecht – so bleibt es durchgehend.',
-      'Zähle die Stufen des Seils ab, statt zu schätzen: von jedem Tor aus sinkt es die ersten vier Blöcke um je eine Ebene, danach nur noch alle ein bis drei Blöcke – in der Mitte liegt es neun Blöcke lang flach.',
-    ],
-  });
-  b.step('Tragseile über der Schlucht', 'Spanne von Tor zu Tor je ein Tragseil über beiden Seiten der Fahrbahn. Es setzt direkt neben dem Torpfosten an, zwei Blöcke unter dem Querbalken, und sinkt bis zur Mitte auf zwei Blöcke über die Fahrbahn.');
+  b.phase('Tragseile');
+  b.step();
   const points = [];
   for (let z = SPAN.z1; z <= SPAN.z2; z++) points.push([z, cableY(z)]);
   for (const s of SIDES) ropeLine(b, 2 * s, points);
-  b.step('Rückhalteseile', 'Von der Rückseite jedes Pfostens läuft ein Zaunseil in Stufen hinunter bis direkt neben den Ankerblock und verbindet sich mit ihm.');
+  b.step();
   for (const s of SIDES) {
     for (const [post, anchor] of [[POSTS[0], ANCHORS[0]], [POSTS[1], ANCHORS[1]]]) {
       const dir = Math.sign(anchor - post);
@@ -238,15 +218,10 @@ function deckBlock(x, z) {
 }
 
 function deck(b) {
-  b.phase('Fahrbahn', 'Die Fahrbahn ist 3 Blöcke breit und besteht aus Fichtenstufen. Wo sie durchhängt, wechseln sich obere und untere Stufen ab – so steigt sie in halben Blöcken. Etwa alle vier Blöcke liegt ein geschälter Stamm quer als Bohle, bündig mit der Fahrbahn, der links und rechts einen Block übersteht. Dazwischen säumen Randbohlen aus oberen Schwarzeichenstufen die Fahrbahn.', {
-    tips: [
-      'Baue von beiden Toren aus zur Mitte und stell dich dabei immer auf das letzte fertige Stück. Ein Seil zur Sicherung brauchst du nicht – aber falle nicht!',
-      'Obere Stufen setzt du mit einem Klick auf die obere Hälfte der Nachbarstufe, untere mit einem Klick auf die untere Hälfte.',
-      'Die Randbohlen sind immer obere Stufen. Wo die Fahrbahn aus unteren Stufen besteht, steht die Randbohle einen halben Block höher – ein kleiner Bordstein, auf dem das Geländer sitzt.',
-    ],
-  });
-  for (const [label, z1, z2, dir] of [['vom ersten Tor zur Mitte', POSTS[0] - 3, SPAN.mid, 1], ['vom zweiten Tor zur Mitte', POSTS[1] + 3, SPAN.mid + 1, -1]]) {
-    b.step(`Fahrbahn ${label}`, 'Leg die Fahrbahn Reihe für Reihe. Die Höhe jeder Reihe zeigt dir die 3D-Ansicht; an Land liegt sie bündig mit dem Fels.');
+  b.phase('Fahrbahn');
+  // Von jedem Tor zur Mitte
+  for (const [z1, z2, dir] of [[POSTS[0] - 3, SPAN.mid, 1], [POSTS[1] + 3, SPAN.mid + 1, -1]]) {
+    b.step();
     for (let z = z1; dir > 0 ? z <= z2 : z >= z2; z += dir) {
       for (let x = -1; x <= 1; x++) {
         const cell = deckBlock(x, z);
@@ -259,16 +234,13 @@ function deck(b) {
       }
     }
   }
-  b.note(0, deckBlock(0, SPAN.mid).y, SPAN.mid, 'Tiefster Punkt: 4 Blöcke unter den Enden');
 }
 
 function hangersAndRailing(b) {
-  b.phase('Hänger und Geländer', 'Jetzt verbindest du Fahrbahn und Tragseile: ein Zaungeländer auf den Randbohlen und alle zwei Blöcke ein senkrechtes Hängeseil aus Ketten vom Geländer bis zum Tragseil.', {
-    tips: ['Fange in der Mitte an: dort sind die Hänger am kürzesten, an den Toren am längsten.'],
-  });
-  b.step('Geländer', 'Auf jede Randbohle kommt ein Fichtenzaun. Die Zäune verbinden sich von selbst zu einem Geländer.');
+  b.phase('Hänger und Geländer');
+  b.step();
   for (let z = POSTS[0] + 1; z <= POSTS[1] - 1; z++) for (const s of SIDES) b.set(2 * s, railY(z), z, spruce.fence);
-  b.step('Hängeseile', 'Alle zwei Blöcke hängst du eine senkrechte Kette vom Tragseil hinunter bis auf den Zaun.');
+  b.step();
   for (let z = SPAN.z1 + 1; z <= SPAN.z2 - 1; z++) {
     if ((z - SPAN.mid) % 2 !== 0) continue;
     for (const s of SIDES) {
@@ -279,7 +251,7 @@ function hangersAndRailing(b) {
 }
 
 function lights(b) {
-  b.phase('Laternen', 'Unter jedem Querbalken hängt eine Laterne an einer Kette, und auf der Brücke hängen drei Laternenpaare zwischen Geländer und Tragseil – so findest du auch nachts sicher hinüber.');
+  b.phase('Laternen');
   for (const z of POSTS) {
     b.set(0, POST_TOP - 1, z, CHAIN_Y);
     b.set(0, POST_TOP - 2, z, 'lantern[hanging=true]');
@@ -292,11 +264,11 @@ function lights(b) {
 // --- Umgebung ---
 
 function surroundings(b) {
-  b.phase('Nadelwald', 'Auf den Felsen wächst ein kleiner Nadelwald: Fichten, Büsche, bemooste Felsen und Farne. Ein Pfad führt auf jeder Seite zum Tor.');
-  b.step('Pfade', 'Ein schmaler Pfad aus Erde und Kies führt von hinten zu jedem Tor.');
+  b.phase('Nadelwald');
+  b.step();
   path(b, { x: 0, y: ROCK_TOP, z: AREA.z1, facing: 'south', length: POSTS[0] - 3 - AREA.z1, width: 3, mix: 'gemischt', wiggle: 1, seed: 3 });
   path(b, { x: 0, y: ROCK_TOP, z: AREA.z2, facing: 'north', length: AREA.z2 - (POSTS[1] + 3), width: 3, mix: 'gemischt', wiggle: 1, seed: 4 });
-  b.step('Fichten und Büsche', 'Fichten stehen ein Stück abseits der Tore, Büsche an den Felskanten.');
+  b.step();
   const trees = [[-10, -1, 'gross', 1], [-12, 5, 'mittel', 2], [-9, 46, 'mittel', 3], [9, 49, 'gross', 4], [12, -4, 'klein', 5]];
   for (const [x, z, size, seed] of trees) {
     tree(b, { x, y: groundHeight(x, z) + 1, z, species: 'fichte', size, seed });
@@ -307,7 +279,7 @@ function surroundings(b) {
   rock(b, { x: 6, y: ROCK_TOP + 1, z: 3, size: 'klein', material: 'stein', seed: 1 });
   rock(b, { x: -7, y: ROCK_TOP + 1, z: 44, size: 'mittel', material: 'andesit', seed: 2 });
   rock(b, { x: 4, y: 3, z: 19, size: 'mittel', material: 'stein', seed: 3, rubble: false });
-  b.step('Farne und Gras', 'Farne und Gras auf den Felsen und unten am Bach.');
+  b.step();
   vegetation(b, { x: AREA.x1, y: ROCK_TOP + 3, z: AREA.z1, width: AREA.x2 - AREA.x1 + 1, depth: AREA.z2 - AREA.z1 + 1, mix: 'farn', density: 0.35, shape: 'eckig', scan: 24, seed: 6 });
 }
 

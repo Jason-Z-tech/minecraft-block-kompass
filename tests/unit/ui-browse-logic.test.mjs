@@ -47,32 +47,40 @@ test('Test im Spiel, Rauminhalt und kompakte Zahlen', () => {
 
 test('Filter: „oder“ innerhalb einer Gruppe, „und“ zwischen Gruppen', () => {
   const items = [
-    item(build('a', { blocks: 50, difficulty: 1, accuracy: 'eigenes', tested: null })),
-    item(build('b', { blocks: 5000, difficulty: 3, accuracy: 'original', tested: null })),
-    item(build('c', { blocks: 50000, difficulty: 3, accuracy: 'massstab', tested: false })),
-    item(build('d', { blocks: 200, difficulty: 2, accuracy: 'eigenes', tested: true })),
+    item(build('a', { blocks: 50, accuracy: 'eigenes', tested: null })),
+    item(build('b', { blocks: 5000, accuracy: 'original', tested: null })),
+    item(build('c', { blocks: 50000, accuracy: 'massstab', tested: false })),
+    item(build('d', { blocks: 200, accuracy: 'eigenes', tested: true })),
   ];
   const filters = { ...emptyFilters(), groesse: ['klein', 'gross'] };
   assert.deepEqual(applyFilters(items, filters).map((i) => i.build.id), ['a', 'c', 'd']);
-  const both = { ...filters, schwierigkeit: ['3'] };
+  const both = { ...filters, herkunft: ['original', 'massstab'] };
   assert.deepEqual(applyFilters(items, both).map((i) => i.build.id), ['c']);
-  assert.equal(activeFilterCount(both), 3);
+  assert.equal(activeFilterCount(both), 4);
   assert.equal(matchesFilters(items[0].values, both), false);
-  assert.equal(matchesFilters(items[0].values, both, 'schwierigkeit'), true);
+  assert.equal(matchesFilters(items[0].values, both, 'herkunft'), true);
   // Zählung je Option: die eigene Gruppe zählt nicht mit, die anderen schon
   const counts = facetCounts(items, both);
   assert.deepEqual(counts.groesse, { klein: 0, mittel: 1, gross: 1, riesig: 0 });
-  assert.deepEqual(counts.schwierigkeit, { 1: 1, 2: 1, 3: 1, 4: 0, 5: 0 });
+  assert.deepEqual(counts.herkunft, { original: 0, massstab: 1, vorlage: 0, nachempfunden: 0, eigenes: 2 });
   assert.deepEqual(counts.test, { getestet: 0, ungetestet: 1, ohne: 0 });
 });
 
+test('Filter: keine Schwierigkeit mehr, alte Felder im Eintrag stören nicht', () => {
+  assert.deepEqual(FILTER_KEYS, ['groesse', 'herkunft', 'test']);
+  const values = filterValuesOf(build('alt', { blocks: 50, accuracy: 'eigenes', difficulty: 3 }));
+  assert.deepEqual(values, { groesse: 'klein', herkunft: 'eigenes', test: 'ohne' });
+  assert.deepEqual(allowedFilterValues('schwierigkeit'), []);
+});
+
 test('Filter: Gruppen erscheinen nur, wenn sie etwas unterscheiden oder etwas gewählt ist', () => {
-  const items = [item(build('a', { blocks: 10, difficulty: 1, accuracy: 'eigenes' })), item(build('b', { blocks: 20, difficulty: 2, accuracy: 'eigenes' }))];
+  const items = [item(build('a', { blocks: 10, accuracy: 'eigenes', tested: true })), item(build('b', { blocks: 20, accuracy: 'eigenes', tested: false }))];
   const present = presentValues(items);
   const groups = Object.fromEntries(visibleFilterOptions(present, emptyFilters()).map((g) => [g.key, g]));
+  assert.deepEqual(Object.keys(groups), ['groesse', 'herkunft', 'test']);
   assert.equal(groups.groesse.visible, false, 'nur eine Größe');
-  assert.equal(groups.schwierigkeit.visible, true);
-  assert.deepEqual(groups.schwierigkeit.options.map((o) => o.value), ['1', '2']);
+  assert.equal(groups.test.visible, true);
+  assert.deepEqual(groups.test.options.map((o) => o.value), ['getestet', 'ungetestet']);
   assert.equal(groups.herkunft.visible, false);
   // Über die Adresse gewählt, aber nicht vorhanden → trotzdem sichtbar (sonst ließe es sich nicht abwählen)
   const selected = Object.fromEntries(visibleFilterOptions(present, { ...emptyFilters(), herkunft: ['original'] }).map((g) => [g.key, g]));
@@ -82,10 +90,10 @@ test('Filter: Gruppen erscheinen nur, wenn sie etwas unterscheiden oder etwas ge
 
 test('Sortierung: alle Schlüssel, fehlende Werte am Ende, Gleichstand nach Name', () => {
   const items = [
-    item(build('zelt', { title: 'Zelt', blocks: 10, difficulty: 1, size: [3, 2, 3] })),
-    item(build('aerger', { title: 'Ärger-Turm', blocks: 10, difficulty: 4, size: [5, 20, 5] })),
-    item(build('burg', { title: 'Burg', blocks: 900, difficulty: null, size: null })),
-    item(build('brunnen', { title: 'brunnen', blocks: null, difficulty: 2, size: [3, 3, 3] })),
+    item(build('zelt', { title: 'Zelt', blocks: 10, size: [3, 2, 3] })),
+    item(build('aerger', { title: 'Ärger-Turm', blocks: 10, size: [5, 20, 5] })),
+    item(build('burg', { title: 'Burg', blocks: 900, size: null })),
+    item(build('brunnen', { title: 'brunnen', blocks: null, size: [3, 3, 3] })),
   ];
   const ids = (key) => sortItems(items, key).map((i) => i.build.id);
   assert.deepEqual(ids('name'), ['aerger', 'brunnen', 'burg', 'zelt'], 'deutsch, ohne Groß/Klein, Ä wie A');
@@ -93,8 +101,9 @@ test('Sortierung: alle Schlüssel, fehlende Werte am Ende, Gleichstand nach Name
   assert.deepEqual(ids('bloecke-ab'), ['burg', 'aerger', 'zelt', 'brunnen']);
   assert.deepEqual(ids('groesse-auf'), ['zelt', 'brunnen', 'aerger', 'burg']);
   assert.deepEqual(ids('groesse-ab'), ['aerger', 'brunnen', 'zelt', 'burg']);
-  assert.deepEqual(ids('schwierigkeit-auf'), ['zelt', 'brunnen', 'aerger', 'burg']);
-  assert.deepEqual(ids('schwierigkeit-ab'), ['aerger', 'brunnen', 'zelt', 'burg']);
+  // Nach Schwierigkeit sortiert die Seite nicht mehr
+  assert.deepEqual(SORT_KEYS, ['relevanz', 'name', 'groesse-auf', 'groesse-ab', 'bloecke-auf', 'bloecke-ab']);
+  assert.throws(() => sortItems(items, 'schwierigkeit-auf'), /Unbekannte Sortierung/);
   const scored = items.map((entry, i) => ({ ...entry, score: [1, 5, 5, 0][i] }));
   assert.deepEqual(sortItems(scored, 'relevanz').map((i) => i.build.id), ['aerger', 'burg', 'zelt', 'brunnen']);
   assert.throws(() => sortItems(items, 'zufall'), /Unbekannte Sortierung/);
@@ -108,11 +117,17 @@ test('Sortierung: alle Schlüssel, fehlende Werte am Ende, Gleichstand nach Name
 });
 
 test('Adresse: nur erlaubte Werte, Mehrfachwerte, feste Reihenfolge', () => {
-  const state = parseBrowseState('?k=redstone&q=  Kolben%20%20T%C3%BCr  &groesse=riesig&groesse=klein,mittel&groesse=klein&schwierigkeit=6&herkunft=original&test=ungetestet&sort=bloecke-ab&foo=1');
-  assert.equal(state.query, 'Kolben Tür');
-  assert.deepEqual(state.filters, { groesse: ['klein', 'mittel', 'riesig'], schwierigkeit: [], herkunft: ['original'], test: ['ungetestet'] });
+  const state = parseBrowseState('?k=farmen&q=  Kaktus%20%20Farm  &groesse=riesig&groesse=klein,mittel&groesse=klein&groesse=winzig&herkunft=original&test=ungetestet&sort=bloecke-ab&foo=1');
+  assert.equal(state.query, 'Kaktus Farm');
+  assert.deepEqual(state.filters, { groesse: ['klein', 'mittel', 'riesig'], herkunft: ['original'], test: ['ungetestet'] });
   assert.equal(state.sort, 'bloecke-ab');
-  assert.deepEqual(state.ignored, ['schwierigkeit=6']);
+  assert.deepEqual(state.ignored, ['groesse=winzig']);
+  // Alte Adressen mit Schwierigkeit: Filter fällt still weg, Sortierung zurück auf den Standard
+  const old = parseBrowseState('?k=klein&schwierigkeit=1&schwierigkeit=2&sort=schwierigkeit-auf');
+  assert.deepEqual(old.filters, emptyFilters());
+  assert.equal(old.sort, 'name');
+  assert.equal(parseBrowseState('?q=turm&sort=schwierigkeit-ab').sort, 'relevanz');
+  assert.equal(browseSearch('klein', old), '?k=klein', 'die Adresse wird ohne die alten Angaben neu geschrieben');
   // Angriffsversuche fallen weg, nichts davon landet im Zustand
   const evil = parseBrowseState('?groesse=<img src=x onerror=alert(1)>&sort=javascript:alert(1)&herkunft=__proto__');
   assert.deepEqual(evil.filters, emptyFilters());
@@ -124,7 +139,7 @@ test('Adresse: nur erlaubte Werte, Mehrfachwerte, feste Reihenfolge', () => {
   assert.equal(parseBrowseState('?q=turm').sort, 'relevanz');
   assert.equal(parseBrowseState(`?q=${'a'.repeat(500)}`).query.length, 120);
   assert.deepEqual(allowedFilterValues('unbekannt'), []);
-  assert.equal(FILTER_KEYS.length, 4);
+  assert.equal(FILTER_KEYS.length, 3);
 });
 
 test('Adresse: Schreiben und Lesen ergeben denselben Zustand, Standardwerte fehlen', () => {
@@ -136,7 +151,7 @@ test('Adresse: Schreiben und Lesen ergeben denselben Zustand, Standardwerte fehl
   assert.equal(browseSearch('klein', { query: '', filters: emptyFilters(), sort: 'name' }), '?k=klein');
   assert.equal(browseSearch('klein', { query: 'x', filters: emptyFilters(), sort: 'relevanz' }), '?k=klein&q=x');
   assert.equal(browseSearch('klein', { query: '', filters: emptyFilters(), sort: 'relevanz' }), '?k=klein', 'unpassende Sortierung fällt weg');
-  assert.equal(browseHref('redstone', { sort: 'bloecke-ab' }), 'kategorie.html?k=redstone&sort=bloecke-ab');
+  assert.equal(browseHref('farmen', { sort: 'bloecke-ab' }), 'kategorie.html?k=farmen&sort=bloecke-ab');
   assert.equal(browseSearch(null, {}), '');
   assert.deepEqual(categoryParam('?k=haeuser'), { kind: 'category', slug: 'haeuser' });
   assert.deepEqual(categoryParam('?k='), { kind: 'overview' });

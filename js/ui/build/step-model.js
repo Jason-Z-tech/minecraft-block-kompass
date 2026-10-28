@@ -1,6 +1,6 @@
 // Schrittmodell des Players (rein, in Node testbar). Fortschritt p wie viewer.setProgress:
 // p = 0 → noch nichts gebaut, p = i + 1 → Schritt i fertig, p = n → ganzer Bau. Kommazahlen = Schritt läuft gerade.
-import { formatNumber } from '../shared.js';
+import { formatNumber, formatCount } from '../shared.js';
 
 /** Schritt, den die Anzeige als „aktuell“ zeigt: −1 vor dem Start, sonst 0 … n − 1. */
 export function shownStep(p, stepCount) {
@@ -56,39 +56,21 @@ export function phaseCount(result) {
   return result.phases.filter((phase) => phase.steps.length > 0).length;
 }
 
-/** Text für die Live-Region und den Schieberegler. */
+/** Text für die Live-Region und den Schieberegler: „Schritt 3 von 12 (Erdgeschoss).“ */
 export function stepAnnouncement(result, p) {
   const n = result.steps.length;
   if (n === 0) return 'Der Bau hat keine Schritte.';
   const shown = shownStep(p, n);
   if (shown < 0) return `Start – noch kein Block gesetzt. ${formatNumber(n)} Schritte.`;
-  const step = result.steps[shown];
-  const phase = result.phases[step.phase];
+  const phase = result.phases[result.steps[shown].phase];
   const done = p >= n ? ' Der Bau ist fertig.' : '';
-  return `Schritt ${formatNumber(shown + 1)} von ${formatNumber(n)}: ${step.title}${phase ? ` (${phase.title})` : ''}.${done}`;
+  return `Schritt ${formatNumber(shown + 1)} von ${formatNumber(n)}${phase ? ` (${phase.title})` : ''}.${done}`;
 }
 
-/** Anleitungstext eines Schritts: eigener Text, sonst bei Ebenen-Schritten eine kurze Bauanweisung. */
-export function stepInstruction(result, index) {
-  const step = result.steps[index];
-  if (!step) return '';
-  if (step.text) return step.text;
-  if (step.layerY !== null && step.layerY !== undefined) {
-    const where = `der Ebene ${formatNumber(step.layerY + 1)} (y = ${formatNumber(step.layerY)})`;
-    return step.blockCount === 1 ? `Setze den einen Block ${where}.` : `Setze alle ${formatNumber(step.blockCount)} Blöcke ${where}.`;
-  }
-  return '';
-}
-
-/** Markierungen (b.note) je Schritt: Map<step, note[]> */
-export function notesByStep(result) {
-  const map = new Map();
-  for (const note of result.notes ?? []) {
-    if (!Number.isInteger(note.step)) continue;
-    if (!map.has(note.step)) map.set(note.step, []);
-    map.get(note.step).push(note);
-  }
-  return map;
+/** Kurzinfo eines Schritts: „24 Blöcke · y = 2“ (Ebenen-Schritt) bzw. „12 Blöcke“. */
+export function stepMeta(step) {
+  const count = formatCount(step.blockCount, 'Block', 'Blöcke');
+  return Number.isInteger(step.layerY) ? `${count} · y = ${formatNumber(step.layerY)}` : count;
 }
 
 /**

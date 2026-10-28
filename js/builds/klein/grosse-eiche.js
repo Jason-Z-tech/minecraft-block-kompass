@@ -18,14 +18,7 @@ export const meta = {
     'big oak', 'big oak tree', 'large oak', 'large oak tree', 'giant oak', 'custom oak', 'custom tree', 'oak tree', 'tree swing',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Eine alte, frei stehende Eiche als Blickfang für Dorfplatz, Garten oder Wiese. Der Stamm ist unten fünf Blöcke breit und läuft nach oben schlank aus, sieben Wurzeln greifen über den kleinen Hügel und tauchen in den Boden. Sechs lange Äste mit Gabelungen tragen eine breite, lockere Krone aus Eichen- und Schwarzeichenlaub. Am tiefen Südast hängt eine Schaukel, am Nordast eine Laterne.',
-  facts: [
-    'Stamm aus Eichenstämmen, Wurzeln und Äste aus Eichenholz (Rinde auf allen Seiten), damit nirgends Jahresringe herausschauen.',
-    'Die Krone ist 24 bis 27 Blöcke breit und ragt 21 Blöcke über den Hügel; das unterste Laub hängt 8 Blöcke hoch, unter den Ästen gehst du bequem hindurch.',
-    'Das Laub ist dauerhaft (gesetzte Blätter verrotten nie) – die Äste dürfen deshalb so lang sein, wie du willst.',
-    'Die Schaukel besteht aus zwei oberen Eichenholzstufen an zwei Ketten mit je sechs Gliedern.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -37,7 +30,6 @@ const LOG = 'oak_log[axis=y]';
 const LEAF = 'oak_leaves[persistent=true]';
 const LEAF_DARK = 'dark_oak_leaves[persistent=true]';
 const AXES = ['x', 'y', 'z'];
-const COMPASS = ['Osten', 'Südosten', 'Süden', 'Südwesten', 'Westen', 'Nordwesten', 'Norden', 'Nordosten'];
 const SIDES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 
 // Stammradius je Ebene ab dem Fuß (mit leichtem Rauschen ausgefranst): 5 breit unten, oben ein einzelner Stamm.
@@ -69,11 +61,6 @@ function noise3(x, y, z, scale, salt) {
     }
   }
   return v;
-}
-
-function compass(dx, dz) {
-  const i = ((Math.round(Math.atan2(dz, dx) / (Math.PI / 4)) % 8) + 8) % 8;
-  return COMPASS[i];
 }
 
 function bezier(p0, p1, p2, t) {
@@ -189,7 +176,7 @@ function planRoots(rng, ground, y0) {
       }
       prev = [cx, cz];
     }
-    roots.push({ name: compass(dx, dz), axis, above, flush });
+    roots.push({ axis, above, flush });
   }
   return roots;
 }
@@ -228,9 +215,9 @@ function planBranches(rng, y0, trunkTop) {
     const forkMid = [(forkAt[0] + forkEnd[0]) / 2, forkAt[1] + 0.6, (forkAt[2] + forkEnd[2]) / 2];
     const mid = points[Math.round(points.length * 0.7)];
     branches.push({
-      index: i, name: compass(dx, dz), ys, length: L, swing: i === 0,
+      index: i, ys,
       cells: pathCells(points), thickTo,
-      fork: { name: compass(Math.cos(fa), Math.sin(fa)), cells: pathCells(samplePolyline([[forkAt, forkMid, forkEnd]])) },
+      fork: { cells: pathCells(samplePolyline([[forkAt, forkMid, forkEnd]])) },
       blobs: [
         { c: [end[0], end[1] + 1, end[2]], r: 3.3, ry: 2.1 },
         { c: [forkEnd[0], forkEnd[1] + 1, forkEnd[2]], r: 2.9, ry: 1.9 },
@@ -241,7 +228,7 @@ function planBranches(rng, y0, trunkTop) {
     });
   }
   // Drei kurze Triebe aus der Stammspitze tragen die obere Krone.
-  const top = { index: 6, name: 'Krone', cells: [], blobs: [{ c: [0, trunkTop + 3, 0], r: 4.8, ry: 3 }] };
+  const top = { index: 6, cells: [], blobs: [{ c: [0, trunkTop + 3, 0], r: 4.8, ry: 3 }] };
   for (let j = 0; j < 3; j++) {
     const a = 0.5 + (j * 2 * Math.PI) / 3 + (rng.next() - 0.5) * 0.4;
     const end = [Math.cos(a) * 2.8, trunkTop + 4, Math.sin(a) * 2.8];
@@ -350,12 +337,7 @@ export default function build(b) {
   const rng = createRandom(SEED);
 
   // --- Bauplatz ---
-  b.phase('Bauplatz', 'Die Eiche steht auf einer runden Wiese mit 29 Blöcken Durchmesser. In der Mitte hebt sich ein flacher Hügel um zwei Ebenen: oben 7 Blöcke breit und eben, dann ein Ring eine Ebene tiefer. Der Hügel lässt die Wurzeln später schön über die Kante greifen.', {
-    tips: [
-      'Baust du in einer flachen Wiese, setzt du nur den Hügel auf: zwei Ringe aus Erde mit Gras obenauf.',
-      'Wo die Wurzeln in den Boden tauchen, liegt in der Grasschicht schon Eichenholz – setze es gleich mit.',
-    ],
-  });
+  b.phase('Bauplatz');
   const ground = terrain(b, {
     x: -GROUND_R, y: 0, z: -GROUND_R, width: GROUND_R * 2 + 1, depth: GROUND_R * 2 + 1, shape: 'rund', seed: 5,
     heightAt: (dx, dz) => moundHeight(dx - GROUND_R, dz - GROUND_R),
@@ -378,24 +360,17 @@ export default function build(b) {
 
   // --- Stamm ---
   const trunk = planTrunk(y0);
-  b.phase('Stamm', `Der Stamm wächst ${TRUNK_RADIUS.length} Ebenen hoch aus Eichenstämmen (senkrecht). Unten ist er 5 Blöcke breit und fast rund, ab der dritten Ebene ein grob 3 × 3 großer Block mit abgebrochenen Ecken, oben nur noch ein Kreuz und ganz oben ein einzelner Stamm. Wo eine Ebene schmaler wird als die darunter, schaut sonst die Schnittfläche nach oben – setze dort Eichenholz statt Stamm, das hat ringsum Rinde.`, {
-    tips: [
-      'Setze in jeder Ebene zuerst den Mittelblock und zähle dann nach außen: so bleibt der Stamm gerade.',
-      'Die Ecken dürfen ruhig unregelmäßig sein – ein alter Baum ist nie ganz rund.',
-    ],
-  });
+  b.phase('Stamm');
   for (const k of trunk.keys()) {
     const [x, y, z] = unkey(k);
     b.set(x, y, z, trunk.has(key(x, y + 1, z)) ? LOG : 'oak_wood[axis=y]');
   }
 
   // --- Wurzeln ---
-  b.phase('Wurzeln', 'Sieben Wurzeln laufen vom Stammfuß nach außen, folgen dem Hügel nach unten und tauchen am Ende in den Boden. Sie sind aus liegendem Eichenholz, direkt am Stamm teils zwei Blöcke hoch.', {
-    tips: ['Lass die Wurzeln leicht schräg laufen: ein Block nach außen, dann einer zur Seite – das wirkt viel natürlicher als gerade Linien.'],
-  });
-  roots.forEach((root, i) => {
+  b.phase('Wurzeln');
+  roots.forEach((root) => {
     const cells = root.above.filter(([x, y, z]) => !trunk.has(key(x, y, z)));
-    b.step(`Wurzel ${i + 1} nach ${root.name}`, `Diese Wurzel aus ${cells.length} Blöcken läuft vom Stammfuß nach ${root.name}. Lege sie auf das Gras, folge der Hügelkante hinab und schließe an das Holz in der Grasschicht an.`);
+    b.step();
     for (const [x, y, z] of cells) {
       b.set(x, y, z, y > ground.top(x, z) + 1 ? 'oak_wood[axis=y]' : `oak_wood[axis=${root.axis}]`);
     }
@@ -412,25 +387,16 @@ export default function build(b) {
     wood.add(k);
     b.set(x, y, z, `oak_wood[axis=${axis}]`);
   };
-  b.phase('Äste', 'Sechs Hauptäste wachsen aus dem Stamm, jeder mit einem Seitenast. Sie sind aus Eichenholz: setze den nächsten Block immer an eine Fläche des letzten, nie nur über Eck. Nahe am Stamm sind die Äste zwei Blöcke dick.', {
-    tips: [
-      'Zähle die Ebene, auf der ein Ast ansetzt, vom Fuß des Stamms aus – die Schritte nennen sie.',
-      'Der Südast trägt später die Schaukel: er läuft auf seiner ganzen ersten Hälfte genau waagrecht.',
-    ],
-  });
+  b.phase('Äste');
   for (const br of branches) {
-    const rise = Math.round(br.blobs[0].c[1] - 1 - br.ys);
-    const text = br.swing
-      ? `Der Schaukelast setzt auf Ebene ${br.ys + 1} an und läuft 7 Blöcke genau waagrecht nach Süden, dann biegt er auf den letzten 4 Blöcken ${rise} Ebenen nach oben. Bei seinem siebten Block zweigt ein Seitenast nach ${br.fork.name} ab.`
-      : `Dieser Ast setzt auf Ebene ${br.ys + 1} am Stamm an, reicht rund ${Math.round(br.length)} Blöcke weit nach ${br.name} und steigt dabei ${rise} Ebenen. Nach gut der Hälfte zweigt ein Seitenast nach ${br.fork.name} ab, 3 bis 4 Blöcke lang und steil nach oben.`;
-    b.step(`Ast nach ${br.name}`, text);
+    b.step();
     for (const [x, y, z, axis] of br.cells) {
       placeLimb(x, y, z, axis);
       if (Math.hypot(x, z) > 1.5 && Math.hypot(x, z) < br.thickTo && !trunk.has(key(x, y - 1, z))) placeLimb(x, y - 1, z, axis);
     }
     for (const [x, y, z, axis] of br.fork.cells) placeLimb(x, y, z, axis);
   }
-  b.step('Triebe an der Spitze', `Aus der Stammspitze (Ebene ${trunkTop + 1}) wachsen drei kurze Triebe schräg nach oben. Sie tragen die obere Krone.`);
+  b.step();
   for (const [x, y, z, axis] of top.cells) placeLimb(x, y, z, axis);
 
   // Schaukel und Laterne vorplanen, damit das Laub dort Platz lässt.
@@ -447,39 +413,25 @@ export default function build(b) {
   const leaves = planLeaves(b, [...branches, top], { minY: y0 + 5, clear, isWood });
   const order = [...branches].sort((p, q) => p.ys - q.ys).map((br) => br.index).concat(top.index);
   const leafSteps = orderLeafSteps(leaves, order, isWood);
-  b.phase('Krone', `Jetzt bekommt jeder Ast seine Laubwolke, zuerst die tiefen Äste, zum Schluss die Krone über dem Stamm. Zusammen sind es ${leaves.size} Blätter. Um jedes Astende liegt ein dichter Kern, nach außen wird das Laub lockerer und franst aus. Ein paar Flecken aus Schwarzeichenlaub geben der Krone Tiefe.`, {
-    tips: [
-      'Setze das Laub vom Ast aus nach außen – so hat jedes Blatt einen Nachbarn, an den du es setzen kannst.',
-      'Lass Lücken zwischen den Wolken der Äste: durch sie fällt Licht, und die Krone wirkt nicht wie ein Pilz.',
-      'Gesetztes Laub verrottet nicht, auch wenn es weit vom Stamm entfernt ist.',
-    ],
-  });
-  order.forEach((groupIndex, n) => {
-    const br = groupIndex === top.index ? null : branches[groupIndex];
-    const title = br ? `Laub am Ast nach ${br.name}` : 'Obere Krone';
-    const text = br
-      ? `Rund ${leafSteps[n].length} Blätter: eine große Wolke am Astende, eine am Seitenast nach ${br.fork.name} und eine kleinere über der Astmitte. Das Laub sitzt vor allem auf dem Ast und hängt nur wenig darunter.`
-      : `Rund ${leafSteps[n].length} Blätter: eine flache Kuppel über der Stammspitze und die drei Triebe, die die Lücken zwischen den Astwolken schließen.`;
-    b.step(title, text);
-    for (const k of leafSteps[n]) {
+  b.phase('Krone');
+  for (const stepLeaves of leafSteps) {
+    b.step();
+    for (const k of stepLeaves) {
       const [x, y, z] = unkey(k);
       b.set(x, y, z, leafState(x, y, z));
     }
-  });
+  }
 
   // --- Schaukel, Laterne, Boden ---
-  b.phase('Schaukel, Laterne und Wiese', 'Zum Schluss hängst du die Schaukel an den Südast und eine Laterne an den Nordast. Unter der Krone liegt Laubstreu, rundherum wachsen Gras und Wiesenblumen.', {
-    tips: ['Ketten lassen sich an die Unterseite eines Blocks setzen; die Stufe hängt dann an der untersten Kette.'],
-  });
-  b.step('Schaukel', `Hänge unter den Südast zwei Ketten mit je ${chainTop - seatY} Gliedern nebeneinander (6 und 7 Blöcke südlich vom Stammmittelpunkt). Unter die unterste Kette kommt je eine obere Eichenholzstufe – das ist die Sitzfläche, einen halben Block über dem Gras.`);
+  b.phase('Schaukel, Laterne und Wiese');
+  b.step();
   for (const z of [6, 7]) {
     for (let y = seatY + 1; y <= chainTop; y++) b.set(0, y, z, 'iron_chain[axis=y]');
     b.slab(0, seatY, z, 'oak_slab', { type: 'top' });
   }
-  b.note(0, seatY, 6, 'Schaukel: obere Eichenholzstufen an zwei Ketten');
-  b.step('Laterne', 'Hänge unter den Nordast eine Laterne an einem Kettenglied. Sie leuchtet nachts den Platz unter dem Baum aus.');
+  b.step();
   hangingLantern(b, { x: lantern[0], y: lantern[1], z: lantern[2], chain: 1 });
-  b.step('Laubstreu und Wiese', 'Streue unter der Krone Laubhaufen auf das Gras (verschieden viele Blätter je Block). Danach setzt du ringsum lockeres Gras, hohes Gras und ein paar Wiesenblumen.');
+  b.step();
   for (let z = -12; z <= 12; z++) {
     for (let x = -12; x <= 12; x++) {
       const d = Math.hypot(x, z);

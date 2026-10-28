@@ -22,18 +22,10 @@ export const meta = {
     'portal deko', 'portal design', 'netherportal design', 'nether portl', 'portal templ',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Ein Säulentempel auf einem dreistufigen Podest aus polierten Schwarzsteinziegeln: zwanzig Säulen aus '
     + 'poliertem Basalt tragen einen Fries und ein flaches Giebeldach mit verzierten Dreiecksgiebeln. In der Cella aus '
     + 'Netherziegeln steht auf einem Podium ein großes Netherportal, flankiert von Seelenfeuer-Schalen und roten Bannern. '
     + 'Rund um den Tempel hat sich der Nether in den Boden gefressen: Netherrack, Karmesin-Nezel und zwei Riesenpilze.',
-  facts: [
-    'Der Portalrahmen ist 5 Blöcke breit und 6 hoch (innen 3 × 4) – größer als das kleinste Portal mit 4 × 5 Rahmen.',
-    'Die Ecken des Obsidianrahmens braucht das Portal nicht; sie sind nur für die Optik da (spart 4 Obsidian, wenn du willst).',
-    'Das Portal entsteht, wenn du mit einem Feuerzeug (oder einer Feuerkugel) in den fertigen Rahmen klickst – Portalblöcke selbst gibt es nicht als Gegenstand.',
-    'Seelenfeuer brennt auf Seelenerde oder Seelensand für immer und leuchtet mit Stärke 10, das Netherportal mit 11.',
-    'Das Dach steigt in halben Blöcken an (Stufen im Wechsel unten und oben) – dadurch ist es flacher als ein Treppendach, wie bei einem antiken Tempel.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -413,153 +405,77 @@ function crimsonFungus(b, x, z, height, salt) {
 export default function build(b) {
   const braziers = [];
 
-  b.phase('Gelände und Podest', 'Such dir eine ebene Wiese (hier 53 × 61 Blöcke). Der Tempel steht auf einem Podest aus '
-    + 'polierten Schwarzsteinziegeln in drei Stufen: unten 27 × 32 Blöcke, jede Stufe darüber ringsum einen Block '
-    + 'kleiner. Ein paar rissige Ziegel und vereinzelt vergoldeter Schwarzstein machen die Fläche lebendig. Vorne führt '
-    + 'eine 9 breite Freitreppe hinauf, links und rechts von Wangen eingefasst.', {
-    tips: [
-      'Schwarzstein findest du in Basaltdeltas und in Bastionsruinen im Nether. Aus 4 poliertem Schwarzstein werden 4 polierte Schwarzsteinziegel.',
-      'Steck zuerst die vier Ecken der untersten Stufe ab (27 breit, 32 tief) und zieh dann die Ränder – die Mitte füllst du zum Schluss.',
-      'Die Treppenstufen setzt du mit Blick nach Norden, also zum Tempel hin.',
-    ],
-  });
-  b.step('Gelände', 'Eine ebene Grasfläche.');
+  b.phase('Gelände und Podest');
+  b.step();
   terrain(b, { x: TERRAIN.x1, y: -1, z: TERRAIN.z1, width: TERRAIN.x2 - TERRAIN.x1 + 1, depth: TERRAIN.z2 - TERRAIN.z1 + 1, height: 0, surface: 'gras', seed: 'portal' });
-  b.step('Netherboden und Weg', 'Rund um das künftige Podest hat sich der Nether schon in die Wiese gefressen: Ersetz das Gras '
-    + 'in unregelmäßigen Flecken durch Netherrack, nah am Podest durch Karmesin-Nezel, dazwischen ein paar Magmablöcke und '
-    + 'Seelenerde. Je weiter weg vom Tempel, desto seltener werden die Flecken. Von der Treppe nach Süden führt ein 5 breiter Kiesweg.');
+  b.step();
   const nylium = corruptGround(b);
   for (const [x, z] of FUNGI) fungusGround(b, x, z);
   path(b, { x: 0, y: -1, z: TIERS[0].z2 + 2, facing: 'south', length: TERRAIN.z2 - TIERS[0].z2 - 2, width: 5, mix: 'kies', wiggle: 0.5, seed: 'portal' });
-  b.step('Drei Stufen', 'Unterste Stufe 27 × 32, mittlere 25 × 30, oberste 23 × 28 Blöcke, jede genau mittig auf der darunter.');
+  b.step();
   podium(b);
-  b.step('Freitreppe', 'Drei Treppenstufen, 9 breit, vor der Mitte der Vorderseite; die Wangen daneben sind volle Ziegel.');
+  b.step();
   frontStairs(b);
-  b.step('Fußboden', 'Die oberste Stufe wird zum Fußboden: polierter Schwarzstein mit Ziegelrand. In der Cella '
-    + '(11 × 13 innen) liegt ein Schachbrett aus poliertem Schwarzstein und Ziegeln, in der Mitte ein Läufer aus roten '
-    + 'und gemeißelten Netherziegeln.');
+  b.step();
   templeFloor(b);
 
-  b.phase('Cella', 'Die Cella ist das geschlossene Haus in der Mitte (13 × 15 Blöcke außen, 7 hoch). Die Wände sind aus '
-    + 'Netherziegeln mit ein paar rissigen dazwischen; unten läuft eine Reihe Schwarzsteinziegel, oben eine Reihe roter '
-    + 'Netherziegel. Pfeiler aus Schwarzsteinziegeln an den Ecken (je 2 breit) und zwischen den Fenstern gliedern die Wände.', {
-    tips: [
-      'Netherziegel stellst du aus Netherziegeln (Gegenstand) her, die du aus Netherrack im Ofen brennst – Netherrack gibt es im Nether in Massen.',
-      'Setz zuerst die Pfeiler an Ecken und Fensterkanten, dann füllst du die Felder dazwischen.',
-    ],
-  });
-  b.step('Wände', 'Vier Wände, Seitenwände 15 lang, Vorder- und Rückwand 13 breit, alle 7 hoch.');
+  b.phase('Cella');
+  b.step();
   cellaWalls(b);
-  b.step('Eingang und Fenster', 'Vorne in der Mitte ein Spitzbogen, 5 breit und 6 hoch; die Rundung bilden umgedrehte '
-    + 'Treppen. In jede Seitenwand kommen drei schmale, 3 hohe Fenster aus roten Glasscheiben, darüber je ein gemeißelter Netherziegel.');
+  b.step();
   cellaOpenings(b);
 
-  b.phase('Säulen', 'Zwanzig Säulen umstehen die Cella: an jeder Seite sieben, hinten dazwischen vier, vorne nur zwei – '
-    + 'die Mitte bleibt für die Treppe frei. Jede Säule ist 7 hoch: unten ein Schwarzsteinziegel, darüber fünf polierte '
-    + 'Basalte, oben gemeißelter polierter Schwarzstein. Um Fuß und Kopf liegt ein Kranz aus Treppen.', {
-    tips: [
-      'Polierten Basalt stellst du aus 4 Basalt an der Werkbank her (oder einzeln in der Steinsäge). Basalt gibt es in Basaltdeltas im Nether.',
-      'Der Kranz unten: Treppen mit der hohen Seite zur Säule. Oben dieselben Treppen umgedreht – zieh beim Setzen auf die obere Blockhälfte.',
-    ],
-  });
+  b.phase('Säulen');
   columns(b);
 
-  b.phase('Fries und Decke', 'Direkt auf Säulen und Cella-Wänden liegt eine durchgehende Decke. Außen herum '
-    + 'läuft der Fries: im Wechsel gemeißelter polierter Schwarzstein und Ziegel, wie die Triglyphen an einem antiken '
-    + 'Tempel. Über dem Umgang ist die Decke aus poliertem Schwarzstein, in der Cella eine Kassettendecke: Balken aus '
-    + 'Ziegeln, Felder aus roten Netherziegeln.', {
-    tips: ['Die Decke liegt nur auf Säulen und Wänden – bau sie von den Säulen aus nach innen, dann brauchst du kaum Gerüst.'],
-  });
+  b.phase('Fries und Decke');
   ceilingAndFrieze(b);
 
-  b.phase('Dach', 'Das Dach ist flach geneigt: Es steigt mit jedem Block nach innen nur um eine halbe Stufe, abwechselnd '
-    + 'untere und obere Schwarzsteinziegelstufe. Darunter liegt ein Gesims aus umgedrehten Treppen, das einen Block über '
-    + 'den Fries vorsteht. Vorne und hinten schließen Giebelfelder aus Netherziegeln das Dach – eine Reihe hinter der '
-    + 'Dachkante, so wirken sie wie ein eingerahmtes Bild.', {
-    tips: [
-      'Stufen ganz oben im Block: Zieh beim Setzen auf die obere Hälfte des Nachbarblocks.',
-      'In der Giebelebene setzt du statt der oberen Stufe einen vollen Ziegel – sonst bleibt dort ein halber Block offen.',
-    ],
-  });
-  b.step('Gesims', 'Innen ein Ring aus Ziegeln auf dem Fries, außen ringsum umgedrehte Treppen (hohe Seite zum Tempel).');
+  b.phase('Dach');
+  b.step();
   cornice(b);
-  b.step('Giebelfelder', 'Zwei Dreiecke aus Netherziegeln, eine Reihe hinter der vorderen bzw. hinteren Dachkante, mit '
-    + 'einem Zeichen aus vergoldetem Schwarzstein um einen weinenden Obsidian.');
+  b.step();
   pediments(b);
-  b.step('Dachfläche', 'Von beiden Traufen nach innen: untere Stufe, obere Stufe, dann eine Ebene höher wieder untere und '
-    + 'obere Stufe – bis zum First 7 Ebenen über dem Gesims.');
+  b.step();
   roof(b);
-  b.step('Seelenlaternen auf den Giebeln', 'An beiden Enden des Firsts ersetzt du die oberste Stufe durch einen vollen '
-    + 'Schwarzsteinziegel und stellst ein Mauerstück mit einer Seelenlaterne darauf.');
+  b.step();
   roofLanterns(b);
 
-  b.phase('Netherportal', 'Hinten in der Cella steht das Portal auf einem Podium. Erst baust du den Rahmen aus Obsidian, '
-    + 'dann zündest du ihn mit einem Feuerzeug an – das violette Portal entsteht von selbst und füllt den Rahmen.', {
-    tips: [
-      'Obsidian baust du nur mit einer Diamant- oder Netherit-Spitzhacke ab. Oder du gießt Wasser auf Lava-Quellen: Jede wird zu Obsidian.',
-      'Zum Entzünden brauchst du ein Feuerzeug (Eisenbarren + Feuerstein) oder eine Feuerkugel. Portalblöcke gibt es nicht als Gegenstand – darum stehen sie nicht in der Materialliste.',
-      'Ein Portal im Nether entsteht beim ersten Durchgehen von selbst etwa bei den Koordinaten geteilt durch 8.',
-    ],
-  });
-  b.step('Podium', 'Podium 9 × 4 Blöcke an der Rückwand, vorne eine Treppenstufe über die ganze Breite. Vier weinende '
-    + 'Obsidiane liegen im Podium um das Portal.');
+  b.phase('Netherportal');
+  b.step();
   dais(b);
-  b.step('Obsidianrahmen', 'Rahmen 5 breit und 6 hoch auf dem Podium, innen bleibt ein Feld von 3 × 4 frei. Die vier Ecken braucht das Portal nicht.');
+  b.step();
   portalFrame(b);
-  b.step('Portal entzünden', 'Klick mit dem Feuerzeug auf die Innenseite des unteren Rahmens – das Portal füllt den ganzen Rahmen.');
+  b.step();
   lightPortal(b);
-  b.note(0, Y0 + 2, PORTAL_Z, 'Hier mit dem Feuerzeug entzünden – das Portal entsteht von selbst.');
 
-  b.phase('Seelenfeuer-Schalen', 'Sechs Schalen mit Seelenfeuer: zwei auf dem Podium neben dem Portal, zwei in der '
-    + 'Vorhalle neben dem Eingang und zwei unten an der Freitreppe. Jede Schale ist ein Pfosten aus Schwarzsteinziegelmauer '
-    + 'mit Seelenerde obendrauf; ringsum liegen acht umgedrehte Treppen mit der hohen Seite zur Mitte, so ist die Schale '
-    + 'unten schmal und oben breit. Das Seelenfeuer zündest du mit dem Feuerzeug auf der Seelenerde an.', {
-    tips: [
-      'Seelenerde findest du im Seelensandtal im Nether. Feuer auf Seelenerde oder Seelensand brennt blau und geht nie aus.',
-      'Seelenfeuer steht nicht in der Materialliste – du brauchst nur das Feuerzeug.',
-    ],
-  });
-  b.step('Schalen', 'Auf dem Podium je eine Schale links und rechts vor dem Portal (Pfosten 1 hoch), in der Vorhalle je eine '
-    + 'neben dem Eingang (Pfosten 2 hoch) und unten neben der Treppe je eine auf der Wiese (Pfosten 2 hoch).');
+  b.phase('Seelenfeuer-Schalen');
+  b.step();
   for (const x of [-4, 4]) braziers.push(brazier(b, x, Y0 + 1, DAIS.z2, 1));
   for (const x of [-4, 4]) braziers.push(brazier(b, x, Y0, 7, 2));
   for (const x of [-8, 8]) braziers.push(brazier(b, x, 0, TIERS[0].z2 + 2, 2));
-  b.step('Seelenfeuer anzünden', 'Mit dem Feuerzeug auf jede Seelenerde klicken.');
+  b.step();
   igniteBraziers(b, braziers);
 
-  b.phase('Einrichtung und Licht', 'Rote Banner an den Wandpfeilern, Bänke an den Seitenwänden, zwei Truhen am Eingang und '
-    + 'Kerzen vor dem Podium. Auf die Treppenwangen kommen zwei Piglinköpfe als Wächter. Seelenlaternen an Ketten '
-    + 'hängen von der Decke – in der Cella und im Säulengang –, damit auf dem ganzen Fußboden kein Monster spawnt.', {
-    tips: [
-      'Einen Piglinkopf lässt ein Piglin nur fallen, wenn ihn ein geladener Creeper sprengt. Hast du keinen, nimm einen anderen Kopf oder eine geschnitzte Kürbislaterne.',
-      'Seelenlaternen stellst du aus Eisenklumpen und einer Seelenfackel her.',
-    ],
-  });
-  b.step('Cella einrichten', 'Banner, Bänke aus Netherziegeltreppen (Lehne zur Wand), Truhen und Kerzen.');
+  b.phase('Einrichtung und Licht');
+  b.step();
   furnishCella(b);
-  b.step('Wächter', 'Zwei Piglinköpfe auf den oberen Treppenwangen, Blick nach Süden die Treppe hinunter.');
+  b.step();
   guardians(b);
-  b.step('Licht', 'Seelenlaternen an Ketten, erst in der Cella, dann im Säulengang ringsum.');
+  b.step();
   lightRoom(b, { x1: -CELLA.x + 1, y1: Y0, z1: CELLA.z1 + 1, x2: CELLA.x - 1, y2: WALL_TOP, z2: CELLA.z2 - 1 }, { lantern: 'soul_lantern' });
   lightRoom(b, { x1: -TIERS[2].x, y1: Y0, z1: TIERS[2].z1, x2: TIERS[2].x, y2: WALL_TOP, z2: TIERS[2].z2 }, { lantern: 'soul_lantern' });
 
-  b.phase('Umgebung', 'Rund um den Tempel hat sich der Nether in die Wiese gefressen: Netherrack in Flecken, nah am Podest '
-    + 'Karmesin-Nezel mit Wurzeln und Pilzen. Hinten wachsen zwei riesige Karmesinpilze, am Kiesweg stehen Laternen.', {
-    tips: [
-      'Karmesin-Nezel bekommst du nur mit Behutsamkeit, oder du düngst Netherrack neben vorhandenem Nezel mit Knochenmehl.',
-      'Magmablöcke schaden, wenn man darauf steht – schleich darüber oder leg sie abseits vom Weg.',
-    ],
-  });
-  b.step('Netherpflanzen', 'Auf das Karmesin-Nezel kommen Karmesinwurzeln, Karmesinpilze und Nethersprossen.');
+  b.phase('Umgebung');
+  b.step();
   netherPlants(b, nylium);
-  b.step('Riesenpilze', 'Zwei riesige Karmesinpilze hinten links und rechts: Stängel, Hut aus Netherwarzenblöcken mit '
-    + 'Pilzlichtern, darunter Trauerranken.');
+  b.step();
   for (const [x, z, h, salt] of FUNGI) crimsonFungus(b, x, z, h, salt);
-  b.step('Laternen am Weg', 'Vier Laternenpfosten aus Schwarzsteinziegelmauer mit Seelenlaternen neben dem Kiesweg.');
+  b.step();
   for (const z of [21, 28]) {
     for (const x of [-5, 5]) lampPost(b, { x, y: 0, z, height: 3, post: SB.brickWall, base: SB.polished, lantern: 'soul_lantern' });
   }
-  b.step('Bäume, Felsen und Gras', 'Ein paar Fichten und Felsen aus Tiefenschiefer am Rand, Gras auf der übrigen Wiese.');
+  b.step();
   for (const [x, z, size, seed] of [[-20, 24, 'mittel', 1], [21, 22, 'mittel', 2], [-21, -24, 'mittel', 3], [21, 0, 'mittel', 4]]) {
     tree(b, { x, y: 0, z, species: 'fichte', size, seed });
   }

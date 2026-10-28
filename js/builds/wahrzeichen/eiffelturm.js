@@ -12,17 +12,7 @@ export const meta = {
     'paris turm', 'pariser turm', 'turm paris', 'eiffel', 'eifeltum', 'eiffelturm paris',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Der Eiffelturm im Maßstab 1:1: 330 m hoch mit Antennen, 125 m breite quadratische Grundfläche, vier geschwungene Pfeiler mit Zierbögen und drei Etagen auf 57,6 m, 115,7 m und 276,1 m. Das Eisen ist als sichtbares Gitterwerk gebaut – Eckträger und Gurte massiv, die Streben dazwischen aus Kupferrost – in drei Brauntönen, unten dunkler als oben. Die Außenkurve folgt den 29 Feldern des echten Turms; die Pfeiler-Innenkanten, die Spitze und die Einrichtung der Pavillons sind vereinfacht und teils geschätzt.',
-  facts: [
-    'Höhe heute 330 m mit Antennen (seit März 2022), Eisenkonstruktion 300 m, eröffnet 1889 zur Weltausstellung.',
-    'Grundfläche: Quadrat mit 125 m Seitenlänge, zwischen den Pfeilern 74,24 m, jeder Pfeiler rund 26 m breit.',
-    'Etagen: 57,6 m (Seite 70,7 m), 115,7 m (Seite 41 m), 276,1 m mit Oberdeck auf 279,1 m (Seite 18,7 m).',
-    'Die Zierbögen reichen 39 m hoch – sie tragen nichts und kamen auf Wunsch des Architekten Stephen Sauvestre dazu.',
-    'Rund 7 300 t Schmiedeeisen aus 18 038 Teilen und 2,5 Millionen Nieten; gestrichen in „Eiffelturm-Braun“, unten dunkler als oben.',
-    'Im echten Turm zeigen die vier Pfeiler in die vier Himmelsrichtungen; hier stehen sie in den Ecken, die Seiten zeigen nach Norden, Osten, Süden und Westen.',
-    'Geschätzt (nicht belegt): Verlauf der Pfeiler-Innenkanten, Form der Turmspitze über 280 m, Lage und Größe der Pavillons.',
-  ],
   sources: [
     { title: 'Wikipedia (de): Eiffelturm', url: 'https://de.wikipedia.org/wiki/Eiffelturm' },
     { title: 'Wikipedia (fr): Tour Eiffel – Dimensions', url: 'https://fr.wikipedia.org/wiki/Tour_Eiffel' },
@@ -282,14 +272,15 @@ function buildArches(b, g) {
   const thickM = Math.max(3, 1 / g.s);
   const centerM = ARCH.apexM - ARCH.radiusM;
   const top = g.level(ARCH.apexM + thickM);
+  // Reihenfolge: Nord, Süd, West, Ost
   const sides = [
-    ['Bogen Nordseite', (u, y, k) => [u, y, -k]],
-    ['Bogen Südseite', (u, y, k) => [u, y, k]],
-    ['Bogen Westseite', (u, y, k) => [-k, y, u]],
-    ['Bogen Ostseite', (u, y, k) => [k, y, u]],
+    (u, y, k) => [u, y, -k],
+    (u, y, k) => [u, y, k],
+    (u, y, k) => [-k, y, u],
+    (u, y, k) => [k, y, u],
   ];
-  for (const [title, place] of sides) {
-    b.step(title, 'Der Bogen liegt in der Außenfläche des Turms und spannt sich von Pfeiler zu Pfeiler. Setze die Bogenreihe von beiden Pfeilern aus gleichzeitig nach oben – die massiven Kanten zuerst, dann den Kupferrost dazwischen. Am Scheitel treffen sich beide Hälften.');
+  for (const place of sides) {
+    b.step();
     for (let y = 1; y <= top; y++) {
       const m = g.meters(y);
       const k = g.outer(y);
@@ -411,18 +402,12 @@ function buildFloor1(b, g) {
   const half = g.half(FLOOR1.side);
   const beltH = g.len(6, 2);
   const hole = g.len(11, 2);
-  b.phase('Erste Etage (57,6 m)', `Die erste Plattform liegt auf Ebene ${yDeck + 1} und misst ${2 * half + 1} × ${2 * half + 1} Blöcke. Ein umlaufender Randträger verbindet die vier Pfeiler; darauf liegt der Holzboden mit dem Glasboden um die offene Mitte.`, {
-    tips: [
-      'Spanne den Randträger erst als Untergurt von Pfeiler zu Pfeiler – das ist deine Arbeitsbühne für alles darüber.',
-      'Der Glasboden ist echt: seit 2014 kann man auf der ersten Etage über die Mitte des Turms laufen.',
-    ],
-  });
-  b.step('Randträger', `Baue den Randträger ringsum in der Außenkante der Plattform, ${beltH} Ebenen hoch: unten und oben einen massiven Gurt, dazwischen gekreuzte Streben aus Kupferrost.`);
+  b.phase('Erste Etage (57,6 m)');
+  b.step();
   buildBelt(b, g, half, yDeck - 1, beltH);
-  b.note(0, yDeck - 1, -half, 'Randträger der ersten Etage – hier stand früher der Fries mit 72 Namen von Wissenschaftlern.');
-  b.step('Plattformboden', `Lege den Boden aus Fichtenbrettern (Rand: entrindetes Fichtenholz). In der Mitte bleibt ein Loch von ${2 * hole - 1} × ${2 * hole - 1} Blöcken offen, umrahmt von einem Glasboden. Über den hohlen Pfeilern legst du einen Rost aus Kupferrost – so fällt niemand in den Pfeilerschacht, und man sieht trotzdem hinunter.`);
+  b.step();
   buildDeck(b, g, yDeck, half, hole, g.len(2, 1));
-  b.step('Geländer und Laternen', 'Setze ringsum Kupfergitter als Geländer, an der Außenkante und um das Loch in der Mitte. Auf jedes achte Gitter kommt eine Laterne, dazu je eine Laterne an den Innenecken der vier Pfeiler und in der Mitte der Ost- und Westseite ein Laternenpfosten (zwei Kupfergitter übereinander, Laterne obendrauf).');
+  b.step();
   buildRailing(b, g, yDeck + 1, half, Math.max(4, g.len(8)));
   buildRailing(b, g, yDeck + 1, hole, Math.max(4, g.len(6)));
   // Laternen an den Innenecken der Pfeiler, wo das Geländerlicht nicht hinreicht
@@ -443,7 +428,7 @@ function buildFloor1(b, g) {
     b.set(sx * postX, yDeck + 3, 0, 'lantern');
   }
   if (g.s >= 0.5) {
-    b.step('Pavillons auf der Nord- und Südseite', 'Zwischen den Pfeilern stehen zwei Glaspavillons mit Restaurant und Ausstellung. Baue die Rahmen aus Hellgrauer Keramik, fülle mit Glasscheiben, decke mit glatten Steinstufen und richte Tische, Stühle und hängende Laternen ein.');
+    b.step();
     const a = g.inner(yDeck + 1);
     const x1 = -(a - 2);
     const x2 = a - 2;
@@ -459,14 +444,12 @@ function buildFloor2(b, g) {
   const half = g.half(FLOOR2.side);
   const beltH = g.len(4, 2);
   const shaftHalf = g.s >= 1 ? 2 : 1;
-  b.phase('Zweite Etage (115,7 m)', `Hier laufen die vier Pfeiler zusammen. Die Plattform liegt auf Ebene ${yDeck + 1} und misst ${2 * half + 1} × ${2 * half + 1} Blöcke; in der Mitte startet der Aufzugsschacht zur Spitze.`, {
-    tips: ['Ab hier ist der Turm ein einziger Schaft – arbeite dich ringsum Ebene für Ebene hoch.'],
-  });
-  b.step('Randträger', `Baue den Randträger wie bei der ersten Etage, diesmal ${beltH} Ebenen hoch.`);
+  b.phase('Zweite Etage (115,7 m)');
+  b.step();
   buildBelt(b, g, half, yDeck - 1, beltH);
-  b.step('Plattformboden', 'Lege den Boden ganz aus; nur in der Mitte bleibt die Öffnung für den Aufzugsschacht frei.');
+  b.step();
   buildDeck(b, g, yDeck, half, shaftHalf + 1, 0);
-  b.step('Geländer und Laternen', 'Kupfergitter ringsum an der Außenkante, mit Laternen obendrauf.');
+  b.step();
   buildRailing(b, g, yDeck + 1, half, Math.max(4, g.len(6)));
   if (g.s >= 0.5) {
     const k = g.outer(yDeck + g.len(6, 4));
@@ -474,7 +457,7 @@ function buildFloor2(b, g) {
     const inner = shaftHalf + 2;
     const height = g.len(5, 4);
     if (outerP - inner >= 4) {
-      b.step('Glaspavillon rund um den Schacht', 'Innerhalb des Turmgitters steht ein Ring aus Glaspavillons. Baue ihn als vier Teile um den Schacht herum und lass in jedem Teil einen Eingang zur Plattform.');
+      b.step();
       buildPavilion(b, -outerP, -outerP, outerP, -inner - 1, yDeck, height, 'north');
       buildPavilion(b, -outerP, inner + 1, outerP, outerP, yDeck, height, 'south');
       buildPavilion(b, -outerP, -inner, -inner - 1, inner, yDeck, height, 'west');
@@ -495,13 +478,11 @@ function buildFloor3(b, g) {
   const yDeck = g.level(FLOOR3.m) - 1;
   const yUpper = Math.max(yDeck + 3, g.level(FLOOR3.upper) - 1);
   const half = g.half(FLOOR3.side);
-  b.phase('Dritte Etage (276,1 m)', `Die oberste Plattform hat zwei Ebenen: unten einen verglasten Raum auf Ebene ${yDeck + 1}, darüber das offene Oberdeck auf Ebene ${yUpper + 1}. Beide messen ${2 * half + 1} × ${2 * half + 1} Blöcke.`, {
-    tips: ['Baue zuerst den Boden über die Turmkante hinaus – er kragt auf jeder Seite einige Blöcke aus.'],
-  });
-  b.step('Boden', 'Lege den Boden über den ganzen Turmquerschnitt und lass ihn rundum auskragen.');
+  b.phase('Dritte Etage (276,1 m)');
+  b.step();
   b.fill(-half, yDeck, -half, half, yDeck, half, P.deck);
   b.fill(-half, yDeck, -half, half, yDeck, half, P.deckEdge, { outline: true });
-  b.step('Verglaster Raum', 'Setze ringsum Glas, jeden dritten Block einen Pfosten aus Hellgrauer Keramik. Darüber kommt das Oberdeck als Decke.');
+  b.step();
   for (let y = yDeck + 1; y < yUpper; y++) {
     for (let u = -half; u <= half; u++) {
       for (const [x, z] of [[u, -half], [u, half], [-half, u], [half, u]]) {
@@ -512,7 +493,7 @@ function buildFloor3(b, g) {
   }
   b.fill(-half, yUpper, -half, half, yUpper, half, P.deck);
   if (half >= 4) {
-    b.step('Gustave Eiffels Büro', `Gustave Eiffel hatte hier oben ein kleines Büro für seine Messungen. Stell einen Schreibtisch mit Lesepult, zwei Stühle und Bücherregale auf. ${yUpper - yDeck - 1 >= 3 ? 'Häng Laternen unter die Decke.' : 'Der Raum ist nur 2 Blöcke hoch – hängende Laternen wären im Weg. Stell die Laternen deshalb in die vier Ecken und eine auf die Bücherregale.'}`);
+    b.step();
     b.set(-1, yDeck + 1, -2, 'lectern[facing=south]');
     b.stairs(-1, yDeck + 1, -1, 'spruce_stairs', { facing: 'south' });
     b.set(1, yDeck + 1, -2, 'spruce_fence');
@@ -530,13 +511,12 @@ function buildFloor3(b, g) {
       b.set(0, yDeck + 2, half - 1, 'lantern');
     }
   } else {
-    b.step('Licht', 'Häng eine Laterne unter die Decke.');
+    b.step();
     b.set(0, yUpper - 1, 0, 'lantern[hanging=true]');
   }
-  b.step('Leiter zum Oberdeck', `Setze an der Innenseite der Ostwand, genau in der Mitte, eine Leiter vom Boden bis durch das Oberdeck (${yUpper - yDeck} Sprossen). Das Feld im Oberdeck ersetzt du dabei durch die oberste Sprosse.`);
+  b.step();
   for (let y = yDeck + 1; y <= yUpper; y++) b.set(half - 1, y, 0, 'ladder[facing=west]');
-  b.note(half - 1, yDeck + 1, 0, 'Leiter vom verglasten Raum hinauf aufs Oberdeck.');
-  b.step('Geländer auf dem Oberdeck', 'Setze ringsum Kupfergitter als Geländer, mit Laternen an den Ecken.');
+  b.step();
   buildRailing(b, g, yUpper + 1, half, Math.max(2, half));
   return yUpper;
 }
@@ -546,9 +526,7 @@ function buildTop(b, g, yUpper) {
   const yStructure = Math.max(yLantern + Math.max(2, Math.round(3 * g.s)) + 2, g.level(STRUCTURE_TOP_M) - 1);
   const yTop = Math.max(yStructure + 2, g.level(TOTAL_HEIGHT_M) - 1);
   const base = Math.max(1, Math.min(g.half(FLOOR3.side) - 2, Math.round(4 * g.s)));
-  b.phase('Turmspitze und Antenne', 'Über dem Oberdeck laufen vier Eckstreben zur Laterne mit dem Leuchtfeuer (eine Seelaterne hinter Glas) zusammen; eine kleine Kuppel aus Fichtentreppen schließt sie ab. Darauf steht der Antennenmast bis auf 330 m. Die genaue Form der Spitze ist geschätzt.', {
-    tips: ['Der Mast wechselt alle ' + Math.max(1, Math.round(4 * g.s)) + ' Blöcke zwischen Rot und Weiß – fang ganz oben mit Rot an und zähl nach unten.', 'Stell dir für die Spitze eine Säule aus Gerüsten daneben; oben ist kein Platz zum Stehen.'],
-  });
+  b.phase('Turmspitze und Antenne');
   // Vier Eckstreben laufen von den Ecken zur Laterne zusammen
   for (let y = yUpper + 1; y < yLantern; y++) {
     const t = (y - yUpper) / (yLantern - yUpper);
@@ -579,7 +557,6 @@ function buildTop(b, g, yUpper) {
     const fromTop = yTop - y;
     b.set(0, y, 0, Math.floor(fromTop / band) % 2 === 0 ? 'red_concrete' : 'white_concrete');
   }
-  b.note(0, yTop, 0, `Spitze: ${TOTAL_HEIGHT_M} m über dem Boden.`);
 }
 
 export default function build(b, { scale = 1 } = {}) {
@@ -591,47 +568,25 @@ export default function build(b, { scale = 1 } = {}) {
   const yDeck3 = g.level(FLOOR3.m) - 1;
   const k0 = g.outer(1);
 
-  b.phase('Gelände und Fundamente', `Der Turm steht auf einer Fläche von ${2 * k0 + 1} × ${2 * k0 + 1} Blöcken. Unter jedem Pfeiler liegt ein Sockel aus poliertem Andesit, dazwischen Sandsteinplatten wie auf dem Champ de Mars.`, {
-    tips: [
-      'Markiere zuerst die vier Ecken der Grundfläche – sie liegen genau ' + (2 * k0) + ' Blöcke auseinander.',
-      'Arbeite bei einem Bau dieser Größe im Kreativmodus mit Flugmodus und /fill.',
-    ],
-  });
+  b.phase('Gelände und Fundamente');
   buildGround(b, g);
 
-  b.phase('Die vier Pfeiler bis zur ersten Etage', `Jeder Pfeiler ist ein hohler Gitterkasten: massive Eckträger und Gurte in Dunkelbraun (Braune Keramik), dazwischen gekreuzte Streben aus gewachstem angelaufenem Kupferrost; nur sehr schmale Felder füllst du mit gewachsten Kupfergittern. Die Pfeiler neigen sich nach innen – in jeder Ebene rücken Außen- und Innenseite ein Stück zur Mitte.`, {
-    tips: [
-      'Baue alle vier Pfeiler gleichzeitig Ebene für Ebene; so siehst du sofort, ob die Neigung überall gleich ist.',
-      'Die Gurte (volle Reihen) liegen dort, wo beim echten Turm ein neues Feld beginnt.',
-      'Kupferrost und Kupfergitter sind gewachst – so bleiben sie braun und laufen nicht grün an.',
-    ],
-  });
+  b.phase('Die vier Pfeiler bis zur ersten Etage');
   for (let y = 1; y < yDeck1; y++) towerLevel(b, g, levels, y);
   connectLooseBlocks(b, k0, 1, yDeck1 - 1);
-  b.note(g.outer(1), 1, g.outer(1), 'Außenecke: hier misst der Turm 125 m von Ecke zu Ecke einer Seite.');
 
-  b.phase('Die vier Zierbögen', 'Die Bögen zwischen den Pfeilern tragen nichts – sie machen den Turm zum Eingangstor der Weltausstellung. Ihr Scheitel liegt auf 39 m.', {
-    tips: ['Setze erst den inneren Rand des Bogens als Linie, dann den äußeren; der Kupferrost dazwischen geht danach schnell.'],
-  });
+  b.phase('Die vier Zierbögen');
   buildArches(b, g);
-  b.note(0, g.level(ARCH.apexM), -g.outer(g.level(ARCH.apexM)), 'Scheitel des Zierbogens auf 39 m.');
 
   buildFloor1(b, g);
 
-  b.phase('Die Pfeiler bis zur zweiten Etage', 'Über der ersten Etage werden die Pfeiler schmaler und rücken zusammen, bis sie auf der zweiten Etage verschmelzen.', {
-    tips: [`Die Eckträger sind hier nur noch ${cornerWidth(g, (FLOOR1.m + FLOOR2.m) / 2)} ${cornerWidth(g, (FLOOR1.m + FLOOR2.m) / 2) === 1 ? 'Block' : 'Blöcke'} breit.`],
-  });
+  b.phase('Die Pfeiler bis zur zweiten Etage');
   for (let y = yDeck1; y < yDeck2; y++) towerLevel(b, g, levels, y);
   connectLooseBlocks(b, g.outer(yDeck1), yDeck1, yDeck2 - 1);
 
   buildFloor2(b, g);
 
-  b.phase('Der Turmschaft bis zur dritten Etage', `Ab der zweiten Etage ist der Turm ein einziger Gitterschaft, der sich nach oben verjüngt. Im Inneren laufen die Ketten des Aufzugsschachts mit. Ab 110 m wird das Braun heller (Fester Schlamm), ab 220 m am hellsten (Hellgraue Keramik) – wie beim echten Anstrich, der oben heller ist als unten.`, {
-    tips: [
-      'Das letzte Feld unter der dritten Etage steht senkrecht – dort ändert sich die Breite nicht mehr.',
-      'Prüfe alle 20 Ebenen die Breite mit der Ebenen-Ansicht, damit sich keine Seite verschiebt.',
-    ],
-  });
+  b.phase('Der Turmschaft bis zur dritten Etage');
   for (let y = yDeck2; y < yDeck3; y++) {
     towerLevel(b, g, levels, y);
   }

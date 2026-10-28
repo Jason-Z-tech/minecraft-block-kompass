@@ -41,6 +41,10 @@ test('buildUploadResult: Datei → BuildResult, Fortschritt, Fehler als EngineEr
   assert.equal(result.upload.format, 'litematic');
   assert.equal(result.upload.blockCount, 55);
   assert.deepEqual(result.upload.chapters, ['Region „Haus“', 'Region „Turm“']);
+  // Kapitel nur mit Titel, Schritte ohne Titel und Text, keine Notizen (wie jedes BuildResult)
+  assert.ok(result.phases.every((p) => Object.keys(p).sort().join() === 'steps,title'));
+  assert.ok(result.steps.every((s) => Object.keys(s).sort().join() === 'blockCount,index,layerY,materials,phase'));
+  assert.equal('notes' in result, false);
   assert.ok(messages.includes('Entpacke Datei …'));
   assert.ok(messages.some((m) => /^Baue 55 Blöcke/.test(m)));
   // Ergebnis lässt sich wie jedes BuildResult übertragen

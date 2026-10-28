@@ -18,18 +18,10 @@ export const meta = {
     'lothlorien', 'lórien', 'caras galadhon', 'elfen baumhaus', 'riesenbaum', 'hängebrücke', 'haengebruecke', 'elfen baumstat',
   ],
   accuracy: 'eigenes',
-  difficulty: 4,
   description: 'Eine Elfenstadt hoch in den Bäumen: vier Riesenbäume mit hellgrauer Blasseichen-Rinde tragen ringförmige '
     + 'Plattformen auf mehreren Ebenen. Um jeden Stamm windet sich eine Wendeltreppe vom Waldboden bis nach oben, '
     + 'durchhängende Hängebrücken verbinden die Bäume. Auf den Plattformen stehen kleine Häuser mit grünen Kupferdächern, '
     + 'Laternen leuchten, und unter den Plattformen hängen leuchtende Höhlenranken.',
-  facts: [
-    'Der Hauptbaum ist 43 Blöcke hoch und hat einen Stamm mit 9 Blöcken Durchmesser; die drei anderen Bäume haben 7.',
-    'Drei Hängebrücken (12 bis 14 Blöcke lang, 5 breit) hängen in der Mitte zwei Blöcke durch.',
-    'Die Wendeltreppen steigen pro Feld um eine Stufe: Bis zur obersten Plattform des Hauptbaums (30 Blöcke hoch) sind es 30 Stufen.',
-    'Die Rinde ist aus Blasseichenholz, die Kronen aus Birken- und Azaleenlaub; die Dächer aus gewachstem oxidiertem Kupfer bleiben grün.',
-    'Angeregt von Elfenstädten in Bäumen wie Caras Galadhon in Tolkiens Lothlórien – aber ein eigenes Design, kein Nachbau.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -43,9 +35,9 @@ const TREES = [
   { name: 'Nordbaum', x: 0, z: -34, R: 3, H: 33, start: 0, platforms: [{ y: 20, r: 10 }] },
 ];
 const BRIDGES = [
-  { name: 'West', from: [0, 'west'], to: [1, 'east'], level: 10 },
-  { name: 'Ost', from: [0, 'east'], to: [2, 'west'], level: 10 },
-  { name: 'Nord', from: [0, 'north'], to: [3, 'south'], level: 20 },
+  { from: [0, 'west'], to: [1, 'east'], level: 10 },
+  { from: [0, 'east'], to: [2, 'west'], level: 10 },
+  { from: [0, 'north'], to: [3, 'south'], level: 20 },
 ];
 // Häuser: Baum, Plattform-Höhe, Richtung vom Stamm aus (Haus steht dort, Tür zeigt zum Stamm)
 const HOUSES = [
@@ -464,11 +456,7 @@ function underpinSediment(b, { x1, z1, x2, z2, y1, y2 }) {
 // ---------- Bau ----------
 
 export default function build(b) {
-  b.phase('Waldboden', 'Leg eine große Grasfläche an (97 × 85 Blöcke). Markier die vier Baumstandorte: den Hauptbaum in der '
-    + 'Mitte, je 36 Blöcke westlich und östlich davon zwei weitere Bäume und 34 Blöcke nördlich den vierten. Vor dem '
-    + 'Hauptbaum liegt ein kleiner Teich mit einem Beet dahinter, Waldwege verbinden die Stämme.', {
-    tips: ['Steck die Mittelpunkte der Stämme mit einem Zaunpfosten ab – alle Maße der Plattformen zählen von dort.'],
-  });
+  b.phase('Waldboden');
   terrain(b, { x: -50, y: 0, z: -48, width: 101, depth: 86, height: 0, surface: 'gras', seed: 'elfen' });
   pond(b, { x: -6, y: 0, z: 18, width: 13, depth: 9, facing: 'south', shore: 'gemischt', seed: 'elfen' });
   underpinSediment(b, { x1: -7, z1: 17, x2: 7, z2: 27, y1: -2, y2: 0 });
@@ -480,104 +468,68 @@ export default function build(b) {
 
   const stairsIndex = TREES.map((t) => stepIndex(t));
 
-  b.phase('Stämme und Wurzeln', 'Die Stämme sind runde Säulen aus stehenden Blasseichenstämmen: der Hauptbaum 9 Blöcke '
-    + 'dick und 43 hoch, die anderen 7 dick und 33 bis 35 hoch. Ganz oben werden sie in drei Ebenen schmaler. Am Fuß '
-    + 'strahlen Wurzeln aus Blasseichenholz aus – nur die Seite, an der die Treppe beginnt, bleibt frei.', {
-    tips: [
-      'Leg für jeden Stamm zuerst einen Kreis auf dem Boden und zieh ihn dann Ebene für Ebene hoch; Gerüstblöcke helfen ab Höhe 5.',
-      'Blasseichen wachsen im Blassen Garten – ein Setzling von dort und Knochenmehl liefern viel Holz.',
-    ],
-  });
+  b.phase('Stämme und Wurzeln');
   TREES.forEach((t) => {
-    b.step(t.name, `${t.name}: Stamm mit ${2 * t.R + 1} Blöcken Durchmesser, ${t.H} hoch, dazu die Wurzeln.`);
+    b.step();
     trunk(b, t);
     roots(b, t);
   });
 
-  b.phase('Wendeltreppen', 'Um jeden Stamm windet sich eine Treppe aus Birkenholztreppen, eine Stufe pro Feld, direkt '
-    + 'am Stamm entlang. Die Treppe steigt im Uhrzeigersinn (von oben gesehen) und führt durch alle Plattformen '
-    + 'bis nach oben. Jede zweite Stufe bekommt außen einen Zaunpfosten als Geländer.', {
-    tips: ['Schau beim Setzen jeder Stufe in Laufrichtung – dann liegt die hohe Seite richtig.'],
-  });
+  b.phase('Wendeltreppen');
   TREES.forEach((t, i) => {
-    b.step(`Treppe am ${t.name}`, `Vom Waldboden bis zur obersten Plattform in ${t.platforms[t.platforms.length - 1].y} Blöcken Höhe (${t.platforms[t.platforms.length - 1].y} Stufen).`);
+    b.step();
     spiralStairs(b, t, stairsIndex[i]);
-    b.note(TREES[i].x + Math.round(Math.cos(t.start) * (t.R + 1.5)), 1, TREES[i].z + Math.round(Math.sin(t.start) * (t.R + 1.5)), `Hier beginnt die Treppe am ${t.name}.`);
   });
 
-  b.phase('Plattformen', 'Die Plattformen sind Ringe aus Birkenholzbrettern um die Stämme, jeder vierte Ring aus '
-    + 'Blasseichenbrettern, außen eingefasst mit geschälter Blasseiche. Fang direkt am Stamm an und arbeite dich nach außen – so hält jeder Block am vorigen. '
-    + 'Darunter laufen acht schräge Streben aus Blasseichenholz vom Stamm zum Rand. Wo die Treppe hindurchführt, bleibt der Boden offen.', {
-    tips: ['Ringe zeichnest du am einfachsten, indem du erst die vier Achsenpunkte und die Diagonalen setzt und dann verbindest.'],
-  });
+  b.phase('Plattformen');
   TREES.forEach((t, i) => {
     for (const p of t.platforms) {
-      b.step(`${t.name}, Plattform in ${p.y} Blöcken Höhe`, `Ring bis ${p.r} Blöcke um die Stammmitte, jeder vierte Ring aus Blasseichenbrettern, mit Streben darunter.`);
+      b.step();
       platform(b, t, p, stairsIndex[i]);
     }
   });
 
-  b.phase('Hängebrücken', 'Drei Hängebrücken verbinden den Hauptbaum mit den anderen Bäumen. Jede ist 5 breit und hängt in '
-    + 'der Mitte zwei Blöcke durch: Oben setzt du Birkenholzstufen (obere Hälfte), wo es eine Stufe hinab- oder hinaufgeht, '
-    + 'Birkenholztreppen. Am Rand läuft ein Zaun als Geländer, an beiden Enden stehen Pfosten mit Laternen.', {
-    tips: ['Bau jede Brücke von beiden Plattformen aus zur Mitte hin – dann triffst du dich an der tiefsten Stelle.'],
-  });
+  b.phase('Hängebrücken');
   for (const br of BRIDGES) {
-    b.step(`Brücke ${br.name}`, `Hängebrücke in ${br.level} Blöcken Höhe vom Hauptbaum zum ${TREES[br.to[0]].name}.`);
+    b.step();
     hangingBridge(b, br);
   }
 
-  b.phase('Geländer und Laternen', 'Ringsum an den Plattformrändern kommt ein Birkenholzzaun, außer an den Brücken. Auf jeden '
-    + 'fünften Pfosten stellst du eine Laterne.');
+  b.phase('Geländer und Laternen');
   TREES.forEach((t) => {
-    b.step(`Geländer am ${t.name}`, 'Zaun am Rand aller Plattformen, Laternen auf den Pfosten.');
+    b.step();
     for (const p of t.platforms) railing(b, t, p);
   });
 
-  b.phase('Elfenhäuser', 'Auf fünf Plattformen steht ein kleines Haus (5 × 5): Boden aus geschältem Birkenholz, Ecken '
-    + 'aus geschälten Birkenstämmen, unten eine Reihe Blasseichenbretter, darüber Birkenbretter. Die Tür zeigt zum Stamm, '
-    + 'auf den anderen drei Seiten sitzen hohe Fenster. Das Pyramidendach aus gewachstem oxidiertem Kupfer hat einen Block '
-    + 'Überstand und einen vollen Kupferblock mit Blitzableiter als Spitze. Vor der Tür hängt eine Laterne unter dem '
-    + 'Dachüberstand, drinnen eine an zwei Ketten unter der Dachspitze – damit ist der ganze Boden hell genug.', {
-    tips: ['Gewachstes Kupfer oxidiert nicht weiter – das Grün bleibt so, wie du es baust. Gewachst wird mit Honigwaben.'],
-  });
+  b.phase('Elfenhäuser');
   HOUSES.forEach((h) => {
-    const label = { halle: 'Werkstatt', schlaf: 'Schlafhaus', bibliothek: 'Bibliothek' }[h.kind];
-    b.step(`${label} am ${TREES[h.tree].name}`, `${label} auf der Plattform in ${h.y} Blöcken Höhe, Seite ${{ north: 'Norden', south: 'Süden', west: 'Westen', east: 'Osten' }[h.dir]}.`);
+    b.step();
     const { cx, cz, y } = house(b, h);
     // Nachprüfung bis unter die Dachspitze (mit der Kettenlaterne); bliebe etwas dunkel, käme eine Laterne dazu.
     lightRoom(b, { x1: cx - 1, y1: y + 1, z1: cz - 1, x2: cx + 1, y2: y + 6, z2: cz + 1 });
   });
 
-  b.phase('Äste und Kronen', 'Aus jedem Stamm wachsen oben Äste aus Blasseichenholz schräg nach außen; um ihre Enden und '
-    + 'über der Spitze kommen große Laubwolken aus Birken-, Azaleen- und blühendem Azaleenlaub. Am Rand der Wolken lässt '
-    + 'du einzelne Blätter weg, damit die Krone nicht wie eine Kugel aussieht.', {
-    tips: ['Laub, das du selbst setzt, verrottet nicht – auch wenn es weit vom Stamm entfernt ist.'],
-  });
+  b.phase('Äste und Kronen');
   TREES.forEach((t) => {
-    b.step(`Krone des ${t.name}`, 'Äste und Laubwolken.');
+    b.step();
     crown(b, t);
   });
 
-  b.phase('Ranken', 'Unter den Plattformrändern hängen Höhlenranken mit leuchtenden Leuchtbeeren und ein paar '
-    + 'Sporenblüten, an den Stämmen klettern Ranken hoch.', {
-    tips: ['Höhlenranken wachsen nach unten: Setz eine Leuchtbeere an die Unterseite der Plattform und lass sie mit Knochenmehl wachsen.'],
-  });
+  b.phase('Ranken');
   TREES.forEach((t, i) => {
-    b.step(`Ranken am ${t.name}`, 'Höhlenranken und Sporenblüten unter den Plattformen, Ranken am Stamm.');
+    b.step();
     hangingPlants(b, t, stairsIndex[i]);
   });
 
-  b.phase('Lichtung', 'Zum Schluss wird der Waldboden lebendig: Birken und Azaleenbüsche zwischen den Riesenbäumen, ein '
-    + 'Blumenbeet am Teich, dazu Farne, Gras und Blumen.');
-  b.step('Bäume und Büsche', 'Kleine Birken und Azaleenbüsche zwischen den Stämmen.');
+  b.phase('Lichtung');
+  b.step();
   for (const [x, z, s] of [[-20, -18, 1], [20, -20, 2], [-44, -20, 3], [44, -22, 4], [-22, 26, 5], [24, 28, 6], [-44, 24, 7], [44, 22, 8]]) {
     tree(b, { x, y: 1, z, species: 'birke', size: s % 2 ? 'mittel' : 'klein', seed: s });
   }
   for (const [x, z, s] of [[-12, 12, 1], [13, 13, 2], [-28, -8, 3], [28, -9, 4], [-9, -22, 5], [10, -26, 6]]) {
     bush(b, { x, y: 1, z, size: 'klein', leaves: 'azalee', seed: s });
   }
-  b.step('Blumen und Farne', 'Ein Blumenbeet am Teich, Farne und Blumen auf dem ganzen Waldboden.');
+  b.step();
   replant(b, { x1: -5, z1: 28, x2: 5, z2: 30 });
   vegetation(b, { x: -50, y: 2, z: -48, width: 101, depth: 86, mix: 'wald', density: 0.28, shape: 'eckig', seed: 'elfen' });
   vegetation(b, { x: -50, y: 2, z: -48, width: 101, depth: 86, mix: 'blumen', density: 0.08, shape: 'eckig', seed: 'elfen-b' });

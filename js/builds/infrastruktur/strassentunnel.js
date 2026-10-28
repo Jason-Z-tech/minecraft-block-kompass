@@ -17,14 +17,7 @@ export const meta = {
     'mountain tunnel', 'highway tunnel', 'stone tunnel', 'hill tunnel',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Eine Straße führt durch einen 23 Blöcke langen Tunnel unter einem grünen Hügel hindurch. Die Röhre ist ein Rundgewölbe aus Steinziegeln mit Gehwegen auf beiden Seiten, Fluchtnischen und Laternen im Scheitel. Beide Portale bekommen eine Stirnwand aus Tuffsteinziegeln mit Pilastern, Schlussstein, Gesims und Brüstung; davor fängt der Einschnitt die Hänge mit gestuften Stützmauern ab. Straßenlaternen, Bäume und Wiese auf dem Hügel runden das Bild ab.',
-  facts: [
-    'Röhre 23 Blöcke lang, innen 9 Blöcke breit und in der Mitte 6 Blöcke hoch – Fahrbahn 7 Blöcke breit, Gehwege je 1 Block.',
-    'Im Scheitel hängt alle 6 Blöcke eine Laterne: so ist jedes Feld in der Röhre hell genug, dass keine Monster entstehen.',
-    'Die Gehwege sind untere Stufen auf einer Reihe Steinziegel: einen halben Block höher als die Straße, wie ein echter Bordstein.',
-    'Über dem Gewölbescheitel liegen an den Portalen zwei, in der Mitte bis zu sechs Ebenen Stein und Erde – du kannst den Tunnel auch in einen bestehenden Hügel graben.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -113,12 +106,7 @@ function hillTop(x, z) {
 }
 
 function hill(b) {
-  b.phase('Hügel und Einschnitte', 'Der Tunnel führt durch einen Hügel, der sich 10 bis 14 Blöcke über die Straße erhebt. Vor beiden Portalen schneidet die Straße 15 Blöcke breit in den Hang ein. Die Röhre selbst (11 Blöcke breit) bleibt zunächst frei – das Gewölbe baust du im nächsten Kapitel und schüttest es danach mit Erde zu.', {
-    tips: [
-      'Hast du schon einen passenden Hügel, gräbst du die Röhre einfach aus: 11 Blöcke breit, von der Straße aus 8 Blöcke hoch, und überspringst dieses Kapitel.',
-      'Stecke zuerst die Mittellinie der Straße mit ein paar Blöcken ab – Röhre, Portale und Einschnitte richten sich alle danach.',
-    ],
-  });
+  b.phase('Hügel und Einschnitte');
   const ground = terrain(b, {
     x: AREA.x1, y: 0, z: AREA.z1, width: AREA.x2 - AREA.x1 + 1, depth: AREA.z2 - AREA.z1 + 1,
     heightAt: (dx, dz) => {
@@ -145,13 +133,7 @@ function tubeState(lx, ly, z) {
 }
 
 function tube(b) {
-  b.phase('Tunnelröhre', 'Die Röhre ist ein Rundgewölbe aus Steinziegeln: unten senkrechte Wände, oben eine Rundung aus umgedrehten Steinziegeltreppen und oberen Stufen. Baue sie Ebene für Ebene von unten nach oben, über die ganze Länge von 23 Blöcken. In jeder Wand lässt du zwei Fluchtnischen frei (1 breit, 2 hoch, 5 Blöcke vom Portal), hinten mit Steinziegeln ausgekleidet.', {
-    tips: [
-      'Innen ist die Röhre 9 Blöcke breit. Die Wände steigen 3 Blöcke senkrecht auf, dann rundet sich die Decke aus umgedrehten Treppen bis 6 Blöcke über der Straße.',
-      'Umgedrehte Treppen setzt du mit einem Klick auf die obere Hälfte einer Blockseite; die hohe Seite zeigt zur Wand.',
-      'Ein paar rissige und bemooste Steinziegel, besonders an den Portalen, lassen den Tunnel alt wirken.',
-    ],
-  });
+  b.phase('Tunnelröhre');
   for (let ly = -1; ly <= VAULT.height + 1; ly++) {
     for (let z = 0; z <= T; z++) {
       for (let lx = -5; lx <= 5; lx++) {
@@ -172,9 +154,7 @@ function tube(b) {
 }
 
 function cover(b) {
-  b.phase('Überdeckung', 'Jetzt schüttest du das Gewölbe zu: erst Stein, dann zwei Ebenen Erde, oben Gras – bis die Oberfläche glatt in den Hügel übergeht. So liegt die Röhre wie ein echter Tunnel im Berg.', {
-    tips: ['Grasblöcke musst du nicht einzeln setzen: Erde neben Gras wächst mit der Zeit von selbst zu, mit Knochenmehl geht es schneller.'],
-  });
+  b.phase('Überdeckung');
   for (let z = 0; z <= T; z++) {
     for (let x = -5; x <= 5; x++) {
       const from = ROAD + 2 + ringTop.get(x);
@@ -207,7 +187,7 @@ function portalFace(b, zFace, out) {
       b.set(x, y, zFace, state);
     }
   }
-  b.step(`${out > 0 ? 'Südportal' : 'Nordportal'}: Pilaster, Gesims und Brüstung`, 'Links und rechts vom Bogen springt je ein Pilaster aus poliertem Tuffstein einen Block vor, oben mit einem gemeißelten Tuffsteinziegel. Darüber läuft ein Gesims aus umgedrehten Tuffsteinziegeltreppen, ganz oben eine Brüstung aus Tuffsteinziegelmauern.');
+  b.step();
   for (const s of SIDES) {
     b.fill(6 * s, ROAD, zFace + out, 6 * s, FACE_TOP - 2, zFace + out, 'polished_tuff');
     b.set(6 * s, FACE_TOP - 1, zFace + out, 'chiseled_tuff_bricks');
@@ -218,24 +198,15 @@ function portalFace(b, zFace, out) {
 }
 
 function portals(b) {
-  b.phase('Portale', 'Beide Tunneleingänge bekommen eine Stirnwand aus Tuffsteinziegeln, 15 Blöcke breit und 11 hoch. Der Bogen folgt genau dem Gewölbe: ein Ring aus hellen Steinziegeln, die Rundung aus umgedrehten Steinziegeltreppen und oberen Stufen, im Scheitel ein gemeißelter Steinziegel als Schlussstein.', {
-    tips: [
-      'Baue die Stirnwand direkt auf die letzte Gewölbereihe – die Bogenöffnung hat genau dieselbe Form.',
-      'Der helle Steinziegel-Ring hebt sich vom dunkleren Tuffstein ab: so sieht man den Bogen schon von Weitem.',
-      'Die Wandlaternen hängen an einem Zaunarm an den Pilastern; sie leuchten die Einfahrt aus.',
-    ],
-  });
+  b.phase('Portale');
   for (const [zFace, out] of [[T, 1], [0, -1]]) {
-    b.step(`${out > 0 ? 'Südportal' : 'Nordportal'}: Stirnwand mit Bogen`, 'Setze die Stirnwand in die Ebene der letzten Gewölbereihe. Die Bogenöffnung lässt du frei, um sie herum kommt ein 1 Block breiter Ring aus Steinziegeln, in der Rundung umgedrehte Steinziegeltreppen (hohe Seite nach außen) und ganz oben obere Steinziegelstufen.');
+    b.step();
     portalFace(b, zFace, out);
   }
-  b.note(0, ROAD + 1 + VAULT.height, T, 'Schlussstein');
 }
 
 function retainingWalls(b) {
-  b.phase('Stützmauern', 'Im Einschnitt vor den Portalen halten Stützmauern aus Tuffsteinziegeln den Hang. Sie sind direkt am Portal so hoch wie der Hang und werden nach außen Stufe für Stufe niedriger, oben mit einer Tuffsteinziegelstufe.', {
-    tips: ['Die Mauer reicht immer einen halben Block über das Gelände dahinter – so rutscht nichts auf die Straße.'],
-  });
+  b.phase('Stützmauern');
   for (const [zStart, zEnd, out] of [[T + 1, AREA.z2, 1], [-1, AREA.z1, -1]]) {
     for (let z = zStart; out > 0 ? z <= zEnd : z >= zEnd; z += out) {
       for (const s of SIDES) {
@@ -256,14 +227,12 @@ function roadBlock(x, z) {
 }
 
 function road(b) {
-  b.phase('Straße und Gehwege', 'Die Fahrbahn ist 7 Blöcke breit aus Andesit und Stein, in der Mitte eine gestrichelte Linie aus poliertem Diorit. Auf beiden Seiten liegt ein Gehweg aus glatten Steinstufen auf einer Bordsteinkante aus Steinziegeln.', {
-    tips: ['Die Mittellinie: immer zwei Blöcke Diorit, zwei Blöcke Straße. Fang am Südportal an und zähle durch.'],
-  });
-  b.step('Fahrbahn', 'Lege die Fahrbahn durch die Röhre und durch beide Einschnitte bis an den Rand des Bauplatzes.');
+  b.phase('Straße und Gehwege');
+  b.step();
   for (let z = AREA.z1; z <= AREA.z2; z++) {
     for (let x = -3; x <= 3; x++) b.set(x, ROAD, z, roadBlock(x, z));
   }
-  b.step('Gehwege', 'Neben der Fahrbahn kommt auf jeder Seite eine Reihe Steinziegel als Bordstein, darauf glatte Steinstufen in der unteren Hälfte.');
+  b.step();
   for (let z = AREA.z1; z <= AREA.z2; z++) {
     for (const s of SIDES) {
       b.set(4 * s, ROAD, z, 'stone_bricks');
@@ -275,30 +244,27 @@ function road(b) {
 // --- Licht und Umgebung ---
 
 function lights(b) {
-  b.phase('Beleuchtung', 'Im Tunnel hängt alle 6 Blöcke eine Laterne an einer Kette im Scheitel, draußen stehen Straßenlaternen am Rand der Einschnitte.', {
-    tips: ['Laternen an Ketten setzt du von unten: erst die Kette an die Decke, dann die Laterne unten an die Kette.'],
-  });
-  b.step('Laternen im Tunnel', 'Vier Laternen an je einer Eisenkette im Gewölbescheitel, die erste 2 Blöcke hinter dem Nordportal.');
+  b.phase('Beleuchtung');
+  b.step();
   for (const z of LANTERNS_Z) hangingLantern(b, { x: 0, y: ROAD + VAULT.height, z, chain: 1 });
-  b.step('Laternen in den Fluchtnischen', 'In jede Fluchtnische kommt eine stehende Laterne auf den Boden.');
+  b.step();
   for (const z of NICHES_Z) for (const s of SIDES) b.set(5 * s, ROAD + 1, z, 'lantern[hanging=false]');
-  b.note(5, ROAD + 1, NICHES_Z[0], 'Fluchtnische mit Laterne');
-  b.step('Straßenlaternen', 'Auf dem Grünstreifen neben dem Gehweg stehen Laternenmasten aus Schwarzeichenzaun mit einem Arm über den Gehweg.');
+  b.step();
   for (const z of [T + 7, T + 13]) lampPost(b, { x: 5, y: ROAD + 1, z, facing: 'west', height: 5, post: 'dark_oak_fence', base: 'stone_bricks', style: 'arm' });
   for (const z of [T + 10]) lampPost(b, { x: -5, y: ROAD + 1, z, facing: 'east', height: 5, post: 'dark_oak_fence', base: 'stone_bricks', style: 'arm' });
   lampPost(b, { x: -5, y: ROAD + 1, z: -6, facing: 'east', height: 5, post: 'dark_oak_fence', base: 'stone_bricks', style: 'arm' });
 }
 
 function surroundings(b, ground) {
-  b.phase('Umgebung', 'Auf dem Hügel wachsen Eichen, Birken und Büsche, dazu Felsen und eine Wiese; die Grünstreifen im Einschnitt bekommen Blumen.');
-  b.step('Bäume und Büsche', 'Ein paar Bäume auf dem Hügel – nicht direkt über den Portalen, damit die Stirnwände frei bleiben.');
+  b.phase('Umgebung');
+  b.step();
   const trees = [[-14, 6, 'eiche', 'mittel', 1], [13, 12, 'eiche', 'gross', 2], [-9, 15, 'birke', 'mittel', 3], [18, -4, 'birke', 'klein', 4], [-19, T + 8, 'eiche', 'klein', 5], [4, 10, 'birke', 'klein', 6]];
   // Über der Röhre hat das Gelände ein Loch (dort liegt die Überdeckung), also gilt dort die Hügelhöhe.
   const surface = (x, z) => (inTube(x, z) ? hillTop(x, z) : ground.top(x, z));
   for (const [x, z, species, size, seed] of trees) tree(b, { x, y: surface(x, z) + 1, z, species, size, seed });
   for (const [x, z, seed] of [[-11, T + 3, 1], [12, T + 4, 2], [-12, -3, 3], [9, 4, 4]]) bush(b, { x, y: surface(x, z) + 1, z, size: 'klein', leaves: 'eiche', seed });
   for (const [x, z, size, seed] of [[17, T + 6, 'mittel', 1], [-17, 18, 'klein', 2]]) rock(b, { x, y: surface(x, z) + 1, z, size, material: 'andesit', seed });
-  b.step('Wiese und Blumen', 'Gras, Blumen und Farne auf dem Hügel und auf den Grünstreifen.');
+  b.step();
   vegetation(b, { x: AREA.x1, y: FACE_TOP + 8, z: AREA.z1, width: AREA.x2 - AREA.x1 + 1, depth: AREA.z2 - AREA.z1 + 1, mix: 'blumen', density: 0.32, shape: 'eckig', scan: 24, seed: 9 });
 }
 

@@ -17,43 +17,98 @@ function finalize(fn, options) {
   return result;
 }
 
+const PHASE_KEYS = ['title', 'steps'];
+const STEP_KEYS = ['index', 'phase', 'layerY', 'blockCount', 'materials'];
+
 test('Kapitel ohne step(): ein Schritt pro Ebene, Blöcke vor phase() im Kapitel „Aufbau“', () => {
   const r = finalize((b) => {
     b.set(0, -5, 0, 'stone');
-    b.phase('Turm', 'Bau den Turm.', { tips: ['Fang unten an.'] });
+    b.phase('Turm');
     b.fill(0, -4, 0, 0, -2, 0, 'cobblestone');
     b.set(3, 0, 3, 'dirt');
   });
   assert.deepEqual(r.offset, [0, -5, 0]);
   assert.deepEqual(r.size, [4, 6, 4]);
-  assert.deepEqual(r.phases.map((p) => [p.title, p.steps]), [['Aufbau', [0]], ['Turm', [1, 2, 3, 4]]]);
-  assert.deepEqual(r.phases[1].tips, ['Fang unten an.']);
-  assert.deepEqual(r.steps.map((s) => [s.title, s.layerY, s.blockCount]), [
-    ['Ebene 1', 0, 1], ['Ebene 2', 1, 1], ['Ebene 3', 2, 1], ['Ebene 4', 3, 1], ['Ebene 6', 5, 1],
+  assert.deepEqual(r.phases, [{ title: 'Aufbau', steps: [0] }, { title: 'Turm', steps: [1, 2, 3, 4] }]);
+  assert.deepEqual(r.steps.map((s) => [s.index, s.phase, s.layerY, s.blockCount]), [
+    [0, 0, 0, 1], [1, 1, 1, 1], [2, 1, 2, 1], [3, 1, 3, 1], [4, 1, 5, 1],
   ]);
   assert.equal(r.stepAt(0, -5, 0), 0);
   assert.equal(r.stepAt(3, 0, 3), 4);
   assert.deepEqual(r.steps[4].materials, [['dirt', 1]]);
 });
 
-test('Kapitel mit step(): genau diese Schritte, Vor-Schritt mit Kapiteltitel, leere Schritte bleiben', () => {
+test('Kapitel mit step(): genau diese Schritte, eigener Vor-Schritt, leere Schritte bleiben', () => {
   const r = finalize((b) => {
-    b.phase('Technik', 'Die Schaltung.');
+    b.phase('Technik');
     b.set(0, 0, 0, 'stone');
-    b.step('Leitung', 'Leg den Staub.');
+    b.step();
     b.set(1, 0, 0, 'redstone_wire');
     b.set(2, 0, 0, 'redstone_wire');
-    b.step('Hebel umlegen', 'Jetzt testen.');
-    b.note(1, 0, 0, 'Hier den Hebel umlegen');
+    b.step();
     b.phase('Ohne Vor-Schritt');
-    b.step('Nur ein Schritt');
+    b.step();
     b.set(0, 3, 0, 'glass');
   });
-  assert.deepEqual(r.steps.map((s) => [s.title, s.text, s.layerY, s.blockCount]), [
-    ['Technik', '', null, 1], ['Leitung', 'Leg den Staub.', null, 2], ['Hebel umlegen', 'Jetzt testen.', null, 0], ['Nur ein Schritt', '', null, 1],
+  assert.deepEqual(r.phases, [{ title: 'Technik', steps: [0, 1, 2] }, { title: 'Ohne Vor-Schritt', steps: [3] }]);
+  assert.deepEqual(r.steps.map((s) => [s.index, s.phase, s.layerY, s.blockCount]), [
+    [0, 0, null, 1], [1, 0, null, 2], [2, 0, null, 0], [3, 1, null, 1],
   ]);
-  assert.deepEqual(r.notes, [{ x: 1, y: 0, z: 0, text: 'Hier den Hebel umlegen', step: 2 }]);
+  assert.equal(r.stepAt(0, 0, 0), 0);
+  assert.equal(r.stepAt(2, 0, 0), 1);
+  assert.equal(r.stepAt(0, 3, 0), 3);
   assert.deepEqual(r.steps[1].materials, [['redstone', 2]]);
+  assert.deepEqual(r.steps[2].materials, []);
+});
+
+test('Ergebnis ohne Texte: Kapitel nur { title, steps }, Schritte ohne title/text, kein notes', () => {
+  const b = new Builder();
+  b.phase('Boden');
+  b.fill(0, 0, 0, 2, 1, 2, 'stone');
+  b.phase('Möbel');
+  b.step();
+  b.set(1, 2, 1, 'oak_planks');
+  const r = b.finalize();
+  assert.equal('notes' in r, false);
+  assert.deepEqual(Object.keys(r).sort(), ['blockCount', 'materials', 'offset', 'phases', 'size', 'steps', 'volume', 'warnings']);
+  for (const phase of r.phases) assert.deepEqual(Object.keys(phase), PHASE_KEYS);
+  for (const step of r.steps) assert.deepEqual(Object.keys(step), STEP_KEYS);
+  assert.ok(r.phases.every((p) => !('text' in p) && !('tips' in p)));
+  assert.ok(r.steps.every((s) => !('title' in s) && !('text' in s) && !('tips' in s)));
+  assert.deepEqual(r.steps.map((s) => s.layerY), [0, 1, null]);
+});
+
+test('phase: genau ein Titel – Text oder Tipps werfen; step ohne Argumente; b.note gibt es nicht mehr', () => {
+  const b = new Builder();
+  const phaseError = { message: 'phase: nur ein Titel – Texte und Tipps gibt es nicht mehr.' };
+  const stepError = { message: 'step: Schritte haben keinen Titel und keinen Text mehr.' };
+  assert.throws(() => b.phase('Wände', 'Setze die Wände.'), phaseError);
+  assert.throws(() => b.phase('Wände', '', { tips: ['Tipp'] }), phaseError);
+  assert.throws(() => b.phase('Wände', { tips: ['Tipp'] }), phaseError);
+  assert.throws(() => b.phase('Wände', undefined), phaseError);
+  assert.throws(() => b.phase(''), /darf nicht leer sein/);
+  assert.throws(() => b.phase(), /muss ein Text sein/);
+  assert.throws(() => b.step('Tür'), stepError);
+  assert.throws(() => b.step('Tür', 'Setze die Tür.'), stepError);
+  assert.throws(() => b.step(''), stepError);
+  assert.throws(() => b.step(undefined), stepError);
+  assert.equal(b.note, undefined);
+  assert.equal('note' in b, false);
+  // Fehlgeschlagene Aufrufe hinterlassen kein Kapitel und keinen Schritt.
+  b.set(0, 0, 0, 'stone');
+  const r = b.finalize();
+  assert.deepEqual(r.phases, [{ title: 'Aufbau', steps: [0] }]);
+  assert.equal(r.steps.length, 1);
+});
+
+test('step() vor dem ersten phase(): Kapitel „Aufbau“ mit diesem Schritt', () => {
+  const r = finalize((b) => {
+    b.step();
+    b.set(0, 0, 0, 'stone');
+    b.set(0, 1, 0, 'stone');
+  });
+  assert.deepEqual(r.phases, [{ title: 'Aufbau', steps: [0] }]);
+  assert.deepEqual(r.steps.map((s) => [s.phase, s.layerY, s.blockCount]), [[0, null, 2]]);
 });
 
 test('Überschreiben: letzter Zustand und sein Kapitel gelten, remove entfernt', () => {

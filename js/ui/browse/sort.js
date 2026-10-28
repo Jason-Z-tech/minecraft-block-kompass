@@ -8,8 +8,6 @@ export const SORT_OPTIONS = Object.freeze([
   Object.freeze({ key: 'groesse-ab', label: 'Größe: groß zuerst' }),
   Object.freeze({ key: 'bloecke-auf', label: 'Blöcke: wenige zuerst' }),
   Object.freeze({ key: 'bloecke-ab', label: 'Blöcke: viele zuerst' }),
-  Object.freeze({ key: 'schwierigkeit-auf', label: 'Schwierigkeit: leicht zuerst' }),
-  Object.freeze({ key: 'schwierigkeit-ab', label: 'Schwierigkeit: schwer zuerst' }),
 ]);
 
 export const SORT_KEYS = Object.freeze(SORT_OPTIONS.map((option) => option.key));
@@ -43,8 +41,6 @@ const NUMERIC_SORTS = {
   'groesse-ab': ['volume', -1],
   'bloecke-auf': ['blocks', 1],
   'bloecke-ab': ['blocks', -1],
-  'schwierigkeit-auf': ['difficulty', 1],
-  'schwierigkeit-ab': ['difficulty', -1],
 };
 
 /**

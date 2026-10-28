@@ -12,6 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
 import { defaultSourcePaths } from './extract-game-data.mjs';
 import { catalogInputs, DEFAULT_OUT as CATALOG } from './build-catalog.mjs';
+import { CATEGORIES } from './check-build.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GAME_DATA = path.join(ROOT, 'game-data');
@@ -20,7 +21,8 @@ const THUMBS_DIR = path.join(ROOT, 'thumbs');
 const DEFAULT_PORT = 8080;
 const PORT_TRIES = 10;
 const REQUIRED_DATA = ['meta.json', 'blocks.json', 'names.json', 'models.json', 'textures.json', 'textures.bin', 'structures/index.json'];
-const CATEGORY_DIRS = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'redstone', 'farmen', 'infrastruktur'];
+// Kategorie-Ordner wie in check-build (eine Liste für alle Skripte)
+const CATEGORY_DIRS = CATEGORIES;
 
 export function parseStartArgs(argv) {
   const options = { port: DEFAULT_PORT, portGiven: false, remote: false, thumbs: true };

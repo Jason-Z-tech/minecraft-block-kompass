@@ -32,6 +32,10 @@ function check(name, ok, detail = '') {
 }
 
 const READY = 'window.__createPage && window.__createPage.ready';
+// Ergebnis nach dem Vertrag: Kapitel { title, steps }, Schritte ohne title/text/tips, kein notes
+const ONLY_TITLES = (slot) => `(() => { const r = window.__createPage.views.${slot}.result; return !('notes' in r)
+  && r.phases.every((p) => Object.keys(p).sort().join() === 'steps,title' && p.title.trim() !== '')
+  && r.steps.every((s) => !('title' in s) && !('text' in s) && !('tips' in s)); })()`;
 const viewReady = (slot, host) => `window.__createPage.views.${slot} && window.__createPage.views.${slot}.context && document.querySelector('#${host} .bv-player:not(.is-loading)')`;
 
 async function openBrowser({ mobile = false } = {}) {
@@ -165,6 +169,7 @@ async function ideaFlow(server) {
     await page.eval('window.__createPage.views.shape.viewer.idle()');
     check('Vorschau aus dem Freitext: Reiter Formen, Ansicht geladen', await page.eval("document.getElementById('create-tab-formen').getAttribute('aria-selected') === 'true' && location.hash === '#formen'"));
     check('Vorschau: Kugel mit Kapiteln', await page.eval("window.__createPage.views.shape.result.phases.length >= 2"), await page.eval("window.__createPage.views.shape.result.phases.map((p) => p.title).join(' | ')"));
+    check('Form: Kapitel nur mit Titel, Schritte ohne Namen und Text', await page.eval(ONLY_TITLES('shape')));
     await viewShot(page, 'desktop-07-kugel-vorschau');
     const errors = takeErrors(page);
     check('Freitext: keine Konsolenfehler', errors.length === 0, errors.slice(0, 3).join(' | '));
@@ -275,6 +280,7 @@ async function importFlow(server) {
     before = await importOnce(page, [path.join(IMPORT_DIR, 'regions.litematic')]);
     outcome = await waitImport(page, before);
     check('regions.litematic: Regionen als Kapitel', outcome.ok && await page.eval("window.__createPage.views.import?.result.phases.some((p) => p.title.startsWith('Region'))"));
+    check('Upload: Kapitel nur mit Titel, Schritte ohne Namen und Text', outcome.ok && await page.eval(ONLY_TITLES('import')));
 
     before = await importOnce(page, [path.join(IMPORT_DIR, 'future-v2.schem')]);
     outcome = await waitImport(page, before);

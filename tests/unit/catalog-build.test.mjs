@@ -16,9 +16,9 @@ const DATA_DIR = path.join(ROOT, 'game-data');
 const HAS_GAME_DATA = existsSync(path.join(DATA_DIR, 'structures', 'index.json')) && existsSync(path.join(DATA_DIR, 'blocks.json'));
 const NO_DATA = HAS_GAME_DATA ? false : 'game-data/ fehlt (node scripts/extract-game-data.mjs)';
 const EXAMPLE_HOUSE = path.join(ROOT, 'tests', 'fixtures', 'core', 'example-house.js');
-const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'redstone', 'farmen', 'infrastruktur'];
+const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur'];
 const ACCURACIES = ['original', 'massstab', 'vorlage', 'nachempfunden', 'eigenes'];
-const ENTRY_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'difficulty', 'description', 'facts', 'sources',
+const ENTRY_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources',
   'credits', 'tested', 'module', 'structure', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials',
   'sizeClass', 'thumb'];
 
@@ -51,7 +51,7 @@ async function structuresFile(name, source) {
 const DEFAULTS = `export const GAME_STRUCTURE_DEFAULTS = { accuracy: 'original', sources: [],
   credits: { author: 'Mojang Studios', url: 'https://www.minecraft.net/', license: 'Teil von Minecraft Java 26.2' }, tested: null };`;
 const iglu = (id = 'spiel-test-iglu', structure = 'igloo/top') => `{ id: '${id}', structure: '${structure}', title: 'Test ${id}', subtitle: 'Untertitel',
-  category: 'haeuser', difficulty: 1, tags: ['Schnee'], aliases: ['iglu'], description: 'Ein Iglu. Zum Testen.' }`;
+  category: 'haeuser', tags: ['Schnee'], aliases: ['iglu'], description: 'Ein Iglu. Zum Testen.' }`;
 
 /** Prüft einen Eintrag gegen das Katalog-Format aus ARCHITEKTUR §9. */
 function assertEntrySchema(entry) {
@@ -60,8 +60,9 @@ function assertEntrySchema(entry) {
   for (const key of ['title', 'subtitle', 'description']) assert.ok(typeof entry[key] === 'string' && entry[key].trim(), `${entry.id}.${key}`);
   assert.ok(CATEGORIES.includes(entry.category));
   assert.ok(ACCURACIES.includes(entry.accuracy));
-  assert.ok(Number.isInteger(entry.difficulty) && entry.difficulty >= 1 && entry.difficulty <= 5);
-  for (const key of ['tags', 'aliases', 'facts']) assert.ok(Array.isArray(entry[key]) && entry[key].every((v) => typeof v === 'string'));
+  assert.equal('difficulty' in entry, false, `${entry.id}: keine Schwierigkeit`);
+  assert.equal('facts' in entry, false, `${entry.id}: kein Wissenswertes`);
+  for (const key of ['tags', 'aliases']) assert.ok(Array.isArray(entry[key]) && entry[key].every((v) => typeof v === 'string'));
   assert.ok(Array.isArray(entry.sources) && entry.sources.every((s) => Object.keys(s).sort().join() === 'title,url'));
   assert.ok(entry.credits === null || Object.keys(entry.credits).sort().join() === 'author,license,url');
   assert.ok(entry.tested === null || typeof entry.tested === 'boolean');
@@ -150,19 +151,31 @@ describe('Hilfsfunktionen', () => {
   });
 
   test('validateStructureDefinition meldet fehlende und falsche Felder', () => {
-    assert.deepEqual(validateStructureDefinition({ id: 'spiel-x', structure: 'igloo/top', title: 'T', subtitle: 'U', category: 'klein', difficulty: 2, tags: ['a'], aliases: ['b'], description: 'D.' }), []);
-    const errors = validateStructureDefinition({ id: 'iglu', structure: '../x', title: '', category: 'burgen', difficulty: 9, tags: [], aliases: ['Groß'] });
+    const good = { id: 'spiel-x', structure: 'igloo/top', title: 'T', subtitle: 'U', category: 'klein', tags: ['a'], aliases: ['b'], description: 'D.' };
+    assert.deepEqual(validateStructureDefinition(good), []);
+    const errors = validateStructureDefinition({ id: 'iglu', structure: '../x', title: '', category: 'burgen', tags: [], aliases: ['Groß'] });
     assert.ok(errors.length >= 7, errors.join('\n'));
+  });
+
+  test('validateStructureDefinition: Schwierigkeit, Wissenswertes und Redstone gibt es nicht mehr', () => {
+    const good = { id: 'spiel-x', structure: 'igloo/top', title: 'T', subtitle: 'U', category: 'klein', tags: ['a'], aliases: ['b'], description: 'D.' };
+    assert.deepEqual(validateStructureDefinition({ ...good, difficulty: 2 }), ['difficulty gibt es nicht mehr.']);
+    assert.deepEqual(validateStructureDefinition({ ...good, facts: ['x'] }), ['facts gibt es nicht mehr.']);
+    assert.deepEqual(validateStructureDefinition({ ...good, facts: [] }), ['facts gibt es nicht mehr.'], 'auch eine leere Liste');
+    const redstone = validateStructureDefinition({ ...good, category: 'redstone' });
+    assert.equal(redstone.length, 1);
+    assert.match(redstone[0], /^category muss eine von haeuser, wahrzeichen, fantasy, mittelalter, klein, farmen, infrastruktur sein\.$/);
   });
 
   test('findModules nimmt nur Kategorie-Ordner und überspringt lib/', async () => {
     const dir = await moduleDir('find', {
-      'haeuser/a.js': 'export const meta = {};', 'lib/helper.js': '', 'entwurf/b.js': '', 'klein/readme.txt': '',
+      'haeuser/a.js': 'export const meta = {};', 'lib/helper.js': '', 'entwurf/b.js': '', 'klein/readme.txt': '', 'redstone/c.js': 'export const meta = {};',
     });
     const { modules, notes } = await findModules(dir);
     assert.deepEqual(modules.map((m) => `${m.folder}/${m.fileId}`), ['haeuser/a']);
-    assert.equal(notes.length, 1);
+    assert.equal(notes.length, 2);
     assert.match(notes[0], /entwurf.*keine Kategorie/);
+    assert.match(notes[1], /redstone.*keine Kategorie/, 'Redstone ist keine Kategorie mehr');
     const missing = await findModules(path.join(dir, 'gibt-es-nicht'));
     assert.deepEqual(missing.modules, []);
   });
@@ -185,7 +198,9 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     assert.equal(igloo.structure, 'igloo__top.json');
     assert.equal(igloo.phases, 1);
     assert.deepEqual(igloo.credits, { author: 'Mojang Studios', url: 'https://www.minecraft.net/', license: 'Teil von Minecraft Java 26.2' });
-    assert.ok(igloo.facts.includes('Vorlage im Spiel: minecraft:igloo/top'));
+    assert.equal('facts' in igloo, false, 'kein Wissenswertes, auch nicht der Name der Vorlage');
+    assert.equal('difficulty' in igloo || 'difficulty' in house, false, 'keine Schwierigkeit');
+    assert.equal(igloo.description, 'Ein Iglu. Zum Testen.', 'Beschreibung bleibt');
     assert.equal(igloo.topMaterials[0][0], 'snow_block');
   });
 
@@ -194,7 +209,7 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
       'haeuser/example-house.js': EXAMPLE_HOUSE,
       'klein/kaputt-syntax.js': 'export const meta = { id: ;',
       'klein/kaputt-bau.js': `export const meta = { id: 'kaputt-bau', title: 'Kaputt', category: 'klein', subtitle: 'x', tags: ['a'], aliases: ['a'],
-        accuracy: 'eigenes', difficulty: 1, description: 'Kaputt.', facts: [], sources: [], credits: null, tested: null };
+        accuracy: 'eigenes', description: 'Kaputt.', sources: [], credits: null, tested: null };
         export default function build(b) { b.set(0, 0, 0, 'gibt_es_nicht_block'); }`,
     });
     const { catalog, errors } = await buildCatalog({ modulesDir: dir, structuresFile: null, thumbsDir: workDir });
@@ -202,6 +217,21 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     assert.ok(errors.some((e) => /kaputt-syntax\.js: Modul lässt sich nicht laden/.test(e)), errors.join('\n'));
     assert.ok(errors.some((e) => /kaputt-bau\.js: .*(gibt_es_nicht_block|Bau fehlgeschlagen)/.test(e)), errors.join('\n'));
     assert.ok(catalog.warnings.some((w) => /kaputt-bau\.js: wegen Fehlern nicht im Katalog/.test(w)));
+    assertCatalogSchema(catalog);
+  });
+
+  test('Modul mit meta.difficulty oder meta.facts kommt nicht in den Katalog', async () => {
+    const source = await readFile(EXAMPLE_HOUSE, 'utf8');
+    const variant = (id, extra) => source.replace("id: 'example-house',", `id: '${id}', ${extra},`).replace("title: 'Beispielhaus'", `title: '${id}'`);
+    const dir = await moduleDir('alte-felder', {
+      'haeuser/example-house.js': source,
+      'haeuser/mit-schwierigkeit.js': variant('mit-schwierigkeit', 'difficulty: 2'),
+      'haeuser/mit-wissen.js': variant('mit-wissen', "facts: ['Ein Satz']"),
+    });
+    const { catalog, errors } = await buildCatalog({ modulesDir: dir, structuresFile: null, thumbsDir: workDir });
+    assert.deepEqual(catalog.builds.map((b) => b.id), ['example-house']);
+    assert.ok(errors.some((e) => /mit-schwierigkeit\.js: meta\.difficulty gibt es nicht mehr\./.test(e)), errors.join('\n'));
+    assert.ok(errors.some((e) => /mit-wissen\.js: meta\.facts gibt es nicht mehr\./.test(e)), errors.join('\n'));
     assertCatalogSchema(catalog);
   });
 

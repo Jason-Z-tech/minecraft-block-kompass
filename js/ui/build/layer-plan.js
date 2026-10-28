@@ -658,10 +658,8 @@ export class LayerPlan {
       this.#invalidate();
     }
     if (this.#hover && event) {
-      const { result } = this.#ctx;
-      const step = result.steps[this.#hover.step];
       this.#tooltip.show(blockTooltipParts(this.#hover.state, {
-        step: this.#hover.step, stepTitle: step?.title ?? '', coords: positionText(this.#hover.x, this.#layerY, this.#hover.z),
+        step: this.#hover.step, coords: positionText(this.#hover.x, this.#layerY, this.#hover.z),
       }), event.clientX, event.clientY);
     } else {
       this.#tooltip.hide();
@@ -671,10 +669,8 @@ export class LayerPlan {
   #onTap(point, event) {
     const info = this.#cellInfo(point);
     if (!info || !info.index) return;
-    const { result } = this.#ctx;
-    const step = result.steps[info.step];
     if (event.pointerType !== 'mouse') {
-      this.#tooltip.show(blockTooltipParts(info.state, { step: info.step, stepTitle: step?.title ?? '', coords: positionText(info.x, this.#layerY, info.z) }), event.clientX, event.clientY, { duration: 2500 });
+      this.#tooltip.show(blockTooltipParts(info.state, { step: info.step, coords: positionText(info.x, this.#layerY, info.z) }), event.clientX, event.clientY, { duration: 2500 });
     }
     this.#ctx.goToStep(info.step);
   }

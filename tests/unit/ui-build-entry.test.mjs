@@ -36,10 +36,11 @@ function memoryStorage() {
 test('Test-Katalog hat das Format von Runde 2 und zeigt auf vorhandene Dateien', () => {
   assert.equal(CATALOG.version, '26.2');
   assert.equal(CATALOG.counts.total, CATALOG.builds.length);
-  const required = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'difficulty', 'description', 'facts', 'sources', 'credits',
+  const required = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources', 'credits',
     'tested', 'module', 'structure', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials', 'sizeClass', 'thumb'];
   for (const build of CATALOG.builds) {
     for (const key of required) assert.ok(Object.hasOwn(build, key), `${build.id}: ${key} fehlt`);
+    for (const key of ['difficulty', 'facts']) assert.ok(!Object.hasOwn(build, key), `${build.id}: ${key} gibt es nicht mehr`);
     assert.ok(build.topMaterials.length <= 8);
     if (build.module) assert.ok(existsSync(path.join(ROOT, build.module)), `${build.module} fehlt`);
     if (build.structure) assert.ok(build.id.startsWith('spiel-') && build.accuracy === 'original' && build.module === null);
@@ -47,7 +48,7 @@ test('Test-Katalog hat das Format von Runde 2 und zeigt auf vorhandene Dateien',
   const normalized = normalizeCatalog(CATALOG);
   assert.equal(normalized.builds.length, CATALOG.builds.length, 'kein Eintrag wird verworfen');
   assert.ok(CATALOG.builds.some((b) => b.scales?.length === 2 && b.variants), 'ein Eintrag mit Maßstäben');
-  assert.ok(CATALOG.builds.some((b) => b.tested === false && b.credits), 'ein Eintrag mit tested: false und Credits');
+  assert.ok(CATALOG.builds.some((b) => b.tested === false && b.credits && b.category === 'farmen'), 'eine Farm mit tested: false und Credits');
 });
 
 test('loadBuildEntry: Eintrag mit allen Feldern, Testmodule erlaubt, unbekannt → null', async () => {
@@ -86,14 +87,15 @@ test('loadBuildEntry: auf dem eigenen Rechner kommt das lokale Vorschaubild dazu
 
 test('normalizeBuildDetails prüft jedes Feld', () => {
   const details = normalizeBuildDetails({
-    description: '  Text  ', facts: ['a', '', 3, 'b'], module: 'js/builds/x/../y.js',
+    description: '  Text  ', facts: ['a', '', 3, 'b'], difficulty: 3, module: 'js/builds/x/../y.js',
     sources: [{ title: 'Gut', url: 'https://example.org/a' }, { title: 'Böse', url: 'javascript:alert(1)' }, { url: 'http://unsicher.de' }, { url: 'https://ohne-titel.de/x' }],
     credits: { author: 'Ann', url: 'http://nicht-https.de', license: 'CC BY 4.0' },
     scales: [0.5, 1, 1, -2, 9, 'x'], defaultScale: 0.5, variants: { 1: { size: [2, 2, 2], blocks: 8, steps: 2 }, 0.3: { size: [1, 1, 1] } },
     sizeClass: 'mega',
   });
   assert.equal(details.description, 'Text');
-  assert.deepEqual(details.facts, ['a', 'b']);
+  assert.equal(Object.hasOwn(details, 'facts'), false, 'kein Wissenswertes mehr');
+  assert.equal(Object.hasOwn(details, 'difficulty'), false, 'keine Schwierigkeit mehr');
   assert.equal(details.module, null, 'kein „..“ im Modulpfad');
   assert.deepEqual(details.sources, [{ title: 'Gut', url: 'https://example.org/a' }, { title: 'ohne-titel.de', url: 'https://ohne-titel.de/x' }]);
   assert.deepEqual(details.credits, { author: 'Ann', url: null, license: 'CC BY 4.0' });
@@ -117,6 +119,10 @@ test('viewEntry: Teil-Objekte für Formen und Uploads', () => {
   assert.equal(entry.thumb, null);
   assert.deepEqual(entry.sources, []);
   assert.equal(viewEntry(null).title, 'Bau');
+  // Alte Felder aus Katalog, Form oder Upload kommen nicht in die Ansicht
+  const old = viewEntry({ title: 'Alt', description: 'Bleibt', difficulty: 2, facts: ['weg'] });
+  assert.equal(old.description, 'Bleibt');
+  assert.ok(!Object.hasOwn(old, 'difficulty') && !Object.hasOwn(old, 'facts'));
   assert.equal(viewEntry({ thumb: 'thumbs/kugel.webp' }).thumb, 'thumbs/kugel.webp');
 });
 

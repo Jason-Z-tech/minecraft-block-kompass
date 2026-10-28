@@ -22,15 +22,7 @@ export const meta = {
     'villa mit garten', 'villa mit brunnen', 'villa mit saeulen', 'haus mit saeulen', 'grosses haus', 'big house', 'schloss klein',
   ],
   accuracy: 'eigenes',
-  difficulty: 4,
   description: 'Eine große, streng symmetrische Villa: Der zweigeschossige Mittelbau aus hellem Sandstein trägt ein Walmdach aus Tiefenschieferfliesen, links und rechts schließen einstöckige Flügel an, deren Dächer Terrassen sind. Vor dem Eingang stehen vier Quarzsäulen unter einem Balkon, eine breite Freitreppe führt hinauf. Innen gibt es Halle mit Prachttreppe, Salon, Bibliothek, Speisezimmer, Küche, zwei Schlafzimmer, Bad und Arbeitszimmer; davor liegt ein formaler Garten mit Brunnen.',
-  facts: [
-    'Mittelbau 24 × 15 Blöcke, mit Flügeln 40 Blöcke breit; Grundstück 50 × 52 Blöcke',
-    'Vier Säulen aus Quarzsäulen mit gemeißeltem Quarz als Kapitell tragen den Balkon über dem Eingang',
-    'Die Halle ist über die Treppe zwei Geschosse hoch; der Kronleuchter hängt im offenen Treppenauge',
-    'Der Brunnen hat zwei Schalen: ein rundes Becken (Durchmesser 10) und eine kleine Schale auf einem Sockel',
-    'Alle Räume sind mit Laternen so beleuchtet, dass auf keinem Boden Monster spawnen können',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -100,11 +92,9 @@ function rectEdge(x1, z1, x2, z2, sides) {
 // ------------------------------------------------------------------ Kapitel
 
 function ground(b) {
-  b.phase('Grundstück abstecken', 'Das Grundstück ist 50 × 52 Blöcke groß und eben: oben Gras, darunter zwei Ebenen Erde. Der Mittelbau steht im Norden, davor bleibt viel Platz für den Garten.', {
-    tips: ['Markiere zuerst die Symmetrieachse: Sie verläuft genau zwischen der 12. und 13. Blockreihe des Mittelbaus. Alles links davon baust du rechts gespiegelt.'],
-  });
+  b.phase('Grundstück abstecken');
   terrain(b, { x: PLOT.x1, y: -2, z: PLOT.z1, width: PLOT.x2 - PLOT.x1 + 1, depth: PLOT.z2 - PLOT.z1 + 1, height: 2, seed: 17 });
-  b.step('Kieswege abstecken', 'Leg gleich die Wege an, dann siehst du beim Bauen immer, wo was hinkommt: Der Hauptweg (6 breit) läuft von der späteren Freitreppe bis zur Straße und weitet sich in der Mitte zu einem 14 × 14 großen Platz für den Brunnen. Ein Querweg (2 breit) teilt den Garten, hinter dem Haus liegt ein kleiner Kieshof. Ersetz dafür das Gras durch Kies und fass die Wege mit poliertem Andesit ein.');
+  b.step();
   gravelPath(b, 9, 23, 14, 26, ['west', 'east']);
   gravelPath(b, 9, 41, 14, 44, ['west', 'east']);
   gravelPath(b, 5, 27, 18, 40, ['north', 'south', 'west', 'east']);
@@ -116,12 +106,7 @@ function ground(b) {
 }
 
 function plinth(b) {
-  b.phase('Sockel und Fußböden', 'Die Villa steht auf einem 3 Blöcke hohen Sockel aus Steinziegeln, damit sie erhaben wirkt. Mauere zuerst den Rand von Mittelbau (24 × 15) und Flügeln (je 9 × 11, um 2 nach hinten versetzt), füll das Innere 2 Ebenen hoch mit Erde auf und leg auf Ebene 6 die Fußböden. Vor dem Mittelbau ragt der Sockel des Portikus 5 Blöcke nach vorne.', {
-    tips: [
-      'Setz zuerst die vier Ecken des Mittelbaus, dann die Ecken der Flügel – so siehst du sofort, ob alles symmetrisch ist.',
-      'Die Fußböden haben Muster: Schachbrett in der Halle, Fischgrät im Salon, Rahmenmuster in Speisezimmer und Bibliothek.',
-    ],
-  });
+  b.phase('Sockel und Fußböden');
   b.walls(MAIN.x1, 1, MAIN.z1, MAIN.x2, FLOOR_GF, MAIN.z2, PLINTH);
   for (const w of WINGS) b.walls(w.x1, 1, WING_Z.z1, w.x2, FLOOR_GF, WING_Z.z2, PLINTH);
   b.fill(MAIN.x1 + 1, 1, MAIN.z1 + 1, MAIN.x2 - 1, 2, MAIN.z2 - 1, 'dirt');
@@ -139,9 +124,7 @@ function plinth(b) {
 }
 
 function groundFloorWalls(b) {
-  b.phase('Erdgeschoss: Mauern', 'Die Mauern des Erdgeschosses sind 5 Blöcke hoch (Ebene 7 bis 11) aus glattem Sandstein. An die Ecken des Mittelbaus und der Flügel kommen Quarzsäulen als Eckpfeiler. Innen trennen zwei Wände Salon, Halle und Speisezimmer.', {
-    tips: ['Lass die Öffnungen erst einmal zu – Fenster, Türen und Bögen setzt du später hinein. So bleiben die Abstände leichter zählbar.'],
-  });
+  b.phase('Erdgeschoss: Mauern');
   b.walls(MAIN.x1, 4, MAIN.z1, MAIN.x2, 8, MAIN.z2, WALL);
   for (const w of WINGS) b.walls(w.x1, 4, WING_Z.z1, w.x2, 8, WING_Z.z2, WALL);
   for (const x of [7, 16]) b.fill(x, 4, 1, x, 8, 13, WALL);
@@ -150,19 +133,12 @@ function groundFloorWalls(b) {
 }
 
 function porticoColumns(b) {
-  b.phase('Portikus: Säulen', 'Vor dem Eingang stehen vier Säulen, 5 Blöcke hoch: unten ein Sockel aus glattem Quarz, darüber drei Quarzsäulen und oben gemeißelter Quarz als Kapitell. Um Fuß und Kapitell legst du einen Kranz aus Quarztreppen (unten normal, oben kopfüber), immer mit der hohen Seite zur Säule.', {
-    tips: ['Die beiden mittleren Säulen haben 6 Blöcke Abstand – genau Platz für die Doppeltür samt Rahmen.'],
-  });
+  b.phase('Portikus: Säulen');
   for (const x of COLUMNS_X) column(b, { x, y: 4, z: 18, height: 5 });
 }
 
 function upperSlab(b) {
-  b.phase('Decke, Balkon und Terrassen', 'Die Decke über dem Erdgeschoss (Ebene 12) trägt das Obergeschoss. Außen läuft ein Gesimsband aus glattem Quarz ringsum. Über dem Portikus wird die Decke zum Balkon (innen Quarzziegel, außen ein Rand aus glattem Quarz), auf den Flügeln zur Dachterrasse mit Holzboden. Lass über der Halle ein 4 × 5 großes Treppenauge offen.', {
-    tips: [
-      'Setz den Balkon Reihe für Reihe von der Hauswand aus nach vorne – die Säulen tragen ihn an der Vorderkante.',
-      'Unter die Vorderkante des Balkons kommt eine Reihe kopfüber gesetzter Quarztreppen als Zierbalken.',
-    ],
-  });
+  b.phase('Decke, Balkon und Terrassen');
   b.fill(MAIN.x1, FLOOR_UF, MAIN.z1, MAIN.x2, FLOOR_UF, MAIN.z2, TRIM);
   b.fill(1, FLOOR_UF, 1, 22, FLOOR_UF, 13, WOOD_DARK);
   floorPattern(b, { x: 1, y: FLOOR_UF, z: 8, width: 6, depth: 6, pattern: 'border', blocks: ['spruce_planks', WOOD_DARK] });
@@ -182,7 +158,7 @@ function upperSlab(b) {
 }
 
 function upperWalls(b) {
-  b.phase('Obergeschoss: Mauern', 'Das Obergeschoss ist 4 Blöcke hoch (Ebene 13 bis 16). Innen teilen Wände es in Bad, Elternschlafzimmer, Galerie, Arbeitszimmer und Gästezimmer.');
+  b.phase('Obergeschoss: Mauern');
   b.walls(MAIN.x1, 10, MAIN.z1, MAIN.x2, 13, MAIN.z2, WALL);
   for (const x of [7, 16]) b.fill(x, 10, 1, x, 13, 13, WALL);
   b.fill(1, 10, 7, 6, 13, 7, WALL);
@@ -193,7 +169,7 @@ function upperWalls(b) {
 }
 
 function topPlate(b) {
-  b.phase('Dachplatte und Hauptgesims', 'Schließ das Obergeschoss mit einer Decke aus Schwarzeichenbrettern ab (Ebene 17), außen mit einem Rand aus glattem Quarz. Direkt unter dem späteren Dachüberstand setzt du ringsum kopfüber Quarztreppen mit der hohen Seite zur Wand – das ist das Hauptgesims.');
+  b.phase('Dachplatte und Hauptgesims');
   b.fill(MAIN.x1, TOP, MAIN.z1, MAIN.x2, TOP, MAIN.z2, TRIM);
   b.fill(MAIN.x1 + 1, TOP, MAIN.z1 + 1, MAIN.x2 - 1, TOP, MAIN.z2 - 1, WOOD_DARK);
   for (const x of [3, 20]) b.set(x, TOP, 1, 'bricks');
@@ -208,22 +184,17 @@ function topPlate(b) {
 }
 
 function hipRoof(b) {
-  b.phase('Walmdach', 'Das Walmdach aus Tiefenschieferfliesen steigt von allen vier Seiten gleichmäßig an. Die unterste Reihe steht einen Block über (Ebene 17), jede weitere Reihe sitzt einen Block weiter innen und eine Ebene höher, die hohe Seite der Treppen zeigt immer zur Dachmitte. Oben schließt ein First aus Stufen ab.', {
-    tips: [
-      'Bau das Dach Ring für Ring. An den Ecken bilden die Treppen von selbst Außenecken, wenn du beide Seiten bis in die Ecke führst.',
-      'Jeder neue Ring berührt den darunter nur über Eck. Setz für die erste Treppe eines Rings einen Hilfsblock (z. B. Erde) oben auf die Treppe darunter, setz die neue Treppe seitlich daran und nimm den Hilfsblock wieder weg – der Rest des Rings hält sich dann an seinen Nachbarn.',
-    ],
-  });
+  b.phase('Walmdach');
   b.roof({ x1: MAIN.x1, z1: MAIN.z1, x2: MAIN.x2, z2: MAIN.z2, y: TOP, type: 'hip', axis: 'x', ...ROOF, overhang: 1 });
-  b.step('Dachgauben', 'Auf der Vorderseite sitzen zwei Gauben mit kleinem Satteldach. Ihre Vorderwand steht auf der Mauerkrone (Ebene 18), die Ecken sind Quarzsäulen.');
+  b.step();
   for (const x of [5, mirrorX(5)]) dormer(b, { x, y: TOP + 1, z: MAIN.z2, facing: 'south', width: 3, wallHeight: 2, wall: WALL, corner: PILLAR, stairs: ROOF.stairs, slab: ROOF.slab });
-  b.step('Schornsteine', 'Zwei Schornsteine aus Ziegeln stehen über den Kaminen von Salon und Speisezimmer. Sie beginnen auf dem Dachboden und ragen über den First; oben brennt ein Lagerfeuer, ein Kranz aus Ziegeltreppen schließt ab.');
+  b.step();
   for (const x of [3, 20]) chimney(b, { x, y: TOP + 1, z: 1, height: 8, block: 'bricks', smoke: 'normal', rim: 'brick_stairs' });
 }
 
 function windowsAndDoors(b) {
-  b.phase('Fenster und Türen', 'Alle Fenster sitzen genau übereinander und spiegeln sich an der Mittelachse. Unten sind sie 3 hoch, oben 2 hoch, jedes mit einer Fensterbank und einer Verdachung aus Quarztreppen. In die Flügel kommen außen große Bogenfenster.');
-  b.step('Fenster', 'Setz die Glasscheiben, darunter eine kopfüber gesetzte Quarztreppe als Fensterbank und darüber eine zweite als Verdachung – beide mit der hohen Seite zur Wand.');
+  b.phase('Fenster und Türen');
+  b.step();
   // Erdgeschoss
   for (const x of [2, 21]) classicWindow(b, { x, y: 5, z: MAIN.z2, facing: 'south', height: 3 });
   for (const x of [5, 18]) classicWindow(b, { x, y: 5, z: MAIN.z2, facing: 'south', height: 3, sill: false });
@@ -245,7 +216,7 @@ function windowsAndDoors(b) {
     classicWindow(b, { x: MAIN.x2, y: 10, z, facing: 'east', height: 2, sill: false });
   }
 
-  b.step('Außentüren', 'Die Haustür ist eine Doppeltür aus Schwarzeiche mit einem Rahmen aus Quarzsäulen und einem Oberlicht aus Glas. Hinten führt eine gleiche Tür in den Garten, oben eine Doppeltür auf den Balkon und je eine Tür auf die Flügelterrassen.');
+  b.step();
   doorway(b, { x: 11, y: 4, z: MAIN.z2, facing: 'south', door: DOOR, width: 2, frame: PILLAR });
   doorway(b, { x: 12, y: 4, z: MAIN.z1, facing: 'north', door: DOOR, width: 2, frame: PILLAR });
   for (const z of [MAIN.z1, MAIN.z2]) b.fill(11, 7, z, 12, 8, z, 'glass_pane');
@@ -253,9 +224,8 @@ function windowsAndDoors(b) {
   b.fill(11, 12, MAIN.z2, 12, 12, MAIN.z2, 'glass_pane');
   doorway(b, { x: MAIN.x1, y: 10, z: 10, facing: 'west', door: DOOR, frame: null });
   doorway(b, { x: MAIN.x2, y: 10, z: 10, facing: 'east', door: DOOR, frame: null });
-  b.note(11, 4, MAIN.z2, 'Haustür: Doppeltür mit Quarzrahmen und Oberlicht');
 
-  b.step('Innentüren und Bögen', 'Zwischen Halle, Salon und Speisezimmer öffnen sich breite Rundbögen (3 breit, 4 hoch), ebenso vom Salon in die Bibliothek. Zur Küche, zu Bad, Schlafzimmern und Arbeitszimmer führen einfache Türen.');
+  b.step();
   arch(b, { x: 7, y: 4, z: 11, facing: 'west', width: 3, height: 4, style: 'round', block: WALL, stairs: TRIM_STAIRS, slab: TRIM_SLAB });
   arch(b, { x: 16, y: 4, z: 11, facing: 'east', width: 3, height: 4, style: 'round', block: WALL, stairs: TRIM_STAIRS, slab: TRIM_SLAB });
   arch(b, { x: 0, y: 4, z: 7, facing: 'west', width: 3, height: 4, style: 'round', block: WALL, stairs: TRIM_STAIRS, slab: TRIM_SLAB });
@@ -267,8 +237,8 @@ function windowsAndDoors(b) {
 }
 
 function porticoAndTerraces(b) {
-  b.phase('Freitreppe und Balustraden', 'Jetzt die Schmuckstücke außen: die Freitreppe zum Portikus, Balustraden aus Sandsteinmauern zwischen Quarzpfosten auf Balkon und Terrassen und Möbel für draußen.');
-  b.step('Freitreppe', 'Die Freitreppe ist 10 breit und hat drei Stufen aus glatten Quarztreppen, die hohe Seite zeigt zum Haus (nach Norden). Die Wangen links und rechts sind Steinziegel mit Quarzstufen obendrauf, vorne steht je ein Blumentopf. Hinten führt eine schmale Treppe gleicher Art (2 breit, hohe Seite nach Süden) von der Gartentür in den Kieshof.');
+  b.phase('Freitreppe und Balustraden');
+  b.step();
   for (let k = 0; k < 3; k++) {
     const z = 22 - k;
     const y = 1 + k;
@@ -283,7 +253,6 @@ function porticoAndTerraces(b) {
     b.set(x, FLOOR_GF + 1, 21, slab(TRIM_SLAB));
     b.set(x, FLOOR_GF + 1, 22, 'potted_azalea_bush');
   }
-  b.note(11, 1, 22, 'Freitreppe: drei Stufen, hohe Seite zum Haus');
   // Hintertreppe in den Hof
   for (let k = 0; k < 3; k++) {
     const z = -1 - k;
@@ -295,14 +264,14 @@ function porticoAndTerraces(b) {
     for (const x of [10, 13]) b.fill(x, 1, z, x, y, z, PLINTH);
   }
 
-  b.step('Balustraden', 'Auf dem Portikus sichern Sandsteinmauern die offenen Seiten zwischen Hauswand und Säulen, neben der Treppe stehen Kübelpflanzen. Auf Balkon und Terrassen läuft die Balustrade ringsum: Sandsteinmauern als Docken, an den Ecken und über den Säulen Pfosten aus Quarzsäulen mit einer Quarzstufe obendrauf.');
+  b.step();
   balustrade(b, [[3, 15], [3, 16], [20, 15], [20, 16]], [], FLOOR_GF + 1);
   for (const x of [6, 17]) b.set(x, FLOOR_GF + 1, PORTICO.z2, 'potted_azalea_bush');
   balustrade(b, rectEdge(PORTICO.x1, PORTICO.z1, PORTICO.x2, PORTICO.z2 + 1, ['south', 'west', 'east']), [[3, 20], [8, 20], [15, 20], [20, 20], [3, 15], [20, 15]], FLOOR_UF + 1);
   balustrade(b, rectEdge(-8, WING_Z.z1, -1, WING_Z.z2, ['north', 'south', 'west']), [[-8, 2], [-8, 12], [-8, 7], [-4, 2], [-4, 12]], FLOOR_UF + 1);
   balustrade(b, rectEdge(24, WING_Z.z1, 31, WING_Z.z2, ['north', 'south', 'east']), [[31, 2], [31, 12], [31, 7], [27, 2], [27, 12]], FLOOR_UF + 1);
 
-  b.step('Terrassenmöbel', 'Auf jede Terrasse kommt ein kleiner Tisch (Zaun mit weißem Teppich) mit zwei Stühlen aus Treppen und Kübelpflanzen in den Ecken.');
+  b.step();
   for (const cx of [-4, 27]) {
     b.set(cx, 10, 7, FENCE_DARK);
     b.set(cx, 11, 7, 'white_carpet');
@@ -314,8 +283,8 @@ function porticoAndTerraces(b) {
 }
 
 function grandStairs(b) {
-  b.phase('Halle und Prachttreppe', 'Die Halle reicht über die Treppe bis unters Dach. Die Treppe ist 4 breit und steigt von vorne nach hinten (nach Norden) bis auf die Galerie im Obergeschoss.');
-  b.step('Prachttreppe', 'Setz sechs Reihen glatte Quarztreppen (hohe Seite nach Norden), jede eine Ebene höher und einen Block weiter nördlich, und füll darunter mit glattem Quarz – so wirkt sie wie aus Marmor. Links und rechts laufen Wangen aus glattem Quarz mit einem Handlauf aus Schwarzeichenzaun.');
+  b.phase('Halle und Prachttreppe');
+  b.step();
   for (let k = 0; k <= 5; k++) {
     const z = 9 - k;
     const y = 4 + k;
@@ -329,13 +298,12 @@ function grandStairs(b) {
       if (k === 5) b.set(x, FLOOR_UF + 1, z, FENCE_DARK);
     }
   }
-  b.note(11, FLOOR_UF, 4, 'Oberste Stufe: hier kommst du auf der Galerie an');
 
-  b.step('Galeriegeländer', 'Oben sichert ein Zaungeländer das Treppenauge an drei Seiten.');
+  b.step();
   for (let z = STAIRWELL.z1; z <= STAIRWELL.z2; z++) for (const x of [STAIRWELL.x1 - 1, STAIRWELL.x2 + 1]) b.set(x, FLOOR_UF + 1, z, FENCE_DARK);
   for (let x = STAIRWELL.x1 - 1; x <= STAIRWELL.x2 + 1; x++) b.set(x, FLOOR_UF + 1, STAIRWELL.z2 + 1, FENCE_DARK);
 
-  b.step('Halle einrichten', 'Ein roter Läufer führt von der Haustür zur Treppe. Links und rechts der Tür hängen rote Banner, in den Ecken stehen Pflanzen auf Sockeln aus gemeißeltem Quarz. Im Treppenauge hängt ein Kronleuchter aus zwei Laternen an Ketten von der Dachplatte.');
+  b.step();
   for (let z = 10; z <= 13; z++) for (const x of [11, 12]) b.set(x, 4, z, 'red_carpet');
   for (const x of [9, 14]) b.set(x, 6, 13, formatState('red_wall_banner', { facing: 'north' }));
   for (const [x, z, plant] of [[8, 13, 'potted_fern'], [15, 13, 'potted_fern'], [8, 1, 'potted_bamboo'], [15, 1, 'potted_bamboo']]) {
@@ -346,8 +314,8 @@ function grandStairs(b) {
 }
 
 function groundFloorRooms(b) {
-  b.phase('Einrichtung Erdgeschoss', 'Links der Halle liegt der Salon mit Kamin, dahinter im Flügel die Bibliothek. Rechts der Halle das Speisezimmer, im rechten Flügel die Küche.');
-  b.step('Salon', 'Der Kamin aus Quarzziegeln steht mittig an der Rückwand, davor ein roter Teppich mit niedrigem Tisch, ein Sofa aus Schwarzeichentreppen (hohe Seite nach Süden) und zwei Sessel. Vorne am Fenster steht ein Spieltisch, an der Seite eine Jukebox.');
+  b.phase('Einrichtung Erdgeschoss');
+  b.step();
   fireplace(b, { x: 3, y: 4, z: 1, facing: 'south', height: 5, block: 'quartz_bricks', mantel: 'dark_oak_stairs' });
   for (let x = 2; x <= 5; x++) {
     b.set(x, 4, 6, st('dark_oak_stairs', 'south'));
@@ -371,7 +339,7 @@ function groundFloorRooms(b) {
   b.set(1, 4, 10, 'note_block');
   for (const [x, z] of [[1, 13], [6, 13], [6, 8]]) b.set(x, 4, z, 'potted_bamboo');
 
-  b.step('Bibliothek', 'Im linken Flügel stehen Bücherwände an Rück- und Außenwand, mit Stämmen aus Schwarzeiche als Ständern und einer Leiter. Das Bogenfenster bleibt frei. In der Mitte ein Lesetisch mit grüner Decke, vorne zwischen den beiden Fenstern ein niedriges Regal, unter den Fenstern ein Lesesessel und ein Lesepult.');
+  b.step();
   bookWall(b, { x: -7, y: 4, z: 3, facing: 'south', width: 7, height: 3, wood: 'schwarzeiche', chiseled: true, crown: true, ladder: true });
   bookWall(b, { x: -7, y: 4, z: 11, facing: 'east', width: 3, height: 3, wood: 'schwarzeiche', chiseled: true, crown: true });
   bookWall(b, { x: -7, y: 4, z: 5, facing: 'east', width: 2, height: 3, wood: 'schwarzeiche', chiseled: true, crown: true });
@@ -382,7 +350,7 @@ function groundFloorRooms(b) {
   b.set(-1, 4, 11, 'potted_fern');
   b.set(-6, 4, 11, st('dark_oak_stairs', 'south'));
 
-  b.step('Speisezimmer', 'Der lange Tisch für zwölf Personen steht quer zum Kamin, an den Stirnseiten je ein Stuhl. Unter den Fenstern zur Straße steht eine Anrichte aus oberen Schwarzeichenstufen mit Kerzen und Blumen.');
+  b.step();
   fireplace(b, { x: 20, y: 4, z: 1, facing: 'south', height: 5, block: 'quartz_bricks', mantel: 'dark_oak_stairs' });
   diningTable(b, { x: 19, y: 4, z: 10, facing: 'east', length: 5, width: 2, wood: 'schwarzeiche', top: 'slab', cloth: 'weiss', headChairs: true });
   for (let x = 18; x <= 21; x++) b.set(x, 4, 13, slab('dark_oak_slab', 'top'));
@@ -390,7 +358,7 @@ function groundFloorRooms(b) {
   b.set(21, 5, 13, formatState('white_candle', { candles: '3', lit: 'true' }));
   for (const [x, z] of [[17, 1], [22, 1], [22, 13], [17, 13]]) b.set(x, 4, z, 'potted_bamboo');
 
-  b.step('Küche', 'Die Küchenzeile steht im rechten Flügel unter den hinteren Fenstern, ohne Hängeschränke. In der Mitte eine Kochinsel aus glattem Quarz, an der Außenwand Vorratstruhen und Fässer, dazu ein kleiner Tisch fürs Personal.');
+  b.step();
   kitchen(b, { x: 24, y: 4, z: 3, facing: 'south', width: 7, wood: 'fichte', cabinets: false });
   b.fill(26, 4, 7, 28, 4, 7, TRIM);
   b.set(27, 5, 7, formatState('cake', { bites: '0' }));
@@ -403,21 +371,21 @@ function groundFloorRooms(b) {
 }
 
 function upperRooms(b) {
-  b.phase('Einrichtung Obergeschoss', 'Oben verbindet die Galerie um das Treppenauge alle Räume: hinten links das Bad, vorne links das Elternschlafzimmer mit Tür zur Terrasse, rechts Arbeitszimmer und Gästezimmer.');
-  b.step('Galerie', 'Vorne an der Balkontür stehen zwei Sessel, hinten auf dem Treppenabsatz eine Bank mit Blick auf die Treppe.');
+  b.phase('Einrichtung Obergeschoss');
+  b.step();
   b.set(9, 10, 12, st('dark_oak_stairs', 'west'));
   b.set(14, 10, 12, st('dark_oak_stairs', 'east'));
   for (const [x, z] of [[8, 13], [15, 13], [8, 1], [15, 1]]) b.set(x, 10, z, 'potted_flowering_azalea_bush');
   for (let x = 10; x <= 13; x++) b.set(x, 10, 1, st('dark_oak_stairs', 'north'));
 
-  b.step('Elternschlafzimmer', 'Das Doppelbett steht mit dem Kopfteil an der Wand zum Bad, daneben Nachttische. Am Vorderfenster steht ein Schreibtisch, links führt eine Tür auf die Terrasse des Flügels.');
+  b.step();
   bedroom(b, { x: 1, y: 10, z: 8, facing: 'south', width: 5, depth: 6, wood: 'schwarzeiche', color: 'rot', rug: 'weiss', double: true });
   for (const x of [5, 6]) b.set(x, 10, 13, slab('dark_oak_slab', 'top'));
   b.set(5, 10, 12, st('dark_oak_stairs', 'north'));
   b.set(6, 11, 13, formatState('candle', { candles: '1', lit: 'true' }));
   b.set(6, 10, 8, 'potted_bamboo');
 
-  b.step('Bad', 'Die Badewanne sind zwei Kessel mit Wasser, das Waschbecken ein weiterer Kessel mit einem Stolperdrahthaken als Wasserhahn. Die Toilette ist eine Quarztreppe mit einer offenen Birkenfalltür als Deckel. Zwischen Wanne und Becken läuft der Schornstein durch.');
+  b.step();
   for (const x of [1, 2]) b.set(x, 10, 1, formatState('water_cauldron', { level: '3' }));
   b.set(4, 10, 1, formatState('water_cauldron', { level: '3' }));
   b.set(4, 11, 1, formatState('tripwire_hook', { facing: 'south', attached: 'false', powered: 'false' }));
@@ -428,7 +396,7 @@ function upperRooms(b) {
   b.set(1, 11, 6, formatState('white_candle', { candles: '2', lit: 'true' }));
   b.set(6, 10, 6, 'potted_fern');
 
-  b.step('Arbeitszimmer', 'Eine Bücherwand steht an der Wand zum Gästezimmer. Der Schreibtisch aus Schwarzeichenstufen steht am hinteren Fenster, daneben ein Kartentisch und ein Lesepult.');
+  b.step();
   bookWall(b, { x: 22, y: 10, z: 6, facing: 'north', width: 6, height: 3, wood: 'schwarzeiche', chiseled: true, crown: true });
   for (const x of [18, 19]) b.set(x, 10, 2, slab('dark_oak_slab', 'top'));
   b.set(18, 10, 3, st('dark_oak_stairs', 'south'));
@@ -437,7 +405,7 @@ function upperRooms(b) {
   b.set(17, 10, 1, formatState('lectern', { facing: 'south', has_book: 'false', powered: 'false' }));
   b.fill(19, 10, 4, 21, 10, 4, 'brown_carpet');
 
-  b.step('Gästezimmer', 'Ein Einzelbett mit hellblauer Decke, Nachttische, eine Truhe und ein kleiner Schreibtisch am Fenster; rechts geht es auf die zweite Terrasse.');
+  b.step();
   bedroom(b, { x: 18, y: 10, z: 8, facing: 'south', width: 5, depth: 6, wood: 'birke', color: 'hellblau', rug: 'hellgrau', double: false });
   for (const x of [17, 18]) b.set(x, 10, 13, slab('birch_slab', 'top'));
   b.set(18, 10, 12, st('birch_stairs', 'north'));
@@ -445,23 +413,21 @@ function upperRooms(b) {
 }
 
 function lighting(b) {
-  b.phase('Licht', 'Damit nirgends Monster spawnen, hängen in allen Räumen Laternen an der Decke, auch unter dem Portikus und auf dem Dachboden.', {
-    tips: ['Monster spawnen in 26.2 nur bei Blocklicht 0. Jede Laterne leuchtet mit Stärke 15 und reicht damit gut 14 Blöcke weit.'],
-  });
-  b.step('Erdgeschoss und Portikus');
+  b.phase('Licht');
+  b.step();
   lightRoom(b, { x1: 1, y1: 4, z1: 1, x2: 6, y2: 8, z2: 13 });
   lightRoom(b, { x1: 8, y1: 4, z1: 1, x2: 15, y2: 8, z2: 13 });
   lightRoom(b, { x1: 17, y1: 4, z1: 1, x2: 22, y2: 8, z2: 13 });
   lightRoom(b, { x1: -7, y1: 4, z1: 3, x2: -1, y2: 8, z2: 11 });
   lightRoom(b, { x1: 24, y1: 4, z1: 3, x2: 30, y2: 8, z2: 11 });
   lightRoom(b, { x1: PORTICO.x1, y1: 4, z1: PORTICO.z1, x2: PORTICO.x2, y2: 8, z2: PORTICO.z2 });
-  b.step('Obergeschoss');
+  b.step();
   lightRoom(b, { x1: 1, y1: 10, z1: 1, x2: 6, y2: 13, z2: 6 });
   lightRoom(b, { x1: 1, y1: 10, z1: 8, x2: 6, y2: 13, z2: 13 });
   lightRoom(b, { x1: 8, y1: 10, z1: 1, x2: 15, y2: 13, z2: 13 });
   lightRoom(b, { x1: 17, y1: 10, z1: 1, x2: 22, y2: 13, z2: 6 });
   lightRoom(b, { x1: 17, y1: 10, z1: 8, x2: 22, y2: 13, z2: 13 });
-  b.step('Dachboden', 'Unter dem Dach hängen zwei Laternen an je zwei Kettengliedern unter den Dachtreppen; sie reichen bis in die Ecken und in die Gauben.');
+  b.step();
   for (const x of [6, mirrorX(6)]) hangingLantern(b, { x, y: TOP + 6, z: 7, chain: 2 });
 }
 
@@ -501,13 +467,8 @@ function hedgeBed(b, x1, z1, x2, z2, flowers, seed) {
 }
 
 function garden(b) {
-  b.phase('Garten', 'Zum Schluss der formale Garten an den Kieswegen: ein Brunnen in der Mitte, vier Beete mit niedrigen Hecken, Zypressen vor den Flügeln, Laternen und eine niedrige Mauer an der Straße.', {
-    tips: [
-      'Die Beete pflanzt du direkt in den Rasen – Blumen halten auf Grasblöcken, du musst nichts umgraben.',
-      'Setz die Hecken vor den Blumen, dann trittst du beim Pflanzen nichts kaputt.',
-    ],
-  });
-  b.step('Brunnen', 'Das Becken hat einen Durchmesser von 10 Blöcken: Boden aus glattem Quarz mit Seelaternen eine Ebene unter dem Gelände, ringsum ein Rand aus glattem Quarz, 2 Ebenen hoch. In der Mitte steht ein 2 × 2 großer Sockel aus Quarzsäulen mit einer kleinen Schale aus kopfüber gesetzten Quarztreppen. Füll beide Schalen mit Wassereimern – alles sind Quellen, nichts fließt.');
+  b.phase('Garten');
+  b.step();
   const fx = 11.5;
   const fz = 33.5;
   b.disc(fx, -1, fz, 4.5, TRIM);
@@ -526,9 +487,8 @@ function garden(b) {
     b.set(13, 3, z, st(TRIM_STAIRS, 'west', 'top'));
   }
   b.fill(11, 3, 33, 12, 3, 34, 'water');
-  b.note(11, 3, 33, 'Obere Brunnenschale: 4 Wasserquellen');
 
-  b.step('Beete und Hecken', 'Die vier Beete (13 × 8) bekommen einen Rand aus Eichenlaub, an den Ecken 2 hoch als kleine Formschnitt-Säulen. Innen stehen die Blumen in Reihen, gespiegelt zur Mitte: außen hohe Pfingstrosen bzw. Flieder, dann Tulpen bzw. Kornblumen, innen Zierlauch bzw. Porzellansternchen; in der Mitte ein Azaleenbusch. Vor den Flügeln wachsen Rosenbüsche und weiße Tulpen. Um das ganze Grundstück wächst eine 2 hohe Hecke aus Schwarzeichenlaub.');
+  b.step();
   const ROSE_BED = ['peony', 'pink_tulip', 'allium'];
   const BLUE_BED = ['lilac', 'cornflower', 'azure_bluet'];
   hedgeBed(b, -10, 24, 2, 31, ROSE_BED, 1);
@@ -541,7 +501,7 @@ function garden(b) {
   }
   for (const x1 of [-7, 24]) flowerRows(b, x1, x1 + 6, 13, ['rose_bush', 'white_tulip']);
 
-  b.step('Mauer an der Straße', 'Vorne schließt eine Steinziegelmauer das Grundstück ab. Alle 7 Blöcke steht ein Pfeiler aus Steinziegeln (2 hoch, oben gemeißelt) mit einer Laterne obendrauf; die Einfahrt in der Mitte bleibt 6 breit offen.');
+  b.step();
   const pillars = [-13, -6, 1, 8, 15, 22, 29, 36];
   for (let x = PLOT.x1; x <= PLOT.x2; x++) {
     if (x >= 9 && x <= 14) continue;
@@ -552,7 +512,7 @@ function garden(b) {
     } else b.set(x, 1, PLOT.z2, 'stone_brick_wall');
   }
 
-  b.step('Bäume, Laternen und Bänke', 'Vor die Flügel kommen je zwei schlanke Fichten wie Zypressen, hinter das Haus zwei Birken. Laternenpfähle aus Steinziegelmauern säumen Hauptweg und Brunnenplatz, Bänke laden am Brunnen und an den Enden des Querwegs zum Sitzen ein.');
+  b.step();
   for (const [x, seed] of [[-10, 1], [-4, 2], [27, 3], [33, 4]]) tree(b, { x, y: 1, z: 17, species: 'fichte', size: 'klein', seed });
   tree(b, { x: -9, y: 1, z: -2, species: 'birke', size: 'mittel', seed: 5 });
   tree(b, { x: 32, y: 1, z: -2, species: 'birke', size: 'mittel', seed: 6 });

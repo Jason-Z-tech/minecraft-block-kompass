@@ -16,23 +16,10 @@ export const meta = {
     'golden gait', 'goldan gate', 'golden gat bridge',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Die Hängebrücke über das Golden Gate, 1 Block = 1 m (oder 1:2, 1:4): 2737 m Gesamtlänge, 1280 m Hauptspannweite, '
     + 'Seitenöffnungen je 343 m, Türme 227 m über dem Wasser, Fahrbahn 27 m breit (19 m zwischen den Bordsteinen), 67 m Durchfahrtshöhe '
     + 'und 7,6 m hoher Versteifungsträger – alles belegt. Die Hauptkabel sind als Parabel berechnet, die 250 Hängerpaare stehen alle '
     + '15,24 m. Geschätzt sind der Durchhang der Kabel, die Lage der Turm-Querriegel, die Abstufung der Turmbeine, Pfeiler, Fender, Pylone, Ankerhäuser und die Form der Zufahrten.',
-  facts: [
-    'Gesamtlänge 2737 m (8981 ft) von Widerlager zu Widerlager, davon 1966 m Hängebrücke.',
-    'Hauptspannweite 1280 m (4200 ft) – bei der Eröffnung 1937 die längste der Welt.',
-    'Türme 227 m über dem Wasser und 152 m über der Fahrbahn; jedes Turmbein misst am Fuß 10 × 16 m.',
-    'Durchfahrtshöhe 67 m über mittlerem Hochwasser; die Fahrbahn liegt rund 75 m über dem Wasser (227 m Turm minus 152 m Turm über der Fahrbahn).',
-    'Die Turmbeine sind aus Stahlzellen gebaut und dreimal in der Dicke abgestuft; die Portale werden nach oben kleiner, damit der Turm höher wirkt.',
-    'Zwei Hauptkabel mit je 0,92 m Durchmesser aus 27.572 Drähten, 2332 m lang.',
-    '250 Paare Hängerseile im Abstand von 15,24 m (50 ft).',
-    'Farbe „International Orange“ (CMYK 0/69/100/6); im Bau Oranger Beton, der in der Farbe am nächsten liegt.',
-    'Die Fahrbahn ist 27 m breit: 19 m zwischen den Bordsteinen für sechs Spuren und zwei 3 m breite Gehwege.',
-    'Der Fort-Point-Bogen (rund 97 m) überspannt die alte Festung am Südufer.',
-  ],
   sources: [
     { title: 'Golden Gate Bridge District: Design & Construction Stats', url: 'https://www.goldengate.org/bridge/history-research/statistics-data/design-construction-stats/' },
     { title: 'Golden Gate Bridge District: Color & Art Deco Styling', url: 'https://www.goldengate.org/bridge/history-research/bridge-features/color-art-deco-styling/' },
@@ -207,16 +194,6 @@ const symmetricX = (fn) => {
   fn(1);
   fn(-1);
 };
-
-function fmt(value) {
-  const rounded = Math.round(value * 10) / 10;
-  return String(rounded).replace('.', ',');
-}
-
-function blocks(m, s) {
-  const n = Math.max(1, Math.round(m * s));
-  return `${n} ${n === 1 ? 'Block' : 'Blöcke'}`;
-}
 
 // ---------------------------------------------------------------- Türme
 
@@ -424,7 +401,6 @@ function buildArch(b, cfg) {
     if (cfg.mid) b.fill(-(ribXs[ribXs.length - 1] - 1), yArch, z, ribXs[ribXs.length - 1] - 1, yArch, z, M.steel);
   }
   symmetricX((sign) => b.fill(sign * cfg.halfDeck, girderBottom, za, sign * cfg.halfDeck, cfg.roadY - 1, zb, M.steel));
-  return { za, zb, crown };
 }
 
 // ---------------------------------------------------------------- Zufahrten
@@ -736,143 +712,89 @@ export default function build(b, { scale = 1 } = {}) {
   const cfg = createConfig(s);
   const g = cableGeometry(cfg);
   const zones = deckZones(cfg, g);
-  const lvl = (y) => y + 1; // Ebene N = y + 1
-  const scaleText = s === 1 ? '1:1' : `1:${fmt(1 / s)}`;
-  const commonTips = [
-    'Baue im Kreativmodus und fliege (zweimal Leertaste); mit F3 siehst du deine Koordinaten. Die Brücke ist schnurgerade: Lege die Mittellinie auf eine feste x-Koordinate.',
-    'Ebene 1 ist die Wasserlinie. Baust du über echtem Meer, führe Pfeiler und Stützen bis zum Grund weiter.',
-  ];
   const zN = cfg.zNorthTower;
   const zS = cfg.zSouthTower;
 
-  b.phase('Pfeiler im Wasser', `Maßstab ${scaleText}. Die Brücke läuft von Norden (Marin, z = 0) nach Süden (San Francisco) und ist ${blocks(Z_TOTAL, s)} lang. `
-    + `Die beiden Türme stehen ${blocks(MAIN_SPAN, s)} auseinander (Mitte zu Mitte), der Nordturm ${blocks(Z_NORTH_TOWER, s)} vom Nordende. `
-    + `Beide stehen auf Betonpfeilern bis Ebene ${lvl(cfg.yOf(H_PIER) - 1)} (Höhe geschätzt).`, {
-    tips: [...commonTips, 'Markiere zuerst die Turmmitten und die Brückenachse mit Wolle – alles andere misst du von dort.'],
-  });
-  b.step('Südpfeiler mit Fender', `Der Südturm steht im offenen Wasser. Setze den Pfeiler (Glatter Stein, Rand aus Poliertem Andesit) und darum den ovalen Fender `
-    + `(${blocks(72, s)} quer, ${blocks(56, s)} längs, ${blocks(3, s)} dick – Form geschätzt), der den Pfeiler gegen Schiffe und Wellen schützt.`);
+  b.phase('Pfeiler im Wasser');
+  b.step();
   buildPier(b, cfg, zS, { fender: true });
-  b.note(0, cfg.yOf(H_PIER) - 1, zS, 'Südpfeiler: Das Fundament reicht im Original 34 m unter Niedrigwasser. Der Fender darum wurde beim Bau leergepumpt.');
-  b.step('Nordpfeiler am Lime Point', 'Der Nordturm steht direkt am Ufer von Marin. Setze denselben Pfeiler und lege Felsen aus Stein, Andesit und Bruchstein darum.');
+  b.step();
   buildPier(b, cfg, zN, { fender: false });
 
-  b.phase('Türme bis zur Fahrbahn', `Jeder Turm hat zwei hohle Beine (im Original Stahlzellen). Am Fuß misst ein Bein ${blocks(10, s)} quer × ${blocks(16, s)} längs. `
-    + `Die Innenseiten der Beine stehen ${blocks(19, s)} auseinander – genau die Fahrbahnbreite. `
-    + (cfg.fine ? 'Die Außenseiten haben senkrechte Rillen: zwischen den Eckpfosten ist jede zweite Spalte um einen Block eingerückt. ' : '')
-    + `Unter der Fahrbahn verbindet ein Andreaskreuz die Beine, direkt unter der Fahrbahn ein Riegel (Ebene ${lvl(cfg.yOf(H_DECK_STRUT))}–${lvl(cfg.trussBottom - 1)}; Form geschätzt).`, {
-    tips: [...commonTips, 'Baue beide Beine eines Turms Lage für Lage gleichzeitig hoch, dann bleiben sie sicher symmetrisch.'],
-  });
-  b.step('Nordturm bis zur Fahrbahn', `Beine von Ebene ${lvl(cfg.sectionY[0])} bis ${lvl(cfg.trussBottom - 1)}, dazu Kreuz und Fahrbahnriegel.`);
+  b.phase('Türme bis zur Fahrbahn');
+  b.step();
   buildTowerBelowDeck(b, cfg, zN);
-  b.step('Südturm bis zur Fahrbahn', 'Genau wie beim Nordturm.');
+  b.step();
   buildTowerBelowDeck(b, cfg, zS);
 
-  b.phase('Türme über der Fahrbahn', `Über der Fahrbahn verbinden vier Querriegel die Beine. Die Öffnungen dazwischen werden nach oben kleiner `
-    + `(${STRUTS.map(([a], i) => blocks(a - (i === 0 ? H_ROAD : STRUTS[i - 1][1]), s)).join(', ')}) – so wirkt der Turm höher (B). `
-    + `An jedem Riegel springen die Beine zurück: quer ${cfg.legW.join(' → ')}, längs ${cfg.legD.join(' → ')} Blöcke. `
-    + `Die Spitze liegt auf Ebene ${lvl(cfg.topY)} = ${H_TOWER} m über dem Wasser, 152 m über der Fahrbahn.`, {
-    tips: [...commonTips, cfg.fine ? 'Die Riegel tragen auf Nord- und Südseite senkrechte Rippen (jede zweite Spalte steht einen Block vor) – das Art-déco-Merkmal der Türme.' : 'Die Riegel sind hier glatte Balken.'],
-  });
+  b.phase('Türme über der Fahrbahn');
   for (let i = 0; i < 4; i++) {
-    const y0 = i === 0 ? cfg.trussBottom : cfg.sectionY[i];
-    const y1 = cfg.sectionY[i + 1] - 1;
-    const [a, top] = STRUTS[i];
-    b.step(`Abschnitt ${i + 1}${i === 3 ? ' mit Krone' : ''} (beide Türme)`, `Beine von Ebene ${lvl(y0)} bis ${lvl(y1)} (${cfg.legW[i]} × ${cfg.legD[i]} Blöcke), `
-      + `${i === 3 ? 'oben der Kronenriegel' : `Querriegel ${i + 1}`} auf Ebene ${lvl(cfg.yOf(a))}–${lvl(cfg.yOf(top) - 1)}.`
-      + (i === 3 ? ' Über den Kronenriegel läuft später das Kabel – er ist das Dach des Turms.' : ''));
+    b.step();
     buildTowerSection(b, cfg, zN, i);
     buildTowerSection(b, cfg, zS, i);
   }
-  b.note(cfg.inner, cfg.topY, zS, `Turmspitze: ${H_TOWER} m über dem Wasser. Bei der Eröffnung 1937 waren das die höchsten Brückentürme der Welt.`);
 
-  b.phase('Pylone, Ankerhäuser und Fort-Point-Bogen', 'An beiden Enden der Hängebrücke stehen Paare von Art-déco-Pylonen aus Beton (N1, N2, S1, S2). '
-    + 'Unter den Ankerhäusern liegen im Original die riesigen Betonanker der Kabel (je 60.000 t). Im Süden überspannt der Stahlbogen die alte Festung Fort Point. '
-    + 'Lage und Form der Pylone und Ankerhäuser sind geschätzt.', {
-    tips: [...commonTips, 'Die Ankerhäuser sind hier hohl – im Spiel genügt die Hülle.'],
-  });
-  b.step('Ankerhaus Nord', `Betonblock unter der Fahrbahn, ${blocks(60, s)} lang, mit Wandpfeilern.`);
+  b.phase('Pylone, Ankerhäuser und Fort-Point-Bogen');
+  b.step();
   buildHousing(b, cfg, Z_NORTH_VIADUCT_END, Z_NORTH_SUSPENDED);
-  b.step('Pylone N1 und N2', `Je zwei Pylone links und rechts der Fahrbahn, ${blocks(10, s)} breit und ${blocks(15, s)} tief. N1 (Ende der Seitenöffnung) trägt oben das Kabel auf Ebene ${lvl(g.yEnd)}, N2 nimmt es auf Ebene ${lvl(g.yEntry)} auf.`);
+  b.step();
   buildPylon(b, cfg, Z_NORTH_SUSPENDED - 15, g.yEnd - 1, { beam: false });
   buildPylon(b, cfg, Z_NORTH_VIADUCT_END, cfg.yOf(H_PYLON_TOP) - 1, { beam: false });
-  b.step('Pylone S1 und S2', 'Dieselben Pylone im Süden: S2 am Ende der Seitenöffnung, S1 am Südende des Bogens.');
+  b.step();
   buildPylon(b, cfg, Z_SOUTH_SUSPENDED, g.yEnd - 1);
   buildPylon(b, cfg, Z_ARCH_END, cfg.yOf(H_PYLON_TOP) - 1);
-  b.step('Fort-Point-Bogen', `Zwei Bogenrippen spannen ${blocks(98, s)} von Pylon zu Pylon (Kämpfer auf Ebene ${lvl(cfg.yOf(H_ARCH_SPRING))}, Scheitel auf Ebene ${lvl(cfg.yOf(H_GIRDER) - 2)}). `
-    + `Setze zuerst die vier Kämpferfundamente aus Glattem Stein (${blocks(8, s)} lang, direkt neben den Pylonen; Form geschätzt), `
-    + 'dann jede Rippe von beiden Fundamenten her zur Mitte, zuletzt die Ständer und die Blechträger obendrauf.');
-  const arch = buildArch(b, cfg);
-  b.note(0, arch.crown, Math.round((arch.za + arch.zb) / 2), 'Fort-Point-Bogen: Der Ingenieur Joseph Strauss ließ den Bogen bauen, damit die Festung von 1861 erhalten blieb.');
-  b.step('Ankerhaus Süd', `Wie im Norden, ${blocks(60, s)} lang, direkt hinter Pylon S1.`);
+  b.step();
+  buildArch(b, cfg);
+  b.step();
   buildHousing(b, cfg, Z_HOUSING_SOUTH, Z_SOUTH_VIADUCT);
 
-  b.phase('Hauptkabel', `Die zwei Hauptkabel (echt 0,92 m dick → 1 Block) laufen in ${blocks(26, s)} Abstand über die Turmspitzen. Zwischen den Türmen hängen sie als Parabel `
-    + `${blocks(SAG, s)} durch: von Ebene ${lvl(g.ySad)} an den Türmen bis Ebene ${lvl(g.yMid)} in der Mitte. `
-    + `In den Seitenöffnungen fallen sie zu den Pylonen N1/S2 (Ebene ${lvl(g.yEnd)}) und von dort gerade in die Ankerpylone.`, {
-    tips: [...commonTips, `Rechne die Höhe selbst nach: Abstand d von der Feldmitte in Blöcken → Höhe = ${g.yMid} + ${blocks(SAG, s).split(' ')[0]} · (d / ${Math.round((g.zS - g.zN) / 2)})². Setze alle 50 Blöcke einen Hilfsblock auf die richtige Höhe und verbinde dann.`,
-      'Das Kabel ist flächenverbunden: Wo es steiler wird, setzt du die Blöcke treppenförmig übereinander.'],
-  });
-  b.step('Kabel der Hauptöffnung', 'Von Turm zu Turm, beide Seiten.');
+  b.phase('Hauptkabel');
+  b.step();
   const mainBottoms = buildCables(b, cfg, g, 'main').main;
-  b.note(0, g.yMid, Math.round(g.zMid), `Mitte der Hauptöffnung: Das Kabel hängt hier nur ${g.yMid - cfg.roadY - 1} Blöcke über der Fahrbahn; darunter ${H_CLEAR} m Durchfahrtshöhe.`);
-  b.step('Kabel der Seitenöffnungen und Rückhaltekabel', `Von den Türmen hinunter zu N1 und S2 (Durchhang ${blocks(SIDE_SAG, s)} unter der Sehne), dann gerade in N2 und S1.`);
+  b.step();
   const sideBottoms = buildCables(b, cfg, g, 'side');
-  b.note(cfg.halfDeck, g.yEnd, g.s2c, 'Pylon S2: Hier liegt das Kabel auf und läuft über den Fort-Point-Bogen hinunter zum Anker.');
 
-  b.phase('Hänger und Versteifungsträger', `Alle ${blocks(HANGER_SPACING, s)} hängt an jedem Kabel ein Hänger (echt 250 Paare im Abstand von 50 ft). `
-    + `Daran hängt der ${blocks(7.6, s)} hohe Versteifungsträger: zwei Fachwerkwände unter den Kabeln, unten Ebene ${lvl(cfg.trussBottom)} (= ${H_CLEAR} m Durchfahrtshöhe), oben die Fahrbahnebene ${lvl(cfg.roadY)}.`, {
-    tips: [...commonTips, 'Im Original wurde der Träger von beiden Türmen gleichzeitig nach außen und zur Mitte gebaut – so bleibt das Kabel im Gleichgewicht.'],
-  });
+  b.phase('Hänger und Versteifungsträger');
   const hangers = hangerPositions(cfg, g);
-  b.step('Hänger der Hauptöffnung', `${hangers.main.length} Hänger je Kabel aus Akazienholzzaun, vom Geländer (Ebene ${lvl(cfg.roadY + 1)}) bis unter das Kabel.`);
+  b.step();
   buildHangers(b, cfg, hangers.main, mainBottoms);
-  b.step('Hänger der Seitenöffnungen', `Je ${hangers.north.length} Hänger pro Kabel und Seitenöffnung.`);
+  b.step();
   buildHangers(b, cfg, hangers.north, sideBottoms.north);
   buildHangers(b, cfg, hangers.south, sideBottoms.south);
   const legN = legZone(cfg, zN);
   const legS = legZone(cfg, zS);
-  b.step('Versteifungsträger Hauptöffnung', `Fachwerk mit Pfosten alle ${blocks(PANEL, s)} und Diagonalen im Wechsel, dazu Querträger unter der Fahrbahn${cfg.fine ? ' und unten ein Windverband im Zickzack' : ''}.`);
+  b.step();
   buildStiffeningTruss(b, cfg, legN.zb + 1, legS.za - 1, g.zMid);
-  b.step('Versteifungsträger Seitenöffnungen', 'Gleiches Fachwerk von den Türmen bis zu den Pylonen N1 und S2.');
+  b.step();
   buildStiffeningTruss(b, cfg, g.n1.zb + 1, legN.za - 1, g.zMid);
   buildStiffeningTruss(b, cfg, legS.zb + 1, g.s2.za - 1, g.zMid);
 
-  b.phase('Zufahrten', 'Im Norden führt ein rund 305 m langes Fachwerk auf vier Stahltürmen zum Ufer, im Süden ein 218 m langer Viadukt (drei Fachwerk- und drei Blechträgerfelder) zum Toll Plaza. '
-    + 'Im Original stehen die Stützen auf den Hügeln von Lime Point und Fort Point – hier reichen sie bis zur Wasserlinie. Passe ihre Länge an dein Gelände an.', {
-    tips: [...commonTips],
-  });
-  b.step('Widerlager', `Betonblöcke an beiden Enden, ${blocks(6, s)} tief.`);
+  b.phase('Zufahrten');
+  b.step();
   buildAbutments(b, cfg);
-  b.step('Zufahrt Nord', 'Fachwerk mit fünf Feldern und vier Stahltürmen.');
+  b.step();
   buildNorthViaduct(b, cfg);
-  b.step('Zufahrt Süd', 'Sechs Felder auf Stahlstützen, die drei nördlichen als Fachwerk, die drei südlichen als Blechträger (Reihenfolge geschätzt).');
+  b.step();
   buildSouthViaduct(b, cfg);
 
-  b.phase('Fahrbahn und Gehwege', `Die Fahrbahn liegt auf Ebene ${lvl(cfg.roadY)} – du stehst also ${H_ROAD} m über dem Wasser. Sie ist ${blocks(19, s)} breit`
-    + (cfg.walkWidth > 0 ? `, daneben je ein ${cfg.walkWidth === 1 ? '1 Block' : `${cfg.walkWidth} Blöcke`} breiter Gehweg, um eine halbe Stufe erhöht` : '')
-    + `. Gesamtbreite ${2 * cfg.halfDeck + 1} Blöcke (echt 27 m).`, {
-    tips: [...commonTips, 'Setze die Fahrbahn in langen Bahnen mit /fill, wenn du Befehle nutzt – sie ist über 2,7 km schnurgerade.'],
-  });
-  b.step('Fahrbahnplatte', 'Grauer Beton über die ganze Länge; durch die Turmportale läuft nur die Fahrbahn.');
+  b.phase('Fahrbahn und Gehwege');
+  b.step();
   buildRoad(b, cfg, zones);
   if (cfg.mid) {
-    b.step('Markierungen und Mittelschutz', cfg.fine ? 'Sechs Spuren: gestrichelte Linien aus Weißem Beton, in der Mitte der verschiebbare Mittelschutz als Steinstufe.' : 'Gestrichelte Linien und eine Steinstufe als Mittelschutz.');
+    b.step();
     buildMarkings(b, cfg, zones);
   }
   if (cfg.walkWidth > 0) {
-    b.step('Gehwege', 'Glatte Steinstufen auf beiden Seiten.');
+    b.step();
     buildWalkways(b, cfg, zones);
-    b.step('Umgehung an den Türmen', 'Die Gehwege führen außen um die Turmbeine herum: eine Plattform auf Stahlkonsolen mit Geländer und zwei Laternen.');
+    b.step();
     buildBypass(b, cfg, zN);
     buildBypass(b, cfg, zS);
   }
 
-  b.phase('Geländer und Licht', 'Zum Schluss das Geländer an der Außenkante und die Beleuchtung. Der Architekt Irving Morrow hielt das Geländer bewusst schlicht, damit man im Vorbeifahren die Aussicht hat.', {
-    tips: [...commonTips, 'Laternen hängen an einer Stufe (hängende Laterne) oder stehen auf einem Zaunpfosten – beides hält im Spiel.'],
-  });
-  b.step('Geländer', 'Akazienholzzaun auf der Außenkante; über den Ankerhäusern am Rand der Terrasse.');
+  b.phase('Geländer und Licht');
+  b.step();
   buildRailing(b, cfg, zones);
-  b.step('Leuchten', cfg.fine ? 'Alle 30 Blöcke ein schlanker Mast aus Harzziegelmauer mit hängender Laterne über der äußeren Spur.' : 'Laternen auf dem Geländer.');
+  b.step();
   buildLights(b, cfg, zones);
 }

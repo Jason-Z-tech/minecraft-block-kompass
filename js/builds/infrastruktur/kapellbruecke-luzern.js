@@ -16,17 +16,7 @@ export const meta = {
     'luzern brücke', 'lucerne bridge', 'holzbrücke luzern', 'gedeckte holzbrücke', 'pont de la chapelle',
   ],
   accuracy: 'massstab',
-  difficulty: 4,
   description: 'Die Kapellbrücke in Luzern im Maßstab 1:1: 203 m gedeckte Holzbrücke auf Holzjochen, mit Ziegel-Satteldach, Blumenkästen an beiden Brüstungen und dem Knick am achteckigen Wasserturm. Der Turm ist 34,5 m hoch, rund 12 m breit und innen mit Verlies, zwei Stockwerken und Dachstock eingerichtet; daneben steht der kleine Anbau mit dem Souvenirladen. Die Reuss ist nur als schmaler Wasserstreifen unter der Brücke angedeutet, die Ufer laufen schräg wie in Luzern. Länge, Verlauf und Turmmaße sind belegt, Höhen der Brücke und Dachneigung sind geschätzt.',
-  facts: [
-    'Heutige Länge 202,9 m (204,7 m mit den Vordächern) – nach der Holzbrücke Säckingen–Stein die zweitlängste gedeckte Holzbrücke Europas.',
-    'Ursprünglich war sie rund 279 m lang; im 19. Jahrhundert wurde das Ufer aufgeschüttet und die Brücke gekürzt, das Südende 1833–1838 schräg abgewinkelt.',
-    'Gebaut um 1365 als Wehrgang der Stadtbefestigung; 28 Joche im Wasser (20 aus Holz, 8 aus Stein), 27 Felder.',
-    'Beim Brand am 18. August 1993 wurde der größte Teil der Brücke und viele der dreieckigen Giebelbilder zerstört; am 14. April 1994 wurde sie wieder eröffnet.',
-    'Der achteckige Wasserturm (um 1300, älter als die Brücke) ist 34,5 m hoch, hat 4,4–5 m Seitenlänge und 39 m Umfang; im Verlies sind die Mauern rund 3 m dick.',
-    'Im Modell läuft das Hauptstück genau Nord–Süd; in Luzern läuft es von Nordost nach Südwest (um 34,5° gedreht).',
-    'Geschätzt (nicht belegt): Höhe der Fahrbahn über dem Wasser, Höhe der Brüstung und des Firsts, Lage der 8 Steinjoche (hier alle Joche aus Holz), Form des Anbaus.',
-  ],
   sources: [
     { title: 'Wikipedia (de): Kapellbrücke', url: 'https://de.wikipedia.org/wiki/Kapellbr%C3%BCcke' },
     { title: 'Wikipedia (en): Kapellbrücke', url: 'https://en.wikipedia.org/wiki/Kapellbr%C3%BCcke' },
@@ -272,12 +262,7 @@ function* eachCell(ctx, filter) {
 
 // Kapitel 1: Flussbett, Ufer-Fundament und Turmfundament
 function buildRiverbed(b, spec, ctx) {
-  b.phase('Flussbett und Ufer abstecken',
-    `Markiere zuerst den Verlauf: Das lange Hauptstück läuft ${Math.round(ctx.path.segs[0].len)} Blöcke geradeaus nach Süden, dann knickt die Brücke beim Wasserturm leicht nach Westen ab und am Südende schräg nach Südosten. Lege darunter einen schmalen Streifen Flussbett aus Ton, Schlamm und grober Erde an – das Wasser kommt erst ganz am Schluss hinein. Der Rand aus grober Erde hält das Wasser später im Streifen. An den Enden liegen die Ufer: Sie laufen schräg unter der Brücke durch, genau wie in Luzern. Mauere dort gleich den Quai bis auf Ebene ${spec.y.quay + 1} hoch und pflastere ihn (Bruchstein, Andesit, polierter Andesit, an der Kante und unter der Brücke Steinziegel) – auf ihm liegen später die Brückenenden.`,
-    { tips: [
-      'Setz dir alle 10 Blöcke einen Zaunpfosten auf die Mittellinie – so bleibt die lange Brücke schnurgerade.',
-      'Der Knick am Turm ist nur leicht: auf 3 Blöcke nach Süden kommt 1 Block nach Westen.',
-    ] });
+  b.phase('Flussbett und Ufer abstecken');
   const y = spec.y;
   for (const c of eachCell(ctx, (c) => c.inSite && !c.land && !c.tower)) {
     const water = c.ad <= spec.water && c.s > -spec.landBeyond + 1 && c.s < ctx.L + spec.landBeyond - 1;
@@ -293,20 +278,12 @@ function buildRiverbed(b, spec, ctx) {
   for (const c of eachCell(ctx, (c) => c.tower)) {
     for (let yy = y.bed; yy <= y.bed + t.solidBelow; yy++) b.set(c.x, yy, c.z, towerStone(c.x, yy, c.z));
   }
-  b.note(0, y.bed, 0, 'Nordende der Brücke (Rathausquai, bei der Peterskapelle).');
-  const end = spec.path[spec.path.length - 1];
-  b.note(Math.round(end[0]), y.bed, Math.round(end[1]), 'Südende (Seite Luzerner Theater) – hier wurde die Brücke im 19. Jahrhundert gekürzt und abgewinkelt.');
 }
 
 // Kapitel 2: Joche (Pfahlreihen) und Längsbalken
 function buildPiles(b, spec, ctx) {
   const y = spec.y;
-  b.phase('Joche und Unterbau',
-    `Die Brücke steht auf ${spec.spans + 1} Jochen – Reihen aus Holzpfählen quer zur Brücke, etwa alle ${(ctx.L / spec.spans).toFixed(1).replace('.', ',')} Blöcke. Ramme die Pfähle aus Fichtenstamm ins Flussbett${y.beam !== null ? ' und leg oben einen Querbalken darauf. Unter den beiden Brüstungen laufen die Längsbalken aus entrindetem Fichtenstamm von Joch zu Joch' : ''}.`,
-    { tips: [
-      'Zähl beim Abstecken die Joche mit: Wenn eins fehlt, merkst du es sonst erst beim Dach.',
-      'In Luzern sind 8 der 28 Joche aus Stein. Wo genau, ist nicht dokumentiert – deshalb sind hier alle aus Holz.',
-    ] });
+  b.phase('Joche und Unterbau');
   const topPile = y.beam ?? y.deck - 1;
   for (let k = 0; k <= spec.spans; k++) {
     const s = (ctx.L * k) / spec.spans;
@@ -341,9 +318,7 @@ function buildPiles(b, spec, ctx) {
 // Kapitel 3: Gehweg
 function buildDeck(b, spec, ctx) {
   const y = spec.y;
-  b.phase('Gehweg verlegen',
-    `Leg den Boden aus Fichtenbrettern über die ganze Länge: ${Math.round((spec.wall - 0.6) * 2 + 1)} Blöcke breit, die äußersten Reihen tragen später die Brüstung. An beiden Enden führt eine Treppenstufe vom Ufer hinauf.`,
-    { tips: ['Arbeite dich von Joch zu Joch vor und setz zuerst die Randreihen – dann siehst du sofort, ob der Knick sauber verläuft.'] });
+  b.phase('Gehweg verlegen');
   for (const c of eachCell(ctx, (c) => c.onBridge && c.ad < spec.wall && !c.tower)) b.set(c.x, y.deck, c.z, WOOD.planks);
   // Eingangsstufen an beiden Enden
   for (const end of [{ s: -0.5, dir: 1 }, { s: ctx.L + 0.5, dir: -1 }]) {
@@ -364,12 +339,7 @@ function isPostCell(spec, c) {
 // Kapitel 4: Brüstung, Pfosten, Rähm und Zugbalken
 function buildWalls(b, spec, ctx) {
   const y = spec.y;
-  b.phase('Brüstung und Pfosten',
-    `Auf die Randreihen kommt die Brüstung aus Fichtenbrettern, ${y.window - y.walk} Block hoch. Alle ${spec.postEvery} Blöcke steht ein Pfosten aus entrindetem Fichtenstamm bis unters Dach, oben verbindet sie der Rähmbalken. Auf der Seeseite (Osten) ist die Brüstung wie in Luzern höher: Leg dort eine Fichtenstufe obendrauf. Über dem Gehweg spannen die Zugbalken von Pfosten zu Pfosten – an ihnen hängen später die Laternen.`,
-    { tips: [
-      'Setz erst alle Pfosten, dann die Brüstung dazwischen – so stimmt der Rhythmus über die ganze Länge.',
-      'Unter den Zugbalken hängen in Luzern die dreieckigen Giebelbilder. Du kannst dort Gemälde aufhängen.',
-    ] });
+  b.phase('Brüstung und Pfosten');
   for (const c of eachCell(ctx, (c) => c.onBridge && c.band === 'wall' && !c.tower)) {
     const post = isPostCell(spec, c);
     const lake = c.d > 0;
@@ -393,12 +363,7 @@ function buildWalls(b, spec, ctx) {
 // Kapitel 5: Dach
 function buildRoof(b, spec, ctx) {
   const y = spec.y;
-  b.phase('Satteldach mit Ziegeln',
-    `Das Dach ist ein Satteldach aus Ziegeltreppen, das wie in Luzern weit herunterreicht und an jeder Seite einen Block über die Brüstung hinausragt. Setz die Treppen Reihe für Reihe von außen nach innen, mit der hohen Seite zum First. Der First ist eine Reihe Ziegelstufen. An beiden Enden steht ein Vordach einen Block über den Gehweg hinaus, die Giebeldreiecke darüber schließt du mit Fichtenbrettern. Über dem Anbau am Turm läuft ein Pultdach, das vom Brückendach zum Turm hin ansteigt.`,
-    { tips: [
-      'Schau beim Setzen der Treppen zum First – dann zeigt die hohe Seite automatisch richtig.',
-      'Am Knick entstehen kleine Stufen im Dach. Die Ziegelblöcke darunter schließen die Lücken.',
-    ] });
+  b.phase('Satteldach mit Ziegeln');
   const heights = new Map();
   const bands = spec.roofBands;
   for (const c of eachCell(ctx, (c) => c.ad < spec.eave && c.s >= -spec.roofOver && c.s <= ctx.L + spec.roofOver && !c.tower)) {
@@ -443,12 +408,7 @@ function towerWallCell(t, x, y, z) {
 
 function buildTowerMasonry(b, spec, ctx) {
   const t = spec.tower;
-  b.phase('Wasserturm: Mauern und Böden',
-    `Der Wasserturm ist ein Achteck mit ${Math.round(t.a * 2)} Blöcken Breite und ${t.wallTop + 1} Blöcken Mauerhöhe. Setz zuerst die acht Ecken, dann die Seiten dazwischen. ${t.verlies ? 'Ganz unten liegt das Verlies ohne Fenster und Tür: Dort ist die Mauer 3 Blöcke dick, darüber 2 und im Dachstock 1. ' : ''}Die Holzböden der Stockwerke legst du gleich mit, sobald die Mauer ihre Höhe erreicht. Der Eingang liegt auf Höhe des Brückenbodens, direkt neben der Brücke. Die Mischung aus Tuffstein, Andesit und Stein gibt den rauen, grauen Bruchstein-Ton; ganz unten am Wasser kommt etwas bemooster Bruchstein dazu.`,
-    { tips: [
-      'Mische die Steinsorten zufällig – nur so wirkt die Mauer alt. Bloß keine Muster.',
-      'Spar die Fensternischen gleich beim Hochmauern aus: Das Glas sitzt innen, außen bleibt eine Nische.',
-    ] });
+  b.phase('Wasserturm: Mauern und Böden');
   const cellsT = [...eachCell(ctx, (c) => c.tower)];
   const floorY = new Set(t.floors);
   const winCells = new Map();
@@ -469,7 +429,6 @@ function buildTowerMasonry(b, spec, ctx) {
     }
   }
   b.door(t.door.x, spec.y.walk, t.door.z, WOOD.door, { facing: 'east', hinge: 'left' });
-  b.note(t.door.x, spec.y.walk, t.door.z, 'Eingang zum Wasserturm direkt von der Brücke aus.');
 }
 
 // Fenster: Liste nennt die äußere Zelle; die innere Zelle der Mauer bekommt Glas/Gitter, außen bleibt die Nische.
@@ -496,12 +455,7 @@ function isDoorCell(spec, x, y, z) {
 
 function buildTowerRoof(b, spec, ctx) {
   const t = spec.tower;
-  b.phase('Wasserturm: Zeltdach',
-    `Das achteckige Zeltdach ist ${t.apex - t.roofBase + 1} Blöcke hoch und steht rundum ${Math.round(t.roofA - t.a)} Block über die Mauer hinaus. Leg zuerst die Traufe: einen Ring Ziegeltreppen auf Ebene ${t.roofBase + 1} außen um die Mauerkrone, hohe Seite zur Turmmitte. Mauere dann direkt auf der Mauerkrone mit Ziegelblöcken bis unter die Dachtreppen hoch, damit zwischen Mauer und Dach keine Lücke bleibt. Danach setzt du Ring für Ring die Ziegeltreppen nach oben und füllst darunter mit Ziegelblöcken, wo sonst ein Loch bliebe.`,
-    { tips: [
-      'Bau das Dach von innen aus: Stell dich auf den Dachboden und arbeite dich mit Gerüstblöcken hoch.',
-      'Die Traufe hängt frei über der Mauer: Setz die erste Treppe gegen einen Hilfsblock und reih die übrigen daran an.',
-    ] });
+  b.phase('Wasserturm: Zeltdach');
   const heights = new Map();
   const rMax = t.roofA - 0.5;
   for (const c of eachCell(ctx, (c) => c.towerRoof)) {
@@ -532,13 +486,13 @@ function buildTowerRoof(b, spec, ctx) {
 function buildTowerInterior(b, spec, ctx) {
   const t = spec.tower;
   const y = spec.y;
-  b.phase('Einrichtung von Turm und Anbau', 'Richte die Stockwerke so ein, wie sie früher genutzt wurden, und zum Schluss den kleinen Laden im Anbau. Jeder Raum bekommt eine Laterne, damit dort keine Monster erscheinen.');
+  b.phase('Einrichtung von Turm und Anbau');
   const cx = Math.floor(t.cx);
   const cz = Math.floor(t.cz);
   const ladder = t.ladder;
 
   if (t.verlies) {
-    b.step('Verlies', 'Das Verlies ganz unten hat keine Fenster und keine Tür – man kam nur durch eine Luke im Boden darüber hinein. Häng eine Seelenlaterne an die Decke, stell ein paar Ketten und Heuballen hinein und setz die Leiter an die Nordwand unter die Luke.');
+    b.step();
     const vy = y.bed + 1;
     b.set(cx, vy + 1, cz, 'soul_lantern[hanging=true]');
     b.set(cx - 2, vy + 1, cz + 1, 'iron_chain[axis=y]');
@@ -547,24 +501,21 @@ function buildTowerInterior(b, spec, ctx) {
     b.set(cx + 2, vy, cz + 2, 'cobweb');
     for (let yy = vy; yy <= vy + 1; yy++) b.set(t.hatch.x, yy, t.hatch.z, 'ladder[facing=south]');
     b.set(t.hatch.x, t.floors[0], t.hatch.z, `${WOOD.trapdoor}[facing=south,half=top,open=false]`);
-    b.note(t.hatch.x, t.floors[0], t.hatch.z, 'Luke ins Verlies – der einzige Zugang.');
   }
 
   const f1 = t.floors[0];
-  b.step('Erstes Stockwerk: Schatzkammer', 'Hier lag früher der Staatsschatz, heute trifft sich der Artillerieverein. Stell einen Tisch aus Fichtenzaun mit Druckplatte in die Mitte, Stühle aus Fichtentreppen und Truhen und Fässer an die Wände. Die Laterne hängt an der Decke. Setz die Leiter an die Nordwand.');
+  b.step();
   furnishRoom(b, spec, f1 + 1, 'treasury');
   for (let yy = f1 + 1; yy <= t.floors[1]; yy++) b.set(ladder.x, yy, ladder.z, 'ladder[facing=south]');
 
   const f2 = t.floors[1];
   const hasAttic = t.floors.length > 2;
-  b.step('Zweites Stockwerk: Archiv', hasAttic
-    ? 'Bis 1919 lag hier das Stadtarchiv. Stell Bücherregale an die Wände, dazu ein Lesepult und einen Schreibtisch mit Kerze. Die Leiter führt weiter in den Dachstock.'
-    : 'Bis 1919 lag hier das Stadtarchiv. Stell ein Bücherregal und ein Lesepult hinein. Im kleinen Maßstab reicht dieses Stockwerk bis unters Dach – es ist zugleich der Dachstock.');
+  b.step();
   furnishRoom(b, spec, f2 + 1, 'archive');
   const atticFloor = t.floors[t.floors.length - 1];
   if (hasAttic) for (let yy = f2 + 1; yy <= atticFloor; yy++) b.set(ladder.x, yy, ladder.z, 'ladder[facing=south]');
 
-  b.step('Dachstock', `${hasAttic ? 'Der Dachstock ist hoch und offen. ' : ''}Stell eine Mittelstütze aus Fichtenstamm bis unter die Dachspitze, leg einen kurzen Balken daran und häng eine Laterne darunter; eine zweite Laterne steht auf dem Boden. In diesem Dachstock wohnt seit 1892 die größte Mauerseglerkolonie der Zentralschweiz.`);
+  b.step();
   const atticY = atticFloor + 1;
   const topY = t.apex - 1;
   for (let yy = atticY; yy <= topY; yy++) {
@@ -647,9 +598,7 @@ function buildAnnexBody(b, spec, ctx) {
   const y = spec.y;
   const annex = annexInfo(spec, ctx);
   if (annex.cells.length === 0) return;
-  b.phase('Anbau am Turm',
-    'Zwischen Brücke und Turm steht ein kleiner Anbau aus Holz – heute ist dort der Souvenirladen. Mauere den Sockel bis zum Brückenboden, leg den Boden auf Brückenhöhe und zieh die Wände aus Fichtenbrettern hoch, an den Ecken Fichtenstamm. Die Wände werden zum Turm hin höher, weil das Pultdach dort ansteigt. Auf der Brückenseite bleibt der Anbau offen: Nimm dort die Brüstung zwischen den Pfosten heraus.',
-    { tips: ['Die Form des Anbaus ist aus dem Stadtplan abgeschätzt – Fotos zeigen ihn als niedrigen Holzbau am Turmfuß.'] });
+  b.phase('Anbau am Turm');
   for (const c of annex.cells) {
     for (let yy = y.bed; yy < y.deck; yy++) b.set(c.x, yy, c.z, towerStone(c.x, yy, c.z));
     b.set(c.x, y.deck, c.z, WOOD.planks);
@@ -695,7 +644,7 @@ function furnishAnnex(b, spec, ctx) {
   const y = spec.y;
   const annex = annexInfo(spec, ctx);
   if (annex.inner.length === 0) return;
-  b.step('Souvenirladen im Anbau', 'Stell eine Theke aus Fässern auf, häng Regale an die Wände und eine Laterne unter das Dach.');
+  b.step();
   const sorted = annex.inner.slice().sort((p, q) => p.z - q.z || p.x - q.x);
   const lamp = sorted[Math.floor(sorted.length / 2)];
   const roofY = annexRoofHeight(spec, annex, lamp);
@@ -722,12 +671,7 @@ function furnishAnnex(b, spec, ctx) {
 // Blumenkästen und Laternen
 function buildFlowerBoxes(b, spec, ctx) {
   const y = spec.y;
-  b.phase('Blumenkästen und Laternen',
-    'Außen an beiden Brüstungen hängen die Blumenkästen mit roten und rosa Geranien: ein Block Wurzelerde direkt an der Brüstung, außen eine aufgeklappte Fichtenfalltür als Kastenwand, obendrauf die Blumen. Innen hängen unter jedem dritten Zugbalken Laternen – so bleibt der ganze Gang hell und es erscheinen keine Monster.',
-    { tips: [
-      'Klapp die Falltür auf, nachdem du sie an die Erde gesetzt hast – dann steht sie senkrecht wie eine Kastenwand.',
-      'Geranien gibt es im Spiel nicht: Rote und rosa Tulpen mit ein paar Mohnblumen kommen dem am nächsten.',
-    ] });
+  b.phase('Blumenkästen und Laternen');
   const boxCells = [...eachCell(ctx, (c) => c.onBridge && c.band === 'eave' && !c.tower && !c.annex && !c.land
     && c.s > 1 && c.s < ctx.L - 1)];
   const boxSet = new Set(boxCells.map((c) => key(c.x, c.z)));
@@ -764,9 +708,7 @@ function buildFlowerBoxes(b, spec, ctx) {
 // Ufer: Pflaster, Quaimauer, Geländer, Bäume, Bänke
 function buildQuays(b, spec, ctx) {
   const y = spec.y;
-  b.phase('Ufer und Plätze',
-    'Jetzt bekommt der Quai an beiden Enden seine Ausstattung: ein Eisengeländer auf der Quaimauer am Wasser, eine Laterne, eine Bank und eine Linde, die den Platz gemütlich machen.',
-    { tips: ['Lass am Brückeneingang das Geländer weg, damit man auf die Stufe kommt.'] });
+  b.phase('Ufer und Plätze');
   const landCells = [...eachCell(ctx, (c) => c.inSite && c.land && !c.tower)];
   const landSet = new Set(landCells.map((c) => key(c.x, c.z)));
   for (const c of landCells) {
@@ -839,9 +781,7 @@ function tree(b, x, y, z, spec) {
 // Zum Schluss: Wasser
 function buildWater(b, spec, ctx) {
   const y = spec.y;
-  b.phase('Wasser einfüllen',
-    'Ganz am Schluss kommt die Reuss: Füll den Streifen mit Wasserquellen. Mit einer unendlichen Wasserquelle (zwei Eimer in eine Ecke) geht das schnell. Ein paar Seegrasbüschel machen das Flussbett lebendig.',
-    { tips: ['Fang an einem Ende an und arbeite dich zum anderen vor – sonst fließt das Wasser in noch offene Ecken.'] });
+  b.phase('Wasser einfüllen');
   for (const c of eachCell(ctx, (c) => c.inSite && !c.land && !c.tower && c.ad <= spec.water && c.s > -spec.landBeyond + 1 && c.s < ctx.L + spec.landBeyond - 1)) {
     if (b.get(c.x, y.water, c.z) !== 'air') continue;
     const grass = c.ad > spec.wall && hashPosition(c.x, 3, c.z, 13) % 17 === 0;

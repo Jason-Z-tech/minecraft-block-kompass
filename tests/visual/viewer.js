@@ -159,7 +159,8 @@ function initControls(viewer, options) {
     syncSlider(progress);
     const done = Math.min(steps, Math.floor(p));
     const step = viewer.result.steps[Math.min(steps - 1, done)];
-    progressLabel.textContent = steps ? `${p.toFixed(2)} von ${steps} · ${done >= steps ? 'fertig' : step.title}` : 'keine Schritte';
+    const phase = step ? viewer.result.phases[step.phase]?.title ?? '' : '';
+    progressLabel.textContent = steps ? `${p.toFixed(2)} von ${steps} · ${done >= steps ? 'fertig' : `Schritt ${done + 1} (${phase})`}` : 'keine Schritte';
   };
   options.onProgress = showProgress;
   showProgress(viewer.progress);

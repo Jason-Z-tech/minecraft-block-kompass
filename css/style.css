@@ -128,7 +128,6 @@
   --cat-fantasy: #9a5cc6;
   --cat-mittelalter: #9a9a9a;
   --cat-klein: #e57ca3;
-  --cat-redstone: #e0342f;
   --cat-farmen: #d9b84a;
   --cat-infrastruktur: #d0703c;
 
@@ -222,7 +221,6 @@
 [data-category='fantasy'] { --cat: var(--cat-fantasy); }
 [data-category='mittelalter'] { --cat: var(--cat-mittelalter); }
 [data-category='klein'] { --cat: var(--cat-klein); }
-[data-category='redstone'] { --cat: var(--cat-redstone); }
 [data-category='farmen'] { --cat: var(--cat-farmen); }
 [data-category='infrastruktur'] { --cat: var(--cat-infrastruktur); }
 [data-accuracy='original'] { --acc: var(--acc-original); }
@@ -1152,25 +1150,6 @@ ol.cluster {
   --chip-accent: var(--c-grass);
   font-family: var(--font-mono);
   font-weight: 600;
-}
-
-/* Schwierigkeit als 5 Pixel-Blöcke */
-.difficulty {
-  display: inline-flex;
-  gap: 3px;
-  align-items: center;
-}
-
-.difficulty__pip {
-  width: 10px;
-  height: 10px;
-  background: var(--c-sunken);
-  box-shadow: inset 0 0 0 2px #2c3037;
-}
-
-.difficulty__pip.is-on {
-  background: var(--c-gold);
-  box-shadow: inset -2px -2px 0 #a7802a, inset 2px 2px 0 #fde08f;
 }
 
 /* Bau-Karte: „Block“ mit Grasskante in Kategoriefarbe */

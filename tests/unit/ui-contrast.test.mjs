@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { contrastRatio, mixHex } from '../../js/ui/shared.js';
+import { contrastRatio, mixHex, CATEGORY_SLUGS } from '../../js/ui/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -55,7 +55,8 @@ test('Die Tabelle enthält jede Text- und Akzentfarbe mindestens einmal', async 
     '--c-redstone-text', '--c-oxidized-text', '--c-amethyst-text', '--c-tooltip-text', '--c-tooltip-muted', '--c-xp', '--c-focus', '--c-field-edge']) {
     assert.ok(used.has(name), `${name} wird nicht geprüft`);
   }
-  for (const slug of ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'redstone', 'farmen', 'infrastruktur']) {
+  for (const slug of CATEGORY_SLUGS) {
     assert.ok(used.has(`--cat-${slug}`), `Kategorie ${slug} wird nicht geprüft`);
   }
+  assert.ok(!pairs.some((pair) => /--cat-redstone/.test(`${pair.fg} ${pair.bg}`)), 'die Kategorie Redstone gibt es nicht mehr');
 });

@@ -16,14 +16,7 @@ export const meta = {
     'cherry tree', 'cherry blossom', 'cherry blossom tree', 'sakura tree', 'custom cherry tree', 'pink tree', 'japanese garden',
   ],
   accuracy: 'eigenes',
-  difficulty: 2,
   description: 'Ein blühender Kirschbaum für Gärten und japanische Ecken. Der schlanke Stamm schwingt sich in einem S nach oben und teilt sich in vier Äste, die eine breite, flache Krone aus Kirschlaub tragen; an ihrem Rand hängen Blütenzweige herab. Unter dem Baum liegt ein Teppich aus rosa Blüten, im Süden stehen eine kleine Steinbank mit Armlehnen und eine Steinlaterne, Trittsteine führen hin.',
-  facts: [
-    'Stamm und Äste aus Kirschstamm und Kirschholz; das Holz hat ringsum Rinde und kommt überall dorthin, wo sonst eine Schnittfläche zu sehen wäre.',
-    'Die Bank besteht aus nur drei Steinziegeltreppen: die Enden zeigen nach außen, dadurch formt das Spiel sie von selbst zu Ecken mit Armlehnen.',
-    'Rosa Blütenblätter liegen in 1 bis 4 Blüten pro Block und lassen sich mit weiteren Klicks auf denselben Block auffüllen.',
-    'Kirschlaub wird im Spiel nicht nach dem Biom eingefärbt – es ist überall gleich rosa.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -33,7 +26,6 @@ const SEED = 'kirschbaum';
 const GROUND_R = 10;
 const LEAF = 'cherry_leaves[persistent=true]';
 const AXES = ['x', 'y', 'z'];
-const COMPASS = ['Osten', 'Südosten', 'Süden', 'Südwesten', 'Westen', 'Nordwesten', 'Norden', 'Nordosten'];
 const SIDES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 const FACINGS = ['north', 'east', 'south', 'west'];
 const BENCH = { x: 1, z: 4 };
@@ -59,10 +51,6 @@ function noise3(x, y, z, scale, salt) {
     v += w * rand01(i[0] + d[0], i[1] + d[1], i[2] + d[2], salt);
   }
   return v;
-}
-
-function compass(dx, dz) {
-  return COMPASS[((Math.round(Math.atan2(dz, dx) / (Math.PI / 4)) % 8) + 8) % 8];
 }
 
 function cubic(p0, p1, p2, p3, t) {
@@ -106,7 +94,7 @@ function planLimbs(rng, top) {
     const end = [top[0] + dx * L, top[1] + lift, top[2] + dz * L];
     const points = sampleCurve(top, [top[0] + dx * 1.2, top[1] + 1.4, top[2] + dz * 1.2], [top[0] + dx * L * 0.7, top[1] + lift + 0.6, top[2] + dz * L * 0.7], end);
     limbs.push({
-      index: i, name: compass(dx, dz), length: L, cells: pathCells(points),
+      index: i, cells: pathCells(points),
       blobs: [
         { c: [end[0], end[1] + 0.9, end[2]], r: 3.4, ry: 1.9 },
         { c: [top[0] + dx * L * 0.5, top[1] + lift + 0.9, top[2] + dz * L * 0.5], r: 2.6, ry: 1.6 },
@@ -205,9 +193,7 @@ export default function build(b) {
   const rng = createRandom(SEED);
 
   // --- Bauplatz ---
-  b.phase('Bauplatz', 'Der Kirschbaum steht auf einer runden Wiese mit 21 Blöcken Durchmesser und einem flachen Hügel in der Mitte (eine Ebene höher, etwa 9 Blöcke breit). Sechs Trittsteine aus Stein, Andesit und Bruchstein liegen bündig in der Grasschicht und führen von Südwesten zur Bank.', {
-    tips: ['Baust du auf vorhandener Wiese, ersetze für die Trittsteine einfach einzelne Grasblöcke – nicht obendrauf setzen.'],
-  });
+  b.phase('Bauplatz');
   const ground = terrain(b, {
     x: -GROUND_R, y: 0, z: -GROUND_R, width: GROUND_R * 2 + 1, depth: GROUND_R * 2 + 1, shape: 'rund', seed: 4,
     heightAt: (dx, dz) => moundHeight(dx - GROUND_R, dz - GROUND_R),
@@ -224,12 +210,7 @@ export default function build(b) {
   // Stammfuß 2 × 2 (x −1 … 0, z −1 … 0) mit Wurzelanlauf aus Kirschholz ringsum.
   const base = [[0, 0, 0], [-1, 0, 0], [0, 0, -1], [-1, 0, -1], [-1, 1, 0], [0, 1, -1], [-1, 1, -1]];
   const flare = [[1, 0, 0], [1, 0, -1], [-2, 0, -1], [0, 0, 1], [-1, 0, -2], [1, 1, 0], [-2, 1, -1], [2, 0, 0], [-1, 0, -3]];
-  b.phase('Stamm', `Der Stamm schwingt sich in einem S nach oben: erst nach Osten, dann zurück nach Westen und oben wieder zur Mitte. Er wächst ${top[1] - y0 + 1} Ebenen hoch, unten steht er auf einem 2 × 2 Blöcke dicken Fuß. Wo er seitlich versetzt, setzt du liegendes Kirschholz; senkrechte Stücke sind Kirschstämme. Am Fuß liegt ringsum ein Kranz aus Kirschholz, der den Stamm breiter wirken lässt.`, {
-    tips: [
-      'Setze jeden neuen Stammblock an eine Fläche des vorigen, nie nur über Eck – sonst sieht der Stamm abgebrochen aus.',
-      'Kirschholz zeigt auf allen Seiten Rinde; nimm es überall, wo sonst die helle Schnittfläche eines Stamms zu sehen wäre.',
-    ],
-  });
+  b.phase('Stamm');
   for (const [x, dy, z] of flare) {
     wood.add(key(x, y0 + dy, z));
     b.set(x, y0 + dy, z, 'cherry_wood[axis=y]');
@@ -245,11 +226,9 @@ export default function build(b) {
 
   // --- Äste ---
   const limbs = planLimbs(rng, top);
-  b.phase('Äste', `Aus der Stammspitze auf Ebene ${top[1] + 1} wachsen vier Äste in alle Richtungen. Jeder läuft erst steil, dann flacher nach außen und hebt sich am Ende noch einmal – so entsteht die typische breite, schirmförmige Krone.`, {
-    tips: ['Baue einen Ast nach dem anderen fertig und schau ihn dir von unten an, bevor du den nächsten setzt.'],
-  });
+  b.phase('Äste');
   for (const limb of limbs) {
-    b.step(`Ast nach ${limb.name}`, `Rund ${Math.round(limb.length)} Blöcke weit nach ${limb.name}, aus ${limb.cells.length - 1} Blöcken Kirschholz. Er steigt auf den ersten zwei Blöcken schnell und läuft dann fast waagrecht aus.`);
+    b.step();
     for (const [x, y, z, axis] of limb.cells.slice(1)) {
       if (isWood(x, y, z)) continue;
       wood.add(key(x, y, z));
@@ -264,26 +243,18 @@ export default function build(b) {
   const leaves = planLeaves(b, groups, { minY: y0 + 3, clear: benchClear, isWood });
   const order = groups.map((g) => g.index);
   const leafSteps = orderLeafSteps(leaves, order, isWood);
-  b.phase('Krone', `Die Krone ist flach und breit: über jedem Astende liegt eine große Wolke aus Kirschlaub, eine kleinere über der Astmitte, und oben schließt eine flache Kuppel die Mitte. Zusammen sind es ${leaves.size} Blätter. Zum Schluss hängen Blütenzweige vom Rand herab.`, {
-    tips: [
-      'Lass den Rand der Wolken ausfransen: einzelne Blätter vor und zurück wirken weicher als eine glatte Kante.',
-      'Gesetztes Laub verrottet nicht – du brauchst keinen Stamm in der Nähe jedes Blatts.',
-    ],
-  });
+  b.phase('Krone');
   const leafCells = [];
-  order.forEach((groupIndex, n) => {
-    const limb = limbs[groupIndex];
-    b.step(limb ? `Laub am Ast nach ${limb.name}` : 'Kuppel über der Mitte', limb
-      ? `Rund ${leafSteps[n].length} Blätter: die Wolke am Astende ist etwa 7 Blöcke breit und 3 bis 4 hoch, die über der Astmitte etwas kleiner. Arbeite vom Ast aus nach außen.`
-      : `Rund ${leafSteps[n].length} Blätter: eine flache Kuppel über der Stammspitze, die die Lücken zwischen den vier Astwolken schließt.`);
-    for (const k of leafSteps[n]) {
+  for (const stepLeaves of leafSteps) {
+    b.step();
+    for (const k of stepLeaves) {
       const [x, y, z] = unkey(k);
       b.set(x, y, z, LEAF);
       leafCells.push([x, y, z]);
     }
-  });
+  }
   // Hängende Blütenzweige an der Unterseite, mit mindestens zwei Blöcken Kopffreiheit.
-  b.step('Hängende Blütenzweige', 'Unter den Rand der Krone hängst du an einzelnen Stellen ein bis zwei Blätter Kirschlaub untereinander. Lass darunter immer mindestens zwei Blöcke Luft, damit du unter dem Baum gehen kannst.');
+  b.step();
   let hanging = 0;
   for (const [x, y, z] of leafCells) {
     if (b.get(x, y - 1, z) !== 'air' || Math.hypot(x - top[0], z - top[2]) < 2.5 || rand01(x, y, z, 81) >= 0.2) continue;
@@ -299,29 +270,24 @@ export default function build(b) {
   if (hanging === 0) throw new Error('Kirschbaum: keine hängenden Blütenzweige gefunden.');
 
   // --- Bank und Laterne ---
-  b.phase('Steinbank und Laterne', 'Unter der Südseite der Krone steht eine kleine Steinbank mit Blick nach Süden, daneben eine Steinlaterne.', {
-    tips: ['Die Treppen formen sich von selbst zu Ecken, wenn du die beiden äußeren nach außen gerichtet neben die mittlere setzt.'],
-  });
+  b.phase('Steinbank und Laterne');
   const benchY = ground.top(BENCH.x + 1, BENCH.z) + 1;
-  b.step('Steinbank', 'Setze drei Steinziegeltreppen nebeneinander: die mittlere mit der hohen Seite nach Norden (Rückenlehne), die linke mit der hohen Seite nach Westen, die rechte nach Osten. Die äußeren werden dadurch zu Eckstücken – Rücken- und Armlehne in einem.');
+  b.step();
   b.stairs(BENCH.x, benchY, BENCH.z, 'stone_brick_stairs', { facing: 'west' });
   b.stairs(BENCH.x + 1, benchY, BENCH.z, 'stone_brick_stairs', { facing: 'north' });
   b.stairs(BENCH.x + 2, benchY, BENCH.z, 'stone_brick_stairs', { facing: 'east' });
-  b.note(BENCH.x + 1, benchY, BENCH.z, 'Steinbank: drei Steinziegeltreppen, die äußeren zeigen nach außen');
   const lanternY = ground.top(STONE_LANTERN.x, STONE_LANTERN.z) + 1;
-  b.step('Steinlaterne', 'Die Steinlaterne ist ein gemeißelter Steinziegel als Sockel, darauf eine Steinziegelmauer und obendrauf eine stehende Laterne.');
+  b.step();
   b.set(STONE_LANTERN.x, lanternY, STONE_LANTERN.z, 'chiseled_stone_bricks');
   b.set(STONE_LANTERN.x, lanternY + 1, STONE_LANTERN.z, 'stone_brick_wall');
   b.set(STONE_LANTERN.x, lanternY + 2, STONE_LANTERN.z, 'lantern[hanging=false]');
 
   // --- Blütenteppich und Wiese ---
-  b.phase('Blütenteppich und Wiese', 'Unter der Krone liegen rosa Blütenblätter auf dem Gras, dicht am Stamm und lockerer zum Rand. Zwei blühende Azaleenbüsche rahmen Bank und Laterne, rundherum wächst Wiesengras.', {
-    tips: ['Klickst du mit rosa Blütenblättern mehrmals auf denselben Block, werden es bis zu vier Blüten.'],
-  });
-  b.step('Azaleenbüsche', 'Setze links der Laterne und rechts der Bank je einen kleinen Busch aus Azaleenlaub und blühendem Azaleenlaub gemischt, etwa 3 Blöcke breit und 2 hoch.');
+  b.phase('Blütenteppich und Wiese');
+  b.step();
   bush(b, { x: -5, y: ground.top(-5, 3) + 1, z: 3, size: 'klein', leaves: 'azalee', seed: 2 });
   bush(b, { x: 6, y: ground.top(6, 3) + 1, z: 3, size: 'klein', leaves: 'azalee', seed: 5 });
-  b.step('Blütenblätter und Gras', 'Verteile rosa Blütenblätter unter der Krone, mal eine, mal bis zu vier Blüten pro Block, und drehe sie unterschiedlich. Außerhalb der Krone setzt du lockeres Gras und ein paar Blumen.');
+  b.step();
   for (let z = -GROUND_R; z <= GROUND_R; z++) {
     for (let x = -GROUND_R; x <= GROUND_R; x++) {
       const d = Math.hypot(x - top[0], z - top[2]);

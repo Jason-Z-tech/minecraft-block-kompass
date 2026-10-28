@@ -1,11 +1,11 @@
 // Schritt-Player: vor/zurück, Abspielen mit Tempo, Schieberegler über alle Schritte (Kommazahlen für
-// flüssiges Aufploppen), XP-Leiste mit einem Segment je Kapitel, aktuelles Kapitel mit Schritttext,
-// Tastatur (←/→, Pos1/Ende, Leertaste) und eine Live-Region für Schrittwechsel.
+// flüssiges Aufploppen), XP-Leiste mit einem Segment je Kapitel, aktuelles Kapitel mit Blockzahl und Ebene
+// des Schritts, Tastatur (←/→, Pos1/Ende, Leertaste) und eine Live-Region für Schrittwechsel.
 import { el } from '../dom.js';
 import { icon, formatNumber, syncSlider } from '../shared.js';
 import {
   shownStep, previousTarget, nextTarget, phaseSegments, segmentFill, phaseNumber, phaseCount,
-  stepAnnouncement, stepInstruction, shortcutAllowed,
+  stepAnnouncement, stepMeta, shortcutAllowed,
 } from './step-model.js';
 import { prefersReducedMotion } from './kit.js';
 
@@ -259,11 +259,12 @@ export class StepPlayer {
       text.textContent = 'Drück auf Abspielen oder → für den ersten Schritt.';
       return;
     }
+    // Kapitel als Hauptzeile, darunter Blockzahl und Ebene; „Schritt n von N“ steht neben den Knöpfen
     const step = result.steps[shown];
     const phase = result.phases[step.phase];
-    chapter.textContent = phase ? `Kapitel ${formatNumber(phaseNumber(result, step.phase))} · ${phase.title}` : '';
-    title.textContent = step.title;
-    text.textContent = stepInstruction(result, shown);
+    chapter.textContent = phase ? `Kapitel ${formatNumber(phaseNumber(result, step.phase))} von ${formatNumber(phaseCount(result))}` : '';
+    title.textContent = phase?.title ?? '';
+    text.textContent = stepMeta(step);
   }
 
   #renderPlay() {

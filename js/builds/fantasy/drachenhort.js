@@ -18,17 +18,10 @@ export const meta = {
     'goldschatz', 'knochendrache', 'drachenknochen', 'drachenhord', 'dragon bones', 'hort des drachen',
   ],
   accuracy: 'eigenes',
-  difficulty: 4,
   description: 'Eine Felsenhöhle mit weitem Eingang, in der das Skelett eines riesigen Drachen auf seinem Goldschatz '
     + 'liegt: Schädel mit Hörnern und offenem Maul, geschwungene Wirbelsäule mit Dornen, ein Brustkorb aus Rippen, '
     + 'Beine mit Krallen und zwei halb gefaltete Flügel aus Fingerknochen. Ringsum glänzen Gold- und Rohgoldblöcke, '
     + 'Truhen und Münzen; Fackeln, ein Lavabecken und Leuchtflechte erhellen die Tropfsteinhöhle.',
-  facts: [
-    'Das Skelett liegt zusammengerollt auf dem Schatz: Wirbelsäule 19 Blöcke, mit Hals und Schwanz rund 70 Blöcke Knochen am Stück, Schädel 10 Blöcke lang.',
-    'Die Münzen auf dem Schatz sind Wägeplatten (leicht) aus Gold, die Zähne und Krallen Endstäbe.',
-    'Die Höhle ist innen bis zu 19 Blöcke hoch, rund 49 × 41 Blöcke groß und hat einen 17 Blöcke breiten Eingang.',
-    'Die Flügel hängen frei in der Luft – beim Bauen helfen Gerüstblöcke, die du danach wieder abbaust.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -538,103 +531,60 @@ function scatteredBones(b) {
 // ---------- Bau ----------
 
 export default function build(b) {
-  b.phase('Gelände und Höhlenboden', 'Leg eine Grasfläche an und markier den Grundriss der Höhle: ein Oval von etwa '
-    + '55 × 47 Blöcken, der Eingang zeigt nach Süden. Innen wird der Boden zu Stein, Andesit, Tuff, Bruchstein und grober Erde. Hinten '
-    + 'links liegt ein Lavabecken (5 × 4) auf glattem Basalt, eingefasst von einem Rand aus Magmablöcken und Basalt. Vor dem '
-    + 'Eingang ist das Gras verbrannt: Tuff, grobe Erde und Schwarzstein in Flecken. Unter die großen Fichten, die später '
-    + 'dazukommen, legst du Podsol und grobe Erde.', {
-    tips: [
-      'Lava nimmst du mit Eimern mit. Bau erst den Rand ringsum, dann kippst du die Lava hinein – so läuft nichts aus.',
-      'Lass im Boden kleine Flecken grober Erde – das bricht die Steinfläche auf.',
-    ],
-  });
+  b.phase('Gelände und Höhlenboden');
   terrain(b, { x: -36, y: 0, z: -32, width: 73, depth: 71, height: 0, surface: 'gras', seed: 'drachenhort' });
   caveFloor(b);
   lavaPool(b);
   scorchedGround(b);
   forestFloor(b);
 
-  b.phase('Felswände und Gewölbe', 'Die Höhle ist eine verbeulte Kuppel mit drei Blöcke dicken Wänden. Bau sie Ring für '
-    + 'Ring nach oben: unten Tiefenschiefer, Bruchtiefenschiefer und Tuff, in der Mitte Stein mit Andesit und '
-    + 'Bruchstein, oben bemooster Bruchstein. Im Süden bleibt ein unregelmäßiger Eingang frei, unten 17 Blöcke breit '
-    + 'und 12 hoch. Wo die Kuppel außen flach wird, kommen Moos- und Grasblöcke obendrauf.', {
-    tips: [
-      'Bau die Wände nicht zu glatt – Beulen und Vorsprünge machen eine Höhle glaubwürdig.',
-      'Für das Gewölbe stellst du dich auf Gerüstblöcke; die kannst du von unten mit einem Schlag abbauen.',
-    ],
-  });
-  const bands = [[1, 4, 'unten'], [5, 9, 'Mitte'], [10, 14, 'oben'], [15, R_OUT.y + 2, 'Gewölbe']];
-  for (const [y1, y2, name] of bands) {
-    b.step(`Wände ${name} (Höhe ${y1 + 1}–${Math.min(y2 + 1, R_OUT.y + 2)})`, `Felsring von Höhe ${y1 + 1} bis ${Math.min(y2 + 1, R_OUT.y + 2)}.`);
+  b.phase('Felswände und Gewölbe');
+  const bands = [[1, 4], [5, 9], [10, 14], [15, R_OUT.y + 2]];
+  for (const [y1, y2] of bands) {
+    b.step();
     buildShell(b, y1, y2);
   }
 
-  b.phase('Tropfsteine und Leuchtflechte', 'An die Decke kommen Tropfsteine: Setz an die Ansatzstelle einen '
-    + 'Tropfsteinblock und häng darunter 1–3 spitze Tropfsteine. Am Rand des Bodens wachsen ein paar Tropfsteine nach '
-    + 'oben. Leuchtflechte in Flecken an den Wänden gibt ein schwaches grünliches Licht.', {
-    tips: ['Spitze Tropfsteine verbinden sich von selbst zu einer Säule mit dicker Basis und Spitze, wenn du sie untereinander setzt.'],
-  });
-  b.step('Tropfsteine', 'Hängende Tropfsteine an der Decke, stehende am Rand des Bodens.');
+  b.phase('Tropfsteine und Leuchtflechte');
+  b.step();
   dripstones(b);
-  b.step('Leuchtflechte', 'Leuchtflechte in Flecken an Wänden und Decke.');
+  b.step();
   glowLichen(b);
 
-  b.phase('Goldschatz', 'In der Mitte türmt sich der Schatz: ein Haufen aus Gold- und Rohgoldblöcken mit etwas '
-    + 'vergoldetem Schwarzstein, rund 27 Blöcke breit und bis zu 6 hoch. Obendrauf liegen goldene Wägeplatten als '
-    + 'Münzen, dazu Kerzen und eine goldene Glocke. Rundherum stehen Truhen und Fässer, an den Wänden liegen kleinere '
-    + 'Haufen und die Schädel unglücklicher Abenteurer.', {
-    tips: ['Ein Goldblock braucht 9 Goldbarren – für den großen Haufen lohnt sich eine Goldfarm im Nether.'],
-  });
+  b.phase('Goldschatz');
   heapGold(b, HOARD, 77);
   treasureDetails(b);
 
-  b.phase('Drachenskelett', 'Auf dem Schatz liegt das Skelett. Knochenblöcke richtest du immer entlang des Knochens '
-    + 'aus: Schau beim Setzen in die Richtung, in die der Knochen läuft. Fang mit der Wirbelsäule an, sie trägt alles '
-    + 'andere.', {
-    tips: [
-      'Knochenblöcke stellst du aus je 9 Knochenmehl her – Skelette und eine Knochenmehl-Farm (Komposter) liefern genug.',
-      'Rippen, Flügel und Schädel ragen frei in die Luft: Stell ein Gerüst daneben und bau es danach wieder ab.',
-    ],
-  });
-  b.step('Wirbelsäule', 'Von der Schulter (Höhe 12) über die Mitte (Höhe 13) bis zur Hüfte (Höhe 10) läuft die Wirbelsäule über den Schatz. Alle '
-    + '2 Blöcke sitzt oben ein Dorn aus einem Knochenblock und einem Endstab.');
+  b.phase('Drachenskelett');
+  b.step();
   spine(b);
-  b.note(...SHOULDER, 'Schulter: Hier treffen sich Wirbelsäule, Hals, Vorderbeine und Flügel.');
-  b.step('Rippen', 'Acht Rippenpaare biegen sich von der Wirbelsäule nach außen und unten in den Goldhaufen – vorne und '
-    + 'hinten etwas kürzer, in der Mitte am weitesten.');
+  b.step();
   ribs(b);
-  b.step('Hals und Schädel', 'Der Hals schwingt nach vorne zum Eingang. Der Schädel liegt mit offenem Maul auf dem '
-    + 'Boden: hohle Hirnschale mit Augenhöhlen, lange Schnauze mit Nüstern, Zähne aus Endstäben, Unterkiefer darunter '
-    + 'und zwei Hörner nach hinten.');
+  b.step();
   neck(b);
   skull(b);
-  b.note(SKULL_X - 1, 4, 12, 'Das offene Maul zeigt zum Eingang.');
-  b.step('Beine und Krallen', 'Vier Beine reichen von Schulter und Hüfte in den Schatz, an jedem Fuß zwei Krallen aus Endstäben.');
+  b.step();
   legs(b);
-  b.step('Schwanz', 'Der Schwanz läuft von der Hüfte nach hinten rechts, biegt um den Schatz herum nach vorne und endet in einer Spitze.');
+  b.step();
   tail(b);
-  b.step('Flügel', 'Zwei halb gefaltete Flügel: Oberarm und Unterarm steigen von der Schulter bis zum Handgelenk auf '
-    + 'Höhe 13–15, von dort fallen je drei lange Fingerknochen nach außen ab. Zwischen den Fingern hängen Spinnweben als '
-    + 'Fetzen der Flughaut.');
+  b.step();
   wings(b);
 
-  b.phase('Fackeln und Licht', 'Steck Fackeln rundum an die Wände, unten auf Höhe 5 und oben auf Höhe 10. Wo es dann '
-    + 'noch dunkel ist, stellst du Laternen auf den Boden – sonst spawnen in der großen Höhle Monster.');
-  b.step('Fackeln', 'Fackeln an den Wänden, zur Höhle hin.');
+  b.phase('Fackeln und Licht');
+  b.step();
   wallTorches(b, 4, 14, 0.2);
   wallTorches(b, 9, 10, 0.5);
-  b.step('Laternen', 'Laternen auf dem Boden an den dunklen Stellen.');
+  b.step();
   lightCave(b);
 
-  b.phase('Vor der Höhle', 'Auf dem verbrannten Boden vor dem Eingang liegen ein paar Knochen und Schädel, Felsen und '
-    + 'Fichten rahmen den Eingang ein.');
-  b.step('Knochen', 'Verstreute Knochenblöcke und Schädel vor dem Eingang.');
+  b.phase('Vor der Höhle');
+  b.step();
   scatteredBones(b);
-  b.step('Felsen und Bäume', 'Felsen links und rechts vom Eingang, dahinter Fichten.');
+  b.step();
   rock(b, { x: -15, y: 1, z: 27, size: 'gross', material: 'andesit', facing: 'south', sink: 0, seed: 1 });
   rock(b, { x: 16, y: 1, z: 26, size: 'mittel', material: 'stein', facing: 'south', sink: 0, seed: 2 });
   rock(b, { x: 25, y: 1, z: 17, size: 'klein', material: 'tuff', sink: 0, seed: 3 });
   for (const [x, z, size, seed] of SPRUCES) tree(b, { x, y: 1, z, species: 'fichte', size, seed, ground: false });
-  b.step('Bewuchs', 'Gras und Farne rundherum und auf der Kuppel.');
+  b.step();
   vegetation(b, { x: -36, y: R_OUT.y + 3, z: -32, width: 73, depth: 71, mix: 'farn', density: 0.3, shape: 'eckig', seed: 'hort' });
 }

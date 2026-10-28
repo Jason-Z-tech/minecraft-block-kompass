@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { launchBrowser } from './browser.mjs';
 import { MIRROR_PREFIX, mirrorOverrides, mirrorStatus } from './lib/mcmeta-mirror.mjs';
 import { MCMETA_COMMITS, LANG_FILES } from '../js/data/sources.js';
+import { CATEGORY_SLUGS } from '../js/ui/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CATALOG_FILE = path.join(ROOT, 'data', 'catalog.json');
@@ -663,6 +664,11 @@ async function checkSteps(page, label) {
     await page.click('.bv-player__controls .btn--icon:nth-of-type(3)');
     await page.waitFor('window.__buildView.context.p === 1', 8000);
     const first = await page.eval("document.querySelector('.bv-player__label strong')?.textContent ?? ''");
+    // Kapitel, Blockzahl und Ebene statt Schritt-Name und Anleitungssatz; Anleitung ohne Texte, Tipps und Notizen
+    const now = await page.eval("[...document.querySelectorAll('.bv-player__now p')].map((p) => p.textContent)");
+    const removed = await page.eval("document.querySelectorAll('.bv-step__title, .bv-step__text, .bv-chapter__text, .bv-tips, .bv-note, .bv-notes, .bv-marker, .difficulty').length");
+    check(`${label}: ohne Schritt-Namen, Texte, Tipps und Notizen`, /^Kapitel \d+ von \d+$/.test(now[0] ?? '') && /^[\d.]+ (?:Block|Blöcke)( · y = -?\d+)?$/.test(now[2] ?? '') && removed === 0,
+      `${now.join(' | ')} · ${removed} alte Elemente`);
     await page.click('.bv-player__controls .btn--icon:nth-of-type(3)');
     await page.waitFor('window.__buildView.context.p === 2', 8000);
     await page.click('.bv-player__controls .btn--icon:nth-of-type(1)');
@@ -799,7 +805,7 @@ async function startFlow() {
     `isSecureContext ${await page.eval('window.isSecureContext')}, Web Locks ${await page.eval('Boolean(navigator.locks)')}`);
   await page.waitFor("document.querySelectorAll('#home-sections .build-card').length > 0", 20000);
   const home = await page.eval("({ cards: document.querySelectorAll('#home-sections .build-card').length, tiles: document.querySelectorAll('#home-categories .category-tile').length, total: document.getElementById('home-total')?.textContent.trim() ?? '', error: Boolean(document.querySelector('.state--error')) })");
-  check('Start: Karten da, keine Fehlerbox', home.cards > 0 && home.tiles === 8 && !home.error && home.total.replace(/\D/g, '').includes(String(catalog.counts.total)),
+  check('Start: Karten da, keine Fehlerbox', home.cards > 0 && home.tiles === CATEGORY_SLUGS.length && !home.error && home.total.replace(/\D/g, '').includes(String(catalog.counts.total)),
     `${home.cards} Karten, ${home.tiles} Kacheln, „${home.total.slice(0, 60)}“`);
   const images = await loadLazyImages(page);
   check('Start: keine kaputten Bilder', images.broken.length === 0, `${images.total} Bilder${images.broken.length ? `, kaputt: ${images.broken.join(', ')}` : ''}`);
@@ -818,7 +824,7 @@ async function startFlow() {
   await shot(page, 'desktop-02-kategorie');
   await checkNoCommands(page, 'Kategorie');
   await page.goto(`${SERVER.base}kategorie.html`);
-  await page.waitFor("document.querySelectorAll('#category-overview-list .category-tile').length === 8", 10000)
+  await page.waitFor(`document.querySelectorAll('#category-overview-list .category-tile').length === ${CATEGORY_SLUGS.length}`, 10000)
     .then(() => check('Übersicht aller Kategorien', true), (error) => check('Übersicht aller Kategorien', false, error.message));
   const mc = countMcmeta(page, from);
   info(`Start und Kategorie: ${mc.cdp} Anfragen an mcmeta (erwartet 0: Start und Kategorie brauchen keine Spieldaten)`);

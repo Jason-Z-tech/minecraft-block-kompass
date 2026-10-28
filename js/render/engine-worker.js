@@ -174,7 +174,7 @@ export function buildStructure(data, { file = null } = {}) {
   const label = `Die Struktur „${data.path ?? file ?? '?'}“`;
   try {
     const b = new Builder();
-    b.phase('Aufbau', 'Original-Struktur aus Minecraft 26.2 – baue sie Ebene für Ebene von unten nach oben.');
+    b.phase('Aufbau');
     let cell = 0;
     for (let i = 0; i < data.rle.length; i += 2) {
       const index = data.rle[i], count = data.rle[i + 1];
@@ -280,7 +280,7 @@ export function buildSynthetic(count) {
   // Fläche großzügig wählen (Ø gut 10 Blöcke je Säule); gebaut wird nur, bis count erreicht ist
   const side = Math.max(16, Math.ceil(Math.sqrt(count / 8)));
   const b = new Builder({ seed: 'synthetic', maxBlocks: SYNTHETIC_MAX + 4096 });
-  b.phase('Gelände', 'Synthetisches Testvolumen für Leistungsmessungen.');
+  b.phase('Gelände');
   const water = 6;
   for (let z = 0; z < side && b.blockCount < count; z++) {
     for (let x = 0; x < side && b.blockCount < count; x++) {
@@ -657,13 +657,14 @@ export function buildGallery(group = 'all', page = 0) {
   const pages = galleryPageCount(group);
   if (page >= pages) throw new EngineError(`Die Galerie „${group}“ hat nur ${pages} Seite(n).`, { code: 'source' });
   const b = new Builder({ seed: `gallery-${group}` });
-  b.phase(`Galerie: ${group}`, group === 'all' ? `Alle Blöcke im Standardzustand, Seite ${page + 1} von ${pages}.` : 'Zustandsreihe zur Sichtprüfung.');
+  b.phase(`Galerie: ${group}`);
   const warnings = [];
   const items = [];
   const rows = [];
   let z = 0;
   for (const { title, items: rowItems } of galleryRows(group, page)) {
-    b.step(title);
+    // Ein Schritt je Reihe; den Namen der Reihe trägt result.gallery.rows
+    b.step();
     let x = 0;
     let depth = 1;
     const rowBox = { title, min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };

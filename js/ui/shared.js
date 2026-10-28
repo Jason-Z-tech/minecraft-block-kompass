@@ -12,7 +12,6 @@ export const CATEGORIES = deepFreeze([
   { slug: 'fantasy', title: 'Fantasy, Anime & Film', shortTitle: 'Fantasy', color: '#9a5cc6', colorName: 'Amethyst', icon: 'cat-fantasy', description: 'Bauten aus Geschichten, Serien, Filmen und eigener Fantasie.' },
   { slug: 'mittelalter', title: 'Mittelalter & Burgen', shortTitle: 'Mittelalter', color: '#9a9a9a', colorName: 'Stein', icon: 'cat-mittelalter', description: 'Burgen, Mauern, Türme und mittelalterliche Gebäude.' },
   { slug: 'klein', title: 'Kleine Projekte & Deko', shortTitle: 'Klein & Deko', color: '#e57ca3', colorName: 'Blüte', icon: 'cat-klein', description: 'Schnelle Bauten und Deko-Ideen für zwischendurch.' },
-  { slug: 'redstone', title: 'Redstone', shortTitle: 'Redstone', color: '#e0342f', colorName: 'Redstone', icon: 'cat-redstone', description: 'Schaltungen und Mechanismen mit Redstone.' },
   { slug: 'farmen', title: 'Farmen & Technik', shortTitle: 'Farmen', color: '#d9b84a', colorName: 'Weizen', icon: 'cat-farmen', description: 'Farmen und technische Anlagen, die dir Arbeit abnehmen.' },
   { slug: 'infrastruktur', title: 'Brücken, Bahnhöfe & Häfen', shortTitle: 'Infrastruktur', color: '#d0703c', colorName: 'Kupfer', icon: 'cat-infrastruktur', description: 'Brücken, Bahnhöfe, Häfen und Verkehrswege.' },
 ]);
@@ -29,8 +28,6 @@ export const ACCURACY_LABELS = Object.freeze({
 });
 
 export const ACCURACY_KEYS = Object.freeze(Object.keys(ACCURACY_LABELS));
-
-export const DIFFICULTY_LABELS = Object.freeze(['Sehr leicht', 'Leicht', 'Mittel', 'Schwer', 'Sehr schwer']);
 
 /** Größenklassen nach Blöcken (Katalog ab Runde 2): klein < 1 000 ≤ mittel < 10 000 ≤ gross < 100 000 ≤ riesig */
 export const SIZE_CLASS_KEYS = Object.freeze(['klein', 'mittel', 'gross', 'riesig']);
@@ -68,10 +65,6 @@ export function findCategory(slug) {
 
 export function accuracyLabel(key) {
   return Object.hasOwn(ACCURACY_LABELS, key) ? ACCURACY_LABELS[key] : null;
-}
-
-export function difficultyLabel(level) {
-  return Number.isInteger(level) && level >= 1 && level <= 5 ? DIFFICULTY_LABELS[level - 1] : null;
 }
 
 export function isValidBuildId(id) {
@@ -324,7 +317,7 @@ export function nudge(node) {
   node.addEventListener('animationend', () => node.classList.remove('is-shaking'), { once: true });
 }
 
-/* ------------------------------------------------------------------ Chips, Schwierigkeit, Kennzahlen */
+/* ------------------------------------------------------------------ Chips und Kennzahlen */
 
 export function createChip(text, { className = '', iconName = null, dataset = null } = {}) {
   return el('span', { class: ['chip', iconName && 'chip--icon', className], dataset }, iconName ? icon(iconName) : null, text);
@@ -344,13 +337,6 @@ export function createAccuracyChip(key) {
 
 export function createUntestedChip() {
   return createChip('Nicht im Spiel getestet', { className: 'chip--warning', iconName: 'warning' });
-}
-
-export function createDifficulty(level) {
-  const label = difficultyLabel(level);
-  if (!label) return null;
-  const pips = Array.from({ length: 5 }, (_, index) => el('span', { class: ['difficulty__pip', index < level && 'is-on'] }));
-  return el('span', { class: 'difficulty', role: 'img', 'aria-label': `Schwierigkeit ${level} von 5: ${label}`, title: `Schwierigkeit: ${label}` }, pips);
 }
 
 function statItem(iconName, label, value) {
@@ -387,9 +373,7 @@ export function createBuildCard(build, { headingLevel = 3, imageSrc = null } = {
     build.accuracy && accuracyLabel(build.accuracy) ? createAccuracyChip(build.accuracy) : null,
     build.tested === false ? createUntestedChip() : null,
   ].filter(Boolean);
-  const foot = el('div', { class: 'build-card__foot' },
-    footItems.length ? el('span', { class: 'cluster' }, footItems) : null,
-    createDifficulty(build.difficulty));
+  const foot = footItems.length ? el('div', { class: 'build-card__foot' }, el('span', { class: 'cluster' }, footItems)) : null;
   const title = el(`h${headingLevel}`, { class: 'build-card__title' },
     el('a', { class: 'build-card__link', href: sitePath(`bau.html?id=${encodeURIComponent(build.id)}`) }, build.title));
   return el('article', { class: 'build-card', dataset: { category: category.slug } },

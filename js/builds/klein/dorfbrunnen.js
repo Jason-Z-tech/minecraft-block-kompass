@@ -14,13 +14,7 @@ export const meta = {
     'well', 'village well', 'wishing well', 'medieval well', 'stone well', 'mittelalter brunnen',
   ],
   accuracy: 'eigenes',
-  difficulty: 2,
   description: 'Ein runder Brunnen aus Bruchstein mit Wasser im Schacht, darüber ein kleines Satteldach aus Fichte auf vier Pfosten. Unter dem First läuft die Seilwinde mit Kette und Kessel-Eimer, außen sitzt ein Hebel als Kurbel; Kopfbänder aus Treppen steifen die Pfosten aus. Ein Pflasterring, eine Laterne, Fass und Wasserkessel machen ihn zum Mittelpunkt eines Dorfplatzes.',
-  facts: [
-    'Der Brunnenring hat 7 Blöcke Durchmesser, das Wasser darin 5 Blöcke.',
-    'Das Wasser ist 2 Blöcke tief und besteht nur aus Wasserquellen – es fließt nichts aus.',
-    'Ein Hebel an der Giebelseite sieht aus wie die Kurbel der Seilwinde.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -38,12 +32,7 @@ const UNDER_OBJECTS = new Set(['4,1', '4,-1']);
 const inDisc = (x, z, r) => Math.hypot(x, z) <= r + 0.5;
 
 function ground(b) {
-  b.phase('Boden und Pflaster', 'Such dir eine flache Wiese. Der Brunnen steht in einem Pflasterring mit 11 Blöcken Durchmesser. Grabe in der Mitte ein rundes Loch mit 7 Blöcken Durchmesser und 3 Blöcken Tiefe für den Schacht.', {
-    tips: [
-      'Den Rasen musst du nicht neu legen – er zeigt nur, wo das Pflaster aufhört.',
-      'Mische Bruchstein, bemoosten Bruchstein, Kies und Trampelpfad unregelmäßig, dann wirkt der Platz alt und belebt.',
-    ],
-  });
+  b.phase('Boden und Pflaster');
   terrain(b, { x: -8, y: -1, z: -8, width: 17, depth: 17, height: 1, shape: 'rund', seed: 'brunnen' });
   b.disc(0, -2, 0, RING_RADIUS + 1, 'dirt');
   for (let x = -5; x <= 5; x++) {
@@ -63,12 +52,12 @@ function ground(b) {
 }
 
 function shaft(b) {
-  b.phase('Brunnenschacht und Mauer', 'Der Schacht ist innen 5 Blöcke breit und rund, die Mauer ist einen Block dick.');
-  b.step('Schacht ausmauern', 'Lege den Boden des Lochs (Ebene 1) mit bemoostem Bruchstein aus und mauere die Schachtwand ringsum bis zur Wiese hoch (Ebene 1 bis 3). Setze erst die vier geraden Stücke mit je 3 Blöcken, dann die Ecken dazwischen.');
+  b.phase('Brunnenschacht und Mauer');
+  b.step();
   b.disc(0, -2, 0, WATER_RADIUS, 'mossy_cobblestone');
   for (let y = -2; y <= 0; y++) b.cylinder(0, y, 0, RING_RADIUS, 1, y === -2 ? 'mossy_cobblestone' : 'cobblestone', { hollow: true });
 
-  b.step('Brunnenmauer', 'Die Mauer über der Wiese ist eine Ebene hoch (Ebene 4). Mische Bruchstein mit etwas bemoostem Bruchstein und Steinziegeln.');
+  b.step();
   for (let x = -RING_RADIUS; x <= RING_RADIUS; x++) {
     for (let z = -RING_RADIUS; z <= RING_RADIUS; z++) {
       if (!inDisc(x, z, RING_RADIUS) || inDisc(x, z, WATER_RADIUS)) continue;
@@ -76,7 +65,7 @@ function shaft(b) {
     }
   }
 
-  b.step('Abdeckung', 'Lege oben auf die Mauer untere Steinziegelstufen (Ebene 5). Lass die vier Felder frei, auf denen gleich die Pfosten stehen: je zwei Blöcke von der Mitte nach links/rechts und nach vorne/hinten.');
+  b.step();
   for (let x = -RING_RADIUS; x <= RING_RADIUS; x++) {
     for (let z = -RING_RADIUS; z <= RING_RADIUS; z++) {
       if (!inDisc(x, z, RING_RADIUS) || inDisc(x, z, WATER_RADIUS)) continue;
@@ -85,21 +74,21 @@ function shaft(b) {
     }
   }
 
-  b.step('Wasser einfüllen', 'Fülle den Schacht mit Wassereimern: unten und oben je 21 Quellen. Gieß zuerst die untere Lage, dann die obere – so entstehen keine fließenden Ränder.');
+  b.step();
   b.disc(0, -1, 0, WATER_RADIUS, WATER);
   b.disc(0, 0, 0, WATER_RADIUS, WATER);
 }
 
 function frame(b) {
-  b.phase('Dachgestell', 'Vier Pfosten tragen einen Balkenkranz, auf dem das Dach liegt.');
-  b.step('Pfosten', 'Stelle auf die vier freien Felder der Mauer je 3 Fichtenstämme übereinander (Ebene 5 bis 7).');
+  b.phase('Dachgestell');
+  b.step();
   for (const [x, z] of POSTS) b.fill(x, 2, z, x, 4, z, `${spruce.log}[axis=y]`);
 
-  b.step('Balkenkranz', 'Lege auf Ebene 8 geschälte Fichtenstämme liegend von Pfosten zu Pfosten: vorne und hinten in Ost-West-Richtung, links und rechts in Nord-Süd-Richtung. Stämme legen sich in die Richtung der angeklickten Fläche: Den Eckstamm, mit dem die vordere bzw. hintere Reihe beginnt, klickst du an die Ost- oder Westseite eines Hilfsblocks (danach wieder abbauen), jeden weiteren an die Seite des vorigen, in deren Richtung der Balken weiterläuft.');
+  b.step();
   for (const z of [-2, 2]) b.fill(-2, 5, z, 2, 5, z, `${spruce.strippedLog}[axis=x]`);
   for (const x of [-2, 2]) b.fill(x, 5, -1, x, 5, 1, `${spruce.strippedLog}[axis=z]`);
 
-  b.step('Kopfbänder', 'Unter dem Balkenkranz sitzen an jedem Pfosten zwei Kopfbänder aus Fichtentreppen (Ebene 7): eine Treppe auf jeder Seite des Pfostens, die am Balken entlang zeigt. Setze sie als obere Treppen – klick dafür an die obere Hälfte der Pfostenseite – mit der hohen Seite zum Pfosten.');
+  b.step();
   for (const [px, pz] of POSTS) {
     const sx = Math.sign(px);
     const sz = Math.sign(pz);
@@ -110,36 +99,30 @@ function frame(b) {
 }
 
 function roof(b) {
-  b.phase('Dach', 'Ein Satteldach aus Fichtentreppen mit First in Ost-West-Richtung, an jeder Seite einen Block Überstand. Die Giebel über den seitlichen Balken füllst du mit Fichtenbrettern.', {
-    tips: ['Setze jede Treppenreihe von außen nach innen und schau dabei zur Firstmitte – dann zeigt die hohe Seite automatisch nach oben zur Mitte.'],
-  });
+  b.phase('Dach');
   b.roof({ x1: -2, z1: -2, x2: 2, z2: 2, y: 5, type: 'gable', axis: 'x', stairs: spruce.stairs, slab: spruce.slab, full: spruce.planks, overhang: 1 });
 }
 
 function winch(b) {
-  b.phase('Seilwinde und Kurbel', 'Jetzt kommt die Seilwinde unter den First.');
-  b.step('Welle', 'Ersetze in beiden Giebeln das mittlere Brett auf Ebene 9 durch einen liegenden Fichtenstamm und verbinde sie mit drei weiteren Stämmen zu einer durchgehenden Welle in Ost-West-Richtung. Auf der Ostseite lässt du die Welle einen Block über den Giebel hinausragen (unter dem Dachüberstand).');
+  b.phase('Seilwinde und Kurbel');
+  b.step();
   b.fill(-2, 6, 0, 3, 6, 0, `${spruce.log}[axis=x]`);
 
-  b.step('Seil, Eimer und Kurbel', 'Hänge unter die Mitte der Welle drei Eisenketten nach unten – das ist das Brunnenseil – und darunter einen Kessel als Eimer: mit dem Kessel in der Hand an die Unterseite der untersten Kette klicken. An das überstehende Ende der Welle kommt ein Hebel: er sieht aus wie die Kurbel. Unter den vorderen Balken hängt eine Laterne.');
+  b.step();
   b.fill(0, 3, 0, 0, 5, 0, 'iron_chain[axis=y]');
   b.set(0, 2, 0, 'cauldron');
   b.set(4, 6, 0, 'lever[face=wall,facing=east,powered=false]');
   b.set(0, 4, 2, 'lantern[hanging=true]');
-  b.note(4, 6, 0, 'Hebel als Kurbel der Seilwinde');
-  b.note(0, 2, 0, 'Kessel als Brunneneimer');
 }
 
 function surroundings(b) {
-  b.phase('Rund um den Brunnen', 'Zum Schluss der Dorfplatz: eine Laterne, ein Fass, ein Wasserkessel, ein Weg nach Süden und etwas Grün.', {
-    tips: ['Den Wasserkessel füllst du mit einem Wassereimer – er sieht aus wie ein gefüllter Eimer, der gerade hochgezogen wurde.'],
-  });
-  b.step('Laterne, Fass und Kessel', 'Stelle vorne links am Rand des Pflasters einen Laternenpfahl: ein bemooster Bruchstein als Sockel, darauf drei Fichtenzäune, oben ein Zaun als Arm nach Osten, darunter die hängende Laterne. Östlich vom Brunnen kommen ein Fass und ein gefüllter Wasserkessel.');
+  b.phase('Rund um den Brunnen');
+  b.step();
   lampPost(b, { x: -4, y: 1, z: 5, facing: 'east', height: 4, post: spruce.fence, base: 'mossy_cobblestone', style: 'arm' });
   b.set(4, 1, 1, 'barrel[facing=up,open=false]');
   b.set(4, 1, -1, 'water_cauldron[level=3]');
 
-  b.step('Weg und Grün', 'Lege einen Trampelpfad nach Süden, setze zwei kleine Büsche und streue Gras und Blumen auf die Wiese.');
+  b.step();
   path(b, { x: 0, y: 0, z: 5, facing: 'south', length: 3, width: 3, mix: 'erde', wiggle: 0.5, seed: 2 });
   bush(b, { x: -6, y: 1, z: -3, size: 'klein', leaves: 'eiche', seed: 1 });
   bush(b, { x: 5, y: 1, z: -5, size: 'klein', leaves: 'azalee', seed: 4 });

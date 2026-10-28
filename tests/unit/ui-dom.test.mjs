@@ -69,7 +69,7 @@ test('isSafeUrl mit allowImageData erlaubt nur Rasterbilder als data: und blob:'
 });
 
 test('isSafeSitePath akzeptiert nur Pfade innerhalb der Webseite', () => {
-  for (const ok of ['game-data/catalog.json', 'bau.html?id=a1', 'assets/icons.svg', 'kategorie.html?k=redstone#liste']) assert.equal(isSafeSitePath(ok), true, ok);
+  for (const ok of ['game-data/catalog.json', 'bau.html?id=a1', 'assets/icons.svg', 'kategorie.html?k=farmen#liste']) assert.equal(isSafeSitePath(ok), true, ok);
   for (const bad of ['../secret.json', 'a/../../b', './x', '/x', 'https://x/y', 'javascript:alert(1)', 'a/%2e%2e/b', '', 'a\\b', 'a b', '?q=x', 42]) {
     assert.equal(isSafeSitePath(bad), false, String(bad));
   }
@@ -93,9 +93,9 @@ test('el setzt Text immer als Textknoten (kein HTML)', () => {
 
 test('el: Klassen, dataset, boolesche Attribute und Ereignisse', () => {
   const handler = () => {};
-  const node = el('button', { class: ['btn', false, 'btn--primary', null], dataset: { category: 'redstone', skip: null }, disabled: true, hidden: false, type: 'button', 'aria-label': 'Los', on: { click: handler } });
+  const node = el('button', { class: ['btn', false, 'btn--primary', null], dataset: { category: 'farmen', skip: null }, disabled: true, hidden: false, type: 'button', 'aria-label': 'Los', on: { click: handler } });
   assert.equal(node.getAttribute('class'), 'btn btn--primary');
-  assert.deepEqual(node.dataset, { category: 'redstone' });
+  assert.deepEqual(node.dataset, { category: 'farmen' });
   assert.equal(node.getAttribute('disabled'), '');
   assert.equal(node.getAttribute('hidden'), null);
   assert.equal(node.getAttribute('aria-label'), 'Los');

@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as shared from '../../js/ui/shared.js';
 import {
-  CATEGORIES, CATEGORY_SLUGS, ACCURACY_LABELS, ICON_NAMES, SEARCH_MAX_LENGTH, findCategory, accuracyLabel, difficultyLabel,
+  CATEGORIES, CATEGORY_SLUGS, ACCURACY_LABELS, ICON_NAMES, SEARCH_MAX_LENGTH, findCategory, accuracyLabel,
   isValidBuildId, formatNumber, formatCount, formatSize, normalizeSearchQuery, searchHref, parseBuildParams, parseScale,
   storageGet, storageSet, storageRemove, parseHex, contrastRatio, mixHex, isExpectedDataError,
 } from '../../js/ui/shared.js';
@@ -19,7 +20,6 @@ test('Kategorien: Slugs, Titel und Reihenfolge wie ARCHITEKTUR §8, Farben wie �
     ['fantasy', 'Fantasy, Anime & Film', '#9a5cc6'],
     ['mittelalter', 'Mittelalter & Burgen', '#9a9a9a'],
     ['klein', 'Kleine Projekte & Deko', '#e57ca3'],
-    ['redstone', 'Redstone', '#e0342f'],
     ['farmen', 'Farmen & Technik', '#d9b84a'],
     ['infrastruktur', 'Brücken, Bahnhöfe & Häfen', '#d0703c'],
   ]);
@@ -45,11 +45,14 @@ test('Kategorie-Farben stimmen mit den CSS-Tokens --cat-<slug> überein', async 
     assert.equal(match[1].toLowerCase(), category.color, category.slug);
     assert.match(css, new RegExp(`\\[data-category='${category.slug}'\\]\\s*\\{\\s*--cat: var\\(--cat-${category.slug}\\);`), `data-category-Regel für ${category.slug}`);
   }
+  // Die Kategorie Redstone ist weg, die Redstone-Farben für Fehler bleiben
+  assert.doesNotMatch(css, /--cat-redstone|data-category='redstone'/);
+  for (const token of ['--c-redstone', '--c-redstone-deep', '--c-redstone-text']) assert.match(css, new RegExp(`${token}:\\s*#[0-9a-f]{6};`, 'i'), token);
 });
 
-test('findCategory, Herkunfts-Labels und Schwierigkeit', () => {
-  assert.equal(findCategory('redstone').title, 'Redstone');
-  for (const bad of ['x', '', null, '__proto__', 'Redstone']) assert.equal(findCategory(bad), null, String(bad));
+test('findCategory, Herkunfts-Labels und keine Schwierigkeit mehr', () => {
+  assert.equal(findCategory('farmen').title, 'Farmen & Technik');
+  for (const bad of ['x', '', null, '__proto__', 'Redstone', 'redstone']) assert.equal(findCategory(bad), null, String(bad));
   assert.deepEqual(ACCURACY_LABELS, {
     original: 'Original aus dem Spiel', massstab: 'Nach echten Maßen', vorlage: 'Nach bekannter Vorlage',
     nachempfunden: 'Nachempfunden', eigenes: 'Eigenes Design',
@@ -57,9 +60,7 @@ test('findCategory, Herkunfts-Labels und Schwierigkeit', () => {
   assert.equal(accuracyLabel('massstab'), 'Nach echten Maßen');
   assert.equal(accuracyLabel('toString'), null);
   assert.equal(accuracyLabel('unbekannt'), null);
-  assert.equal(difficultyLabel(1), 'Sehr leicht');
-  assert.equal(difficultyLabel(5), 'Sehr schwer');
-  for (const bad of [0, 6, 2.5, '3', null]) assert.equal(difficultyLabel(bad), null);
+  for (const name of ['DIFFICULTY_LABELS', 'difficultyLabel', 'createDifficulty']) assert.equal(Object.hasOwn(shared, name), false, name);
 });
 
 test('Alle Icons der Liste stehen im Sprite und umgekehrt', async () => {
@@ -67,6 +68,7 @@ test('Alle Icons der Liste stehen im Sprite und umgekehrt', async () => {
   const symbols = [...sprite.matchAll(/<symbol id="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual([...symbols].sort(), [...ICON_NAMES].sort());
   assert.equal(new Set(ICON_NAMES).size, ICON_NAMES.length, 'doppelte Icon-Namen');
+  assert.equal(ICON_NAMES.includes('cat-redstone'), false, 'kein Icon für die alte Kategorie Redstone');
 });
 
 test('formatNumber: deutsche Tausendertrennung und Dezimalkomma', () => {

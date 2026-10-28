@@ -132,7 +132,7 @@ Zuständen. Zusätzlich `isBlockDataLoaded()`, `blockDataInfo()`, `allBlockIds()
 einen `Error` mit Hinweis. In `blockstate.js` zusätzlich `parseStateCached(str)` (eingefroren, schnell),
 `isAirId(id)`, `isAirState(str)`; IDs, Namen und Werte nur aus `a–z 0–9 _`.
 
-**Bedeutung wichtiger Eigenschaften** (für Bauregeln, Drehungen und Anleitungstexte):
+**Bedeutung wichtiger Eigenschaften** (für Bauregeln, Drehungen und Beschreibungen):
 
 | Block | Eigenschaft | Bedeutung |
 |---|---|---|
@@ -376,9 +376,8 @@ Bau-Module bekommen eine `Builder`-Instanz `b`. Alle Formen sind exakt und ganzz
 new Builder({ seed = 'block-kompass', maxBlocks = 3_000_000, maxSize = 4064 })
 
 // Gliederung der Anleitung
-b.phase(title, text = '', { tips = [] } = {})  // neues Kapitel; ohne b.step() wird es in Ebenen aufgeteilt
-b.step(title, text = '')                         // eigener Schritt im aktuellen Kapitel (dann keine Ebenen-Aufteilung)
-b.note(x, y, z, text)                            // Markierung, z. B. „Hier den Hebel umlegen“
+b.phase(title)   // neues Kapitel, nur ein Titel; ohne b.step() wird es in Ebenen aufgeteilt
+b.step()         // eigener Schritt im aktuellen Kapitel (dann keine Ebenen-Aufteilung), ohne Titel und Text
 
 // Setzen
 b.set(x, y, z, state, { raw = false } = {})    // ersetzt vorhandenes; raw = keine Auto-Verbindungen
@@ -423,9 +422,8 @@ b.finalize()  // → BuildResult
   volume,            // BlockVolume, kleinste Ecke (0,0,0), steps = endgültige Schrittnummern
   size: [w, h, l],   // x, y, z
   offset: [dx, dy, dz],
-  phases: [ { title, text, tips, steps: [stepIndex, …] } ],
-  steps:  [ { index, phase, title, text, layerY /* number|null */, blockCount, materials: [[itemId, n], …] } ],
-  notes:  [ { x, y, z, text, step } ],
+  phases: [ { title, steps: [stepIndex, …] } ],
+  steps:  [ { index, phase, layerY /* number|null */, blockCount, materials: [[itemId, n], …] } ],
   materials: [[itemId, n], …],    // gesamt, absteigend
   blockCount,
   warnings: []
@@ -435,6 +433,11 @@ b.finalize()  // → BuildResult
 Regeln:
 - Blöcke vor dem ersten `phase()` landen im Kapitel „Aufbau“. Wird eine Position erneut gesetzt,
   gilt der letzte Zustand und sein Kapitel/Schritt.
+- Anleitungstexte gibt es nicht (Änderung 2026-10-28): `b.phase()` nimmt genau einen nicht leeren Titel, jedes
+  weitere Argument (Text oder Optionen wie `tips`) → `Error` „phase: nur ein Titel – Texte und Tipps gibt es nicht
+  mehr.“ `b.step()` nimmt keine Argumente, sonst `Error` „step: Schritte haben keinen Titel und keinen Text mehr.“
+  `b.note` gibt es nicht mehr. Das Ergebnis hat keine Texte, Tipps oder Notizen; das gilt auch für Worker-Nachrichten
+  und Bauten aus Struktur, Form und Upload.
 - Grenzen: mehr als `maxBlocks` Blöcke oder eine Kante größer als `maxSize` → `Error` mit deutscher Meldung.
 - `finalize()` führt aus: Normalisieren → Auto-Verbindungen (§6.3) → Schrittplan (§6.4) → Materialien (§6.5).
 
@@ -468,8 +471,6 @@ Regeln:
 - `transform`: erst spiegeln, dann drehen, dann verschieben; verschachtelt wirkt der innere zuerst. Die
   Funktion muss synchron sein. `b.get()` liefert den Zustand in lokaler Ausrichtung.
 - `BuildResult.offset` = kleinste Ecke in Modul-Koordinaten (Modul-Position = Ergebnis-Position + offset).
-  Ebenen-Schritte haben `text: ''`. `notes[].step` = Schritt beim Setzen (bei Ebenen-Kapiteln die Ebene der
-  Markierung oder die nächste darunter), `null` nur ohne Schritte.
 - `finalize()`: Auto-Verbindungen arbeiten auf den Zuständen des Moduls (fehlende Eigenschaften =
   Standardwert), danach `completeState` für alle Zustände und eine verdichtete Palette. Ohne Blockdaten:
   Warnung, Zustände bleiben unvollständig. Leerer Bau → Warnung „Der Bau enthält keine Blöcke.“
@@ -542,9 +543,9 @@ Wie das Spiel beim Platzieren (außer bei `raw`):
 ### 6.4 Schrittplan (`steps.js`)
 
 - Reihenfolge der Kapitel wie im Modul. Kapitel mit `b.step()` → genau diese Schritte (Blöcke vor
-  dem ersten `step()` bilden einen eigenen ersten Schritt mit dem Kapiteltitel).
-- Kapitel ohne `b.step()` → ein Schritt pro belegter Ebene, von unten nach oben,
-  Titel „Ebene N“ (N = y + 1), `layerY = y`.
+  dem ersten `step()` bilden einen eigenen ersten Schritt).
+- Kapitel ohne `b.step()` → ein Schritt pro belegter Ebene, von unten nach oben, `layerY = y`.
+- Schritte haben keinen Titel und keinen Text; die Seite zeigt Nummer, Blockzahl und Ebene.
 - Schrittnummern 0 … N−1 werden in `volume.steps` geschrieben (Wert 65535 ist reserviert).
 - Pro Schritt: Blockzahl und Materialien.
 
@@ -900,8 +901,9 @@ viewer.dispose()
 ## 8. Seiten (`js/ui/`)
 
 - `index.html` – Start: Suche/Freitext „Was willst du bauen?“, Kategorien mit Anzahl, Empfehlungen.
-- `kategorie.html?k=<slug>` – Liste mit Vorschaubild, Filter (Größe, Schwierigkeit, Herkunft), Sortierung.
-- `bau.html?id=<id>[&scale=<zahl>]` – 3D-Ansicht + Schritt-Player + Anleitung (Kapitel/Schritte),
+- `kategorie.html?k=<slug>` – Liste mit Vorschaubild, Filter (Größe, Herkunft, Test), Sortierung.
+- `bau.html?id=<id>[&scale=<zahl>]` – 3D-Ansicht + Schritt-Player + Anleitung (Kapitel mit Titel, Schritte mit Nummer,
+  Blockzahl und Ebene),
   Material (gesamt und pro Schritt, abhakbar), Ebenen-Plan (2D-Raster der Ebene mit Block-Icons),
   Infos & Quellen. Fortschritt im `localStorage` (`bk:progress:<id>`, immer in try/catch).
 - `bau.html?form=<form>&…` – Ergebnis des Formen-Generators.
@@ -909,8 +911,10 @@ viewer.dispose()
 
 Kategorien (`slug` → Titel):
 `haeuser` Häuser & Wohnen · `wahrzeichen` Wahrzeichen & Riesenbauten · `fantasy` Fantasy, Anime & Film ·
-`mittelalter` Mittelalter & Burgen · `klein` Kleine Projekte & Deko · `redstone` Redstone ·
+`mittelalter` Mittelalter & Burgen · `klein` Kleine Projekte & Deko ·
 `farmen` Farmen & Technik · `infrastruktur` Brücken, Bahnhöfe & Häfen
+Änderung (2026-10-28): Die Kategorie `redstone` gibt es nicht mehr (Bauten nicht prüfbar). Alte Adressen wie
+`kategorie.html?k=redstone` oder `bau.html?id=lauflicht` zeigen die normale Anzeige für Unbekanntes.
 
 Herkunft (`accuracy`):
 `original` Original aus dem Spiel · `massstab` Nach echten Maßen · `vorlage` Nach bekannter Vorlage ·
@@ -930,10 +934,10 @@ isSafeUrl(url, { allowImageData }) / isSafeSitePath(pfad) / sitePath('bau.html?i
 // data.js – Fehler als DataError { kind: invalid-path|missing|http|network|timeout|parse|format, title, message, steps:[{text, command?}] }
 loadJson(pfad, { fetch, timeoutMs, root }) / loadCatalog() / loadNames() / findBuild(catalog, id) / countByCategory(catalog)
 // shared.js
-CATEGORIES (slug, title, shortTitle, color, colorName, icon, description) · ACCURACY_LABELS · ICON_NAMES · DIFFICULTY_LABELS
+CATEGORIES (slug, title, shortTitle, color, colorName, icon, description) · CATEGORY_SLUGS · ACCURACY_LABELS · ICON_NAMES
 initPage() · bindSearchForm(form, input) · normalizeSearchQuery(text) · searchHref(text) · parseBuildParams(location.search)
 formatNumber(n) („12.345“) · formatCount(n, 'Bau', 'Bauten') · formatSize([w,h,l]) · storageGet/storageSet/storageRemove('bk:…')
-icon(name, { size: 16|32|48|64 }) · createChip / createCategoryChip / createAccuracyChip / createUntestedChip / createDifficulty
+icon(name, { size: 16|32|48|64 }) · createChip / createCategoryChip / createAccuracyChip / createUntestedChip
 createBuildCard(eintrag) · createSkeletonCards(n) · renderCategoryGrid(liste) · setCategoryCounts(kacheln, zahlen)
 renderLoading / renderEmpty / renderInfo / renderError(container, fehler, { onRetry }) / renderState / createState
 initTabs(root) · initSlider(input) / syncSlider(input) · setXpProgress(node, { value, max, level }) · showToast({ title, text, kind })
@@ -941,11 +945,12 @@ attachTooltip(ziel, () => tooltipContent(name, { lines, meta })) · contrastRati
 ```
 
 Änderung (ui:browse, Start- und Kategorie-Seite): Zustand der Kategorie-Seite in der Adresse
-`kategorie.html?k=<slug>[&q=<text>][&groesse=klein|mittel|gross|riesig…][&schwierigkeit=1…5…][&herkunft=<accuracy>…][&test=getestet|ungetestet|ohne…][&sort=<schlüssel>]`
+`kategorie.html?k=<slug>[&q=<text>][&groesse=klein|mittel|gross|riesig…][&herkunft=<accuracy>…][&test=getestet|ungetestet|ohne…][&sort=<schlüssel>]`
 – Mehrfachwerte als wiederholte Parameter (Komma-Listen werden auch gelesen), alles gegen Whitelists geprüft, Unbekanntes fällt weg
 (Konsolen-Warnung), Standardwerte stehen nicht in der Adresse. `test`: true → getestet, false → ungetestet, null → ohne.
 Sortierungen: `relevanz` (nur mit Suche, dann Standard), `name` (Standard ohne Suche), `groesse-auf|-ab` (Rauminhalt w·h·l),
-`bloecke-auf|-ab`, `schwierigkeit-auf|-ab`; fehlende Werte immer am Ende, Gleichstand nach Name. Filter: „oder“ in einer Gruppe,
+`bloecke-auf|-ab`; fehlende Werte immer am Ende, Gleichstand nach Name. Alte Adressen mit `schwierigkeit=` oder
+`sort=schwierigkeit-…` fallen still auf den Standard zurück. Filter: „oder“ in einer Gruppe,
 „und“ zwischen Gruppen; eine Gruppe erscheint nur, wenn in der Kategorie ≥ 2 Werte vorkommen oder etwas gewählt ist. Filter und
 Sortierung legen einen Verlaufseintrag an (Zurück-Taste), Tippen nur beim ersten Zeichen; `history.state = { mark: 'bk-browse',
 shown, scrollY }` stellt nach Zurück die Zahl der Karten und die Stelle wieder her. Karten in Schritten zu 24 (IntersectionObserver
@@ -953,10 +958,12 @@ shown, scrollY }` stellt nach Zurück die Zahl der Karten und die Stelle wieder 
 (Größenklassen, Test-Zustand, Rauminhalt), `filters.js`, `sort.js`, `url-state.js` (`parseBrowseState`, `browseSearch`, `browseHref`),
 `view.js` (`createBrowseIndex`, `computeView(index, state, { search, category })`, `initialShown`, `nextShown`), `home-sections.js`
 (`selectHomeSections(builds)`, `catalogTotals(builds)`). Startseite: Abschnitte nach festen Regeln ohne Zufall – Riesenbauten (gross +
-riesig, meiste Blöcke), Schnell gebaut (klein, Schwierigkeit ≤ 2), Original aus dem Spiel, Nach echten Maßen, Redstone und Technik;
+riesig, meiste Blöcke), Klein & schnell gebaut (Größe klein, nach Blockzahl aufsteigend, dann Titel), Original aus dem Spiel,
+Nach echten Maßen, Farmen (Kategorie `farmen`, die größten zuerst);
 je 4 Karten, kein Bau doppelt, dazu Links „N Bauten in <Kategorie>“ auf genau diese Auswahl der Kategorie-Seite. Styles in
-`css/browse.css` (nach `style.css` eingebunden). `data.js` übernimmt zusätzlich die Katalogfelder von Runde 2 (`description`, `facts`,
+`css/browse.css` (nach `style.css` eingebunden). `data.js` übernimmt zusätzlich die Katalogfelder von Runde 2 (`description`,
 `sources`, `credits`, `defaultScale`, `variants`, `phases`, `sizeClass`; nur wenn vorhanden), `shared.js` exportiert `SIZE_CLASS_KEYS`.
+Alte Felder wie `difficulty` und `facts` übernimmt `data.js` nicht. Karten zeigen Größe und Blockzahl, keine Schwierigkeit.
 
 Änderung (ui:build, Bau-Seite): Die Bau-Ansicht ist eine Komponente in `js/ui/build-view.js`, die `bau.html` (Container
 `#build-view` in `#build-layout`) und „Selber erstellen“ einbetten:
@@ -976,9 +983,14 @@ Maßstab), `onScaleChange` passt in `bau.html` die Adresse per `history.replaceS
 (Icons und Draufsicht-Kacheln aus `models.json` + `textures.bin` im Hauptthread: Flächen einer Blickrichtung werden orthografisch
 gerastert, Icons isometrisch über `renderBlockIcon`, `item/<id>` des Spiels hat Vorrang, dünne Formen wie Fackeln flach). Styles in
 `css/build-view.css` (nach `style.css`). Hervorhebung in 3D: der Schritt unter dem Zeiger in der Anleitung, sonst der gerade gebaute
-Schritt für 3 s bzw. während des Abspielens (danach aus, damit der Viewer nicht dauernd zeichnet). Notizen (`b.note`) erscheinen als
-Markierungen über der 3D-Ansicht (eigene Projektion mit der Kamera aus `viewer.controls`, verdeckt → blass). `window.__buildView` hält
+Schritt für 3 s bzw. während des Abspielens (danach aus, damit der Viewer nicht dauernd zeichnet). `window.__buildView` hält
 in `bau.html` die geladene Ansicht (für Klick-Tests). Prüfung: `node tests/visual/build-page-check.mjs` (Screenshots, Abläufe, FPS).
+Änderung (2026-10-28, Anleitung ohne Texte): Es gibt keine Schritt-Namen, Schritt- und Kapiteltexte, Tipps, Notizen (auch keine
+Markierungen in 3D) und keinen Anleitungssatz unter dem Schieberegler. Anleitung: Kapitel mit „Kapitel n“, Titel und Schrittzahl,
+Schritte mit Nummer und Kurzinfo „24 Blöcke · y = 2“ (`stepMeta`). Player: „Kapitel n von N“, Kapiteltitel, Kurzinfo des Schritts,
+daneben „Schritt n von N“; Live-Region „Schritt 3 von 12 (Erdgeschoss).“ (`stepAnnouncement`). Tooltips nennen „Schritt 5“,
+der Materialhinweis „Schritt 5“ bzw. „Kapitel 2: Erdgeschoss“. Der Info-Tab zeigt Einordnung, Beschreibung, Maßstab, Kennzahlen,
+Quellen und Design, aber keine Schwierigkeit und kein Wissenswertes.
 Änderung (ui:create): `onError(error, handle)` bekommt als zweites Argument den Griff der Ansicht (`null`, wenn schon der Viewer nicht
 starten konnte), weil das Promise bei Ladefehlern keinen liefert – Einbettungen räumen damit Viewer und Worker nach Fehlern ab.
 
@@ -1010,19 +1022,19 @@ export const meta = {
   tags: ['Japan', 'Turm', 'Riesig'],
   aliases: ['skytree', 'sky tree', 'tokyo sky tree'],   // für die Freitext-Suche
   accuracy: 'massstab',
-  difficulty: 5,                        // 1–5
   description: 'Kurzer Text (2–4 Sätze).',
-  facts: ['634 m hoch …'],
   sources: [{ title: 'Wikipedia: Tokyo Skytree', url: 'https://…' }],
   credits: null,                        // bei übernommenen Designs: { author, url, license }
   scales: [1, 0.5, 0.25],               // optional (nur bei echten Maßen): erlaubte Maßstäbe, 1 = 1 Block pro Meter
-  tested: null,                         // Redstone/Farmen: false = „nicht im Spiel getestet“
+  tested: null,                         // Farmen: false = „nicht im Spiel getestet“
 };
 export default function build(b, { scale = 1 } = {}) { … }
 ```
-Regeln: deterministisch (nur `b.rng()`), kein DOM, kein Netzwerk; nur Blöcke aus 26.2; Kapitel-
-und Schritttexte auf Deutsch in du-Form, konkret („Setze die Treppen mit der hohen Seite nach
-außen“); echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nichts erfinden.
+Regeln: deterministisch (nur `b.rng()`), kein DOM, kein Netzwerk; nur Blöcke aus 26.2; Kapitel-Titel
+kurz auf Deutsch, Schritte ohne Titel und Text; echte Bauwerke mit Quellen, unsichere Maße als solche benennen; nichts erfinden.
+Änderung (2026-10-28): `meta.difficulty` und `meta.facts` gibt es nicht mehr; stehen sie noch im Modul, meldet check-build
+einen Fehler („meta.difficulty gibt es nicht mehr.“ bzw. „meta.facts gibt es nicht mehr.“). `description`, `subtitle`,
+`sources` und `credits` bleiben (Quelle und Lizenz übernommener Bauten).
 Änderung (Integration Runde 2): `Math.sin`, `Math.cos` und `Math.atan2` liefern in Node 24 (V8 13.6) und Chrome 156 im letzten
 Bit verschiedene Werte. Wer aus Winkeln Blockpositionen rundet, rundet das Ergebnis vorher auf ein feines Raster (z. B.
 `Math.round(v * 1e6) / 1e6`), sonst kippen einzelne Blöcke an .5-Grenzen und Katalog (Node) und Bau-Seite (Browser) haben
@@ -1044,8 +1056,8 @@ nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur 
 { "generatedAt": "ISO-Zeit", "version": "26.2",
   "counts": { "total": n, "byCategory": { "<slug>": n } }, "warnings": [],
   "builds": [ {
-    "id", "title", "category", "subtitle", "tags": [], "aliases": [], "accuracy", "difficulty",
-    "description", "facts": [], "sources": [{ "title", "url" }], "credits": { "author", "url", "license" } | null,
+    "id", "title", "category", "subtitle", "tags": [], "aliases": [], "accuracy",
+    "description", "sources": [{ "title", "url" }], "credits": { "author", "url", "license" } | null,
     "tested": true | false | null,
     "module": "js/builds/<kategorie>/<id>.js" | null,
     "structure": "<datei>.json" | null,                (Original-Struktur aus game-data/structures/)
@@ -1057,17 +1069,18 @@ nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur 
     "thumb": "thumbs/<id>.webp" | null } ] }
 ```
 - Original-Strukturen: `id` mit Vorsilbe `spiel-` (für Module verboten), `accuracy` `original`, `module` null, `structure` gesetzt,
-  `phases` 1, `steps` = belegte Ebenen, `size` = Begrenzung der Blöcke (Luftränder der Vorlage zählen nicht), `facts` enthält
-  „Vorlage im Spiel: minecraft:<pfad>“. `defaultScale` = 1, wenn erlaubt, sonst der erste Maßstab (wie check-build).
-- `counts.byCategory` nennt immer alle 8 Kategorien (auch 0). `builds` sortiert nach Kategorie (Reihenfolge §8), dann Titel.
+  `phases` 1, `steps` = belegte Ebenen, `size` = Begrenzung der Blöcke (Luftränder der Vorlage zählen nicht).
+  `defaultScale` = 1, wenn erlaubt, sonst der erste Maßstab (wie check-build).
+- Änderung (2026-10-28): Der Katalog hat keine Felder `difficulty` und `facts` und keine Kategorie `redstone` mehr.
+- `counts.byCategory` nennt immer alle 7 Kategorien (auch 0). `builds` sortiert nach Kategorie (Reihenfolge §8), dann Titel.
   `warnings`: Warnungen der Module (höchstens 20 je Eintrag), doppelte Titel, Einträge, die wegen Fehlern fehlen.
 - Die Datei hat einen Eintrag je Zeile (kompakt, gültiges JSON) und wird atomar geschrieben (Zwischendatei + Umbenennen).
 - Bau-Seite: `bau.html?id=<id>[&scale=<zahl>]`; Formen: `bau.html?form=<shape>&<param>=<wert>…`
 
 `js/builds/game-structures.js` (Agent catalog) exportiert `GAME_STRUCTURE_DEFAULTS` (`accuracy`, `sources`, `credits`,
-`tested`), `difficultyForBlocks(blocks)` (Schwierigkeit nach Größe: < 150 → 1, < 400 → 2, < 1 500 → 3, < 6 000 → 4, sonst 5)
-und `GAME_STRUCTURES` (eingefroren): `{ id, structure: '<spielpfad>', title, subtitle, category, difficulty, tags, aliases,
-description, facts? }`; `structure` ist der Pfad unter `data/minecraft/structure/` (z. B. `village/plains/houses/plains_library_1`),
+`tested`) und `GAME_STRUCTURES` (eingefroren): `{ id, structure: '<spielpfad>', title, subtitle, category, tags, aliases,
+description }` (ein Eintrag mit `difficulty` oder `facts` ist ein Fehler); `structure` ist der Pfad unter
+`data/minecraft/structure/` (z. B. `village/plains/houses/plains_library_1`),
 der Dateiname folgt daraus (`/` → `__`, `.json`). Auswahl: vollständige, nachbaubare Stücke – keine Zombie-, Verfalls- oder
 Kohle-Varianten, keine Straßen, Lampen, Deko-Kleinteile, Halb-Wracks oder Leerräume.
 
@@ -1405,6 +1418,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   meta (§9), baut zweimal (deterministisch?) und sucht im Quelltext nach `Math.random`, Zeit-, Netzwerk- und
   DOM-Zugriffen. Als Bibliothek: `checkBuild(pfad, { scale, dataDir })`, `validateMeta(meta, { fileId,
   folderCategory })`.
+  Änderung (2026-10-28): `meta.difficulty` und `meta.facts` sind Fehler („… gibt es nicht mehr.“), die Warnung „Kapitel … hat
+  keinen Text“ entfällt, die Warnung zu `tested` gilt nur noch für `farmen`. Leere Schritte nennen Nummer und Kapitel
+  („Schritt 3 (Kapitel „Möbel“) setzt keine Blöcke.“). `CATEGORIES` (7 Kategorien) nutzen auch `build-catalog.mjs` und `start.mjs`.
 - `node scripts/shot.mjs --module <pfad> | --structure <datei> [--views iso,front,top] [--out tmp/shots]`
   – Screenshots über Chrome (für Sichtprüfungen).
   Änderung: weitere Quellen `--gallery <gruppe|all>` (ohne `--page` alle Seiten) und `--synthetic <anzahl>`; Optionen
@@ -1451,8 +1467,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `node tests/e2e.mjs` – Klick-Test.
   Änderung (Integration Runde 2): `node tests/e2e.mjs [--only start,bau,erstellen,handy] [--gpu hardware|swiftshader] [--out <ordner>]`
   prüft im echten Chrome gegen den echten Katalog (`game-data/catalog.json`, seit Etappe 1 `data/catalog.json`; fehlt er → Exit-Code 2): Start → Kategorie (Filter,
-  Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1 mit Maßstab-Wechsel, Infinity Castle, ein Dorfhaus `spiel-…`, ein Redstone-
-  Bau: Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt, Laufen, Bildrate) → „Selber erstellen“ (Freitext, Upload
+  Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1 mit Maßstab-Wechsel, Infinity Castle, ein Dorfhaus `spiel-…`, eine Farm
+  mit `tested: false` (seit 2026-10-28 statt eines Redstone-Baus): Schritte, Abspielen, Tabs, Abhaken + Neuladen, Ebenen-Plan, Schnitt,
+  Laufen, Bildrate) → „Selber erstellen“ (Freitext, Upload
   je Fixture-Format) → Handy 390 × 844. Ausgabe je Prüfung `OK`/`FEHLER`, Leistungswerte, Screenshots und `e2e-report.json` (Standard
   `tmp/integration/e2e/`); Exit-Code 1 bei Fehlern. Konsolenfehler zählen als Fehler (einzige Ausnahme: die absichtlich kaputte
   Upload-Datei, deren Ablehnung `renderer.js` mit `console.error` meldet).
@@ -1491,8 +1508,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   `#1e2127`/`#272b32`), warmes Weiß `#ece8df`, Grasgrün `#5da33b`, Kupfer `#d0703c`,
   Oxidiert-Türkis `#4fa38b`, Gold `#f2c14e`, Redstone-Rot `#e0342f`, Diamant `#5de3d8`.
   Kategorie-Farben: Häuser Eiche `#b8945f`, Wahrzeichen Gold, Fantasy Amethyst `#9a5cc6`,
-  Mittelalter Stein `#9a9a9a`, Klein Blüte `#e57ca3`, Redstone Rot, Farmen Weizen `#d9b84a`,
-  Infrastruktur Kupfer.
+  Mittelalter Stein `#9a9a9a`, Klein Blüte `#e57ca3`, Farmen Weizen `#d9b84a`,
+  Infrastruktur Kupfer. Änderung (2026-10-28): Die Kategorie Redstone (`--cat-redstone`, Icon `cat-redstone`) ist weg;
+  `--c-redstone`, `--c-redstone-deep` und `--c-redstone-text` bleiben als Fehlerfarben.
 - Schriften lokal (Google Fonts, OFL, heruntergeladen): Überschriften **Pixelify Sans**,
   Text **Atkinson Hyperlegible Next**, Zahlen/Koordinaten **Atkinson Hyperlegible Mono**.
   Änderung: Überschriften nutzen die zusammengesetzte Schrift „BK Display“ – Buchstaben aus Pixelify Sans,
@@ -1561,10 +1579,10 @@ shapeQueryString(id, params)             // „form=sphere&diameter=31&block=gla
   setzbar (keine Türen, Betten, hohen Pflanzen, Luft, Wasser …), bei `kind: 'stairs'` eine Treppe; kein voller Block → Warnung.
   Vorab-Schätzung (Obergrenze) > 2 Mio. → Fehler „… höchstens 2 Mio. Mach sie kleiner oder hohl.“
 - Alle Formen beginnen auf y = 0, Mittelpunkte/Radien wie §6.2 (gerader Durchmesser exakt). Kapitel ohne `b.step()` (eine Ebene
-  je Schritt) mit erklärendem Text; ab 11 Ebenen und 800 Blöcken 2 Kapitel (Hälften), ab 25 Ebenen Drittel, ab 121 Viertel, Titel
+  je Schritt), nur mit Titel (seit 2026-10-28 ohne Text und Tipps); ab 11 Ebenen und 800 Blöcken 2 Kapitel (Hälften), ab 25 Ebenen Drittel, ab 121 Viertel, Titel
   mit Ebenen („Kugel: Unteres Drittel (Ebene 1–20)“). Turm: „Boden“, „Mauer …“, „Flachdach“, „Zinnen“, „Kegeldach“/„Kuppeldach“
-  (mit Zinnen steht das Kegel-/Kuppeldach einen Block eingerückt zwischen ihnen); Bogen: „Pfeiler“, „Bogen“; Wendeltreppe mit Markierung
-  am Start. Hohle Kugeln, Ellipsoide und Ringe sind dicht; Pyramide, Kegel, Kuppel und Turm unten offen.
+  (mit Zinnen steht das Kegel-/Kuppeldach einen Block eingerückt zwischen ihnen); Bogen: „Pfeiler“, „Bogen“; Wendeltreppe ohne
+  Markierung (Notizen gibt es nicht mehr). Hohle Kugeln, Ellipsoide und Ringe sind dicht; Pyramide, Kegel, Kuppel und Turm unten offen.
 
 ```js
 // text-parser.js
@@ -1593,7 +1611,7 @@ extractScale(folded) · formatScale(0.5) → „1:2“ · cleanRequest(raw) → 
 ### 12.2 Datei-Import (`js/create/import/`)
 
 Fertige Bauten aus dem Netz laden → 3D-Ansicht + Anleitung (Kapitel „Aufbau“ in Ebenen; Litematica: je Region ein Kapitel
-„Region „Name““). Dateien: `index.js` (Dispatcher), `nbt.js` (reiner NBT-Leser), `schem.js`, `litematic.js`,
+„Region „Name““). Kapitel nur mit Titel (`{ title, blocks, count }`, `b.phase(part.title)`), ohne Text. Dateien: `index.js` (Dispatcher), `nbt.js` (reiner NBT-Leser), `schem.js`, `litematic.js`,
 `structure-nbt.js`, `rename.js` (Zustände auf 26.2), `common.js` (ImportError, Grenzen, Block-Sammler).
 
 ```js

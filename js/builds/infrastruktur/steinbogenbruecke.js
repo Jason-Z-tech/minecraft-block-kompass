@@ -18,14 +18,7 @@ export const meta = {
     'stone bridge', 'stone arch bridge', 'arch bridge', 'river bridge', 'bridge', 'old stone bridge',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Eine 41 Blöcke lange Steinbrücke, die mit drei Rundbögen über einen Fluss führt. Die Bögen bekommen einen hellen Ring aus poliertem Andesit, die Pfeiler spitze Wellenbrecher gegen die Strömung, darüber laden zwei Ausweichnischen mit Bänken zum Verweilen ein. Ein Gesims aus Treppen, eine Brüstung mit Stufen und acht Laternen auf Steinziegelmauern machen die Brücke auch nachts zum Blickfang. Ufer, Schilf, Seerosen und Bäume gehören dazu.',
-  facts: [
-    'Länge 41 Blöcke, Fahrbahn 5 Blöcke breit zwischen den Brüstungen, die Bögen sind je 7 Blöcke breit.',
-    'Unter dem Scheitel jedes Bogens bleiben 5 Blöcke Luft über dem Wasser – genug für ein Boot.',
-    'Die Fahrbahn liegt 7 Blöcke über dem Wasserspiegel; der Fluss ist 2 Blöcke tief.',
-    'Das Wasser besteht nur aus Wasserquellen; Zuckerrohr wächst am Sandufer direkt neben dem Wasser.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -99,25 +92,20 @@ function bankTop(x, z) {
 }
 
 function riverAndBanks(b) {
-  b.phase('Fluss und Ufer', 'Die Brücke braucht einen Fluss: 27 Blöcke breit, 2 Blöcke tief, mit Ufern, die bis auf die Höhe der Fahrbahn ansteigen. Baust du an einem echten Fluss, suchst du dir eine Stelle mit etwa dieser Breite und überspringst dieses Kapitel.', {
-    tips: [
-      'Wasser setzt du mit dem Eimer. Fülle erst die beiden Ränder und dann die Mitte: zwischen zwei Quellen entsteht im Spiel von selbst eine neue Quelle.',
-      'Am flachen Sandufer direkt neben dem Wasser wächst später das Zuckerrohr.',
-    ],
-  });
-  b.step('Ufer formen', 'Forme die beiden Ufer: direkt am Wasser ein Streifen Sand auf Höhe des Wasserspiegels, dann steigt das Ufer Block für Block an, bis es 7 Blöcke über dem Wasser die Höhe der Fahrbahn erreicht. Steile Stellen bekommen Stein und Andesit.');
+  b.phase('Fluss und Ufer');
+  b.step();
   const width = AREA.x2 - AREA.x1 + 1;
   const depth = AREA.z2 - AREA.z1 + 1;
   // Die Säulen reichen von y = 0 bis zur Uferhöhe (terrain füllt y … y + h).
   const ground = terrainColumns(b, width, depth);
-  b.step('Sandstrand am Wasser', 'Der unterste Uferstreifen auf Höhe des Wasserspiegels wird zu Sand und Kies.');
+  b.step();
   for (let x = AREA.x1; x <= AREA.x2; x++) {
     for (let z = AREA.z1; z <= AREA.z2; z++) {
       if (ground.top(x, z) !== WATER_TOP) continue;
       b.set(x, WATER_TOP, z, pick([['sand', 6], ['gravel', 2], ['clay', 1]], x, WATER_TOP, z, 21));
     }
   }
-  b.step('Flussbett und Wasser', 'Das Flussbett aus Kies, Sand und Ton liegt auf der untersten Ebene, darüber kommen zwei Ebenen Wasserquellen.');
+  b.step();
   for (let x = AREA.x1; x <= AREA.x2; x++) {
     for (let z = AREA.z1; z <= AREA.z2; z++) {
       if (landDistance(x, z) !== 0) continue;
@@ -217,28 +205,14 @@ function buildArchivolts(b) {
 }
 
 function piersAndArches(b) {
-  b.phase('Pfeiler und Widerlager', 'Baue die Brücke Ebene für Ebene von unten nach oben. Zuerst die beiden Pfeiler im Fluss und die Widerlager an den Ufern – die Widerlager mauerst du nur dort, wo das Ufer nicht schon bis oben reicht. Jeder Pfeiler ist 3 Blöcke lang und hat an beiden Seiten einen spitzen Wellenbrecher. Die Steinziegel kannst du einfach ins Wasser setzen, sie verdrängen es.', {
-    tips: [
-      'Stecke zuerst die Mittellinie quer über den Fluss ab: von ihr aus sind es 3 Blöcke nach links und nach rechts – die Brücke ist 7 Blöcke breit.',
-      'Zwischen den Pfeilern und den Ufern bleiben je 7 Blöcke frei: dort entstehen die Bögen.',
-      'Moosige und rissige Steinziegel streust du unregelmäßig ein, am Wasser etwas mehr. So wirkt die Brücke alt.',
-    ],
-  });
+  b.phase('Pfeiler und Widerlager');
   buildBody(b, 0, WATER_TOP);
   buildCutwaters(b, 0, WATER_TOP + 1);
-  b.note(5, WATER_TOP + 1, PIERS[0].mid, 'Wellenbrecher: Treppe mit der hohen Seite zur Brücke');
 
-  b.phase('Bögen', 'Über dem Wasser ziehen sich die Pfeiler zum Bogen zusammen. Die Rundung entsteht aus umgedrehten Steinziegeltreppen und oberen Stufen; auf den Außenseiten rahmt ein Ring aus poliertem Andesit jeden Bogen ein.', {
-    tips: [
-      'Umgedrehte Treppen setzt du, indem du auf die obere Hälfte einer Blockseite klickst. Die hohe Seite zeigt immer vom Bogen weg zum Pfeiler.',
-      'Baue jeden Bogen von beiden Seiten gleichzeitig nach oben, dann treffen sich die Hälften genau in der Mitte.',
-      'Der Ring aus poliertem Andesit sitzt nur auf den beiden Außenseiten, innen bleibt alles aus Steinziegeln. Davor kommt über dem Wasser eine zweite Andesit-Reihe, einen Block vor der Wand: diese Kante wirft Schatten und lässt die Bögen hervortreten.',
-    ],
-  });
+  b.phase('Bögen');
   buildBody(b, WATER_TOP + 1, DECK - 1);
   buildCutwaters(b, WATER_TOP + 2, DECK - 1);
   buildArchivolts(b);
-  b.note(0, DECK - 1, ARCH.centers[1], 'Scheitel des mittleren Bogens');
 }
 
 // --- Fahrbahn, Gesims, Nischen ---
@@ -253,13 +227,8 @@ function roadBlock(x, z) {
 }
 
 function deckAndCornice(b) {
-  b.phase('Gesims und Fahrbahn', 'Jetzt bekommt die Brücke ihren oberen Abschluss: ein Gesims aus umgedrehten Treppen, das ringsum einen Block übersteht, und die Fahrbahn aus Bruchstein, Andesit und Stein.', {
-    tips: [
-      'Für das Gesims stellst du dich auf die Brücke und schaust nach außen – dann klickst du auf die obere Hälfte der Außenwand. So zeigt die hohe Seite zur Brücke.',
-      'Über den Pfeilern springt die Fahrbahn auf jeder Seite einen Block weiter vor: das sind die Ausweichnischen.',
-    ],
-  });
-  b.step('Gesims', 'Entlang beider Außenseiten setzt du auf Fahrbahnhöhe umgedrehte Steinziegeltreppen, einen Block vor der Wand. Über den Pfeilern und neben den Nischen tragen solche Treppen auch den Boden der Nische.');
+  b.phase('Gesims und Fahrbahn');
+  b.step();
   for (const s of SIDES) {
     for (let z = BODY.z1; z <= BODY.z2; z++) {
       if (isPierZ(z)) continue;
@@ -271,7 +240,7 @@ function deckAndCornice(b) {
       for (const z of [pier.z1, pier.z2]) b.stairs(5 * s, DECK - 1, z, 'stone_brick_stairs', { facing: facingInward(s), half: 'top' });
     }
   }
-  b.step('Fahrbahn', 'Die Fahrbahn ist 7 Blöcke breit (bis an die Außenkante der Brücke) und reicht in den Nischen bis über die Wellenbrecher. Die äußeren Reihen sind Steinziegel – darauf steht gleich die Brüstung –, dazwischen mischst du Bruchstein, Andesit und Stein.');
+  b.step();
   for (let z = BODY.z1; z <= BODY.z2; z++) {
     for (let x = BODY.x1; x <= BODY.x2; x++) b.set(x, DECK, z, Math.abs(x) === 3 ? 'stone_bricks' : roadBlock(x, z));
   }
@@ -284,10 +253,8 @@ function deckAndCornice(b) {
 }
 
 function parapet(b) {
-  b.phase('Brüstung und Nischen', 'Die Brüstung ist eine Reihe Steinziegel mit einer Steinziegelstufe obendrauf – zusammen anderthalb Blöcke hoch, genug, dass niemand hinunterfällt. In den Nischen über den Pfeilern stehen Bänke.', {
-    tips: ['Die Stufen setzt du in die untere Hälfte des Blocks, dann bleibt oben eine halbe Kante frei – das sieht feiner aus als ein ganzer Block.'],
-  });
-  b.step('Brüstung', 'Setze auf die äußersten Reihen der Fahrbahn eine Reihe Steinziegel und darauf Steinziegelstufen. An den Nischen weicht die Brüstung um zwei Blöcke nach außen aus.');
+  b.phase('Brüstung und Nischen');
+  b.step();
   const cells = [];
   for (const s of SIDES) {
     for (let z = BODY.z1; z <= BODY.z2; z++) if (!isPierZ(z)) cells.push([3 * s, z]);
@@ -300,20 +267,17 @@ function parapet(b) {
     b.set(x, DECK + 1, z, 'stone_bricks');
     b.slab(x, DECK + 2, z, 'stone_brick_slab');
   }
-  b.step('Bänke in den Nischen', 'In jede Nische kommen zwei Bänke aus Fichtentreppen mit der Lehne zur Brüstung, dazwischen ein Blumentopf mit Porzellansternchen.');
+  b.step();
   for (const pier of PIERS) {
     for (const s of SIDES) {
       for (const z of [pier.z1, pier.z2]) b.stairs(4 * s, DECK + 1, z, 'spruce_stairs', { facing: facingX(s) });
       b.set(4 * s, DECK + 1, pier.mid, 'potted_azure_bluet');
     }
   }
-  b.note(4, DECK + 1, PIERS[0].z1, 'Bank: Lehne zur Brüstung');
 }
 
 function lanterns(b) {
-  b.phase('Laternen', 'Acht Laternen beleuchten die Brücke: je zwei an den Brückenenden und eine über jedem Wellenbrecher. Jede steht auf einem gemeißelten Steinziegel mit zwei Steinziegelmauern.', {
-    tips: ['Die Mauerstücke verbinden sich von selbst mit der Laterne darauf – du brauchst nichts zu drehen.'],
-  });
+  b.phase('Laternen');
   const posts = [];
   for (const s of SIDES) {
     posts.push([3 * s, BODY.z1], [3 * s, BODY.z2]);
@@ -339,10 +303,10 @@ function roadOnLand(b) {
 
 function riverside(b, ground) {
   const onGround = (x, z) => ground.top(x, z) + 1;
-  b.phase('Weg und Ufergrün', 'Zum Schluss führt der Weg an beiden Enden weiter, und am Fluss wird es grün: Schilf aus Zuckerrohr, Seerosen, Seegras, ein paar Bäume, Büsche und Felsen.');
-  b.step('Weg an Land', 'Der Pflasterweg aus Bruchstein, Andesit und Stein läuft an beiden Enden der Brücke weiter, 5 Blöcke breit mit einem Rand aus grober Erde und Kies.');
+  b.phase('Weg und Ufergrün');
+  b.step();
   roadOnLand(b);
-  b.step('Schilf, Seerosen und Seegras', 'Setze Zuckerrohr auf den Sand direkt neben das Wasser (1–3 Blöcke hoch), ein paar Seerosen auf das Wasser abseits der Brücke und Seegras auf den Grund.');
+  b.step();
   for (let x = AREA.x1; x <= AREA.x2; x++) {
     if (Math.abs(x) <= 6) continue;
     for (let z = AREA.z1; z <= AREA.z2; z++) {
@@ -357,7 +321,7 @@ function riverside(b, ground) {
       }
     }
   }
-  b.step('Bäume, Büsche und Felsen', 'Auf beiden Ufern wachsen Eichen und Birken, an den Widerlagern Büsche. Ein paar bemooste Felsen liegen im Gras.');
+  b.step();
   tree(b, { x: -11, y: onGround(-11, 2), z: 2, species: 'eiche', size: 'mittel', seed: 3 });
   tree(b, { x: 11, y: onGround(11, 1), z: 1, species: 'birke', size: 'mittel', seed: 5 });
   tree(b, { x: -12, y: onGround(-12, 49), z: 49, species: 'birke', size: 'mittel', seed: 8 });
@@ -366,7 +330,7 @@ function riverside(b, ground) {
   bush(b, { x: 6, y: onGround(6, 47), z: 47, size: 'klein', leaves: 'azalee', seed: 4 });
   rock(b, { x: 14, y: onGround(14, 6), z: 6, size: 'klein', material: 'andesit', seed: 1 });
   rock(b, { x: -14, y: onGround(-14, 44), z: 44, size: 'klein', material: 'stein', seed: 2 });
-  b.step('Wiese', 'Gras, Farne und Blumen auf den Ufern – mit Knochenmehl auf Gras geht das schnell.');
+  b.step();
   vegetation(b, { x: AREA.x1, y: DECK + 1, z: AREA.z1, width: AREA.x2 - AREA.x1 + 1, depth: AREA.z2 - AREA.z1 + 1, mix: 'wiese', density: 0.3, shape: 'eckig', seed: 9 });
 }
 

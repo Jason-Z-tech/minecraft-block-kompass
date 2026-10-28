@@ -19,7 +19,7 @@ function pickPalette(value, warnings) {
 }
 
 /** Liest die Blöcke in den Sammler. ctx = { converter, collector, onProgress, warnings }. */
-export function readStructureNbt(root, { converter, collector, onProgress, warnings, title = 'Aufbau', text = '' }) {
+export function readStructureNbt(root, { converter, collector, onProgress, warnings, title = 'Aufbau' }) {
   const value = root.value;
   const size = value.size.map(intValue);
   if (size.length !== 3 || size.some((n) => n === null || n < 0)) throw corrupt('size ist ungültig');
@@ -46,7 +46,7 @@ export function readStructureNbt(root, { converter, collector, onProgress, warni
 
   const blocks = value.blocks;
   const tick = progressTicker(onProgress, 'Lese Blöcke', blocks.length);
-  collector.begin(title, text);
+  collector.begin(title);
   const seen = new Map();
   let badPos = 0, outside = 0, badState = 0;
   const [sx, sy, sz] = size;

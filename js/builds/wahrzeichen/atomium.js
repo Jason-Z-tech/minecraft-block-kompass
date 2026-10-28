@@ -15,17 +15,7 @@ export const meta = {
     'atom', 'atomiom', 'atomuim', 'atonium', 'atomium expo 58', 'eisenkristall', 'brüssel kugeln', 'kugeln brüssel',
   ],
   accuracy: 'massstab',
-  difficulty: 5,
   description: 'Das Atomium im Maßstab 1:1: neun Kugeln mit 18 Blöcken Durchmesser bilden einen auf der Spitze stehenden Würfel mit 47 Blöcken Kantenlänge – die Elementarzelle eines Eisenkristalls –, verbunden durch 20 Röhren und gestützt von drei Doppelstützen. Mit dem Eingangspavillon ist es 103 Blöcke hoch. Die Achsenkugeln sind über eine Leiter im senkrechten Mittelrohr begehbar, oben mit Panorama-Restaurant; die übrigen Kugeln haben Böden und Licht, aber keinen Zugang. Form und Lage der Stützen, die Höhe der untersten Kugel und die Fensterverteilung sind geschätzt.',
-  facts: [
-    'Höhe 102 m (vom Boden bis zur Oberkante der obersten Kugel 102,705 m), gebaut für die Weltausstellung Expo 58 und am 17. April 1958 eröffnet.',
-    'Neun Kugeln mit je 18 m Durchmesser, Abstand zwischen den Kugeln 29 m – von Mitte zu Mitte also 47 m Würfelkante.',
-    '20 Röhren mit 3,3 m Durchmesser: 12 entlang der Würfelkanten, 8 von den Ecken zur Mittelkugel.',
-    'Es zeigt die Elementarzelle eines Eisenkristalls, rund 165 Milliarden Mal vergrößert.',
-    'Seit der Sanierung 2004–2006 sind die Kugeln mit Edelstahl statt Aluminium verkleidet; Gewicht rund 2 500 t.',
-    'Im Original fährt ein Aufzug (5 m/s) durch das Mittelrohr nach oben, in den schrägen Röhren laufen Rolltreppen. Hier ersetzt eine Leiter den Aufzug, die schrägen Röhren sind massiv.',
-    'Geschätzt (nicht belegt): Form, Breite und Fußpunkte der drei Stützen, Höhe des Pavillons, Lage und Zahl der Fenster.',
-  ],
   sources: [
     { title: 'Atomium: The Atomium in figures', url: 'https://atomium.be/the_atomium_in_figures' },
     { title: 'Wikipedia (en): Atomium', url: 'https://en.wikipedia.org/wiki/Atomium' },
@@ -264,11 +254,6 @@ const LEG_TOP_M = 2.5;
 const LEG_SPREAD_M = 7;
 const LEG_OUT_M = 3;
 
-// Waagrechter Abstand eines Stützenfußes von der Achse.
-function footDistance(g, scale) {
-  return Math.round(Math.hypot(g.rh + LEG_OUT_M * scale, LEG_SPREAD_M * scale));
-}
-
 function supportLegs(g, sp, P) {
   const s = P.scale;
   const a = (sp.deg * Math.PI) / 180;
@@ -347,11 +332,7 @@ export default function build(b, { scale = 1 } = {}) {
   const pr = g.pavilionD / 2;
 
   // 1. Fundament
-  b.phase(
-    'Fundament und Pavillonboden',
-    `Lege zuerst den runden Boden des Eingangspavillons aus Glattem Stein: ${g.pavilionD} Blöcke Durchmesser, die Mitte ist die senkrechte Achse des ganzen Atomiums. Alle neun Kugeln richten sich nach dieser Achse aus. Dazu kommen sechs Fundamentplatten aus Hellgrauem Beton für die Beine der drei Stützen.`,
-    { tips: [`Markiere die Achse mit einem farbigen Block. Die Fußpunkte der drei Stützen liegen rund ${footDistance(g, scale)} Blöcke von ihr entfernt.`] },
-  );
+  b.phase('Fundament und Pavillonboden');
   for (const c of pav) b.set(c.x, 0, c.z, PAVING);
   for (const sp of [S.L1, S.L2, S.L3]) {
     for (const leg of supportLegs(g, sp, P)) {
@@ -363,11 +344,7 @@ export default function build(b, { scale = 1 } = {}) {
   }
 
   // 2. Pavillon
-  b.phase(
-    'Eingangspavillon',
-    `Der Pavillon ist ein flacher Rundbau: ${P.interior ? `Außenring aus Glasscheiben, alle paar Blöcke ein Pfosten aus Weißem Beton, ${P.pavilionH} Ebenen hoch, darüber ein Flachdach aus Weißem Beton. Auf der Südseite führen zwei gewachste Kupfertüren hinein; in der Mitte steht der Kern des Mittelrohrs mit dem Einstieg zur Leiter.` : 'eine Ebene Glasscheiben mit Pfosten aus Weißem Beton und ein Flachdach. Bei 1:2 ist er nur angedeutet.'} Auf dem Dach sitzt später die unterste Kugel.`,
-    { tips: ['Setze erst die Pfosten, dann die Glasscheiben dazwischen – sie verbinden sich von selbst.'] },
-  );
+  b.phase('Eingangspavillon');
   for (const c of pav) {
     if (c.edge) {
       const slot = Math.round(((c.angle + Math.PI) / (2 * Math.PI)) * 64);
@@ -377,7 +354,6 @@ export default function build(b, { scale = 1 } = {}) {
   }
   if (P.interior) {
     // Türen nach Süden
-    const doorZ = Math.max(...pav.filter((c) => c.x === Math.floor(g.axis)).map((c) => c.z));
     for (const dx of [0, 1]) {
       const x = Math.floor(g.axis) + dx;
       const z = Math.max(...pav.filter((c) => c.x === x).map((c) => c.z));
@@ -386,7 +362,6 @@ export default function build(b, { scale = 1 } = {}) {
       b.set(x, 2, z, `waxed_copper_door[facing=north,half=upper,hinge=${dx === 0 ? 'left' : 'right'},open=false]`);
       b.set(x, 3, z, PAVILION_POST);
     }
-    b.note(Math.floor(g.axis), 1, doorZ, 'Eingang: zwei gewachste Kupfertüren auf der Südseite des Pavillons (gewachst, damit sie nicht anlaufen).');
     for (let y = 1; y < g.roofY; y++) for (const [x, z] of axisSec.ring) b.set(x, y, z, CORE);
     for (const [x, z] of axisSec.ring) if (z === Math.ceil(g.axis + 1)) { b.remove(x, 1, z); b.remove(x, 2, z); }
     for (const [x, z] of axisSec.hollow) b.remove(x, g.roofY, z);
@@ -395,11 +370,7 @@ export default function build(b, { scale = 1 } = {}) {
   }
 
   // 3. Stützen
-  b.phase(
-    'Drei Doppelstützen',
-    `Unter den drei unteren Außenkugeln (Süd, Nordwest, Nordost) steht je eine Doppelstütze aus Hellgrauem Beton: zwei schräge Beine, die unten ${Math.round(2 * LEG_SPREAD_M * scale)} Blöcke auseinander stehen und oben direkt unter der Kugel zusammenlaufen. Baue sie Ebene für Ebene von unten nach oben – jede Ebene rückt ein Stück zur Kugel hin.`,
-    { tips: [`Die Fußpunkte liegen rund ${footDistance(g, scale)} Blöcke von der Achse entfernt, jeweils in Richtung der Kugel darüber.`,'Ein Gerüst (Gerüstblöcke) neben den Beinen erleichtert die oberen Ebenen.'] },
-  );
+  b.phase('Drei Doppelstützen');
   for (const sp of [S.L1, S.L2, S.L3]) {
     for (const leg of supportLegs(g, sp, P)) for (const [x, y, z] of legCells(g, leg.foot, leg.top, P.legW)) b.set(x, y, z, SUPPORT);
   }
@@ -408,30 +379,14 @@ export default function build(b, { scale = 1 } = {}) {
   const tubeGroup = (pairs) => {
     for (const [a, c] of pairs) for (const [x, y, z] of tubeCells(g, S[a].c, S[c].c, P.tubeR)) b.set(x, y, z, TUBE);
   };
-  const shellText = P.interior
-    ? `Jede Kugel hat ${g.D} Blöcke Durchmesser und eine Hülle aus Eisenblöcken. Innen liegen zwei Böden aus Glattem Stein (der untere 4 Ebenen unter der Kugelmitte, der obere 5 Ebenen darüber) mit je vier Leuchtsteinen als Deckenlicht für beide Räume. Auf Höhe der Böden sitzen Fensterreihen aus Grauem Glas.`
-    : `Jede Kugel hat ${g.D} Blöcke Durchmesser und ist bei 1:2 massiv aus Eisenblöcken.`;
-  const scaffoldTip = 'Unter einer frei hängenden Kugel brauchst du Hilfsblöcke: Stelle ein Gerüst bis zur untersten Ebene und baue die Hülle Ring für Ring nach oben. Entferne das Gerüst, sobald die Röhren die Kugel halten.';
 
-  b.phase(
-    'Untere Kugel',
-    `Die unterste Kugel sitzt mitten auf dem Pavillondach. ${shellText}${P.interior ? ' Durch die Kugel läuft der Kern des Mittelrohrs aus Glattem Stein mit dem Leiterschacht; auf beiden Böden hat er nach Süden eine zwei Blöcke breite Öffnung.' : ''}`,
-    { tips: ['Baue die Kugel Ebene für Ebene: Jede Ebene ist ein Kreis, der bis zur Mitte wächst und dann wieder schrumpft.'] },
-  );
+  b.phase('Untere Kugel');
   buildSphere(b, g, S.B, P, axisSec);
 
-  b.phase(
-    'Drei Kugeln auf den Stützen',
-    `Die drei unteren Außenkugeln liegen ${Math.round(S.L1.c[1] - S.B.c[1])} Ebenen über der Mitte der unteren Kugel und ${Math.round(g.rh)} Blöcke waagrecht von der Achse entfernt (Süd, Nordwest, Nordost). Sie ruhen auf den Doppelstützen. ${shellText}${P.interior ? ' Diese Kugeln haben keinen Zugang (im Original führen Rolltreppen in den schrägen Röhren hinein).' : ''}`,
-    { tips: ['Fang direkt auf den Stützen an: Die unterste Ebene jeder Kugel liegt auf den Beinen auf.'] },
-  );
+  b.phase('Drei Kugeln auf den Stützen');
   for (const sp of [S.L1, S.L2, S.L3]) buildSphere(b, g, sp, P, axisSec);
 
-  b.phase(
-    'Röhren der unteren Hälfte',
-    `Jetzt verbindest du: drei Röhren von der unteren Kugel schräg hinauf zu den drei Außenkugeln (Würfelkanten) und drei Röhren von den Außenkugeln schräg zur Mitte, wo später die Mittelkugel sitzt. Die Röhren haben ${P.interior ? 'rund 3 Blöcke (3,3 m)' : '1–2 Blöcke'} Durchmesser und sind aus Eisenblöcken${P.interior ? '; das senkrechte Mittelrohr zur Mittelkugel ist hohl und enthält die Leiter' : ''}.`,
-    { tips: ['Schräge Röhren baust du am besten von der tragenden Kugel aus: Jede Ebene ist eine kleine Scheibe, die ein Stück weiter wandert.', scaffoldTip] },
-  );
+  b.phase('Röhren der unteren Hälfte');
   tubeGroup(g.tubes.lowerEdges);
   tubeGroup(g.tubes.lowerCenter);
   if (P.interior) {
@@ -441,33 +396,17 @@ export default function build(b, { scale = 1 } = {}) {
     }
   } else tubeGroup([['B', 'C']]);
 
-  b.phase(
-    'Mittelkugel',
-    `Die Mittelkugel sitzt genau über der unteren Kugel auf der Achse, ${Math.round(S.C.c[1] - S.B.c[1])} Ebenen höher. Sie hängt an vier Röhren. ${shellText}${P.interior ? ' Auch hier läuft der Kern mit dem Leiterschacht durch, mit Öffnungen nach Süden auf beiden Böden.' : ''}`,
-    { tips: [scaffoldTip] },
-  );
+  b.phase('Mittelkugel');
   buildSphere(b, g, S.C, P, axisSec);
 
-  b.phase(
-    'Röhren zu den oberen Kugeln',
-    'Von jeder unteren Außenkugel laufen zwei Röhren schräg hinauf zu den beiden benachbarten oberen Kugeln (sechs Würfelkanten), dazu drei Röhren von der Mittelkugel zu den oberen Kugeln. Die oberen Kugeln stehen genau zwischen den unteren: über Südost, Südwest und Nord.',
-    { tips: [scaffoldTip] },
-  );
+  b.phase('Röhren zu den oberen Kugeln');
   tubeGroup(g.tubes.middleEdges);
   tubeGroup(g.tubes.upperCenter);
 
-  b.phase(
-    'Drei obere Kugeln',
-    `Die oberen Außenkugeln liegen ${Math.round(S.U1.c[1] - S.B.c[1])} Ebenen über der Mitte der unteren Kugel, wieder ${Math.round(g.rh)} Blöcke von der Achse. ${shellText}${P.interior ? ' Wie im Original sind sie nicht zugänglich.' : ''}`,
-    { tips: [scaffoldTip] },
-  );
+  b.phase('Drei obere Kugeln');
   for (const sp of [S.U1, S.U2, S.U3]) buildSphere(b, g, sp, P, axisSec);
 
-  b.phase(
-    'Röhren zur Spitze',
-    `Drei Röhren laufen von den oberen Kugeln zur Spitze; ${P.interior ? 'das hohle senkrechte Mittelrohr führt die Leiter von der Mittelkugel hinauf' : 'dazu das senkrechte Mittelrohr'}.`,
-    { tips: ['Die Spitzenkugel hängt nur an diesen vier Röhren – lass das Gerüst stehen, bis alle vier fertig sind.'] },
-  );
+  b.phase('Röhren zur Spitze');
   tubeGroup(g.tubes.upperEdges);
   if (P.interior) {
     for (let y = Math.floor(S.C.c[1] + g.R) + 1; y < Math.ceil(S.T.c[1] - g.R); y++) {
@@ -476,43 +415,30 @@ export default function build(b, { scale = 1 } = {}) {
     }
   } else tubeGroup([['C', 'T']]);
 
-  b.phase(
-    'Oberste Kugel',
-    `Die Spitzenkugel krönt das Atomium; ihre Oberkante liegt ${Math.ceil(S.T.c[1] + g.R) - 1} Ebenen über dem Platz. ${P.interior ? 'Auf dem unteren Boden liegt das Restaurant mit einem umlaufenden Panoramaband aus Hellgrauem Glas (zwei Reihen), darüber die Aussichtsebene mit kleineren Fenstern. Hülle, Böden und Leuchtsteine wie bei den anderen Kugeln.' : 'Ein Band aus Hellgrauem Glas um die Mitte deutet das Panorama-Restaurant an.'}`,
-    { tips: [scaffoldTip] },
-  );
+  b.phase('Oberste Kugel');
   buildSphere(b, g, S.T, P, axisSec);
 
   // 12. Leiter, Einrichtung, Licht
   if (P.interior) {
-    b.phase(
-      'Leiter, Einrichtung und Licht',
-      'Setze die Leiter an die Nordwand des Mittelrohrs: von der Mitte des Pavillons bis zum oberen Boden der Spitzenkugel, ohne Lücke. Hänge im Pavillon sechs Laternen unter das Dach und richte ihn mit Empfangstresen, Bänken und Pflanzen ein. In der unteren Kugel und der Mittelkugel stellst du Lesepulte als Ausstellungstafeln auf, in der Spitzenkugel Tische (Fichtenzaun mit Druckplatte) und Stühle (Fichtentreppen, Lehne nach außen) fürs Restaurant und Bänke auf der Aussichtsebene. Unter jedem oberen Boden hängen vier Laternen.',
-      { tips: ['Leitern hängen nur an einer festen Wand: Schau beim Setzen nach Norden auf die Rohrwand.', 'Am Ausstieg in jeder Kugel ist der Boden neben der Leiter fest – dort steigst du aus und gehst durch die Öffnung nach Süden.'] },
-    );
+    b.phase('Leiter, Einrichtung und Licht');
     const lx = Math.floor(g.axis);
     const lz = Math.floor(g.axis);
     const top = floorLevels(S.T).f2 + 1;
-    b.step('Leiter im Mittelrohr', `Setze eine durchgehende Leiter an die Nordwand des Mittelrohrs, von Ebene 2 bis Ebene ${top + 1}: Schau beim Setzen nach Norden auf die Wand, dann zeigt die Leiter nach Süden. In jedem Kugelboden ist genau über der Leiter ein Loch frei.`);
+    b.step();
     for (let y = 1; y <= top; y++) b.set(lx, y, lz, 'ladder[facing=south]');
-    b.step('Licht im Pavillon', 'Sechs Laternen hängen unter dem Pavillondach.');
+    b.step();
     for (let k = 0; k < 6; k++) {
       const a = (k * Math.PI) / 3;
       b.set(Math.floor(g.axis + 8 * Math.cos(a)), g.roofY - 1, Math.floor(g.axis + 8 * Math.sin(a)), 'lantern[hanging=true]');
     }
-    b.step('Empfang im Pavillon', 'Stelle an die Nordseite einen 6 Blöcke langen Empfangstresen aus Weißem Beton mit Glatten Quarzstufen obendrauf und dahinter zwei Hocker. An die Ost- und Westseite kommen Bänke aus Glatten Quarztreppen (Lehne zum Glas), in die vier Ecken dazwischen blühende Azaleen im Topf.');
+    b.step();
     furnishPavilion(b, g);
-    b.step('Einrichtung der Achsenkugeln', 'Ausstellung in der unteren Kugel und der Mittelkugel, Restaurant und Aussichtsebene in der Spitzenkugel, dazu Laternen unter den oberen Böden.');
+    b.step();
     for (const sp of [S.B, S.C, S.T]) furnish(b, g, sp);
-    b.note(lx, floorLevels(S.T).f1 + 1, lz + 3, 'Restaurant mit Panoramafenstern in der obersten Kugel.');
   }
 
   // 13. Umgebung
-  b.phase(
-    'Platz, Rasen und Bäume',
-    `Rund um den Pavillon liegt ein gepflasterter Platz aus Glattem Stein, von dem drei Wege zu den Stützen und einer nach Süden führen. Der Rest ist Rasen bis ${plaza} Blöcke von der Achse, mit kleinen Eichen und Birken am Rand.`,
-    { tips: ['Lege erst die Wege, dann den Rasen – so bleiben die Kanten sauber.'] },
-  );
+  b.phase('Platz, Rasen und Bäume');
   const forecourt = pr + Math.round(6 * scale);
   const pathHalf = Math.max(1, Math.round(1.5 * scale));
   for (let x = Math.floor(g.axis - plaza); x <= Math.ceil(g.axis + plaza); x++) {

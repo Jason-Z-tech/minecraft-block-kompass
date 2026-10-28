@@ -17,17 +17,9 @@ export const meta = {
     'fliegenpilz haus', 'fliegenpilzhaus', 'pilzhütte', 'schlumpfhaus', 'risenpilz haus', 'riesen pilz', 'märchenhaus pilz',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Ein gemütliches Haus in einem riesigen roten Pilz. Im runden Stiel aus Pilzstiel-Blöcken liegt die Wohnküche mit zwei '
     + 'Rundfenstern, eine Wendeltreppe um einen Holzpfosten führt hinauf unter den großen Hut. Dort ist ein runder Schlafraum mit '
     + 'Fenstern im Hutrand. Ringsum wächst ein Pilzgarten mit kleinen Riesenpilzen, Pilzlicht und vielen Pilzen auf Podsol und Myzel.',
-  facts: [
-    'Stiel 9 Blöcke breit (innen 7), Hut 19 Blöcke breit und 8 Ebenen hoch.',
-    'Pilzblöcke zeigen ihre Außenhaut auf jeder Seite, die frei liegt; wo zwei gleiche Pilzblöcke aneinanderstoßen, wird die Seite im Spiel '
-    + 'von selbst zur Innenseite.',
-    'Pilze auf Podsol und Myzel wachsen bei jedem Licht – auf Gras nur im Dunkeln.',
-    'Die Wendeltreppe hat 8 Stufen – eine volle Drehung – um einen geschälten Fichtenstamm.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -69,17 +61,10 @@ function inCap(x, y, z, shrink = 0) {
 }
 
 export default function build(b) {
-  b.phase('Gelände', 'Leg eine runde Wiese von knapp 30 Blöcken Durchmesser an. Rund um den Pilz kommen Flecken aus Podsol und Myzel – '
-    + 'darauf wachsen später die Pilze bei jedem Licht.', {
-    tips: ['Podsol und Myzel bekommst du mit einer Behutsamkeits-Spitzhacke oder -Schaufel.'],
-  });
+  b.phase('Gelände');
   buildGround(b);
 
-  b.phase('Stiel', 'Der Stiel ist ein Ring aus Pilzstiel-Blöcken mit 9 Blöcken Durchmesser und 7 Ebenen Höhe (Ebene 4 bis 10). Unten läuft er '
-    + 'in einen breiteren Fuß (Durchmesser 11) aus, auf Ebene 9 sitzt ein Ring mit demselben Durchmesser – wie beim echten Fliegenpilz. '
-    + 'Innen liegt ein Boden aus Fichtenbrettern. Lass im Süden die Tür und im Osten und Westen je ein rundes Fenster (3 × 3) frei.', {
-    tips: ['Auf den Achsen ist die Stielwand 5 Felder gerade – dort passen Tür und Rundfenster genau in die Mitte.'],
-  });
+  b.phase('Stiel');
   const plan = new Map([...stemCells(), ...capCells()]);
   buildFloor(b);
   placeMushroom(b, stemCells(), plan);
@@ -88,49 +73,26 @@ export default function build(b) {
   const underside = new Map([...cap].filter(([k]) => Number(k.split(',')[1]) === EG_CEILING));
   const capRest = new Map([...cap].filter(([k]) => Number(k.split(',')[1]) !== EG_CEILING));
 
-  b.phase('Decke und Hutunterseite', 'Auf Ebene 11 schließt eine Decke aus Fichtenbrettern den Stiel ab; rundherum liegt die Unterseite des '
-    + 'Huts aus rotem Pilzblock (Durchmesser 19), über der Stielwand aus Pilzstiel. Darüber kommt der Boden des Obergeschosses aus '
-    + 'Fichtenbrettern.', {
-    tips: ['Die Hutunterseite ragt bis zu 5 Blöcke über den Stiel hinaus: Bau sie Ring für Ring von innen nach außen, jeder Block an den vorigen.'],
-  });
+  b.phase('Decke und Hutunterseite');
   buildCeiling(b);
   placeMushroom(b, underside, plan);
 
-  b.phase('Hutrand und Kuppel', 'Ganz außen hängt der Hutrand eine Ebene unter der Hutunterseite (Ebene 10) – setz ihn von unten an die '
-    + 'Unterseite. Dann kommt der Hut selbst: eine flache Kuppel, 8 Ebenen hoch, deren Wand 1–2 Blöcke dick ist. Die weißen Punkte sind '
-    + 'Pilzstiel-Blöcke in der Hutwand.', {
-    tips: [
-      'Baue die Kuppel Ring für Ring nach innen. Jede Ebene ist etwas kleiner; ab der Hälfte wird sie schnell flach.',
-      'Setz die Punkte gleich beim Bauen ein, statt später Blöcke auszutauschen.',
-    ],
-  });
+  b.phase('Hutrand und Kuppel');
   placeMushroom(b, capRest, plan);
 
-  b.phase('Fenster, Tür und Treppe', 'Setz Glasscheiben in die Rundfenster (Ecken aus Birkentreppen) und in die vier Fenster im Hutrand, im Süden die '
-    + 'Fichtentür mit Stufe und kleinem Vordach. Innen windet sich eine Wendeltreppe aus Fichtentreppen (8 Stufen, eine volle Drehung) um einen '
-    + 'geschälten Fichtenstamm bis in das Obergeschoss.', {
-    tips: [
-      'Die Wendeltreppe startet an der Nordseite des Pfostens und dreht im Uhrzeigersinn; über den oberen Stufen bleibt die Decke offen.',
-      'Die Stufen in den Ecken berühren weder den Pfosten noch die Stufe davor mit einer ganzen Seite: Setz dort kurz einen Hilfsblock '
-        + 'darunter, setz die Treppe daran und bau ihn wieder ab.',
-    ],
-  });
+  b.phase('Fenster, Tür und Treppe');
   buildOpenings(b);
   buildSpiralStairs(b);
 
-  b.phase('Einrichtung', 'Unten liegt die Wohnküche, oben unter dem Hut der Schlafraum.');
-  b.step('Wohnküche im Stiel', 'Nordwand: Räucherofen, Ofen und Werkbank, daneben Fässer. Unter den Rundfenstern stehen ein Tisch mit Stuhl und eine '
-    + 'Doppeltruhe, dazu Topfpilze und ein Teppich.');
+  b.phase('Einrichtung');
+  b.step();
   furnishGround(b);
-  b.step('Schlafraum unter dem Hut', 'Ein Doppelbett an der Nordseite, Bücherregale, ein Lesepult, ein runder Tisch und ein Geländer um die Treppenöffnung.');
+  b.step();
   furnishUpper(b);
-  b.step('Licht', 'Laternen an der Decke der Wohnküche und unter dem Hut, damit kein Feld dunkel bleibt.');
+  b.step();
   lightHouse(b);
 
-  b.phase('Pilzgarten', 'Um das Haus wächst ein Pilzgarten: zwei kleine Riesenpilze (ein brauner mit flachem Hut, ein roter) mit Pilzlicht unter '
-    + 'dem Hut, Pilzlampen aus Pilzstiel und Pilzlicht, rote und braune Pilze auf Podsol und Myzel, Farne, Moos und ein Weg zur Tür.', {
-    tips: ['Pilzlicht leuchtet so hell wie eine Laterne und passt farblich perfekt zu Pilzen.'],
-  });
+  b.phase('Pilzgarten');
   buildGarden(b);
 }
 
@@ -382,16 +344,14 @@ function lightHouse(b) {
 // ---------------------------------------------------------------- Pilzgarten
 
 function buildGarden(b) {
-  b.step('Kleine Riesenpilze', 'Ein brauner Riesenpilz mit flachem Hut im Nordosten, ein kleiner roter im Westen – beide mit Pilzlicht unter dem Hut. '
-    + 'Die Seitenteile des roten Huts hängen wie im Spiel eine Ebene tiefer und berühren das Hutdach nur an den Kanten: Setz sie an einen '
-    + 'Hilfsblock und bau ihn danach ab.');
+  b.step();
   brownMushroom(b, 9, -7);
   redMushroom(b, -10, 4);
-  b.step('Pilzlampen und Weg', 'Neben dem Weg stehen Pilzlampen: zwei Pilzstiel-Blöcke, darauf Pilzlicht und ein Deckel aus rotem Pilzblock.');
+  b.step();
   // follow: der Weg liegt auf dem Gelände und läuft am Rand mit ihm hinab.
   path(b, { x: 0, y: -1, z: 6, facing: 'south', length: 8, width: 2, mix: 'gemischt', wiggle: 1, follow: true, seed: 5 });
   for (const [x, z] of [[-2, 8], [2, 11]]) mushroomLamp(b, x, z);
-  b.step('Pilze und Pflanzen', 'Auf Podsol und Myzel setzt du rote und braune Pilze, dazu Farne, Moos und ein paar Büsche.');
+  b.step();
   for (let z = -14; z <= 14; z++) {
     for (let x = -14; x <= 14; x++) {
       const ground = b.get(x, -1, z).split('[')[0];

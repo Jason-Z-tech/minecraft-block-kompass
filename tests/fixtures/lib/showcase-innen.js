@@ -15,9 +15,7 @@ export const meta = {
   tags: ['Test', 'Bibliothek'],
   aliases: ['schaukasten einrichtung'],
   accuracy: 'eigenes',
-  difficulty: 2,
   description: 'Schlafzimmer, Küche mit Esstisch, Bibliothek mit Zaubertisch, Lager, Werkstatt, Wohnzimmer mit Kamin und ein Elternschlafzimmer – jeder Raum mit lightRoom beleuchtet.',
-  facts: ['Testmodul für die Hilfsbibliothek'],
   sources: [],
   credits: null,
   tested: null,
@@ -44,7 +42,7 @@ const planksFloor = (b, id) => (x1, z1, x2, z2) => b.fill(x1, 0, z1, x2, 0, z2, 
 const patternFloor = (b, pattern, blocks) => (x1, z1, x2, z2) => floorPattern(b, { x: x1, y: 0, z: z1, width: x2 - x1 + 1, depth: z2 - z1 + 1, pattern, blocks });
 
 export default function build(b) {
-  b.phase('Räume', 'Baue Boden, Wände, Decke, Türen und Fenster der sieben Räume.');
+  b.phase('Räume');
   const rooms = {
     bed: room(b, { x1: 1, z1: 1, x2: 7, z2: 6, floor: patternFloor(b, 'border', [spruce.planks, WOOD.schwarzeiche.planks]) }),
     kitchen: room(b, { x1: 10, z1: 1, x2: 16, z2: 6, floor: patternFloor(b, 'checker', ['polished_andesite', 'polished_diorite']) }),
@@ -55,27 +53,27 @@ export default function build(b) {
     parents: room(b, { x1: 22, z1: 11, x2: 28, z2: 16, floor: planksFloor(b, WOOD.kirsche.planks) }),
   };
 
-  b.phase('Einrichtung', 'Stell die Möbel in die Räume.');
-  b.step('Schlafzimmer');
+  b.phase('Einrichtung');
+  b.step();
   bedroom(b, { x: 1, y: 1, z: 1, width: 7, depth: 6 });
-  b.step('Küche mit Esstisch');
+  b.step();
   kitchen(b, { x: 10, y: 1, z: 1, width: 7 });
   diningTable(b, { x: 12, y: 1, z: 4, length: 3, width: 1 });
-  b.step('Bibliothek mit Zaubertisch');
+  b.step();
   bookWall(b, { x: 19, y: 1, z: 1, width: 9, height: 3, ladder: true });
   enchantingSetup(b, { x: 23, y: 1, z: 5 });
-  b.step('Lager');
+  b.step();
   storage(b, { x: 30, y: 1, z: 1, width: 6, height: 2 });
   storage(b, { x: 30, y: 1, z: 5, facing: 'east', width: 4, height: 2, barrel: false });
-  b.step('Werkstatt');
+  b.step();
   workshop(b, { x: 1, y: 1, z: 11, width: 8 });
-  b.step('Wohnzimmer mit Kamin');
+  b.step();
   fireplace(b, { x: 15, y: 1, z: 11, height: 4 });
   diningTable(b, { x: 13, y: 1, z: 15, length: 5, width: 1, top: 'carpet', cloth: 'rot', headChairs: false, wood: 'schwarzeiche' });
   bookWall(b, { x: 11, y: 1, z: 17, facing: 'east', width: 3, height: 2, crown: false, chiseled: true });
-  b.step('Elternschlafzimmer');
+  b.step();
   bedroom(b, { x: 22, y: 1, z: 11, width: 7, depth: 6, double: true, color: 'blau', rug: 'hellgrau', wood: 'kirsche' });
 
-  b.phase('Licht', 'Häng Laternen auf, bis kein Feld mehr dunkel ist (Monster spawnen nur bei Blocklicht 0).');
+  b.phase('Licht');
   for (const box of Object.values(rooms)) lightRoom(b, box);
 }

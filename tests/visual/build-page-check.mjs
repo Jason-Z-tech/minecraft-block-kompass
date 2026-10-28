@@ -75,16 +75,29 @@ async function desktopFlow(server) {
     await waitIdle(page);
     await shot(page, 'desktop-02-fertig');
     check('Desktop: Bau geladen', await page.eval("document.querySelectorAll('.bv-step').length === 18"), '18 Schritte in der Anleitung');
+    // Anleitung nur mit Kapitel (Nummer, Titel, Schrittzahl) und Schritten (Nummer, Blockzahl, Ebene)
+    const removed = await page.eval("document.querySelectorAll('.bv-step__title, .bv-step__text, .bv-chapter__text, .bv-tips, .bv-note, .bv-notes, .bv-marker, .difficulty').length");
+    check('Keine Schritt-Namen, Texte, Tipps, Notizen oder Schwierigkeit', removed === 0, `${removed} Elemente`);
+    const steps = await page.eval("[...document.querySelectorAll('.bv-step')].map((b) => [...b.children].map((c) => c.className + '=' + c.textContent).join(' | '))");
+    check('Schritte zeigen nur Nummer, Blockzahl und Ebene', steps.length === 18 && steps.every((line) => /^bv-step__num=Schritt \d+ \| bv-step__meta=[\d.]+ (?:Block|Blöcke)( · y = -?\d+)?$/.test(line)), steps.slice(0, 2).join(' / '));
+    const chapters = await page.eval("[...document.querySelectorAll('.bv-chapter__title')].map((h) => h.textContent)");
+    check('Kapitel-Titel bleiben', chapters.join(',') === 'Fundament,Wände,Tür und Fenster,Dach,Einrichtung,Vorgarten', chapters.join(', '));
 
     // Tastatur: Pos1, dann → (Schritt 1)
     await page.eval('document.activeElement?.blur(); document.body.focus()');
     await page.key('Home');
+    await page.waitFor('window.__buildView.context.p === 0', 5000);
+    const start = await page.eval("[...document.querySelectorAll('.bv-player__now p')].map((p) => p.textContent)");
+    check('Player vor dem Start: Kapitel- und Schrittzahl', start[0] === '6 Kapitel · 18 Schritte' && start[1] === 'Bereit zum Bauen', start.join(' | '));
     await page.key('ArrowRight', 'ArrowRight');
     await page.waitFor('window.__buildView.context.p === 1', 5000);
     await waitIdle(page);
     const label1 = await page.eval("document.querySelector('.bv-player__label').textContent");
     check('Tastatur: Pos1 und → zeigen Schritt 1', /Schritt 1/.test(label1), label1);
     check('Anleitung markiert Schritt 1', await page.eval("document.querySelector('.bv-step.is-current')?.dataset.step === '0'"));
+    const now = await page.eval("({ lines: [...document.querySelectorAll('.bv-player__now p')].map((p) => p.textContent), live: document.querySelector('.bv-player p[aria-live]').textContent })");
+    check('Player: Kapitel, Blockzahl und Ebene statt Schritt-Name und Anleitungssatz', now.lines.join(' | ') === 'Kapitel 1 von 6 | Fundament | 63 Blöcke · y = 0', now.lines.join(' | '));
+    check('Live-Region: „Schritt 1 von 18 (Fundament).“', now.live === 'Schritt 1 von 18 (Fundament).', now.live);
     await shot(page, 'desktop-03-schritt-1');
 
     // Knopf „weiter“ mehrfach, dann Mitte per Regler
@@ -145,6 +158,8 @@ async function desktopFlow(server) {
     await page.waitFor("document.querySelector('.bv-stage .bv-tooltip')", 4000).catch(() => {});
     const tip = await page.eval("document.querySelector('.bv-stage .bv-tooltip')?.textContent ?? ''");
     check('Tooltip beim Zeigen auf einen Block', /minecraft:/.test(tip), tip.slice(0, 80));
+    const tipStep = await page.eval("[...document.querySelectorAll('.bv-stage .bv-tooltip *')].map((n) => n.textContent).find((t) => /^Schritt /.test(t)) ?? ''");
+    check('Tooltip: „Schritt n“ ohne Schritt-Namen', /^Schritt \d+$/.test(tipStep), tipStep);
     await shot(page, 'desktop-08-tooltip');
     // Klick auf den Block springt zu seinem Schritt
     const hoverStep = await page.eval('window.__buildView.viewer.hover?.step ?? null');
@@ -166,7 +181,11 @@ async function desktopFlow(server) {
     await shot(page, 'desktop-10-material-abgehakt');
     // Umfang „Schritt“ und Suche ohne Treffer
     await page.click('.bv-segmented__option:nth-child(3)');
-    check('Material für den aktuellen Schritt', await page.eval("/Schritt/.test(document.querySelector('.bv-materials__scope').textContent)"));
+    const scopeText = await page.eval("document.querySelector('.bv-materials__scope').textContent");
+    check('Material für den aktuellen Schritt: „Schritt n“', /^Schritt \d+$/.test(scopeText), scopeText);
+    await page.click('.bv-segmented__option:nth-child(2)');
+    const phaseText = await page.eval("document.querySelector('.bv-materials__scope').textContent");
+    check('Material für das Kapitel: „Kapitel n: Titel“', /^Kapitel \d+: \S/.test(phaseText), phaseText);
     await page.click('.bv-segmented__option:nth-child(1)');
     await page.type('.bv-materials__search', 'xyzgibtsnicht');
     await sleep(200);
@@ -196,12 +215,14 @@ async function desktopFlow(server) {
     check('Ebenen-Plan: Tooltip über einem Block', /minecraft:/.test(planTip), planTip.slice(0, 80));
     await shot(page, 'desktop-12-ebenen-plan');
     await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 });
-    // Schritt 4 (Index 3) ist „Wände – Ebene 4“ (y = 3)
+    // Schritt 4 (Index 3) baut die Wände auf Ebene 4 (y = 3)
     check('Ebenen-Plan folgt dem Schritt', await page.eval("/Ebene 4 von/.test(document.querySelector('.bv-plan__layer').textContent)"), await page.eval("document.querySelector('.bv-plan__layer').textContent"));
 
     // Infos
     await page.click('[data-tab="info"]');
     await sleep(200);
+    const info = await page.eval("document.querySelector('.bv-info').textContent");
+    check('Infos: Beschreibung ja, Schwierigkeit und Wissenswertes nein', /Ein kleines Haus/.test(info) && !/Schwierigkeit|Wissenswert/.test(info), info.slice(0, 80));
     await shot(page, 'desktop-13-infos');
 
     // Abhaken bleibt nach Neuladen

@@ -64,7 +64,7 @@ function readRegion(name, region, ctx) {
   const words = longArrayWords(states);
   const mask = (1 << bits) - 1;
   const tick = progressTicker(onProgress, `Lese ${where}`, volume);
-  collector.begin(ctx.multiple ? where : 'Aufbau', ctx.text);
+  collector.begin(ctx.multiple ? where : 'Aufbau');
   let outside = 0;
   let x = 0, y = 0, z = 0;
   const [ox, oy, oz] = min;

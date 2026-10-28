@@ -19,14 +19,7 @@ export const meta = {
     'rowhouse', 'terraced houses', 'häuserzeile', 'haeuserzeile', 'altbau', 'stadhäuser', 'stadthauser', 'brownstone', 'grachtenhaus',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Eine Häuserzeile aus vier schmalen Stadthäusern: ein rotes Ziegelhaus mit zweigeschossigem Erker und Gaube, ein Granithaus mit Flachdach und Gesims, ein ockerfarbenes Terrakottahaus mit Giebel zur Straße und Balkonen und ein graublaues Eckhaus mit Gaube und Giebelfenster. Jedes Haus hat eine Eingangstreppe vom Gehweg, drei eingerichtete Etagen und hinten einen kleinen Garten. Davor liegen Gehweg, Bordstein, Straße und Laternen.',
-  facts: [
-    'Vier Häuser, je 6 oder 7 Blöcke breit und 11 tief',
-    'Drei Etagen je 4 Blöcke hoch, das Erdgeschoss liegt 2 Blöcke über dem Gehweg',
-    'Jedes Haus hat eine eigene Treppe im Haus, die Läufe liegen übereinander an der Westwand',
-    'Erker, Balkone und Gauben sitzen auf Konsolen aus umgedrehten Treppen',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -73,9 +66,7 @@ const inner = (h) => ({ a: h.x0 + 1, c: h.x1 - 1 });
 // ------------------------------------------------------------------ Straße, Gehweg, Gärten
 
 function street(b) {
-  b.phase('Straße, Gehweg und Gärten', 'Leg zuerst den Untergrund: hinten die Gärten aus Gras, vorne den Gehweg aus glattem Stein mit Querstreifen aus poliertem Andesit, dann den Bordstein und eine Ebene tiefer die Straße aus grauem Beton mit weißer Mittellinie.', {
-    tips: ['Die Straße liegt einen Block tiefer als der Gehweg – so wirkt der Bordstein echt.'],
-  });
+  b.phase('Straße, Gehweg und Gärten');
   b.fill(-1, -2, -6, 26, -2, 21, 'stone');
   b.fill(-1, -1, -6, 26, -1, 15, 'dirt');
   b.fill(-1, 0, -6, 26, 0, -1, 'grass_block');
@@ -89,9 +80,7 @@ function street(b) {
 // ------------------------------------------------------------------ Rohbau
 
 function foundations(b) {
-  b.phase('Fundamente und Erdgeschossboden', 'Jedes Haus bekommt einen 2 Blöcke hohen Sockel auf dem Gehweg-Niveau. Seine obere Ebene ist zugleich der Erdgeschossboden: innen legst du sie aus Holzdielen, außen bleibt der Sockel sichtbar. Das Erdgeschoss liegt damit 2 Blöcke über dem Gehweg.', {
-    tips: ['Die vier Häuser stehen direkt nebeneinander, jedes mit eigener Seitenwand – zwischen zwei Häusern liegen also immer zwei Wände.'],
-  });
+  b.phase('Fundamente und Erdgeschossboden');
   for (const h of HOUSES) {
     const { a, c } = inner(h);
     b.fill(h.x0, 1, 0, h.x1, 2, DEPTH, h.plinth);
@@ -100,9 +89,7 @@ function foundations(b) {
 }
 
 function walls(b) {
-  b.phase('Wände und Decken', 'Mauere die Wände Ebene für Ebene hoch, jedes Haus in seinem Material. An den Fassadenecken sitzen helle Eckquader (jede zweite Ebene), auf Höhe der Decken läuft vorne ein heller Streifen als Gesims um, innen legst du dort die Holzdecke ein. Über der Treppe (an der Westwand innen) bleiben in jeder Decke drei Felder hintereinander offen – sonst stößt du beim Hinaufgehen mit dem Kopf an.', {
-    tips: ['Lass die Fensteröffnungen beim Mauern gleich frei oder setz die Wand durch und schlag sie danach heraus – beides geht.'],
-  });
+  b.phase('Wände und Decken');
   for (const h of HOUSES) {
     const { a, c } = inner(h);
     b.walls(h.x0, 3, 0, h.x1, WALL_TOP, DEPTH, h.wall);
@@ -126,9 +113,9 @@ function walls(b) {
 // ------------------------------------------------------------------ Fenster, Türen, Erker, Balkone
 
 function windowsAndDoors(b) {
-  b.phase('Fenster, Türen, Erker und Balkone', 'Setz Fenster und Türen in die fertigen Wände. Jedes Haus hat seinen eigenen Stil: weiße Fensterbänke am Ziegelhaus, Rahmen aus poliertem Diorit am Granithaus, Blumenkästen und Läden am Terrakottahaus, Fensterläden aus Birke am Eckhaus.');
+  b.phase('Fenster, Türen, Erker und Balkone');
   for (const h of HOUSES) {
-    b.step(`${h.name}: Fenster und Tür`);
+    b.step();
     if (h.name === 'Ziegelhaus') brickFront(b, h);
     else if (h.name === 'Granithaus') graniteFront(b, h);
     else if (h.name === 'Terrakottahaus') terracottaFront(b, h);
@@ -215,9 +202,7 @@ function backWindows(b, h) {
 // ------------------------------------------------------------------ Dächer
 
 function roofs(b) {
-  b.phase('Dächer', 'Jedes Haus bekommt sein eigenes Dach: Satteldach aus Tiefenschieferfliesen mit Gaube auf dem Ziegelhaus, ein Flachdach mit Brüstung auf dem Granithaus, ein Ziegeldach mit dem Giebel zur Straße auf dem Terrakottahaus und ein Satteldach aus Tiefenschieferziegeln mit Gaube und Rundfenster im Ostgiebel auf dem Eckhaus. Die Treppen zeigen mit der hohen Seite immer zum First.', {
-    tips: ['Fang bei jedem Dach mit der untersten Reihe an der Wandkrone an und arbeite dich nach oben.'],
-  });
+  b.phase('Dächer');
   for (const h of HOUSES) {
     if (h.roof.type === 'flat') {
       b.walls(h.x0, ROOF_Y, 0, h.x1, ROOF_Y, DEPTH, 'granite_wall');
@@ -227,7 +212,7 @@ function roofs(b) {
     const type = h.roof.type === 'hip' ? 'hip' : 'gable';
     b.roof({ x1: h.x0, z1: 0, x2: h.x1, z2: DEPTH, y: ROOF_Y, type, axis, stairs: h.roof.stairs, slab: h.roof.slab, full: h.roof.full, overhang: 0 });
   }
-  b.step('Traufgesimse', 'Unter die Dachkante kommt vorne und hinten eine Reihe umgedrehter Treppen als Gesims – das gibt den Dächern einen Überstand.');
+  b.step();
   for (const h of HOUSES) {
     const stairsId = h.roof.type === 'flat' ? 'polished_granite_stairs' : h.roof.stairs;
     for (let x = h.x0; x <= h.x1; x++) {
@@ -235,7 +220,7 @@ function roofs(b) {
       b.set(x, WALL_TOP, -1, st(stairsId, 'south', 'top'));
     }
   }
-  b.step('Gauben, Giebelfenster und Schornsteine', 'Setz die Gauben auf die Dachfläche (Vorderwand auf der Wandkrone), das kleine Fenster in den Giebel des Terrakottahauses, die Rundfenster in die beiden Außengiebel und die Schornsteine aus Ziegeln.');
+  b.step();
   dormer(b, { x: 3, y: ROOF_Y + 1, z: DEPTH, facing: 'south', width: 3, wall: 'bricks', corner: 'smooth_quartz', stairs: 'deepslate_tile_stairs' });
   dormer(b, { x: 22, y: ROOF_Y + 1, z: DEPTH, facing: 'south', width: 3, wall: 'light_blue_terracotta', corner: 'white_terracotta', stairs: 'deepslate_brick_stairs' });
   window(b, { x: 16, y: ROOF_Y + 1, z: DEPTH, facing: 'south', width: 1, height: 2, sill: 'smooth_sandstone_stairs' });
@@ -248,9 +233,9 @@ function roofs(b) {
 // ------------------------------------------------------------------ Treppen
 
 function stairsAndStoops(b) {
-  b.phase('Treppen und Eingangsstufen', 'Innen führt in jedem Haus eine gerade Treppe an der Westwand nach oben: 5 Stufen je Etage, Blick beim Setzen nach Norden. Die unterste Stufe steht einen Block hinter der Fassade, die oberste ersetzt das Deckenbrett gleich nördlich der Öffnung – so kommst du oben ohne Springen an. Die Läufe liegen genau übereinander. Oben sichern drei Zaunpfosten die Öffnung zum Raum hin. Vor jeder Haustür kommen zwei Stufen vom Gehweg hinauf, mit Wangen und Geländer.');
+  b.phase('Treppen und Eingangsstufen');
   for (const h of HOUSES) {
-    b.step(`${h.name}: Treppen`);
+    b.step();
     const { a } = inner(h);
     for (const y of [LEVELS[0], LEVELS[1]]) straightStairs(b, { x: a, y: y + 1, z: 8, facing: 'north', width: 1, height: 5, stairs: h.wood.stairs, support: null });
     for (const y of [LEVELS[1] + 1, LEVELS[2] + 1]) for (let z = 5; z <= 7; z++) b.set(a + 1, y, z, h.wood.fence);
@@ -261,12 +246,12 @@ function stairsAndStoops(b) {
 // ------------------------------------------------------------------ Einrichtung
 
 function furnish(b) {
-  b.phase('Einrichtung', 'Richte jede Etage ein. Unten Küche, Esstisch und Wohnecke, im ersten Stock Schlafzimmer und Arbeitsplatz, oben je nach Haus ein Atelier, eine Bibliothek, ein Kinderzimmer oder eine Werkstatt.');
+  b.phase('Einrichtung');
   for (const h of HOUSES) {
     const { a, c } = inner(h);
     const wide = c - a + 1 === 5;
     const wood = h.wood;
-    b.step(`${h.name}: Erdgeschoss`, 'Küchenzeile an der Rückwand, davor der Esstisch, vorne am Fenster eine Sitzecke.');
+    b.step();
     const y0 = LEVELS[0] + 1;
     kitchen(b, { x: a, y: y0, z: 1, facing: 'south', width: c - a + 1, wood });
     diningTable(b, { x: a + 2, y: y0, z: 3, length: wide ? 2 : 1, width: 1, wood, headChairs: wide });
@@ -277,7 +262,7 @@ function furnish(b) {
     b.set(c - 1, y0, 7, b.get(c - 1, y0, 6));
     b.set(a + 1, y0, 9, 'potted_fern');
 
-    b.step(`${h.name}: erster Stock`, 'Hinten das Schlafzimmer mit dem Kopfteil an der Rückwand, vorne ein Schreibtisch am Fenster und ein Bücherregal.');
+    b.step();
     const y1 = LEVELS[1] + 1;
     bedroom(b, { x: a + 1, y: y1, z: 1, facing: 'south', width: c - a, depth: 3, wood, color: h.color, rug: null, double: c - a >= 4 });
     b.set(c, y1, 8, slab(wood.slab, 'top'));
@@ -287,7 +272,7 @@ function furnish(b) {
     b.set(c, y1 + 1, 6, 'bookshelf');
     b.set(c, y1 + 2, 6, 'potted_azalea_bush');
 
-    b.step(`${h.name}: oberster Stock`);
+    b.step();
     const y2 = LEVELS[2] + 1;
     topFloor(b, h, a, c, y2);
   }
@@ -324,25 +309,23 @@ function topFloor(b, h, a, c, y) {
 }
 
 function lights(b) {
-  b.phase('Licht', 'Häng in jede Etage Laternen an die Decke und stell eine Laterne auf den Dachboden, damit nirgends Monster erscheinen. Zwischen den Häusern stehen Straßenlaternen mit Ausleger zur Straße.');
-  b.step('Laternen im Haus');
+  b.phase('Licht');
+  b.step();
   for (const h of HOUSES) {
     const { a, c } = inner(h);
     for (const y of LEVELS) lightRoom(b, { x1: a, y1: y + 1, z1: 1, x2: c, y2: y + 4, z2: DEPTH - 1 });
     if (h.roof.type !== 'flat') lightRoom(b, { x1: a, y1: ROOF_Y, z1: 1, x2: c, y2: ROOF_Y, z2: DEPTH - 1 }, { mode: 'floor' });
   }
-  b.step('Straßenlaternen', 'Die Laternenmasten aus Schwarzeichenzaun auf einem Sockel aus poliertem Schwarzstein stehen am Bordstein, der Ausleger zeigt zur Straße.');
+  b.step();
   for (const x of [-1, 7, 13, 20, 26]) lampPost(b, { x, y: 1, z: 14, facing: 'south', height: 5, post: 'dark_oak_fence', base: 'polished_blackstone', style: 'arm' });
 }
 
 function gardens(b) {
-  b.phase('Gärten und Gehweg', 'Hinter jedem Haus liegt ein kleiner Garten mit Holzzaun: Beet, Busch, Apfelbaum und Gemüse. Vorne auf den Gehweg kommen eine Bank, ein Blumenkübel und ein Mülleimer aus einem Kessel.', {
-    tips: ['Karotten brauchen Ackerboden mit Wasser höchstens 4 Blöcke entfernt – darum liegt der Wasserblock mitten im Gemüsebeet.'],
-  });
-  b.step('Gartenzäune');
+  b.phase('Gärten und Gehweg');
+  b.step();
   for (let x = -1; x <= 26; x++) b.set(x, 1, -6, WOOD.fichte.fence);
   for (const x of [-1, 6, 12, 19, 26]) for (let z = -5; z <= -1; z++) b.set(x, 1, z, WOOD.fichte.fence);
-  b.step('Gärten');
+  b.step();
   tree(b, { x: 3, y: 1, z: -3, species: 'eiche', size: 'klein', seed: 2 });
   flowerBed(b, { x: 7, y: 0, z: -5, width: 5, depth: 2, facing: 'south', palette: 'kuehl', seed: 3 });
   bush(b, { x: 9, y: 1, z: -2, size: 'klein', leaves: 'birke', seed: 1 });
@@ -354,7 +337,7 @@ function gardens(b) {
   flowerBed(b, { x: 20, y: 0, z: -5, width: 6, depth: 2, facing: 'south', palette: 'rosa', seed: 6 });
   b.set(24, 1, -2, formatState('dark_oak_stairs', { facing: 'north', half: 'bottom' }));
   b.set(23, 1, -2, formatState('dark_oak_stairs', { facing: 'north', half: 'bottom' }));
-  b.step('Gehweg', 'Bank aus Schwarzeichentreppen mit Falltüren als Armlehnen, ein Blumenkübel und ein Kessel als Mülleimer.');
+  b.step();
   b.set(9, 1, 14, st('dark_oak_stairs', 'south'));
   b.set(10, 1, 14, st('dark_oak_stairs', 'south'));
   b.set(8, 1, 14, trapdoorOpen('dark_oak_trapdoor', 'west'));

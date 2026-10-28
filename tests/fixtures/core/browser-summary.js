@@ -20,7 +20,7 @@ export function summarize(result) {
     blockCount: result.blockCount,
     size: result.size,
     phases: result.phases.length,
-    steps: result.steps.map((s) => `${s.title}:${s.blockCount}`),
+    steps: result.steps.map((s) => `${s.phase}:${s.layerY}:${s.blockCount}`),
     materials: result.materials,
     paletteSize: result.volume.palette.length,
     hash: hashVolume(result.volume),

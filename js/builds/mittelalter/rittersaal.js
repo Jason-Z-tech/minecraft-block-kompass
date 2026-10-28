@@ -18,17 +18,10 @@ export const meta = {
     'bankettsaal', 'banquet hall', 'halle', 'palas', 'saal', 'king hall', 'königssaal', 'koenigssaal', 'ritersaal', 'rittersal',
   ],
   accuracy: 'eigenes',
-  difficulty: 3,
   description: 'Eine lange Halle aus Steinziegeln mit Strebepfeilern und hohen Spitzbogenfenstern. Innen trägt ein offener '
     + 'Dachstuhl aus Schwarzeiche das Schieferdach: Wandstützen, Zugbalken mit Kopfbändern, Hängesäulen und eine '
     + 'Holzschalung. An den Zugbalken hängen drei Kronleuchter, an den Wänden Banner. Zwei lange Tafeln flankieren den roten '
     + 'Läufer zum Podest mit zwei Thronen, an der Ostwand brennt ein großer Kamin.',
-  facts: [
-    'Halle 15 × 29 Blöcke außen, innen 13 × 27; Wände 9 Blöcke hoch, First 18 Blöcke über dem Boden.',
-    'Sieben Dachbinder im Abstand von 4 Blöcken, jeder mit Wandstütze, Zugbalken, Kopfbändern und Hängesäule.',
-    'Zwei Tafeln mit je 15 Plätzen pro Seite plus Stirnplätze – zusammen 64 Stühle aus Treppen.',
-    'Alle begehbaren Felder sind beleuchtet (Kronleuchter, Kamin, Laternen am Podest), dort spawnen keine Monster.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -47,8 +40,6 @@ const TRUSSES = [-12, -8, -4, 0, 4, 8, 12];
 const BAYS = [-10, -6, -2, 2, 6, 10];
 const CHANDELIERS = [-8, 0, 8];
 const HEARTH_Z = 10; // Kamin an der Ostwand
-const BASE = -2;
-const lvl = (y) => y - BASE + 1;
 const roofY = (x) => WALL_TOP + (W + 1 - Math.abs(x)); // Höhe der Dachtreppe über Spalte x (mit Überstand 1)
 const HALL_BOX = [-W - 2, FLOOR, -L - 1, W + 2, roofY(0), L + 1]; // Mauern, Pfeiler und Giebel (für die Alterung)
 
@@ -58,11 +49,7 @@ function wallStone(b, y) {
 }
 
 function groundAndFloor(b) {
-  b.phase('Gelände und Fundament', 'Leg den Bauplatz an und gieß das Fundament: 17 × 31 Blöcke Bruchstein, eine Ebene tief im '
-    + 'Gras. Darauf kommt der Fußboden der Halle – ein Schachbrett aus polierten Andesit- und Dioritplatten, mit einem Rand '
-    + 'aus Steinziegeln. Vom Portal führt ein Kiesweg nach Süden.', {
-    tips: ['Lege beim Schachbrett zuerst eine Reihe komplett, dann jede weitere versetzt – so verrutscht das Muster nicht.'],
-  });
+  b.phase('Gelände und Fundament');
   terrain(b, { x: -14, y: -2, z: -20, width: 29, depth: 47, height: 2, surface: 'gras', seed: 'rittersaal' });
   b.fill(-W - 1, 0, -L - 1, W + 1, 0, L + 1, stone.rough);
   floorPattern(b, {
@@ -75,11 +62,7 @@ function groundAndFloor(b) {
 }
 
 function walls(b) {
-  b.phase('Mauern und Strebepfeiler', `Zieh die Außenmauern 1 Block dick bis Ebene ${lvl(WALL_TOP)} hoch, die unterste Reihe mit `
-    + 'Bruchstein und Moos. Außen an den Längsseiten stehen alle 4 Blöcke Strebepfeiler: unten 2 Blöcke tief, oben 1, die '
-    + 'Absätze mit Steinziegeltreppen abgedeckt. Fenster und Portal schlägst du später heraus.', {
-    tips: ['Setz zuerst die Strebepfeiler – sie markieren gleich die Lage der Dachbinder innen.'],
-  });
+  b.phase('Mauern und Strebepfeiler');
   weatherNew(b, HALL_BOX, 0.12, () => drawWalls(b));
 }
 
@@ -109,23 +92,16 @@ function drawWalls(b) {
 }
 
 function truss(b) {
-  b.phase('Dachstuhl', 'Jetzt kommt das Holz: sieben Dachbinder aus Schwarzeiche, je einer an jedem Strebepfeiler.', {
-    tips: ['Baue den Dachstuhl vor dem Dach: dann kannst du von den Zugbalken aus bequem die Dachtreppen setzen.'],
-  });
-  b.step('Wandstützen', `Stell an jedem Binder innen vor die Längswände einen geschälten Schwarzeichenstamm von Ebene ${lvl(2)} `
-    + `bis Ebene ${lvl(WALL_TOP - 1)} – das sind die Wandstützen.`);
+  b.phase('Dachstuhl');
+  b.step();
   for (const z of TRUSSES) for (const x of [-W + 1, W - 1]) b.fill(x, 2, z, x, WALL_TOP - 1, z, `${darkOak.strippedLog}[axis=y]`);
-  b.step('Zugbalken und Kopfbänder', `Leg auf Ebene ${lvl(WALL_TOP)} quer durch die Halle je einen Zugbalken (Stamm, liegend in `
-    + 'Ost-West-Richtung) von Wand zu Wand. Unter beide Enden kommt ein Kopfband: eine umgedrehte Treppe mit der hohen Seite '
-    + 'zur Wand.');
+  b.step();
   for (const z of TRUSSES) {
     b.fill(-W + 1, WALL_TOP, z, W - 1, WALL_TOP, z, `${darkOak.log}[axis=x]`);
     b.stairs(-W + 2, WALL_TOP - 1, z, darkOak.stairs, { facing: 'west', half: 'top' });
     b.stairs(W - 2, WALL_TOP - 1, z, darkOak.stairs, { facing: 'east', half: 'top' });
   }
-  b.step('Hängesäulen, Streben und Firstbalken', 'Auf jeden Zugbalken stellst du in der Mitte eine Hängesäule (Stamm, '
-    + `senkrecht) bis Ebene ${lvl(roofY(0) - 2)}, links und rechts davon je eine kurze Strebe aus Schwarzeichenzaun. Oben `
-    + 'verbindet der Firstbalken alle Säulen über die ganze Länge.');
+  b.step();
   for (const z of TRUSSES) {
     b.fill(0, WALL_TOP + 1, z, 0, roofY(0) - 2, z, `${darkOak.strippedLog}[axis=y]`);
     for (const x of [-3, 3]) b.fill(x, WALL_TOP + 1, z, x, roofY(x) - 2, z, darkOak.fence);
@@ -134,14 +110,7 @@ function truss(b) {
 }
 
 function roof(b) {
-  b.phase('Dach', 'Das Satteldach aus Tiefenschieferziegeln hat 1 Block Überstand und einen First aus Stufen. Die Giebel '
-    + 'mauerst du mit Steinziegeln bis unter das Dach. Unter die Dachtreppen kommt innen eine Schalung aus umgedrehten '
-    + 'Fichtentreppen – an den Bindern aus Schwarzeiche, so zeichnen sich die Sparren ab.', {
-    tips: [
-      'Für jede Reihe der Schalung: umgedrehte Treppe direkt neben (innen) und auf gleicher Höhe wie die Dachtreppe darüber, hohe Seite nach außen.',
-      'Setz das Dach Reihe für Reihe von beiden Traufen her – die Reihen treffen sich am First.',
-    ],
-  });
+  b.phase('Dach');
   weatherNew(b, HALL_BOX, 0.12, () => {
     b.roof({ x1: -W, z1: -L, x2: W, z2: L, y: WALL_TOP, type: 'gable', axis: 'z', stairs: slate.tileStairs, slab: slate.tileSlab, full: stone.block, overhang: 1 });
   });
@@ -173,9 +142,7 @@ function weatherNew(b, [x1, y1, z1, x2, y2, z2], share, draw) {
 }
 
 function openings(b) {
-  b.phase('Fenster und Portal', 'Zwischen den Strebepfeilern kommen hohe Spitzbogenfenster (3 breit, 5 hoch) mit '
-    + 'Fensterbank, in beide Giebel ein Rundfenster. Im Süden öffnet sich das Portal: ein Spitzbogen mit drei Fichtentüren '
-    + 'nebeneinander und einem Bogenfeld aus Schwarzeiche, davor eine breite Stufe, daneben Laternen und zwei schmale Fenster.');
+  b.phase('Fenster und Portal');
   for (const z of BAYS) {
     for (const [x, facing] of [[-W, 'west'], [W, 'east']]) {
       if (facing === 'east' && Math.abs(z - HEARTH_Z) <= 2) continue;
@@ -195,12 +162,7 @@ function openings(b) {
 }
 
 function hearth(b) {
-  b.phase('Kamin und Schornstein', 'An der Ostwand nahe dem Portal baust du den großen Kamin: eine Feueröffnung 3 breit und 3 hoch '
-    + 'mit drei Lagerfeuern, Wangen und Sturz aus Steinziegeln, darüber ein gemeißelter Schlussstein und ein Sims aus '
-    + 'umgedrehten Schwarzeichentreppen. Der Kaminmantel geht bis unter das Dach. Außen steigt der Schornstein an der Wand hoch: '
-    + 'unten 3 Blöcke tief, dann 2 und zuletzt 1, jeder Absatz mit Treppen abgeschrägt; oben raucht ein Lagerfeuer.', {
-    tips: ['Lagerfeuer in einem Kamin: Stell sie mit Blick in den Raum, dann zeigt die Glut nach vorne.'],
-  });
+  b.phase('Kamin und Schornstein');
   const z0 = HEARTH_Z;
   for (let y = 2; y <= WALL_TOP; y++) for (let z = z0 - 2; z <= z0 + 2; z++) b.set(W - 1, y, z, stone.block);
   for (let y = 5; y <= WALL_TOP; y++) for (let z = z0 - 2; z <= z0 + 2; z++) b.set(W - 2, y, z, stone.block);
@@ -217,7 +179,6 @@ function hearth(b) {
   b.set(W - 3, 7, z0 + 2, 'candle[candles=3,lit=true]');
   b.set(W - 3, 7, z0, 'potted_red_tulip');
   b.set(W - 3, 9, z0, `${COLOR.rot.wallBanner}[facing=west]`);
-  b.note(W - 1, 2, z0, 'Kamin mit drei Lagerfeuern');
   chimneyStack(b, z0);
 }
 
@@ -233,12 +194,7 @@ function chimneyStack(b, z0) {
 }
 
 function dais(b) {
-  b.phase('Podest und Thron', 'Am Nordende steht das Podest: eine Ebene hoch, 9 breit und 4 tief, vorne und an den Seiten mit '
-    + 'Schwarzeichentreppen als Stufen und mit rotem Teppich belegt. Darauf stehen zwei Throne – Sitz aus Treppe, Armlehnen '
-    + 'aus hochgeklappten Falltüren, Rückenlehne aus Schwarzeichenbrettern mit Goldblock. Dahinter hängen Banner, an den '
-    + 'Podestecken brennen Laternen auf Pfosten.', {
-    tips: ['Die Armlehnen sind Falltüren: setz sie an die Seite des Sitzes und klapp sie hoch.'],
-  });
+  b.phase('Podest und Thron');
   const zBack = -L + 1;
   for (let x = -4; x <= 4; x++) {
     for (let z = zBack; z <= zBack + 3; z++) b.set(x, 2, z, darkOak.planks);
@@ -260,29 +216,23 @@ function dais(b) {
     b.set(x, 5, zBack, darkOak.planks);
     b.slab(x, 6, zBack, darkOak.slab, { type: 'bottom' });
   }
-  b.note(0, 3, zBack + 1, 'Zwei Throne');
   for (const [x, color] of [[-4, 'blau'], [0, 'rot'], [4, 'blau']]) b.set(x, 8, zBack, `${COLOR[color].wallBanner}[facing=south]`);
   for (const x of [-4, 4]) lampPost(b, { x, y: 3, z: zBack + 2, facing: 'south', height: 2, style: 'top', post: darkOak.fence });
 }
 
 function hallInterior(b) {
-  b.phase('Tafeln, Banner und Kronleuchter', 'Richte die Halle ein: Rechts und links vom roten Läufer stehen zwei lange Tafeln '
-    + '(15 Blöcke) aus oberen Fichtenstufen mit Kerzen und Blumen, ringsum Stühle aus Treppen. An jeder Wandstütze hängt ein '
-    + 'Banner, abwechselnd rot und blau. Unter die drei mittleren Zugbalken hängst du Kronleuchter: eine Kette, ein Kreuz aus '
-    + 'Zäunen mit Kerzen darauf und fünf hängenden Laternen.');
-  b.step('Läufer und Tafeln', 'Leg den roten Läufer (3 breit) vom Portal bis zum Podest und stell die beiden Tafeln auf.');
+  b.phase('Tafeln, Banner und Kronleuchter');
+  b.step();
   for (let z = -L + 6; z <= L - 1; z++) for (let x = -1; x <= 1; x++) b.set(x, 2, z, COLOR.rot.carpet);
   for (const x of [-3, 3]) diningTable(b, { x, y: 2, z: -6, facing: 'west', length: 15, width: 1, wood: 'fichte' });
-  b.step('Banner', 'An jede Wandstütze kommt in Höhe der Kopfbänder ein Wandbanner, abwechselnd rot und blau.');
+  b.step();
   TRUSSES.forEach((z, i) => {
     const color = COLOR[i % 2 === 0 ? 'rot' : 'blau'];
     b.set(-W + 2, WALL_TOP - 2, z, `${color.wallBanner}[facing=east]`);
     if (Math.abs(z - HEARTH_Z) > 3) b.set(W - 2, WALL_TOP - 2, z, `${color.wallBanner}[facing=west]`);
   });
-  b.step('Kronleuchter', 'Je Kronleuchter: eine Kette unter den Zugbalken, darunter ein Zaun als Nabe mit vier Zaunarmen (je 2 '
-    + 'lang), auf die inneren Arme Kerzen, unter die Armenden und die Nabe hängende Laternen.');
+  b.step();
   for (const z of CHANDELIERS) chandelier(b, 0, WALL_TOP - 1, z);
-  b.note(0, WALL_TOP - 2, CHANDELIERS[1], 'Kronleuchter');
   // Sicherheitsnetz: setzt nur dann Laternen, wenn ein begehbares Feld noch dunkel wäre.
   lightRoom(b, { x1: -W + 1, y1: 2, z1: -L + 1, x2: W - 1, y2: WALL_TOP - 1, z2: L - 1 }, { mode: 'floor' });
 }
@@ -301,8 +251,7 @@ function chandelier(b, x, top, z) {
 }
 
 function surroundings(b) {
-  b.phase('Umgebung', 'Draußen setzt du Laternenpfähle an den Weg, ein paar Bäume und Büsche neben die Halle und lässt Gras '
-    + 'und Blumen wachsen.');
+  b.phase('Umgebung');
   for (const x of [-3, 3]) lampPost(b, { x, y: 1, z: L + 5, facing: 'south', height: 3, style: 'top', post: stone.wall, base: stone.chiseled });
   tree(b, { x: -11, y: 1, z: -13, species: 'eiche', size: 'mittel', seed: 4 });
   tree(b, { x: 11, y: 1, z: -15, species: 'birke', size: 'mittel', seed: 5 });

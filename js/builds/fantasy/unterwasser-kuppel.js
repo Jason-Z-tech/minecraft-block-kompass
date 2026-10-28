@@ -19,18 +19,10 @@ export const meta = {
     'sea dome', 'ocean base', 'ocean dome', 'tauchstation', 'unterwasserstation', 'atlantis', 'unterwaser kuppel',
   ],
   accuracy: 'eigenes',
-  difficulty: 4,
   description: 'Eine Glaskuppel mit 21 Blöcken Durchmesser steht auf dem Meeresgrund, gehalten von Rippen aus '
     + 'Prismarinziegeln. Drinnen gibt es einen Schlafbereich, ein Lager mit Werkbank und Öfen, einen kleinen Garten mit '
     + 'Beeten und eine Sitzecke in der Mitte, alles von Seelaternen beleuchtet. Ein Glastunnel führt zu einem Schacht mit '
     + 'Leiter hinauf zu einer Plattform an der Wasseroberfläche. Draußen wachsen Korallen, Seetang und Seegras.',
-  facts: [
-    'Die Kuppel ist eine Halbkugel mit Radius 10 (21 Blöcke breit, 11 hoch) aus Glas mit acht Rippen und einem Ring aus Prismarinziegeln.',
-    'Das Wasser steht 14 Blöcke über dem Meeresgrund; die Kuppelspitze liegt 3 Blöcke unter der Oberfläche.',
-    'Wasser in der Kuppel entfernst du mit Schwämmen: Ein Schwamm saugt bis zu 65 Wasserblöcke in bis zu 7 Blöcken Entfernung auf.',
-    'Nasse Schwämme trocknest du im Ofen oder im Nether – dort trocknen sie sofort.',
-    'Im Plan kommt das Meer erst zum Schluss, damit du die Kuppel sehen kannst; im Spiel baust du mitten im Wasser.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -371,88 +363,49 @@ function fillSea(b) {
 // ---------- Bau ----------
 
 export default function build(b) {
-  b.phase('Meeresgrund', 'Such dir ein Stück Meer, das etwa 14 Blöcke tief ist, und ebne den Grund: unten Sandstein und '
-    + 'Stein, obenauf Sand mit etwas Kies und Ton (hier 39 × 39 Blöcke). Kies und Sand brauchen einen festen Block darunter.', {
-    tips: [
-      'Unter Wasser arbeitest du mit einem Trank der Wasseratmung und Stiefeln mit Wasserläufer – oder mit einem Aquisitor.',
-      'Türen lassen sich nicht fluten: Setzt du unter Wasser eine Tür, entsteht in ihren beiden Feldern Luft – stell dich hinein und hol Luft.',
-    ],
-  });
+  b.phase('Meeresgrund');
   seabed(b);
 
-  b.phase('Boden und Sockel der Kuppel', 'Leg einen runden Boden mit 21 Blöcken Durchmesser: Prismarinziegel mit Ringen '
-    + 'aus dunklem Prismarin und neun eingelassenen Seelaternen. Außen herum kommt ein Ring aus dunklen Prismarintreppen '
-    + 'mit der hohen Seite zur Kuppel – er verdeckt den Übergang zum Sand.', {
-    tips: ['Setz zuerst die vier Achsenpunkte (je 10 Blöcke von der Mitte) und die Mitte – dann ist der Kreis schnell gezogen.'],
-  });
+  b.phase('Boden und Sockel der Kuppel');
   domeFloor(b);
 
-  b.phase('Glaskuppel', 'Bau die Halbkugel Ring für Ring nach oben: unten eine Reihe dunkles Prismarin, darüber Glas. '
-    + 'Acht Rippen aus Prismarinziegeln laufen von unten zur Spitze, auf Höhe 6 über dem Boden ein waagrechter Ring. Ganz '
-    + 'oben sitzt eine Seelaterne. Auf der Ostseite bleibt eine Öffnung (3 breit, 3 hoch) für den Tunnel.', {
-    tips: [
-      'Wasser in der Kuppel saugst du zum Schluss mit Schwämmen ab: Ein Schwamm nimmt bis zu 65 Wasserblöcke in bis zu 7 Blöcken Entfernung auf.',
-      'Arbeite von außen nach innen: Ist die Kuppel dicht, kann kein neues Wasser nachlaufen. Nasse Schwämme trocknest du im Ofen.',
-      'Statt Schwämmen geht auch Sand: Schütte den Innenraum mit Sand oder Kies voll (er sinkt und verdrängt das Wasser) und grab ihn danach wieder aus.',
-    ],
-  });
+  b.phase('Glaskuppel');
   const bands = [[2, 4], [5, 7], [8, 11]];
   for (const [y1, y2] of bands) {
-    b.step(`Kuppel, Höhe ${y1 - CY} bis ${y2 - CY} über dem Boden`, y1 === 2 ? 'Unterste Reihe dunkles Prismarin, darüber Glas und die Rippen.' : y2 === 11 ? 'Die letzten Ringe und die Seelaterne an der Spitze.' : 'Glas mit Rippen, auf Höhe 6 der waagrechte Ring.');
+    b.step();
     domeShell(b, y1, y2);
   }
 
-  b.phase('Tunnel und Einstiegsschacht', 'Von der Öffnung im Osten führt ein Glastunnel (innen 3 breit, 3 hoch) zu einem '
-    + 'Schacht aus Prismarinziegeln, der bis über die Wasseroberfläche reicht. Im Schacht hängt eine Leiter an der Ostwand; '
-    + 'kleine Glasfenster und Seelaternen machen ihn hell. Oben deckt eine Reihe Prismarinziegelstufen den Schacht ab '
-    + '(nur das Leiterfeld bleibt offen), darum liegt eine Holzplattform mit Geländer und Laternen.', {
-    tips: [
-      'Bau den Schacht von oben nach unten: Wände rundherum, dann das Wasser innen mit Schwämmen absaugen und die Leiter setzen.',
-      'Leitern kann man unter Wasser setzen; im trockenen Schacht sind sie nicht geflutet.',
-    ],
-  });
+  b.phase('Tunnel und Einstiegsschacht');
   const entry = (fn) => b.transform({ rotate: ENTRY_ROTATE }, () => fn(b));
-  b.step('Tunnel', 'Boden aus dunklem Prismarin mit Seelaternen, Wände und Dach aus Glas, alle 3 Blöcke ein Rahmen aus Prismarinziegeln.');
+  b.step();
   entry(tunnel);
-  b.step('Schacht', 'Schacht mit 3 × 3 Feldern innen, Wände aus Prismarinziegeln mit Glasfenstern, Leiter an der Ostwand, Seelaternen in den Seitenwänden.');
+  b.step();
   entry(shaft);
-  b.note(SHAFT.z2, SHAFT.y2, 0, 'Einstieg: Leiter im Schacht bis zur Kuppel hinunter.');
-  b.step('Plattform an der Oberfläche', 'Holzplattform um den Schacht, eine Reihe über dem Wasser, mit Geländer und Laternen; der Schacht wird bis auf das Leiterfeld abgedeckt.');
+  b.step();
   entry(surfaceDock);
 
-  b.phase('Einrichtung', 'Jetzt wird die Kuppel wohnlich: Im Norden schläfst du, im Süden liegt das Lager, im Westen der '
-    + 'Garten und in der Mitte eine Sitzecke; von Osten kommt der Tunnel herein.', {
-    tips: ['Ackerboden bleibt nass, wenn höchstens 4 Blöcke entfernt eine Wasserquelle liegt – darum steckt im Beet eine Quelle mit Seerose.'],
-  });
-  b.step('Schlafbereich', 'Zwei hellblaue Betten, Kopfteil nach Norden, dazwischen ein Fass mit Laterne, Truhen, Bücherregale und ein Teppich.');
+  b.phase('Einrichtung');
+  b.step();
   sleepingArea(b);
-  b.step('Lager', 'An der Südwand vier Fässer mit zwei Doppeltruhen obendrauf (eine Truhe lässt sich nur öffnen, wenn '
-    + 'über ihr kein voller Block steht), dazu Werkbank, Ofen, Schmelzofen, Räucherofen, Schmiedetisch und Amboss.');
+  b.step();
   storageArea(b);
-  b.step('Garten', 'Beet aus Ackerboden mit Wasserquelle in der Mitte (Karotten, Rote Bete, Weizen), Falltüren als Rand, Blumen auf Moos, zwei Azaleen, Komposter.');
+  b.step();
   gardenArea(b);
-  b.step('Sitzecke', 'Teppich in der Mitte, vier Hocker aus Prismarinziegeltreppen.');
+  b.step();
   lounge(b);
-  b.step('Licht', 'Wo es trotz Seelaternen noch dunkel ist, stellst du Laternen auf.');
+  b.step();
   lightInside(b);
 
-  b.phase('Riff und Meer', 'Rund um die Kuppel wächst ein Riff: Korallenblöcke in fünf Farben mit Korallen, Fächern und '
-    + 'Seegurken darauf, Seetang bis weit nach oben und Seegras auf dem Sand. Ganz zum Schluss siehst du hier das Wasser – '
-    + 'im Spiel ist es natürlich schon die ganze Zeit da.', {
-    tips: [
-      'Korallen leben nur, wenn sie Wasser berühren – an Land werden sie sofort zu toten Korallen.',
-      'Korallenblöcke baust du mit einer Spitzhacke mit Behutsamkeit ab, sonst werden sie tot.',
-    ],
-  });
-  b.step('Felsen und Korallen', 'Zwei Felsen und sieben Korallenstöcke um die Kuppel.');
+  b.phase('Riff und Meer');
+  b.step();
   rock(b, { x: -15, y: 2, z: -12, size: 'mittel', material: 'andesit', moss: false, rubble: false, sink: 0, seed: 1 });
   rock(b, { x: 14, y: 2, z: 13, size: 'klein', material: 'stein', moss: false, rubble: false, sink: 0, seed: 2 });
   for (const [x, z, size, salt] of [[-14, 4, 3, 31], [13, -6, 3, 41], [-6, -15, 2, 51], [8, -15, 3, 61], [15, 4, 2, 71], [-12, 13, 3, 81], [-3, 16, 2, 91]]) {
     coralPatch(b, x, z, size, salt);
   }
-  b.step('Seetang und Seegras', 'Seetang und Seegras auf dem Sand.');
+  b.step();
   seaPlants(b);
-  b.step('Wasser', 'Das Meer ringsum bis 14 Blöcke über dem Grund. Im Spiel ist es schon da – die Wassereimer in der '
-    + 'Materialliste zählen nur das Meer im Plan, du musst sie nicht mitnehmen.');
+  b.step();
   fillSea(b);
 }

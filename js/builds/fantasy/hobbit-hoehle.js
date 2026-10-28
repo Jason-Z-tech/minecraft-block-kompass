@@ -21,18 +21,10 @@ export const meta = {
     'hobbingen', 'hobbiton', 'bilbo', 'frodo', 'erdhaus', 'huegelhaus', 'hügelhaus', 'hobit höhle', 'hobbit hohle',
   ],
   accuracy: 'nachempfunden',
-  difficulty: 3,
   description: 'Ein Hobbit-Loch nach dem Vorbild von Beutelsend: Ein runder Grashügel mit einer Eiche obenauf, vorne eine '
     + 'runde grüne Tür und tief eingesetzte Rundfenster mit Blumenkästen. Innen führt ein getäfelter, gewölbter Gang zu '
     + 'Wohnzimmer mit Kamin, Küche mit Esstisch, Schlafzimmer, Speisekammer und Arbeitszimmer – alles auf einer Ebene. '
     + 'Davor liegt ein umzäunter Garten mit Blumenbeet, Gemüsebeet und Vogelscheuche.',
-  facts: [
-    'Im Buch hat Beutelsend eine „vollkommen runde Tür wie ein Bullauge, grün gestrichen, mit einem glänzenden gelben Messingknauf genau in der Mitte“.',
-    'Laut Tolkien liegen alle Zimmer auf einer Ebene an einem langen, röhrenförmigen Flur; die besten Zimmer haben tiefe Rundfenster zum Garten.',
-    'Die Tür ist aus Wirrholz (grün), weil Minecraft keine grüne Holztür kennt; einen Knauf in der Mitte gibt es als Block nicht.',
-    'Die Eiche auf dem Hügel erinnert an den Baum über Beutelsend im Filmset von Hobbingen (Neuseeland).',
-    'Grundriss, Raumaufteilung und Maße sind frei nachempfunden, nicht maßstabsgetreu.',
-  ],
   sources: [
     { title: 'Wikipedia (en): Bag End', url: 'https://en.wikipedia.org/wiki/Bag_End' },
     { title: 'Tolkien Gateway: Bag End', url: 'https://tolkiengateway.net/wiki/Bag_End' },
@@ -401,16 +393,7 @@ function gardenBench(b, x, z) {
 // ---------- Bau ----------
 
 export default function build(b) {
-  b.phase('Gelände und Fußböden', 'Lege eine ebene Grasfläche an (hier 51 × 44 Blöcke). Auf der Fläche des Hobbit-Lochs '
-    + '(27 × 18 Blöcke) ersetzt du das Gras durch die Fußböden: Eichenholzbretter in den Zimmern, ein Muster aus Fichten- '
-    + 'und Schwarzeichenbrettern im Flur und Fischgrät aus geschälten Stämmen im Eingang. Unter die künftige Steinfront '
-    + 'kommt eine Reihe Bruchstein. Leg im Garten gleich den 3 breiten Steinweg von der Tür bis zum Tor, die Erdfläche '
-    + 'fürs Gemüsebeet (9 × 7, rechts) und links das Blumenbeet an.', {
-    tips: [
-      'Steck zuerst die vier Ecken der Hülle ab (27 Blöcke breit, 18 tief) – alles Weitere richtet sich danach.',
-      'Die Tür liegt genau in der Mitte der Vorderseite, 14 Blöcke von der linken Ecke.',
-    ],
-  });
+  b.phase('Gelände und Fußböden');
   terrain(b, { x: -12, y: FLOOR, z: -12, width: 51, depth: 44, height: 0, surface: 'gras', seed: 'hobbit' });
   b.fill(X0, FLOOR, Z_BACK, X1, FLOOR, Z_FRONT, WOOD.eiche.planks);
   floorPattern(b, { x: 1, y: FLOOR, z: 7, width: 25, depth: 3, pattern: 'border', blocks: [spruce.planks, darkOak.planks] });
@@ -421,127 +404,77 @@ export default function build(b) {
   b.fill(PATCH.x1, FLOOR, PATCH.z1, PATCH.x2, FLOOR, PATCH.z2, 'dirt');
   flowerBed(b, { x: 1, y: FLOOR, z: 21, width: 9, depth: 3, facing: 'south', palette: 'bunt', seed: 'hobbit' });
 
-  b.phase('Holzgerüst der Räume', 'Zieh alle Wände 4 Blöcke hoch: unten eine Reihe Schwarzeichenholzbretter als '
-    + 'Täfelung, darüber Fichtenholzbretter, an Ecken und Wandanschlüssen geschälte Schwarzeichenstämme. Ganz hinten '
-    + 'liegen Schlafzimmer, Speisekammer und Arbeitszimmer (je 5 tief), davor der 3 breite Flur quer durchs Haus, '
-    + 'vorne Wohnzimmer, Eingang und Küche.', {
-    tips: ['Setz zuerst die Stämme an allen Ecken und Anschlüssen – dann kannst du die Bretterwände einfach dazwischen ziehen.'],
-  });
-  b.step('Wände', 'Außenwände, die zwei langen Flurwände und die Trennwände zwischen den Zimmern.');
+  b.phase('Holzgerüst der Räume');
+  b.step();
   shellWalls(b);
-  b.step('Durchgänge und Türen', 'Lass vom Eingang einen 3 breiten Bogen in den Flur frei (oben mit zwei umgedrehten '
-    + 'Fichtentreppen gerundet), je einen offenen Durchgang links ins Wohnzimmer und rechts in die Küche und setz drei '
-    + 'Fichtentüren in die hintere Flurwand. Schau beim Setzen der Türen nach Norden.');
+  b.step();
   openings(b);
-  b.step('Decke mit Balken', 'Leg die Decke aus Fichtenholzbrettern auf Höhe 6 über alle Räume; alle 4 Blöcke läuft ein '
-    + 'Balken aus geschälter Schwarzeiche von vorne nach hinten.');
+  b.step();
   shellCeiling(b);
-  b.step('Gewölbe im Flur', 'Setz unter die Decke an beiden Flurwänden eine Reihe umgedrehter Fichtentreppen, die hohe '
-    + 'Seite zur Wand. So wirkt der Flur wie eine runde Röhre – genau wie bei Tolkien.');
+  b.step();
   hallVault(b);
 
-  b.phase('Steinfront', 'Vor die vordere Wand kommt eine zweite Wand aus Steinziegeln, bemoosten Steinziegeln und etwas '
-    + 'Bruchstein, 5 hoch. Sie trägt später die Tür und die Fenster, und weil sie zwei Blöcke dick ist, sitzen die '
-    + 'Rundfenster schön tief in der Wand.', {
-    tips: ['Misch die Steine locker durcheinander, aber setz nicht zwei gleiche bemooste Blöcke nebeneinander – das wirkt natürlicher.'],
-  });
+  b.phase('Steinfront');
   facade(b);
 
-  b.phase('Hügel aufschütten', 'Jetzt verschwindet das Holzhaus unter der Erde: Schütte rundherum und obendrauf Erde '
-    + 'auf, bis über der Decke überall mindestens eine Schicht liegt, und deck alles mit Grasblöcken ab. Nach hinten '
-    + 'wird der Hügel etwas höher, zu den Seiten läuft er flach aus. Links und rechts vom Garten halten zwei kleine '
-    + 'Stützmauern aus Stein die Erde.', {
-    tips: [
-      'Grasblöcke bekommst du mit der Behutsamkeit-Verzauberung, oder du legst Erde aus und wartest, bis das Gras von selbst hinüberwächst.',
-      'Bau den Schornstein, bevor du die Erde aufschüttest – dann musst du nichts wieder ausgraben.',
-    ],
-  });
-  b.step('Schornstein', 'Über dem Kamin im Wohnzimmer (vorne links) steigt ein Schornstein aus Steinziegeln durch die '
-    + 'Erde. Ersetz das Deckenbrett direkt über dem Rauchabzug des Kamins durch einen Ziegelstein, darauf mauerst du den '
-    + 'Schornstein. Er ragt zwei Blöcke aus dem Gras, oben mit einem Kranz aus Treppen und einem Lagerfeuer für den Rauch.');
+  b.phase('Hügel aufschütten');
+  b.step();
   const chimneyTop = moundHeight(1, 13);
   b.set(1, CEIL, 13, 'bricks');
   chimney(b, { x: 1, y: CEIL + 1, z: 13, height: chimneyTop - CEIL + 2, block: 'stone_bricks', rim: 'stone_brick_stairs' });
-  b.step('Erde und Gras', 'Schütte den Hügel auf. Über der Steinfront liegt die Grasschicht auf Höhe 7, über der Tür '
-    + 'eine Ebene höher.');
+  b.step();
   const top = heapMound(b, { x1: -12, z1: -12, x2: 38, z2: 31 });
-  b.step('Stützmauern', 'Setz neben dem Garten links und rechts die Stützmauern aus Stein, oben mit bemoostem Bruchstein.');
+  b.step();
   wingWalls(b);
 
-  b.phase('Runde Tür und Rundfenster', 'Die berühmte runde grüne Tür sitzt genau in der Mitte der Front. Weil es keine '
-    + 'grüne Holztür gibt, nimmst du eine Wirrholztür und baust links, rechts und oben Wirrholzbretter und -treppen an, '
-    + 'sodass ein grünes Rund entsteht. Ein Rahmen aus geschälten Fichtenstämmen und Fichtentreppen macht den Kreis '
-    + 'fertig. Die vier Rundfenster bekommen außen Glasscheiben mit Steinziegeltreppen in den Ecken und innen eine '
-    + 'runde Laibung aus Fichtentreppen.', {
-    tips: [
-      'Die Wirrholztür setzt du von außen mit Blick nach Norden, dann geht sie nach innen auf.',
-      'Für die gerundeten Ecken: Treppen in den oberen Ecken zielst du auf die obere Blockhälfte, damit sie umgedreht liegen.',
-    ],
-  });
-  b.step('Runde Tür', 'Wirrholztür, grüne Rundung, Fichtenrahmen, zwei Laternen an Zaunarmen neben der Tür.');
+  b.phase('Runde Tür und Rundfenster');
+  b.step();
   roundDoor(b);
-  b.step('Rundfenster mit Blumenkästen', 'Vier Rundfenster (3 × 3) – zwei fürs Wohnzimmer links, zwei für die Küche '
-    + 'rechts. Unter jedem Fenster ein Kasten aus Wurzelerde mit Fichtenfalltüren und Blumen.');
+  b.step();
   roundWindows(b);
-  b.step('Gesims und Ranken', 'Unter die Grasschicht kommt über die ganze Front ein Gesims aus umgedrehten '
-    + 'Steinziegeltreppen (hohe Seite zur Wand); zwischen den Fenstern hängen ein paar Ranken herab.');
+  b.step();
   cornice(b);
 
-  b.phase('Einrichtung', 'Richte die Zimmer gemütlich ein – Hobbits lieben Essen, Bücher und ein warmes Feuer.', {
-    tips: ['Die Haken (Stolperdrahthaken) an den Wänden sind die Kleiderhaken für Hüte und Mäntel.'],
-  });
-  b.step('Eingang', 'Grüner Läufer, Kleiderhaken an beiden Seiten, eine Sitzbank aus Fichtentreppen, ein Fass als '
-    + 'Schirmständer und eine Laterne.');
+  b.phase('Einrichtung');
+  b.step();
   furnishEntry(b);
-  b.step('Flur', 'Grüner Läufer über die ganze Länge, an den Enden je ein Fass mit Topfpflanze.');
+  b.step();
   furnishHall(b);
-  b.step('Wohnzimmer', 'Backsteinkamin an der linken Wand, zwei Sessel aus Schwarzeichentreppen, ein roter Teppich, '
-    + 'Bücherregale und Fenstersitze unter den Rundfenstern.');
+  b.step();
   furnishLiving(b);
-  b.step('Küche', 'Küchenzeile an der rechten Wand, in der Mitte ein Esstisch für sechs mit weißem Tischtuch.');
+  b.step();
   furnishKitchen(b);
-  b.step('Schlafzimmer', 'Bett mit grüner Decke, Nachttische, Truhe und Teppich.');
+  b.step();
   furnishBedroom(b);
-  b.step('Speisekammer', 'Truhen und Fässer an der Rückwand, Fässer mit Regal links, Heu, Kürbis, Melone, Räucherofen und Kuchen rechts.');
+  b.step();
   furnishPantry(b);
-  b.step('Arbeitszimmer', 'Bücherwand, Schreibtisch mit Stuhl und Kerze, Lesepult und ein Kartentisch für Bilbos Karten.');
+  b.step();
   furnishStudy(b);
-  b.step('Licht', 'Häng in jedem Zimmer genug Laternen auf, damit kein Monster spawnen kann.');
+  b.step();
   for (const r of Object.values(ROOMS)) lightRoom(b, { x1: r.x1, y1: 1, z1: r.z1, x2: r.x2, y2: CEIL - 1, z2: r.z2 });
 
-  b.phase('Garten', 'Vor dem Hügel liegt der Garten: ein Steinweg von der Tür zum Gartentor, links ein Blumenbeet mit '
-    + 'Bank, rechts ein Hochbeet mit Gemüse und einer Vogelscheuche, ringsum ein Fichtenzaun.', {
-    tips: [
-      'Im Hochbeet liegt in der Mitte eine Reihe Wasser – so bleibt jeder Ackerboden feucht (Wasser wirkt 4 Blöcke weit).',
-      'Den Ackerboden machst du, indem du Erde mit einer Hacke bearbeitest.',
-    ],
-  });
-  b.step('Gemüsebeet', 'Hochbeet 9 × 7 mit Fichtenstamm-Rand: in der Mitte eine Reihe Wasser, daneben Ackerboden mit '
-    + 'Karotten, Kartoffeln, Roter Bete und Weizen.');
+  b.phase('Garten');
+  b.step();
   vegetablePatch(b);
   scarecrow(b, 16, 23);
-  b.step('Blumenbeet und Bank', 'Links ein Blumenbeet, davor eine Bank mit Blick aufs Haus und eine Laterne.');
+  b.step();
   replantBed(b, { x1: 1, z1: 21, x2: 9, z2: 23 });
   gardenBench(b, 4, 26);
   lampPost(b, { x: 8, y: 1, z: 26, height: 2, post: spruce.fence, style: 'top' });
-  b.step('Zaun', 'Fichtenzaun vorne mit Tor in der Mitte, Torpfosten aus geschälten Stämmen mit Laternen, seitlich bis an die Stützmauern.');
+  b.step();
   gardenFence(b, { x: X0 - 1, y: 1, z: 18, width: X1 - X0 + 3, depth: 13, fence: spruce.fence, gate: spruce.fenceGate, posts: spruce.strippedLog, lanterns: true, sides: ['front'] });
   for (const x of [X0 - 1, X1 + 1]) {
     let z = Z_FACADE + 1;
     while (moundHeight(x, z) > 0) z++;
     b.fill(x, 1, z, x, 1, 29, spruce.fence);
   }
-  b.note(DOOR_X, 1, Z_FACADE, 'Die runde grüne Tür – Wirrholztür mit grüner Rundung.');
 
-  b.phase('Hügel bepflanzen', 'Zum Schluss wächst der Hügel zu: eine große Eiche obenauf, ein paar Azaleenbüsche an den '
-    + 'Hängen, Gras und Blumen überall.', {
-    tips: ['Pflanz die Eiche erst, wenn der Hügel fertig ist – ihre Wurzeln liegen auf dem Gras.'],
-  });
-  b.step('Eiche auf dem Hügel', 'Pflanz eine große Eiche hinten auf den Hügel, etwas rechts von der Mitte.');
+  b.phase('Hügel bepflanzen');
+  b.step();
   const treeX = 16;
   const treeZ = 4;
   tree(b, { x: treeX, y: top(treeX, treeZ) + 1, z: treeZ, species: 'eiche', size: 'gross', seed: 'beutelsend', facing: 'south' });
-  b.step('Büsche, Gras und Blumen', 'Ein paar Azaleenbüsche an den Hängen, dazu Gras, Farne und Wildblumen über den ganzen Hügel.');
+  b.step();
   for (const [x, z, s] of [[-5, 8, 1], [31, 6, 2], [4, -6, 3], [24, -7, 4]]) {
     const h = top(x, z);
     if (h > 0) bush(b, { x, y: h + 1, z, size: 'klein', leaves: 'azalee', seed: s });

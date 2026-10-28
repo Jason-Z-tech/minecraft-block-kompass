@@ -19,17 +19,10 @@ export const meta = {
     'bergfried', 'keep', 'donjon', 'festung', 'fortress', 'burganlage', 'schloss mittelalter', 'bug', 'burk', 'castel', 'big castle',
   ],
   accuracy: 'eigenes',
-  difficulty: 5,
   description: 'Eine komplette Höhenburg zum Nachbauen: quadratische Ringmauer mit Wehrgang und Zinnen auf Konsolen, vier '
     + 'runde Ecktürme und ein Torhaus mit Spitzbogen, halb hochgezogenem Fallgitter und Wachstube. Im Burghof steht der '
     + '33 Blöcke hohe Bergfried mit Hocheingang über eine Holztreppe, Verlies, drei Stockwerken und Dachhaus. Dazu ein '
     + 'Brunnen mit Dach, ein Pferdestall mit Pultdach und eine Schmiede mit Esse, Amboss und Lavakessel.',
-  facts: [
-    'Ringmauer 51 × 51 Blöcke, 3 Blöcke dick, Wehrgang 10 Blöcke über dem Burghof; mit Türmen rund 61 × 61.',
-    'Ecktürme 11 Blöcke Durchmesser und 20 Blöcke hoch, Torhaus 19 breit, die Flankentürme springen 6 Blöcke vor die Mauer.',
-    'Bergfried 9 × 9 mit 2 Blöcke dicken Mauern; der Eingang liegt im ersten Stock – unten ist nur das Verlies.',
-    'Alle Innenräume, Stall und Schmiede sind ausgeleuchtet; der Burghof hat Laternen an den Wegen.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -51,7 +44,6 @@ const BUTTRESSES = [-14, -7, 0, 7, 14]; // Strebepfeiler außen an jeder Mauerse
 const STABLE = { x1: 15, x2: 22, z1: -8, z2: 8 };
 const SMITHY = { x1: -22, x2: -16, z1: 6, z2: 16 };
 const BASE = -4;
-const lvl = (y) => y - BASE + 1;
 const ROTATIONS = [0, 90, 180, 270]; // Süd, West, Nord, Ost
 
 function wallStone(b, y) {
@@ -107,14 +99,7 @@ function eachSide(b, draw) {
 // ------------------------------------------------------------------ Gelände
 
 function ground(b) {
-  b.phase('Gelände und Fundamente', 'Leg den Bauplatz an (eine Wiese 77 × 81 Blöcke) und grab die Fundamente ein: unter der '
-    + 'ganzen Ringmauer und den Türmen eine Ebene Bruchstein. Im Hof bekommt der Brunnen gleich seinen Schacht: 3 × 3 Wasser, '
-    + '3 Ebenen tief, rundherum und darunter Steinziegel.', {
-    tips: [
-      'Steck zuerst die vier Turmmitten ab (je 25 Blöcke von der Burgmitte nach Ost/West und Nord/Süd) – daran hängt alles andere.',
-      'Die Burg ist auf allen vier Seiten gleich gebaut: hast du eine Seite fertig, wiederholst du sie dreimal um 90° gedreht.',
-    ],
-  });
+  b.phase('Gelände und Fundamente');
   terrain(b, { x: -38, y: BASE, z: -38, width: 77, depth: 81, height: -BASE, surface: 'gras', seed: 'burg' });
   eachSide(b, () => {
     b.fill(-SPAN, 0, IN, SPAN, 0, OUT, stone.rough);
@@ -132,9 +117,7 @@ function ground(b) {
 // ------------------------------------------------------------------ Ringmauer und Ecktürme
 
 function curtainWalls(b) {
-  b.phase('Ringmauer', `Zieh die Ringmauer 3 Blöcke dick bis Ebene ${lvl(TOP)} hoch, auf jeder Seite 39 Blöcke lang zwischen `
-    + 'den Ecktürmen. Im Süden bleibt in der Mitte die Lücke für das Torhaus (19 Blöcke). Unten mischst du Bruchstein und '
-    + 'Moos unter die Steinziegel, außen am Fuß läuft ein Sockel aus Bruchsteintreppen.');
+  b.phase('Ringmauer');
   eachSide(b, (rotate) => {
     for (let x = -SPAN; x <= SPAN; x++) {
       if (rotate === 0 && Math.abs(x) <= GATE.x) continue;
@@ -142,10 +125,7 @@ function curtainWalls(b) {
       b.stairs(x, 1, OUT + 1, 'cobblestone_stairs', { facing: 'north' });
     }
   });
-  b.phase('Strebepfeiler', `Damit die lange Mauer nicht flach wirkt, setzt du außen alle 7 Blöcke einen Strebepfeiler: 1 Block `
-    + `vor der Mauer, von Ebene ${lvl(1)} bis ${lvl(TOP - 2)} aus Steinziegeln (unten Bruchstein), oben eine Steinziegeltreppe mit `
-    + 'der hohen Seite zur Mauer, unten davor eine Bruchsteintreppe als Fuß. Je Seite sind es fünf; im Süden fallen die drei '
-    + 'mittleren weg, dort steht das Torhaus.');
+  b.phase('Strebepfeiler');
   eachSide(b, (rotate) => {
     for (const x of BUTTRESSES) {
       if (rotate === 0 && Math.abs(x) <= GATE.x + 1) continue;
@@ -175,11 +155,7 @@ function cornerTower(b) {
 }
 
 function towers(b) {
-  b.phase('Ecktürme', `Die vier Ecktürme sind rund (11 Blöcke Durchmesser) und stehen mit ihrer Mitte genau auf der Mauerecke. `
-    + `Mauere die runde Wand bis Ebene ${lvl(TOWER.top)} hoch. Innen kommt auf Wehrganghöhe (Ebene ${lvl(TOP)}) ein Holzboden, `
-    + 'oben eine Steindecke, beide mit einem Loch für die Leiter. Außen umgibt ein Sockel aus Bruchstein und Stufen den Fuß.', {
-    tips: ['Ein Ring mit 11 Blöcken Durchmesser hat je Seite 5 gerade Blöcke, dann Stufen zu 2, 1 und 1 Block bis zur nächsten Seite.'],
-  });
+  b.phase('Ecktürme');
   eachSide(b, () => cornerTower(b));
 }
 
@@ -187,12 +163,7 @@ function towers(b) {
 
 function gatehouse(b) {
   const { x: gx, z1, z2, tz, top, roomFloor, roomTop } = GATE;
-  b.phase('Torhaus', 'Das Torhaus füllt die Lücke in der Südmauer: zwei Flankentürme (7 × 12), die 6 Blöcke vor die Mauer '
-    + 'springen, und dazwischen die 2 Blöcke zurückgesetzte Durchfahrt mit spitzem Bogen (5 breit, 6 hoch). So liegt das Tor in '
-    + 'einer Nische, die man von beiden Türmen aus beschießen kann. Über der Durchfahrt liegt die Wachstube, die Türme '
-    + `haben Böden auf Wehrganghöhe (Ebene ${lvl(roomFloor)}) und gehen bis Ebene ${lvl(top)}.`, {
-    tips: ['Mauer die Bogensteine Ebene für Ebene mit den Wänden hoch, dann brauchst du kein Gerüst.'],
-  });
+  b.phase('Torhaus');
   for (let y = 1; y <= top; y++) {
     for (let z = z1; z <= tz; z++) {
       for (let x = -gx; x <= gx; x++) {
@@ -218,17 +189,13 @@ function gatehouse(b) {
 
 function portcullis(b) {
   const { z1, roomFloor, portcullis: pz } = GATE;
-  b.phase('Fallgitter und Torflügel', 'Das Fallgitter aus Eisengittern hängt in der vorletzten Reihe zum Feld hin: halb hochgezogen, '
-    + 'unten 2 Blöcke frei, oben durch einen Schlitz in der Decke bis in die Wachstube, wo es an einem liegenden Stamm (der '
-    + 'Winde) endet. Am Hofende stehen die offenen Torflügel aus Falltüren an den Wänden.');
-  b.step('Fallgitter', 'Setz die Eisengitter von oben nach unten: in der Wachstube beginnend durch den Schlitz bis 2 Blöcke über '
-    + 'dem Boden der Durchfahrt. Oben drauf liegt die Winde, ein geschälter Fichtenstamm quer zur Durchfahrt.');
+  b.phase('Fallgitter und Torflügel');
+  b.step();
   for (let y = 3; y <= roomFloor + 2; y++) {
     for (let x = -2; x <= 2; x++) if (b.get(x, y, pz) === 'air' || y >= 7) b.set(x, y, pz, 'iron_bars');
   }
   for (let x = -2; x <= 2; x++) b.set(x, roomFloor + 3, pz, `${spruce.strippedLog}[axis=x]`);
-  b.step('Torflügel und Laternen', 'Die offenen Torflügel sind Schwarzeichenfalltüren, je zwei breit und vier hoch flach an den '
-    + 'Wänden am Hofende. Zum Schluss hängst du zwei Laternen unter den Bogen.');
+  b.step();
   for (let y = 1; y <= 4; y++) {
     for (const z of [z1 + 1, z1 + 2]) {
       b.set(-2, y, z, `${darkOak.trapdoor}[facing=east,half=bottom,open=true]`);
@@ -236,18 +203,12 @@ function portcullis(b) {
     }
   }
   for (const z of [z1 + 3, z1 + 6]) hangingLantern(b, { x: 0, y: 6, z, chain: 0 });
-  b.note(0, 3, pz, 'Fallgitter');
 }
 
 // ------------------------------------------------------------------ Wehrgang, Zinnen, Treppen
 
 function walkways(b) {
-  b.phase('Wehrgang und Zinnen', 'Auf der Feldseite springt die Brüstung einen Block vor: unten umgedrehte Steinziegeltreppen als '
-    + `Konsolen (Ebene ${lvl(TOP)}), darauf Brüstung und Zinnen im Wechsel mit Stufen obenauf. Zum Hof hin sichert eine `
-    + 'niedrige Steinziegelmauer den Wehrgang. Ecktürme, Torhaus und später der Bergfried bekommen ebenfalls Zinnen auf '
-    + 'Konsolen, die Türme runde Zinnenkränze und Fahnen.', {
-    tips: ['Zähl die Zinnen von einer Turmseite aus: Zinne, Lücke, Zinne … – die Reihe endet an jedem Turm auf einer Zinne.'],
-  });
+  b.phase('Wehrgang und Zinnen');
   weatherNew(b, [-OUT - 6, TOP, -OUT - 6, OUT + 6, TOWER.top + 4, OUT + 6], 0.2, () => {
     eachSide(b, (rotate) => {
       const parts = rotate === 0 ? [[-SPAN, -GATE.x - 1], [GATE.x + 1, SPAN]] : [[-SPAN, SPAN]];
@@ -313,11 +274,8 @@ function gateBattlements(b) {
 }
 
 function wallStairs(b) {
-  b.phase('Treppen zum Wehrgang', 'Zwei Steintreppen führen vom Hof auf den Wehrgang: eine an der Nordmauer (steigt nach Osten) und '
-    + 'eine an der Ostmauer (steigt nach Norden), je 9 Stufen, darunter voll gemauert. Oben bleibt die Hofbrüstung offen.', {
-    tips: ['Setz zuerst die unterste Stufe mit Blick in Laufrichtung, dann jede weitere einen Block weiter und eine Ebene höher.'],
-  });
-  b.step('Treppen zum Wehrgang', 'Beide Treppen sind 1 Block breit; unter jeder Stufe mauerst du bis zum Boden voll.');
+  b.phase('Treppen zum Wehrgang');
+  b.step();
   for (const s of WALL_STAIRS) straightStairs(b, { x: s.x, y: 1, z: s.z, facing: s.facing, width: 1, height: TOP, stairs: stone.stairs, support: stone.block });
 }
 
@@ -325,12 +283,7 @@ function wallStairs(b) {
 
 function keepShell(b) {
   const { x1, x2, z1, z2, top, floors } = KEEP;
-  b.phase('Bergfried', 'Der Bergfried steht frei im Nordwesten des Hofs: 9 × 9 Blöcke mit 2 Blöcke dicken Mauern, innen bleibt ein '
-    + `Raum von 5 × 5. Mauere ihn bis Ebene ${lvl(top)} hoch. Die Ecken setzt du als Eckquader aus poliertem Andesit und `
-    + `Steinziegeln im Wechsel. Innen kommen Holzböden auf Ebene ${floors.map(lvl).join(', ')}, oben eine Steindecke – jeweils `
-    + 'mit Leiterloch in der Nordostecke.', {
-    tips: ['Ein 2 Blöcke dicker Ring braucht pro Ebene 56 Blöcke – rechne für den ganzen Turm mit gut 22 Stacks Stein.'],
-  });
+  b.phase('Bergfried');
   for (let y = 1; y <= top; y++) {
     for (let x = x1; x <= x2; x++) {
       for (let z = z1; z <= z2; z++) {
@@ -350,11 +303,8 @@ function keepShell(b) {
 
 function keepTop(b) {
   const { x1, x2, z1, z2, top } = KEEP;
-  b.phase('Bergfried: Zinnen, Dachhaus und Hocheingang', 'Der Bergfried bekommt oben seinen Abschluss und unten den Zugang '
-    + 'über eine Holztreppe.');
-  b.step('Zinnen und Dachhaus des Bergfrieds', 'Oben bekommt der Bergfried einen Zinnenkranz auf Konsolen (11 × 11). Auf der '
-    + 'Plattform steht ein kleines Dachhaus: vier Steinziegelpfeiler und ein Zeltdach aus Tiefenschieferziegeln, darauf der '
-    + 'Fahnenmast mit rotem Banner. Die Falltür über der Leiter liegt daneben.');
+  b.phase('Bergfried: Zinnen, Dachhaus und Hocheingang');
+  b.step();
   const sides = [
     { x: x1 - 1, z: z2, facing: 'south', length: x2 - x1 + 3 },
     { x: x2, z: z2 + 1, facing: 'east', length: z2 - z1 + 3 },
@@ -376,10 +326,7 @@ function keepTop(b) {
 function keepEntrance(b) {
   const { z2, floors } = KEEP;
   const ex = -11;
-  b.step('Hocheingang', `Der Bergfried hat keinen Eingang zu ebener Erde: Die Tür liegt auf Ebene ${lvl(floors[0] + 1)}. Davor `
-    + 'baust du eine Holztreppe aus Fichte, die vom Hof senkrecht auf den Turm zuläuft, mit einem kleinen Podest vor der Tür. '
-    + 'Im Ernstfall hätte man sie abbrennen können.', {
-  });
+  b.step();
   straightStairs(b, { x: ex, y: 1, z: z2 + 8, facing: 'north', width: 1, height: floors[0], stairs: spruce.stairs, support: spruce.planks, railing: spruce.fence });
   b.set(ex, floors[0], z2 + 1, spruce.planks);
   for (const x of [ex - 1, ex + 1]) {
@@ -390,14 +337,12 @@ function keepEntrance(b) {
   b.set(ex, floors[0] + 1, z2 - 1, 'air');
   b.set(ex, floors[0] + 2, z2 - 1, 'air');
   wallLantern(b, { x: ex + 1, y: floors[0] + 2, z: z2, facing: 'south', style: 'bracket', arm: spruce.fence });
-  b.note(ex, floors[0] + 1, z2, 'Hocheingang');
 }
 
 // ------------------------------------------------------------------ Öffnungen
 
 function openings(b) {
-  b.phase('Türen und Schießscharten', 'Jetzt schlägst du die Öffnungen heraus: Türen vom Hof in die Ecktürme und Torhaustürme, '
-    + 'Türen vom Wehrgang in alle Türme, Kreuzscharten nach außen und schmale Fenster im Bergfried.');
+  b.phase('Türen und Schießscharten');
   eachSide(b, () => {
     doorway(b, { x: 22, y: 1, z: 21, facing: 'north', door: spruce.door, frame: null });
     doorway(b, { x: 20, y: TOP + 1, z: 24, facing: 'west', door: spruce.door, frame: null });
@@ -431,12 +376,8 @@ function openings(b) {
 // ------------------------------------------------------------------ Einrichtung
 
 function interiors(b) {
-  b.phase('Türme und Bergfried einrichten', 'Setz in allen Türmen die Leitern und richte die Räume ein. Jeder Raum bekommt Laternen, '
-    + 'damit dort keine Monster spawnen.', {
-    tips: ['Leitern setzt du von unten nach oben, immer mit Blick auf die Wand, an der sie hängen sollen.'],
-  });
-  b.step('Ecktürme', 'In jedem Eckturm führt eine Leiter von unten bis unter die Falltür im Dach. Unten lagern Fässer und Truhen, '
-    + 'auf Wehrganghöhe stehen ein Tisch mit Hockern und ein Fass mit Pfeilen.');
+  b.phase('Türme und Bergfried einrichten');
+  b.step();
   eachSide(b, () => {
     const { c, top, ladder } = TOWER;
     for (let y = 1; y < top; y++) b.set(ladder[0], y, ladder[1], 'ladder[facing=east]');
@@ -456,9 +397,7 @@ function interiors(b) {
   });
 
   const { x: gx, z1, z2, tz, top, roomFloor, roomTop } = GATE;
-  b.step('Torhaus', 'In beiden Torhaustürmen führt eine Leiter an der Innenwand bis aufs Dach. Unten lagern Truhen und Fässer, '
-    + 'oben schlafen die Torwachen: zwei Betten an der Feldseite, ein Tisch mit Hockern, Truhe und Fass. In der Wachstube über '
-    + 'der Durchfahrt stehen ein Tisch, Bänke und Truhen; hinter dem Fallgitter-Schlitz liegt die Winde.');
+  b.step();
   for (const s of [-1, 1]) {
     const away = s < 0 ? 'west' : 'east'; // Leiter hängt an der Innenwand (x = ±3)
     for (let y = 1; y < top; y++) b.set(s * 4, y, z1 + 1, `ladder[facing=${away}]`);
@@ -494,15 +433,11 @@ function keepInterior(b) {
   const ix2 = x2 - 2;
   const iz1 = z1 + 2;
   const iz2 = z2 - 2;
-  b.step('Bergfried', 'Im Bergfried führt eine Leiter in der Nordostecke vom Eingangsgeschoss bis unter die Falltür. Unten liegt '
-    + 'das Verlies – nur durch eine Eisenfalltür im Boden erreichbar, mit Ketten an der Wand und einer Seelenlaterne. Eine '
-    + 'Eisenfalltür lässt sich nicht von Hand öffnen: Der Hebel auf dem Boden direkt östlich daneben klappt sie auf. Im '
-    + 'Eingangsgeschoss ist die Wachstube, darüber die Kammer des Burgherrn, ganz oben die Rüstkammer.');
+  b.step();
   for (let y = floors[0] + 1; y < top; y++) b.set(ix2, y, iz1, 'ladder[facing=west]');
   // Luke abseits von Tisch und Stühlen; der Hebel steht auf dem Nachbarbrett und schaltet die Falltür über diesen Block.
   b.set(ix2 - 1, floors[0], iz2 - 1, 'iron_trapdoor[facing=south,half=top,open=false]');
   b.set(ix2, floors[0] + 1, iz2 - 1, 'lever[face=floor,facing=west,powered=false]');
-  b.note(ix2 - 1, floors[0], iz2 - 1, 'Luke ins Verlies (Hebel daneben)');
   for (const [x, z] of [[ix1, iz1], [ix1, iz2], [ix2, iz2]]) b.fill(x, floors[0] - 2, z, x, floors[0] - 1, z, 'iron_chain[axis=y]');
   b.set(ix1 + 1, 1, iz1, 'skeleton_skull[rotation=4]');
   b.set(ix2, 1, iz2 - 1, 'cobweb');
@@ -544,14 +479,7 @@ function leanToRoof(b, { front, back, z1, z2, y }) {
 
 function stable(b) {
   const { x1, x2, z1, z2 } = STABLE;
-  b.phase('Pferdestall', 'An der Ostmauer steht der Pferdestall: Boden aus grober Erde, Giebelwände aus Fachwerk, vorne zum Hof '
-    + 'offen auf Fichtenstämmen mit einem Querbalken. Das Pultdach aus Schwarzeichenstufen steigt zur Mauer hin an – je Block '
-    + 'eine halbe Stufe. Innen gibt es vier Boxen mit Heu, Wassertrog und Zauntoren.', {
-    tips: [
-      'Für das Pultdach wechseln untere und obere Stufen: unten, oben, eine Ebene höher unten, oben … – so entsteht eine flache Schräge.',
-      'Wo über einer Giebelwand eine obere Stufe käme, setzt du eine doppelte Stufe – sonst bleibt unter ihr ein halber Block Luft.',
-    ],
-  });
+  b.phase('Pferdestall');
   for (let x = x1; x <= x2; x++) for (let z = z1; z <= z2; z++) b.set(x, 0, z, b.pickWeighted([['coarse_dirt', 3], ['packed_mud', 2], ['dirt', 1]]));
   const roof = leanToRoof(b, { front: x1, back: x2, z1, z2, y: 6 });
   for (const z of [z1, z2]) {
@@ -585,12 +513,7 @@ function stable(b) {
 
 function smithy(b) {
   const { x1, x2, z1, z2 } = SMITHY;
-  b.phase('Schmiede', 'An der Westmauer liegt die Schmiede: Seitenwände aus Bruchstein, vorne offen auf Stämmen, darüber ein '
-    + 'Pultdach wie beim Stall. An der Rückwand steht die Esse mit einem Lavakessel und einer Haube aus Steinziegeltreppen, '
-    + 'daneben der Hochofen. Ein Schornstein führt durch das Dach. Davor stehen Amboss, Löschtrog, Schleifstein und '
-    + 'Schmiedetisch, an der Wand Regale fürs Werkzeug.', {
-    tips: ['Lava im Kessel kann nicht auslaufen und zündet nichts an – trotzdem nichts Brennbares direkt danebenstellen.'],
-  });
+  b.phase('Schmiede');
   for (let x = x1; x <= x2; x++) for (let z = z1; z <= z2; z++) b.set(x, 0, z, b.pickWeighted([[stone.rough, 3], ['gravel', 1], ['andesite', 1]]));
   const roof = leanToRoof(b, { front: x2, back: x1, z1, z2, y: 6 });
   for (const z of [z1, z2]) {
@@ -625,13 +548,11 @@ function smithy(b) {
   b.set(x1 + 2, 1, 15, 'coal_block');
   b.set(x1 + 1, 2, 15, 'coal_block');
   hangingLantern(b, { x: x1 + 4, y: 6, z: 13, chain: 0 });
-  b.note(x1, 1, 10, 'Esse mit Lavakessel');
   lightRoom(b, { x1, y1: 1, z1: z1 + 1, x2, y2: 5, z2: z2 - 1 });
 }
 
 function well(b) {
-  b.phase('Brunnen', 'In der Hofmitte steht der Brunnen: ein Kranz aus bemoostem Bruchstein um den Wasserschacht, zwei Stämme '
-    + 'tragen ein kleines Satteldach aus Fichte mit der Kette für den Eimer. Rundherum liegt ein gepflasterter Platz.');
+  b.phase('Brunnen');
   floorPattern(b, {
     x: -5, y: 0, z: -5, width: 11, depth: 11, pattern: 'random',
     blocks: [[stone.rough, 4], ['stone', 2], ['andesite', 2], [stone.mossy, 1]],
@@ -653,10 +574,8 @@ function well(b) {
 // ------------------------------------------------------------------ Hof und Umgebung
 
 function courtyard(b) {
-  b.phase('Burghof und Umgebung', 'Zum Schluss legst du die Kieswege im Hof an (vom Tor zum Brunnen und weiter zu Bergfried, '
-    + 'Stall und Schmiede), stellst Laternenpfähle auf, setzt eine große Eiche, ein Kräuterbeet und einen Übungsplatz mit '
-    + 'Zielscheiben. Außerhalb der Mauer führt der Weg nach Süden, dazu Bäume, Felsen und Wiese.');
-  b.step('Wege und Laternen', 'Kieswege 3 breit, an den Kreuzungen Laternenpfähle aus Steinziegelmauer.');
+  b.phase('Burghof und Umgebung');
+  b.step();
   pathAlong(b, { y: 0, points: [[0, GATE.z1 - 1], [0, 6]], width: 3, mix: 'kies', wiggle: 0, seed: 'hof-tor' });
   pathAlong(b, { y: 0, points: [[-6, 0], [-11, -2], [-11, KEEP.z2 + 9]], width: 3, mix: 'kies', wiggle: 0, seed: 'hof-keep' });
   pathAlong(b, { y: 0, points: [[6, 0], [STABLE.x1 - 1, 0]], width: 3, mix: 'kies', wiggle: 0, seed: 'hof-stall' });
@@ -667,8 +586,7 @@ function courtyard(b) {
   }
   for (const x of [-4, 4]) lampPost(b, { x, y: 1, z: GATE.tz + 2, facing: 'east', height: 3, style: 'top', post: stone.wall, base: stone.chiseled });
 
-  b.step('Eiche, Beet und Übungsplatz', 'Im Nordosten des Hofs wächst eine große Eiche, vor dem Bergfried ein Kräuterbeet. Im '
-    + 'Südosten üben die Bogenschützen: Zielscheiben auf Heuballen.');
+  b.step();
   tree(b, { x: 6, y: 1, z: -13, species: 'eiche', size: 'gross', seed: 11 });
   flowerBed(b, { x: -6, y: 0, z: -14, width: 3, depth: 6, palette: 'kuehl', facing: 'east', border: 'stein', seed: 12 });
   for (const z of [13, 16, 19]) {
@@ -679,7 +597,7 @@ function courtyard(b) {
   bush(b, { x: -18, y: 1, z: -4, size: 'klein', leaves: 'eiche', seed: 13 });
   bush(b, { x: 18, y: 1, z: 16, size: 'klein', leaves: 'eiche', seed: 14 });
 
-  b.step('Vor der Burg', 'Außerhalb der Ringmauer: Bäume, ein paar bemooste Felsen und Wiese.');
+  b.step();
   for (const [x, z, species, size, seed] of [
     [-33, 4, 'eiche', 'mittel', 21], [33, -8, 'birke', 'mittel', 22], [-12, -34, 'fichte', 'mittel', 23],
     [16, 36, 'eiche', 'mittel', 24], [-20, 37, 'birke', 'klein', 25], [32, 30, 'fichte', 'klein', 26],

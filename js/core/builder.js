@@ -67,7 +67,6 @@ export class Builder {
   #transform = IDENTITY;
   #prepared = new Map();
   #preparedByMatrix = new Map();
-  #notes = [];
   #warnings = [];
   #random;
   #maxBlocks;
@@ -87,43 +86,31 @@ export class Builder {
 
   // --- Gliederung ---
 
-  phase(title, text = '', options) {
+  // Kapitel: nur ein Titel. Texte, Tipps und Notizen gibt es nicht mehr.
+  phase(title, ...rest) {
     this.#checkOpen();
-    const { tips = [] } = checkOptions(options, ['tips'], 'phase');
+    if (rest.length > 0) throw new Error('phase: nur ein Titel – Texte und Tipps gibt es nicht mehr.');
     const cleanTitle = checkText('phase', 'title', title, { required: true });
-    const cleanTextValue = checkText('phase', 'text', text);
-    if (!Array.isArray(tips) || tips.some((tip) => typeof tip !== 'string' || tip.trim() === '')) {
-      throw new Error('phase: tips muss eine Liste aus nicht leeren Texten sein.');
-    }
-    this.#phases.push({ title: cleanTitle, text: cleanTextValue, tips: tips.map((tip) => tip.trim()), steps: [] });
+    this.#phases.push({ title: cleanTitle, stepCount: 0 });
     this.#phase = this.#phases.length - 1;
     this.#step = -1;
     this.#resetContext();
   }
 
-  step(title, text = '') {
+  // Neuer Schritt im aktuellen Kapitel, ohne Titel und Text.
+  step(...args) {
     this.#checkOpen();
-    const cleanTitle = checkText('step', 'title', title, { required: true });
-    const cleanTextValue = checkText('step', 'text', text);
+    if (args.length > 0) throw new Error('step: Schritte haben keinen Titel und keinen Text mehr.');
     this.#ensurePhase();
-    const steps = this.#phases[this.#phase].steps;
-    steps.push({ title: cleanTitle, text: cleanTextValue });
-    this.#step = steps.length - 1;
+    const phase = this.#phases[this.#phase];
+    phase.stepCount += 1;
+    this.#step = phase.stepCount - 1;
     this.#resetContext();
-  }
-
-  note(x, y, z, text) {
-    this.#checkOpen();
-    checkInts('note', { x, y, z });
-    const cleanTextValue = checkText('note', 'text', text, { required: true });
-    this.#ensurePhase();
-    const [wx, wy, wz] = this.#toWorld(x, y, z);
-    this.#notes.push({ x: wx, y: wy, z: wz, text: cleanTextValue, phase: this.#phase, step: this.#step });
   }
 
   #ensurePhase() {
     if (this.#phase >= 0) return;
-    this.#phases.push({ title: DEFAULT_PHASE_TITLE, text: '', tips: [], steps: [] });
+    this.#phases.push({ title: DEFAULT_PHASE_TITLE, stepCount: 0 });
     this.#phase = this.#phases.length - 1;
     this.#step = -1;
     this.#resetContext();
@@ -566,11 +553,8 @@ export class Builder {
       volume,
       size,
       offset: [...min],
-      phases: phaseDefs.map((p, i) => ({ title: p.title, text: p.text, tips: [...p.tips], steps: [...plan.phaseSteps[i]] })),
+      phases: phaseDefs.map((p, i) => ({ title: p.title, steps: [...plan.phaseSteps[i]] })),
       steps: plan.steps.map((s) => ({ ...s, blockCount: stepBlocks[s.index], materials: stepMaterials[s.index] })),
-      notes: this.#notes.map((n) => ({
-        x: n.x - min[0], y: n.y - min[1], z: n.z - min[2], text: n.text, step: plan.noteStep(n.phase, n.step, n.y),
-      })),
       materials: total,
       blockCount: volume.count,
       warnings,
@@ -659,7 +643,7 @@ function scanOccupancy(source, contexts, phases) {
       if (blocks[i] === 0) continue;
       const ctx = contexts[steps[i]];
       const occ = occupancy[ctx.phase];
-      if (phases[ctx.phase].steps.length > 0) {
+      if (phases[ctx.phase].stepCount > 0) {
         if (ctx.step < 0) occ.pre = true;
       } else {
         occ.layers.add(by + (i >> 8));

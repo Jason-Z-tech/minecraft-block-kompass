@@ -6,8 +6,8 @@
     "byCategory": {
       "haeuser": 2,
       "wahrzeichen": 1,
-      "redstone": 1,
-      "mittelalter": 1
+      "mittelalter": 1,
+      "farmen": 1
     }
   },
   "warnings": [],
@@ -28,12 +28,7 @@
         "kleines haus"
       ],
       "accuracy": "eigenes",
-      "difficulty": 1,
       "description": "Ein kleines Haus aus Eichenholz mit Fichtenholz-Satteldach. Drinnen stehen ein Bett, eine Doppeltruhe und eine Fackel, vor dem Haus liegt ein umzäunter Vorgarten.",
-      "facts": [
-        "Grundfläche 9 × 7 Blöcke",
-        "Satteldach mit einem Block Überstand"
-      ],
       "sources": [],
       "credits": null,
       "tested": null,
@@ -116,11 +111,7 @@
         "testplatz"
       ],
       "accuracy": "massstab",
-      "difficulty": 3,
       "description": "Ein großer Platz mit Türmen, Kuppel, Teich und Garten – nur für Tests der Bau-Seite.",
-      "facts": [
-        "150 × 150 Felder bei 1:1"
-      ],
       "sources": [
         {
           "title": "Minecraft Wiki: Steinziegel",
@@ -220,7 +211,7 @@
     {
       "id": "beispiel-ungetestet",
       "title": "Beispiel ungetestet",
-      "category": "redstone",
+      "category": "farmen",
       "subtitle": "Testeintrag mit tested: false und Credits",
       "tags": [
         "Holz",
@@ -233,12 +224,7 @@
         "kleines haus"
       ],
       "accuracy": "vorlage",
-      "difficulty": 1,
       "description": "Ein kleines Haus aus Eichenholz mit Fichtenholz-Satteldach. Drinnen stehen ein Bett, eine Doppeltruhe und eine Fackel, vor dem Haus liegt ein umzäunter Vorgarten.",
-      "facts": [
-        "Grundfläche 9 × 7 Blöcke",
-        "Satteldach mit einem Block Überstand"
-      ],
       "sources": [
         {
           "title": "Minecraft Wiki: Redstone-Schaltkreise",
@@ -327,9 +313,7 @@
         "dorfhaus"
       ],
       "accuracy": "original",
-      "difficulty": 2,
       "description": "Ein kleines Haus aus einem Ebenen-Dorf, so wie es das Spiel erzeugt.",
-      "facts": [],
       "sources": [],
       "credits": null,
       "tested": null,
@@ -393,9 +377,7 @@
       ],
       "aliases": [],
       "accuracy": "original",
-      "difficulty": 4,
       "description": "Der Eingangsteil der Brücken-Bastion aus dem Nether.",
-      "facts": [],
       "sources": [],
       "credits": null,
       "tested": null,

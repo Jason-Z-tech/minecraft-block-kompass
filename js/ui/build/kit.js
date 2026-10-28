@@ -57,8 +57,8 @@ export function positionText(x, y, z) {
   return `Position x ${x} · y ${y} · z ${z}`;
 }
 
-/** Zeilen für den Block-Tooltip: deutscher Name, Zustand, Schritt, ID. */
-export function blockTooltipParts(state, { step = null, stepTitle = '', coords = null } = {}) {
+/** Zeilen für den Block-Tooltip: deutscher Name, Zustand, Schritt („Schritt 5“), ID. */
+export function blockTooltipParts(state, { step = null, coords = null } = {}) {
   let info;
   try {
     info = describeState(state);
@@ -68,7 +68,7 @@ export function blockTooltipParts(state, { step = null, stepTitle = '', coords =
   }
   const lines = [];
   if (info.detail) lines.push({ text: info.detail, tone: 'blue' });
-  if (Number.isInteger(step) && step >= 0) lines.push({ text: `Schritt ${formatNumber(step + 1)}${stepTitle ? ` · ${stepTitle}` : ''}`, tone: 'gold' });
+  if (Number.isInteger(step) && step >= 0) lines.push({ text: `Schritt ${formatNumber(step + 1)}`, tone: 'gold' });
   if (coords) lines.push({ text: coords });
   return { title: info.name, lines, meta: `minecraft:${info.id}` };
 }

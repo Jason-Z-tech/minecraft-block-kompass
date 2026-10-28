@@ -14,13 +14,7 @@ export const meta = {
     'bench', 'park bench', 'garden bench', 'flower bed', 'flowerbed', 'sitzecke', 'parkbankk', 'parkbnak',
   ],
   accuracy: 'eigenes',
-  difficulty: 1,
   description: 'Eine gemütliche Parkbank aus Schwarzeichentreppen mit hoher Lehne aus offenen Falltüren und Armlehnen aus Wandschildern. Dahinter wächst ein Hochbeet mit Fichtenrahmen und bunten Blumen, daneben stehen eine Laterne und ein Mülleimer, davor führt ein Kiesweg vorbei. In wenigen Minuten gebaut und überall im Dorf oder Park einsetzbar.',
-  facts: [
-    'Offene Falltüren stehen senkrecht an einer Blockkante – auf der Treppe ergeben sie eine hohe Rückenlehne.',
-    'Wandschilder brauchen einen festen Block dahinter: hier halten sie an den Enden der Treppen.',
-    'Im Spiel kannst du dich nicht auf Treppen setzen – die Bank ist reine Deko.',
-  ],
   sources: [],
   credits: null,
   tested: null,
@@ -32,53 +26,51 @@ const BED = { x0: -4, x1: 4, z0: -5, z1: -1 };
 
 function ground(b) {
   const { x0, x1, z0, z1 } = BED;
-  b.phase('Wiese', 'Such dir ein flaches Stück Wiese mit etwa 17 × 16 Blöcken. Die Bank schaut nach Süden. Wo das Hochbeet hinkommt (9 × 5 Blöcke), ersetzt du das Gras durch Erde – unter Rahmen und Beet würde es ohnehin zu Erde werden.');
+  b.phase('Wiese');
   terrain(b, { x: -8, y: -1, z: -9, width: 17, depth: 16, height: 1, shape: 'rund', seed: 'parkbank' });
   b.fill(x0, 0, z0, x1, 0, z1, 'dirt');
 }
 
 function flowerBox(b) {
   const { x0, x1, z0, z1 } = BED;
-  b.phase('Hochbeet', 'Hinter der Bank steht ein Hochbeet: 9 × 5 Blöcke, eine Ebene hoch, mit einem Rahmen aus Fichte.', {
-    tips: ['Hohe Blumen wie Flieder und Rosenstrauch kommen nach hinten, kleine nach vorne – dann siehst du von der Bank aus alle.'],
-  });
-  b.step('Rahmen', 'Lege den Rahmen auf die Wiese: an den Ecken Fichtenholz (Rinde ringsum), dazwischen liegende Fichtenstämme – vorne und hinten in Ost-West-Richtung, an den Seiten in Nord-Süd-Richtung.');
+  b.phase('Hochbeet');
+  b.step();
   for (let x = x0 + 1; x < x1; x++) for (const z of [z0, z1]) b.set(x, 1, z, `${spruce.log}[axis=x]`);
   for (let z = z0 + 1; z < z1; z++) for (const x of [x0, x1]) b.set(x, 1, z, `${spruce.log}[axis=z]`);
   for (const x of [x0, x1]) for (const z of [z0, z1]) b.set(x, 1, z, `${spruce.wood}[axis=y]`);
 
-  b.step('Erde und Blumen', 'Fülle das Innere (7 × 3) mit Grasblöcken und pflanze die Blumen: hinten Flieder, Pfingstrosen und Rosensträucher, vorne kleine Blumen in Grüppchen.');
+  b.step();
   flowerBed(b, { x: x0 + 1, y: 1, z: z0 + 1, width: x1 - x0 - 1, depth: z1 - z0 - 1, facing: 'south', palette: 'bunt', density: 0.9, seed: 3 });
 }
 
 function bench(b) {
-  b.phase('Parkbank', 'Die Bank ist 3 Blöcke lang und steht direkt vor dem Hochbeet.');
-  b.step('Sitzfläche', 'Setze drei Schwarzeichentreppen nebeneinander, die hohe Seite nach hinten zum Beet: schau beim Setzen nach Norden.');
+  b.phase('Parkbank');
+  b.step();
   for (let x = -1; x <= 1; x++) b.stairs(x, 1, 0, dark.stairs, { facing: 'north' });
 
-  b.step('Lehne', 'Stell dich vor die Bank, schau nach Norden und setze auf jede Treppe von oben eine Schwarzeichenfalltür. Klick sie danach mit rechts an: Sie klappt auf, legt sich an die Rückseite und bildet mit der Treppe eine hohe Lehne.');
+  b.step();
   for (let x = -1; x <= 1; x++) b.set(x, 2, 0, `${dark.trapdoor}[facing=south,half=bottom,open=true]`);
 
-  b.step('Armlehnen', 'Klick mit einem Schwarzeichenschild an die linke und die rechte Stirnseite der Bank. Den Text lässt du leer (Esc drücken).');
+  b.step();
   b.set(-2, 1, 0, `${dark.wallSign}[facing=west]`);
   b.set(2, 1, 0, `${dark.wallSign}[facing=east]`);
 }
 
 function extras(b) {
-  b.phase('Laterne und Mülleimer', 'Rechts neben der Bank steht eine Laterne, links ein Kessel als Mülleimer.');
-  b.step('Laterne', 'Setze rechts mit zwei Blöcken Abstand einen Steinziegel, darauf drei Schwarzeichenzäune und oben einen Zaun als Arm nach links zur Bank. Darunter hängt die Laterne.');
+  b.phase('Laterne und Mülleimer');
+  b.step();
   lampPost(b, { x: 4, y: 1, z: 0, facing: 'west', height: 4, post: dark.fence, base: 'stone_bricks', style: 'arm' });
 
-  b.step('Mülleimer', 'Stelle links neben die Bank einen Kessel.');
+  b.step();
   b.set(-3, 1, 0, 'cauldron');
 }
 
 function surroundings(b) {
-  b.phase('Weg und Grün', 'Zum Schluss der Kiesweg vor der Bank, ein kleiner Baum, Büsche und Gras.');
-  b.step('Kiesweg', 'Lege vor der Bank einen 3 Blöcke breiten Weg aus Kies und etwas grober Erde quer über die Wiese.');
+  b.phase('Weg und Grün');
+  b.step();
   path(b, { x: -6, y: 0, z: 2, facing: 'east', length: 13, width: 3, mix: 'kies', wiggle: 0.6, seed: 4 });
 
-  b.step('Baum und Büsche', 'Pflanze hinten links eine kleine Eiche, setze Büsche an die Ecken des Beets und streue Gras und Blumen auf die Wiese.');
+  b.step();
   tree(b, { x: -6, y: 1, z: -6, species: 'eiche', size: 'klein', seed: 2 });
   bush(b, { x: 6, y: 1, z: -3, size: 'klein', leaves: 'azalee', seed: 5 });
   bush(b, { x: 6, y: 1, z: -6, size: 'klein', leaves: 'birke', seed: 6 });

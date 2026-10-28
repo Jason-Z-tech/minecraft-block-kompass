@@ -18,7 +18,7 @@ function missingLast(a, b, direction) {
 }
 
 const byBlocksDescending = (a, b) => missingLast(a.blocks, b.blocks, -1) || compareTitles(a, b);
-const byEase = (a, b) => missingLast(a.difficulty, b.difficulty, 1) || missingLast(a.blocks, b.blocks, 1) || compareTitles(a, b);
+const byBlocksAscending = (a, b) => missingLast(a.blocks, b.blocks, 1) || compareTitles(a, b);
 
 /**
  * match bestimmt die Bauten, compare die Reihenfolge; filters/sort ergeben auf der Kategorie-Seite genau
@@ -37,13 +37,13 @@ export const HOME_SECTIONS = Object.freeze([
   }),
   Object.freeze({
     id: 'schnell',
-    title: 'Schnell gebaut',
-    lead: 'Kleine, leichte Bauten mit weniger als 1.000 Blöcken.',
-    match: (build) => sizeClassOf(build) === 'klein' && Number.isInteger(build.difficulty) && build.difficulty <= 2,
-    compare: byEase,
+    title: 'Klein & schnell gebaut',
+    lead: 'Bauten mit weniger als 1.000 Blöcken, die kleinsten zuerst.',
+    match: (build) => sizeClassOf(build) === 'klein',
+    compare: byBlocksAscending,
     diverse: true,
-    filters: { groesse: ['klein'], schwierigkeit: ['1', '2'] },
-    sort: 'schwierigkeit-auf',
+    filters: { groesse: ['klein'] },
+    sort: 'bloecke-auf',
   }),
   Object.freeze({
     id: 'original',
@@ -66,14 +66,14 @@ export const HOME_SECTIONS = Object.freeze([
     sort: 'bloecke-ab',
   }),
   Object.freeze({
-    id: 'technik',
-    title: 'Redstone und Technik',
-    lead: 'Schaltungen und Farmen, die leichtesten zuerst.',
-    match: (build) => build.category === 'redstone' || build.category === 'farmen',
-    compare: byEase,
-    diverse: true,
+    id: 'farmen',
+    title: 'Farmen',
+    lead: 'Farmen und Anlagen, die dir Arbeit abnehmen – die größten zuerst.',
+    match: (build) => build.category === 'farmen',
+    compare: byBlocksDescending,
+    diverse: false,
     filters: {},
-    sort: 'schwierigkeit-auf',
+    sort: 'bloecke-ab',
   }),
 ]);
 

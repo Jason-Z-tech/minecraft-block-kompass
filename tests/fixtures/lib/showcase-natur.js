@@ -14,9 +14,7 @@ export const meta = {
   tags: ['Natur', 'Bäume', 'Gelände'],
   aliases: ['natur', 'baeume', 'schaukasten natur'],
   accuracy: 'eigenes',
-  difficulty: 2,
   description: 'Alle Bausteine der Natur-Bibliothek nebeneinander: acht Baumarten in vier Größen, Büsche, Blumenbeete, Bewuchs, ein Hügel, ein Teich, Felsen und Wege.',
-  facts: ['Acht Baumarten, je klein, mittel, gross und riesig'],
   sources: [],
   credits: null,
   tested: null,
@@ -31,44 +29,44 @@ const ROWS = [
 ];
 
 export default function build(b) {
-  b.phase('Wiese', 'Lege die Wiese aus Gras, darunter Erde.');
+  b.phase('Wiese');
   terrain(b, { x: 0, y: 0, z: 0, width: 180, depth: 170, height: GROUND });
 
-  b.phase('Hügel', 'Schütte den Hügel auf: Gras oben, Erde darunter, an steilen Stellen Stein.');
+  b.phase('Hügel');
   const mound = hill(b, { x: 2, y: GROUND, z: 104, width: 44, depth: 40, height: 10, facing: 'east', seed: 3 });
 
-  b.phase('Teich', 'Grabe den Teich aus, lege das Ufer und fülle Wasser ein.');
+  b.phase('Teich');
   pond(b, { x: 52, y: GROUND, z: 104, width: 26, depth: 20, facing: 'south', waterDepth: 3, shore: 'gemischt', seed: 1 });
   pond(b, { x: 52, y: GROUND, z: 128, width: 12, depth: 10, facing: 'east', shore: 'sand', seed: 2 });
   pond(b, { x: 66, y: GROUND, z: 128, width: 12, depth: 10, facing: 'west', shore: 'kies', seed: 4 });
 
-  b.phase('Wege', 'Lege die Wege aus Erdpfad, Kies und grober Erde.');
+  b.phase('Wege');
   pathAlong(b, { y: GROUND, points: [[46, 152], [80, 152], [100, 140], [132, 140]], width: 3, wiggle: 1.5, mix: 'gemischt', seed: 5 });
   path(b, { x: 84, y: GROUND, z: 98, length: 60, width: 3, facing: 'south', mix: 'erde', seed: 6 });
   path(b, { x: 88, y: GROUND, z: 98, length: 60, width: 2, facing: 'south', mix: 'kies', seed: 7 });
   pathAlong(b, { y: GROUND + 12, points: [[46, 120], [36, 120], [26, 124]], width: 2, follow: true, wiggle: 0.5, seed: 8 });
 
   for (const row of ROWS) {
-    b.phase(`Bäume ${row.size}`, `Pflanze die acht Baumarten in der Größe „${row.size}“.`);
+    b.phase(`Bäume ${row.size}`);
     TREE_SPECIES.forEach((species, i) => {
       tree(b, { x: row.x0 + i * row.step, y: GROUND + 1, z: row.z, species, size: row.size, seed: i });
     });
   }
 
-  b.phase('Bäume auf dem Hügel', 'Setze Fichten und Birken auf den Hügel.');
+  b.phase('Bäume auf dem Hügel');
   for (const [x, z, species, size] of [[14, 118, 'fichte', 'gross'], [22, 130, 'fichte', 'mittel'], [30, 112, 'birke', 'mittel'], [10, 134, 'fichte', 'klein']]) {
     const top = mound.top(x, z);
     if (top !== null) tree(b, { x, y: top + 1, z, species, size, seed: x });
   }
 
-  b.phase('Felsen', 'Setze die Felsen in allen Größen und Gesteinen.');
+  b.phase('Felsen');
   ROCK_SIZES.forEach((size, i) => rock(b, { x: 96 + i * 9, y: GROUND + 1, z: 106, size, seed: i }));
   ROCK_MATERIALS.forEach((material, i) => rock(b, { x: 94 + i * 6, y: GROUND + 1, z: 122, size: 'mittel', material, facing: ['south', 'east', 'north', 'west'][i % 4], seed: i }));
 
-  b.phase('Büsche', 'Setze die Büsche: klein, mittel und gross.');
+  b.phase('Büsche');
   BUSH_LEAVES.forEach((leaves, i) => bush(b, { x: 96 + i * 5, y: GROUND + 1, z: 132, size: ['klein', 'mittel', 'gross'][i % 3], leaves, seed: i }));
 
-  b.phase('Blumenbeete', 'Lege die Beete an und pflanze die Blumen, hohe Pflanzen nach hinten.');
+  b.phase('Blumenbeete');
   FLOWER_BED_PALETTES.forEach((palette, i) => {
     flowerBed(b, {
       x: 140 + (i % 3) * 13, y: GROUND, z: 104 + Math.floor(i / 3) * 10, width: 11, depth: 7,
@@ -76,7 +74,7 @@ export default function build(b) {
     });
   });
 
-  b.phase('Bewuchs', 'Streue Gras, Farne und Blumen über die Wiese.');
+  b.phase('Bewuchs');
   VEGETATION_MIXES.forEach((mix, i) => vegetation(b, { x: 98 + i * 16, y: GROUND, z: 146, width: 14, depth: 18, mix, density: 0.5, seed: i }));
   vegetation(b, { x: 0, y: GROUND + 12, z: 104, width: 46, depth: 40, mix: 'wiese', density: 0.3, seed: 9 });
 }

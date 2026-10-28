@@ -62,8 +62,9 @@ export class BlockCollector {
     this.current = null;
   }
 
-  begin(title, text = '') {
-    this.current = { title, text, blocks: new Int32Array(4096 * 4), count: 0 };
+  // Neues Kapitel, nur mit Titel
+  begin(title) {
+    this.current = { title, blocks: new Int32Array(4096 * 4), count: 0 };
     this.parts.push(this.current);
     return this.current;
   }
@@ -92,7 +93,7 @@ export class BlockCollector {
     if (z > this.max[2]) this.max[2] = z;
   }
 
-  /** → { size, parts: [{ title, text, blocks: Int32Array (x, y, z, Palettenindex je Block), count }], blockCount } */
+  /** → { size, parts: [{ title, blocks: Int32Array (x, y, z, Palettenindex je Block), count }], blockCount } */
   finish() {
     const parts = this.parts.filter((part) => part.count > 0);
     if (this.total === 0) {

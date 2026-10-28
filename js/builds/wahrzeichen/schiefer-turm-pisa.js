@@ -16,17 +16,7 @@ export const meta = {
     'schiefer turm pisa', 'shiefer turm', 'schifer turm', 'piza turm', 'glockenturm pisa',
   ],
   accuracy: 'massstab',
-  difficulty: 4,
   description: 'Der Glockenturm des Doms von Pisa im Maßstab 1:1: ein Rundturm mit 15 Blöcken Durchmesser, Erdgeschoss mit 15 Blendarkaden, sechs Säulengalerien und der schmaleren Glockenstube mit sieben Glocken. Die Neigung von 3,97° nach Süden entsteht durch versetzte Ebenen – jedes Geschoss rückt einen Block weiter, oben sind es 4 Blöcke – und die Gesimse kippen sichtbar, sodass die Südseite einen Block niedriger ist. Innen führt eine Wendeltreppe am Schacht entlang zu jeder Galerie und auf die Terrasse; Geschosshöhen von Erdgeschoss und Glockenstube sowie Teile der Innengestaltung sind geschätzt.',
-  facts: [
-    'Höhe: 55,86 m auf der niedrigen und 56,67 m auf der hohen Seite – im Bau 56 und 57 Blöcke.',
-    'Außendurchmesser am Fuß 15,48 m, Innendurchmesser 7,37 m – im Bau 15 und 7 Blöcke.',
-    'Neigung heute 3,97°, die Spitze steht rund 3,9 m außerhalb der Senkrechten (im Bau 4 Blöcke nach Süden). 1990 waren es 5,5°.',
-    'Acht Geschosse: Erdgeschoss mit Blendarkaden, sechs offene Säulengalerien (je 5,82 m hoch) und die Glockenstube von 1372.',
-    'Pro Galerie stehen im Original 30 Säulen; bei 1 Block = 1 m hat der äußerste Ring 40 Felder, darauf passen im Wechsel mit Öffnungen 20 Säulen.',
-    'Sieben Glocken, die größte („Assunta“, 1654) wiegt rund 3,6 t. Bauzeit 1173 bis 1372, Gewicht rund 14 500 t.',
-    'Geschätzt (nicht belegt): Höhe des Erdgeschosses (15 Blöcke) und der Glockenstube (6 Blöcke), Durchmesser der Glockenstube (aus dem Höhenunterschied der Seiten berechnet), Lage des Eingangs. Die echte Treppe läuft in der Mauer; hier windet sie sich innen am Schacht entlang.',
-  ],
   sources: [
     { title: 'Wikipedia (en): Leaning Tower of Pisa', url: 'https://en.wikipedia.org/wiki/Leaning_Tower_of_Pisa' },
     { title: 'Wikipedia (it): Torre di Pisa', url: 'https://it.wikipedia.org/wiki/Torre_di_Pisa' },
@@ -459,16 +449,6 @@ function nearestLayerCell(g, layer, dx, dz, P) {
   return best;
 }
 
-// --- Texte ---
-
-function storeyText(P, st, prevShift) {
-  const moved = st.shift - prevShift;
-  const shiftText = moved > 0
-    ? ` Neigung: Alles in diesem Geschoss sitzt ${moved === 1 ? 'einen Block' : `${moved} Blöcke`} weiter südlich als das Geschoss darunter (insgesamt ${st.shift} ${st.shift === 1 ? 'Block' : 'Blöcke'} gegenüber dem Fuß) – das vorstehende Gesims darunter trägt die neue Südkante.`
-    : '';
-  return shiftText;
-}
-
 // --- Bau ---
 
 export default function build(b, { scale = 1 } = {}) {
@@ -479,11 +459,7 @@ export default function build(b, { scale = 1 } = {}) {
   const topShift = storeys[storeys.length - 1].shift;
 
   // 1. Fundament
-  b.phase(
-    'Fundament',
-    `Lege zuerst eine runde Fundamentplatte aus Poliertem Andesit mit ${Math.floor(P.cx + P.rFoundation) - Math.ceil(P.cx - P.rFoundation) + 1} Blöcken Durchmesser auf der Höhe des späteren Rasens. Sie bildet um den Turm herum den gepflasterten Rand. Der Turm selbst steht in der Mitte; die Turmachse liegt im Fuß genau über der Mitte der Platte.`,
-    { tips: ['Markiere die Mitte mit einem Block in auffälliger Farbe – alle Kreise des Turms gehen von dieser Achse aus.', 'Der Turm kippt später nach Süden. Lass dort auf dem Bauplatz mehr Platz als im Norden.'] },
-  );
+  b.phase('Fundament');
   const span = Math.ceil(P.rFoundation);
   for (let x = Math.floor(P.cx - span); x <= Math.ceil(P.cx + span); x++) {
     for (let z = Math.floor(P.cz - span); z <= Math.ceil(P.cz + span); z++) {
@@ -492,61 +468,31 @@ export default function build(b, { scale = 1 } = {}) {
   }
 
   // 2.–9. Geschosse
-  let prevShift = 0;
   storeys.forEach((st, i) => {
     const local = new LocalLayer();
     const plan = plans[i];
     if (st.kind === 'ground') {
-      b.phase(
-        'Erdgeschoss mit Blendarkaden',
-        `Das Erdgeschoss ist ein Ring mit ${P.diameter} Blöcken Außendurchmesser und ${st.h} Ebenen Höhe. Unten liegt ein Sockel aus Poliertem Diorit mit einer umlaufenden Stufe aus Polierten Dioritstufen. Darüber stehen ${P.interior ? '15' : g.groundColumns.size} Halbsäulen aus Quarzsäulen direkt in der Außenwand; dazwischen bleibt die äußerste Blockreihe offen, sodass flache Blendbögen entstehen. Oben schließen umgedrehte Quarztreppen die Bögen ab, darüber folgen eine Ebene Kalzit und ein Gesims aus umgedrehten Glatten Quarztreppen, deren hohe Seite zur Turmmitte zeigt.${P.interior ? ` Innen bleibt ein runder Schacht mit ${P.shaftDiameter} Blöcken Durchmesser frei; an seiner Wand windet sich die Treppe nach oben. Auf der Westseite führt ein zwei Blöcke hoher Gang mit einer Schwarzeichentür in den Schacht.` : ' Im Maßstab 1:2 ist der Turm innen massiv.'}`,
-        { tips: ['Setze erst die Halbsäulen rundherum, dann die Wand dazwischen – so stimmen die Abstände der Bögen.', 'Umgedrehte Treppen für Bögen und Gesims: Klicke an die obere Hälfte einer Blockseite oder an die Unterseite eines Blocks. Beim Gesims schaust du dabei zur Turmmitte (hohe Seite innen), bei den Bögen zur nächsten Halbsäule (hohe Seite an der Säule).'] },
-      );
+      b.phase('Erdgeschoss mit Blendarkaden');
     } else if (st.kind === 'loggia') {
-      b.phase(
-        `${st.index}. Säulengalerie`,
-        `Jede Galerie ist ${st.h} Ebenen hoch. ${P.interior ? `Unterste Ebene: Boden aus Glattem Quarz bis zur Außenkante. Dann vier Ebenen offener Säulengang: Auf dem äußersten Ring wechseln schlanke Säulen aus Dioritmauer und Öffnungen ab (${g.loggiaColumns.size} Säulen), dahinter bleibt ein Block breiter Umgang frei, innen steht die Kernmauer aus Kalzit. In der obersten Ebene sitzen über den Säulen Gemeißelte Quarzblöcke als Kapitelle und über den Öffnungen obere Quarzstufen als flache Bögen; der Umgang bekommt eine Decke aus Glattem Quarz, und ein Ring oberer Quarzstufen steht einen Block über die Wand vor.` : 'Zwei Ebenen lang wechseln auf dem äußersten Ring Säulen aus Dioritmauer und Nischen ab (dahinter massiver Kalzit), darüber folgt ein Gesims aus Glattem Quarz mit einem vorstehenden Ring oberer Quarzstufen.'}${storeyText(P, st, prevShift)}${P.interior ? ' Von der Treppe im Schacht führt ein Durchgang durch die Kernmauer auf die Galerie.' : ''}`,
-        { tips: st.shift !== prevShift
-          ? ['Zähle beim Versetzen von der Turmachse aus: Die neue Achse liegt genau einen Block südlich der alten. Setze erst die vier Punkte Nord, Ost, Süd und West des neuen Rings.']
-          : ['Die Säulen stehen genau über den Säulen der Galerie darunter – du kannst sie einfach nach oben weiterziehen.'] },
-      );
-      if (st.shift !== prevShift) {
-        const [nx, ny, nz] = toWorld(P, Math.floor(P.cx), st.L, Math.floor(P.cz + P.rOut), st.shift);
-        b.note(nx, ny, nz, `Ab hier liegt alles ${st.shift - prevShift === 1 ? 'einen Block' : `${st.shift - prevShift} Blöcke`} weiter südlich – so entsteht die Neigung.`);
-      }
+      b.phase(`${st.index}. Säulengalerie`);
     } else {
-      b.phase(
-        'Glockenstube und Terrasse',
-        `Auf der letzten Galerie liegt eine runde Terrasse aus Glattem Quarz (${P.diameter} Blöcke). Darauf steht die schmalere Glockenstube mit ${P.belfryDiameter} Blöcken Durchmesser: ein Ring aus Quarzsäulen mit ${P.interior ? '16 Bogenöffnungen' : 'Nischen'}, oben ein Dach aus Glattem Quarz mit einem vorstehenden Rand aus unteren Quarzstufen.${storeyText(P, st, prevShift)}`,
-        { tips: ['Die Glockenstube ist kleiner als der Turm: Ihr Ring beginnt zwei Blöcke innerhalb der Terrassenkante.'] },
-      );
-      if (st.shift !== prevShift) {
-        const [nx, ny, nz] = toWorld(P, Math.floor(P.cx), st.L, Math.floor(P.cz + P.rOut), st.shift);
-        b.note(nx, ny, nz, `Die Terrasse liegt noch einmal einen Block weiter südlich – jetzt ${st.shift} Blöcke gegenüber dem Fuß.`);
-      }
+      b.phase('Glockenstube und Terrasse');
     }
     if (st.kind === 'ground') designGround(P, g, st, plan, local);
     else if (st.kind === 'loggia') designLoggia(P, g, st, plan, local);
     else designBelfry(P, g, st, plan, local);
     local.flush(b, P, st.shift);
-    prevShift = st.shift;
   });
 
   // 10. Ausstattung
   const belfry = storeys[storeys.length - 1];
-  b.phase(
-    P.interior ? 'Glocken, Geländer und Licht' : 'Geländer',
-    P.interior
-      ? 'Hänge die sieben Glocken in die Bogenöffnungen der Glockenstube: Jede Glocke hängt an der Decke über der Öffnung (Glocke an die Unterseite des Blocks setzen). Um die Terrasse läuft ein Geländer aus Eisengittern. Damit im Turm keine Monster entstehen, hängt in jedem Geschoss des Schachts eine Laterne unter dem nächsten Boden, im Erdgeschoss steht zusätzlich eine auf dem Boden, auf jeder Galerie hängen vier Laternen und in der Glockenstube eine in der Mitte.'
-      : 'Setze auf den äußersten Ring der Terrasse ein Geländer aus Eisengittern.',
-    { tips: P.interior ? ['Laternen hängen nur, wenn du sie an die Unterseite eines Blocks setzt – im Schacht ist das jeweils der Boden des nächsten Geschosses.'] : [] },
-  );
-  if (P.interior) b.step('Geländer', 'Setze auf den äußersten Ring der Terrasse Eisengitter. Sie verbinden sich von selbst zu einem durchgehenden Geländer.');
+  b.phase(P.interior ? 'Glocken, Geländer und Licht' : 'Geländer');
+  if (P.interior) b.step();
   const railing = new LocalLayer();
   for (const c of g.railRing) railing.set(c.x, belfry.L + 1, c.z, RAILING);
   railing.flush(b, P, belfry.shift);
   if (P.interior) {
-    b.step('Glocken', 'Setze über jede der sieben Glockenöffnungen einen Glatten Quarzblock statt der Stufe und hänge die Glocke direkt darunter an seine Unterseite. Die Glocken hängen nach Nordosten, Südosten, Süden, Südwesten, Westen und die zwei kleineren dazwischen nach Südsüdost und Westsüdwest (im Original hängen diese beiden eine Reihe höher).');
+    b.step();
     const bells = new LocalLayer();
     for (const cell of belfryBells(P, g)) {
       bells.set(cell.x, belfry.L + belfry.h - 2, cell.z, TRIM);
@@ -554,10 +500,7 @@ export default function build(b, { scale = 1 } = {}) {
     }
     bells.set(P.cx, belfry.L + belfry.h - 2, P.cz, 'lantern[hanging=true]');
     bells.flush(b, P, belfry.shift);
-    const bellCell = belfryBells(P, g)[0];
-    const [bx, by, bz] = toWorld(P, bellCell.x, belfry.L + belfry.h - 3, bellCell.z, belfry.shift);
-    b.note(bx, by, bz, 'Die größte Glocke „Assunta“ hängt nach Nordosten.');
-    b.step('Laternen in Schacht und Galerien', 'Hänge in jedem Geschoss eine Laterne mitten unter den Boden des nächsten Geschosses, stelle im Erdgeschoss eine zweite auf den Boden und hänge auf jeder Galerie vier Laternen (Nord, Ost, Süd, West) an die Decke des Umgangs.');
+    b.step();
     storeys.forEach((st) => {
       if (st.kind === 'belfry') return;
       const lights = new LocalLayer();
@@ -574,11 +517,7 @@ export default function build(b, { scale = 1 } = {}) {
   }
 
   // 11. Umgebung
-  b.phase(
-    'Rasen und Weg',
-    `Rund um den Turm liegt der Rasen der Piazza dei Miracoli. Fülle die Fläche um die Fundamentplatte auf derselben Ebene mit Grasblöcken und lege von Westen einen ${P.interior ? 'drei' : 'einen'} Block breiten Weg aus Glattem Stein bis zum Sockel${P.interior ? ' vor der Eingangstür' : ''}. Ein paar Grasbüschel lockern den Rasen auf.`,
-    { tips: ['Die Gras-Ebene liegt genau eine Ebene unter dem Sockel – der Turm steht also auf dem Boden, nicht darin.'] },
-  );
+  b.phase('Rasen und Weg');
   const lawn = P.lawn;
   const x1 = Math.floor(P.cx - lawn);
   const x2 = Math.ceil(P.cx + lawn);
@@ -598,5 +537,4 @@ export default function build(b, { scale = 1 } = {}) {
       if (b.chance(0.07)) b.set(x, 0, z, 'short_grass');
     }
   }
-  if (P.interior) b.note(P.cx - 7, 1, P.cz, 'Eingang: Schwarzeichentür auf der Westseite, dahinter der Gang zur Wendeltreppe.');
 }
