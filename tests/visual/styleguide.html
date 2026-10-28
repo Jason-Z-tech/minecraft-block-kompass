@@ -34,16 +34,9 @@
           <li><a class="hotbar__slot" href="../../index.html" data-nav="home"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#home"></use></svg><span>Start</span></a></li>
           <li><a class="hotbar__slot" href="../../kategorie.html" data-nav="category"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#grid"></use></svg><span>Kategorien</span></a></li>
           <li><a class="hotbar__slot" href="../../erstellen.html" data-nav="create"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#hammer"></use></svg><span class="label-long">Selber erstellen</span><span class="label-short">Erstellen</span></a></li>
+          <li><a class="hotbar__slot" href="../../meine.html" data-nav="mine"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#star"></use></svg><span class="label-long">Meine Bauten</span><span class="label-short">Meine</span></a></li>
         </ul>
-        <button class="hotbar__slot site-search-toggle" id="site-search-toggle" type="button" aria-expanded="false" aria-controls="site-search-form"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#search"></use></svg><span>Suche</span></button>
       </nav>
-      <form class="site-search" id="site-search-form" action="erstellen.html" method="get" role="search" aria-label="Bauten suchen">
-        <div class="site-search__field">
-          <label class="visually-hidden" for="site-search-input">Bauten suchen</label>
-          <input class="field__input site-search__input" id="site-search-input" type="search" name="q" maxlength="120" placeholder="Bau suchen …" autocomplete="off" enterkeyhint="search" spellcheck="false">
-          <button class="site-search__submit" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="../../assets/icons.svg#search"></use></svg><span class="visually-hidden">Suchen</span></button>
-        </div>
-      </form>
     </div>
   </header>
 
@@ -187,17 +180,16 @@
           <p class="section__lead">Überschriften Pixelify Sans, Text Atkinson Hyperlegible Next, Zahlen und IDs Atkinson Hyperlegible Mono.</p>
         </div>
         <div class="stack prose">
-          <p class="eyebrow">Eyebrow · Mono</p>
           <h1>Überschrift 1 – Burg am Fluss</h1>
           <h2>Überschrift 2 – Material für Ebene 3</h2>
           <h3>Überschrift 3 – Schritt 12 von 40</h3>
           <h4>Überschrift 4 – Material</h4>
-          <p class="hero__lead">Einleitung: Setze zuerst das Fundament, dann die Wände Ebene für Ebene.</p>
+          <p class="page-head__lead">Einleitung im Seitenkopf: Setze zuerst das Fundament, dann die Wände Ebene für Ebene.</p>
           <p>Fließtext: Setze die Treppen mit der hohen Seite nach außen. Die Laterne hängt an einer Kette unter dem Vordach. <strong>Wichtig:</strong> Redstone-Staub braucht einen festen Block darunter. <em>Kursiv für Hinweise.</em> <a href="#sg-schrift">Ein Link</a> und <code>minecraft:stone_bricks</code>.</p>
           <p class="muted">Gedämpfter Text für Nebeninfos, z. B. „Stand des Katalogs“.</p>
           <p class="mono">Koordinaten 12 / 64 / −8 · 1.234.567 Blöcke · 2 Shulkerkisten, 5 Stacks und 12</p>
           <p>Glyphen: ÄÖÜ äöü ß „Anführung“ ‚einfach‘ – Gedankenstrich … × · › <kbd>W</kbd> <kbd>Shift</kbd> <kbd>Strg</kbd></p>
-          <p class="hero__title">Pixel 72</p>
+          <p class="home__title">Titel der <span class="home__title-accent">Startseite</span></p>
         </div>
       </section>
 
@@ -255,12 +247,13 @@
         </div>
       </section>
 
-      <section class="section" id="sg-kacheln" aria-labelledby="sg-kacheln-title">
+      <section class="section stack" id="sg-kacheln" aria-labelledby="sg-kacheln-title">
         <div class="section__head">
           <h2 class="section__title" id="sg-kacheln-title">Kategorie-Kacheln</h2>
-          <p class="section__lead">Mit Beispielzahlen, im Ladezustand und ohne Anzahl.</p>
+          <p class="section__lead">Mit Beispielzahlen, im Ladezustand und ohne Anzahl. Darunter die kompakte Form der Startseite.</p>
         </div>
         <ul class="category-grid" id="sg-tiles" role="list"></ul>
+        <ul class="category-grid category-grid--compact" id="sg-tiles-compact" role="list"></ul>
       </section>
 
       <section class="section" id="sg-karten" aria-labelledby="sg-karten-title">

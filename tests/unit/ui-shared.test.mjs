@@ -63,6 +63,15 @@ test('findCategory, Herkunfts-Labels und keine Schwierigkeit mehr', () => {
   for (const name of ['DIFFICULTY_LABELS', 'difficultyLabel', 'createDifficulty']) assert.equal(Object.hasOwn(shared, name), false, name);
 });
 
+test('Navigation: Seite → Navigationspunkt, „Meine Bauten“ (mine) mit eigenem Icon, keine Kopf-Suche mehr', () => {
+  assert.deepEqual(shared.NAV_FOR_PAGE, { home: 'home', category: 'category', create: 'create', mine: 'mine' });
+  assert.ok(Object.isFrozen(shared.NAV_FOR_PAGE));
+  assert.ok(ICON_NAMES.includes('star'), 'Icon für „Meine Bauten“');
+  // Die Suche läuft nur noch über das Formular der Startseite
+  assert.equal(typeof shared.bindSearchForm, 'function');
+  assert.equal(Object.hasOwn(shared, 'initHeader'), false);
+});
+
 test('Alle Icons der Liste stehen im Sprite und umgekehrt', async () => {
   const sprite = await readFile(path.join(ROOT, 'assets', 'icons.svg'), 'utf8');
   const symbols = [...sprite.matchAll(/<symbol id="([^"]+)"/g)].map((m) => m[1]);

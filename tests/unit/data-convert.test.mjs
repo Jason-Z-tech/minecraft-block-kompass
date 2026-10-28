@@ -1,5 +1,5 @@
 // Reine Umwandlung (js/data/convert.js) und Blockfarben-Kern (js/data/block-colors.js): ohne Node-Importe, laufen im
-// echten Chrome genau wie in Node, Strukturnamen hin und zurück, textureEntry wie buildTextures, Assets aus der
+// echten Chrome genau wie in Node, textureEntry wie buildTextures, Assets aus der
 // mcmeta-Zusammenfassung, Blockfarben aus vorher dekodierten Bildern. Die Prüfungen mit Spieldaten laufen nur mit
 // game-data/ (node scripts/extract-game-data.mjs), der Browser-Teil nur mit Chrome.
 import { test } from 'node:test';
@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as convert from '../../js/data/convert.js';
 import * as blockColors from '../../js/data/block-colors.js';
-import { buildTextures, buildModels as scriptBuildModels, structureFileName as scriptStructureFileName, readPngSize as scriptReadPngSize } from '../../scripts/extract-game-data.mjs';
+import { buildTextures, buildModels as scriptBuildModels, readPngSize as scriptReadPngSize } from '../../scripts/extract-game-data.mjs';
 import { buildBlockColors } from '../../scripts/build-block-colors.mjs';
 import { decodePng } from '../../scripts/lib/png.mjs';
 import { openZip } from '../../scripts/lib/zip.mjs';
@@ -101,9 +101,6 @@ function probe(c, bc, pngBytes) {
   const colors = bc.buildBlockColorsFrom({ ...colorInput, textureImage: () => image });
   const meta = new TextEncoder().encode('﻿{"animation":{"frametime":2,"interpolate":true},"texture":{"mipmap_strategy":"cutout"}}');
   return JSON.parse(JSON.stringify({
-    path: c.structurePathFromFile('village__plains__houses__plains_small_house_1.json'),
-    file: c.structureFileName('village/plains/houses/plains_small_house_1'),
-    invalid: errorOf(() => c.structurePathFromFile('../evil.json')),
     size: c.readPngSize(png),
     sizeFromArrayBuffer: c.readPngSize(png.buffer),
     sizeWithOffset: c.readPngSize(padded.subarray(7)),
@@ -164,7 +161,6 @@ test('auch alle Module, die block-colors.js lädt, kommen ohne Node- und Paket-I
 });
 
 test('die Skripte nutzen den Kern und exportieren weiter dieselben Funktionen', () => {
-  assert.equal(scriptStructureFileName, convert.structureFileName);
   assert.equal(scriptReadPngSize, convert.readPngSize);
   assert.equal(scriptBuildModels, convert.buildModels);
   const extract = fs.readFileSync(path.join(ROOT, 'scripts', 'extract-game-data.mjs'), 'utf8');
@@ -206,9 +202,6 @@ test('beide Module laden im echten Chrome (CSP der Seite) und rechnen dort genau
     const inNode = probe(convert, blockColors, png);
     assert.deepEqual(inBrowser, inNode);
     // Stichproben, damit der Vergleich nicht zwei gleich falsche Ergebnisse durchwinkt
-    assert.equal(inNode.path, 'village/plains/houses/plains_small_house_1');
-    assert.equal(inNode.file, 'village__plains__houses__plains_small_house_1.json');
-    assert.match(inNode.invalid, /Ungültiger Strukturname/);
     assert.deepEqual(inNode.size, { width: 16, height: 512 });
     assert.deepEqual(inNode.sizeFromArrayBuffer, inNode.size);
     assert.deepEqual(inNode.sizeWithOffset, inNode.size);
@@ -268,28 +261,11 @@ test('Blockfarben im Browser: Texturen vorab asynchron dekodiert → genau game-
 });
 
 // ---------------------------------------------------------------------------------------------
-// (c) Strukturnamen
+// (c) keine Original-Strukturen mehr
 
-test('structurePathFromFile kehrt structureFileName um und lehnt alles andere ab', () => {
-  for (const structurePath of ['igloo/top', 'village/plains/houses/plains_small_house_1', 'shipwreck/rightsideup_backhalf_degraded', 'a', 'a1/b_2/c3']) {
-    const file = convert.structureFileName(structurePath);
-    assert.equal(convert.structurePathFromFile(file), structurePath);
-  }
-  if (hasGameFiles('structures/index.json')) {
-    const index = JSON.parse(fs.readFileSync(path.join(GAME, 'structures', 'index.json'), 'utf8'));
-    assert.ok(index.structures.length > 1000);
-    for (const { path: structurePath, file } of index.structures) {
-      assert.equal(convert.structureFileName(structurePath), file);
-      assert.equal(convert.structurePathFromFile(file), structurePath);
-    }
-  }
-  const invalid = [
-    '', 'x', 'igloo__top', 'igloo__top.nbt', 'igloo__top.JSON', '.json', '__a.json', 'a__.json', 'a___b.json', '_a.json', 'a_.json',
-    'a__b.json.json', '../x.json', '..__x.json', 'a/b.json', 'a\\b.json', 'A__b.json', 'a b.json', 'ä.json', 'a%2fb.json', 'a-b.json',
-    'a.b.json', `${'a'.repeat(300)}.json`, null, undefined, 5, {}, ['a.json'],
-  ];
-  for (const file of invalid) {
-    assert.throws(() => convert.structurePathFromFile(file), /Ungültiger Strukturname/, `„${String(file).slice(0, 40)}“ müsste abgelehnt werden`);
+test('convert.js wandelt keine Strukturen mehr um (Original-Strukturen gibt es nicht mehr)', () => {
+  for (const name of ['STRUCTURE_PREFIX', 'parseStateString', 'createStateNormalizer', 'encodeRle', 'convertStructure', 'structureFileName', 'structurePathFromFile']) {
+    assert.equal(name in convert, false, name);
   }
 });
 

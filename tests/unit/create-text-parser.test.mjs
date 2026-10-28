@@ -81,7 +81,7 @@ describe('Bauten aus dem Katalog', () => {
     ['Hobbit Höhle', 'hobbit-hoehle', null],
     ['iron farm', 'eisenfarm', null],
     ['Sakura', 'kirschbluetenbaum', null],
-    ['Dorfhaus', 'spiel-plains-small-house-1', null],
+    ['Windmühle', 'windmuehle', null],
     ['Pyramide von Gizeh', 'cheops-pyramide', 0.25],
     ['Wachturm aus Holz', 'wachturm', null],
     ['Tokyo Tower', 'tokyo-tower', 1],
@@ -98,7 +98,7 @@ describe('Bauten aus dem Katalog', () => {
   });
 
   test('Maßstab bei einem Bau ohne Maßstäbe wird nicht still verschluckt', () => {
-    const r = expectBuild('Iglu 1:1', 'spiel-igloo-top', { scale: null });
+    const r = expectBuild('Windmühle 1:1', 'windmuehle', { scale: null });
     assert.match(r.notes[0], /nur in einer Größe/);
   });
 

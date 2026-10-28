@@ -214,7 +214,6 @@ export function normalizeBuild(entry) {
       steps: cleanInteger(entry.steps, 0, 65534),
       topMaterials: cleanMaterials(entry.topMaterials),
       module: cleanPath(entry.module, /^js\/builds\/[a-z]+\/[a-z0-9-]{2,80}\.js$/),
-      structure: cleanPath(entry.structure, /^[a-z0-9_.-]{1,160}\.json$/),
       scales: Array.isArray(entry.scales) ? entry.scales.filter((s) => typeof s === 'number' && s > 0 && s <= 4) : [],
       tested: entry.tested === true || entry.tested === false ? entry.tested : null,
       thumb: cleanPath(entry.thumb, /^thumbs\/[a-z0-9-]{2,80}\.(?:webp|png|avif|jpg)$/),

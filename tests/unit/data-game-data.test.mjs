@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   createGameData, GameDataError, toGameDataError, isLocalHost, dataMode, loadGameNames, onGameDataProgress,
 } from '../../js/data/game-data.js';
+import * as gameDataModule from '../../js/data/game-data.js';
 import { NetError } from '../../js/data/net.js';
 import { MCMETA_BASE, MCMETA_COMMITS } from '../../js/data/sources.js';
 import { TextureStore, TextureSourceError, createImage, encodePng } from '../../js/render/texture-store.js';
@@ -58,14 +59,13 @@ function fakeSource(overrides = {}) {
     models: answer('models', { version: '26.2', textures: [], models: [], blocks: {} }),
     textures: answer('textures', { version: '26.2', entries: { 'block/stone': { atlas: 'blocks', x: 0, y: 0, w: 16, h: 16, anim: null } } }),
     atlas: answer('atlas', new Uint8Array([1, 2, 3])),
-    structure: answer('structure', { path: 'a/b', size: [1, 1, 1], palette: ['air'], rle: [0, 1] }),
     blockColors: answer('blockColors', { format: 1, blocks: { stone: {} } }),
     isCached: answer('isCached', true),
   };
   return { source, calls };
 }
 
-function remoteData(source, { persist = () => {}, labels = { names: 'Blocknamen', models: 'Blockmodelle', structure: 'Struktur' }, fetch } = {}) {
+function remoteData(source, { persist = () => {}, labels = { names: 'Blocknamen', models: 'Blockmodelle', 'block-colors': 'Blockfarben' }, fetch } = {}) {
   const state = { created: 0, onProgress: null, persisted: 0 };
   const data = createGameData({
     location: { hostname: 'jason-z-tech.github.io' },
@@ -148,17 +148,16 @@ test('Standard-Wurzel: game-data/ in der Website-Wurzel (neben js/), relativ zum
 // ---------------------------------------------------------------------------------------------
 // Lokal: genau die Dateien aus game-data/
 
-test('Lokal: Namen, Blöcke, Modelle, Texturen, Struktur und Blockfarben aus game-data/, feste Dateien einmal', async () => {
+test('Lokal: Namen, Blöcke, Modelle, Texturen und Blockfarben aus game-data/, feste Dateien einmal', async () => {
   const names = { block: { stone: { de: 'Stein', en: 'Stone' } }, item: {} };
   const blocks = { version: '26.2', blocks: { stone: { props: {}, default: {} } } };
   const models = { version: '26.2', textures: ['block/stone'], models: [], blocks: {} };
   const textures = { version: '26.2', entries: { 'block/stone': { o: 0, l: 10, w: 16, h: 16, anim: null } } };
   const bin = new Uint8Array([7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-  const structure = { path: 'village/plains/houses/plains_small_house_1', size: [1, 1, 1], palette: ['air'], rle: [0, 1] };
   const colors = { format: 1, blocks: { stone: {} } };
   const { fetch, calls } = localFiles({
     'names.json': names, 'blocks.json': blocks, 'models.json': models, 'textures.json': textures, 'textures.bin': bin,
-    'structures/village__plains__houses__plains_small_house_1.json': structure, 'block-colors.json': colors,
+    'block-colors.json': colors,
   });
   let created = 0;
   const data = createGameData({ location: { hostname: '127.0.0.1' }, fetch, root: DATA_ROOT, createSource: async () => { created++; throw new Error('nicht gebraucht'); } });
@@ -173,18 +172,13 @@ test('Lokal: Namen, Blöcke, Modelle, Texturen, Struktur und Blockfarben aus gam
   assert.ok(tex.bin instanceof Uint8Array);
   assert.deepEqual([...tex.bin], [...bin], 'Bytes von textures.bin unverändert');
   assert.equal(TextureStore.fromSource(tex).mode, 'bin', 'passt zu TextureStore.fromSource');
-  assert.deepEqual(await data.loadStructure('village__plains__houses__plains_small_house_1.json'), structure);
   assert.deepEqual(await data.loadBlockColors(), colors);
-  // Feste Dateien je Kontext nur einmal (gleiche Objekte), Strukturen jedes Mal frisch
+  // Feste Dateien je Kontext nur einmal (gleiche Objekte)
   assert.equal(await data.loadModels(), await data.loadModels());
   assert.equal(await data.loadTextures(), tex);
-  await data.loadStructure('village__plains__houses__plains_small_house_1.json');
+  assert.equal(await data.loadBlockColors(), await data.loadBlockColors());
   const files = calls.map((call) => call.url.slice(DATA_ROOT.href.length));
-  assert.deepEqual(files, [
-    'meta.json', 'names.json', 'blocks.json', 'models.json', 'textures.json', 'textures.bin',
-    'structures/village__plains__houses__plains_small_house_1.json', 'block-colors.json',
-    'structures/village__plains__houses__plains_small_house_1.json',
-  ]);
+  assert.deepEqual(files, ['meta.json', 'names.json', 'blocks.json', 'models.json', 'textures.json', 'textures.bin', 'block-colors.json']);
   assert.ok(calls.every((call) => call.options.credentials === 'same-origin' && call.options.signal instanceof AbortSignal));
   assert.equal(created, 0, 'lokal wird keine Remote-Quelle angelegt');
   assert.deepEqual(progress, [], 'lokal kein Fortschritt (kein Download)');
@@ -239,13 +233,13 @@ test('Lokal: Fehler mit menschlichen Meldungen („Spieldaten fehlen …“), ni
   await assert.rejects(flaky.loadBlocks(), (error) => assertHuman(error, { kind: 'timeout', title: 'Zeitüberschreitung' }) ?? true);
 });
 
-test('Lokal: ungültige Strukturnamen ohne Anfrage abgelehnt', async () => {
+test('Keine Original-Strukturen mehr: kein Lader, nie eine Anfrage nach game-data/structures/', async () => {
   const { fetch, calls } = localFiles({});
   const data = createGameData({ location: { hostname: '127.0.0.1' }, fetch, root: DATA_ROOT });
   await data.dataMode();
-  for (const file of ['../meta.json', 'a/b.json', 'Gross.json', 'x.nbt', '', null, `${'a'.repeat(256)}.json`]) {
-    await assert.rejects(data.loadStructure(file), (error) => assertHuman(error, { kind: 'invalid' }) ?? true, String(file));
-  }
+  assert.equal('loadStructure' in data, false);
+  assert.deepEqual(Object.keys(data).sort(), ['dataMode', 'loadBlockColors', 'loadBlocks', 'loadModels', 'loadNames', 'loadTextures', 'needsDownload', 'onProgress']);
+  assert.equal('loadGameStructure' in gameDataModule, false);
   assert.equal(calls.length, 1, 'nur meta.json');
 });
 
@@ -265,10 +259,9 @@ test('Remote: alle Lader gehen an EINE Quelle, nie an game-data/', async () => {
   assert.deepEqual([...await textures.atlas('blocks')], [1, 2, 3]);
   assert.equal(await data.loadTextures(), textures, 'gleiche Texturquelle je Kontext');
   assert.equal(TextureStore.fromSource(textures).mode, 'atlas', 'passt zu TextureStore.fromSource');
-  assert.equal((await data.loadStructure('a__b.json')).path, 'a/b');
   assert.equal((await data.loadBlockColors()).format, 1);
   assert.equal(state.created, 1, 'eine Quelle je Kontext');
-  assert.deepEqual(calls, [['names'], ['blocks'], ['models'], ['textures'], ['atlas', 'blocks'], ['structure', 'a__b.json'], ['blockColors']]);
+  assert.deepEqual(calls, [['names'], ['blocks'], ['models'], ['textures'], ['atlas', 'blocks'], ['blockColors']]);
 });
 
 test('Remote: Fehler menschlich und nicht behalten, persist einmal nach dem ersten Erfolg', async () => {
@@ -342,7 +335,7 @@ test('needsDownload: lokal nie, remote bis alle Stufen gespeichert sind', async 
   assert.deepEqual(calls.map(([, name]) => name).sort(), ['blocks', 'models', 'names', 'textures']);
   cached.add('models').add('textures');
   assert.equal(await data.needsDownload(), false);
-  assert.equal(await data.needsDownload(['structure:a__b.json']), true);
+  assert.equal(await data.needsDownload(['atlas:blocks']), true, 'andere Stufen auf Wunsch');
   const failing = remoteData(fakeSource({ isCached: () => { throw new TypeError('kaputt'); } }).source);
   assert.equal(await failing.data.needsDownload(), true, 'im Zweifel: ja');
 });
@@ -395,10 +388,11 @@ test('TextureSourceError, ungültige Namen und Unbekanntes → GameDataError', (
   const decode = toGameDataError(new TextureSourceError('Der Textur-Atlas „entities“ lässt sich nicht lesen: PNG: CRC falsch', { atlas: 'entities', cause: new Error('PNG: CRC falsch') }));
   assertHuman(decode, { kind: 'damaged', title: 'Texturen beschädigt', message: /„entities“.*beschädigt/ });
   assert.doesNotMatch(decode.message, /CRC|PNG:/, 'technische Details nur in cause');
-  // Ungültiger Strukturname (convert.js) und unbekannter Atlas (sources.js): Meldung bleibt, Art invalid
-  const badName = new Error('Ungültiger Strukturname „x“ (erwartet z. B. village__plains__houses__plains_small_house_1.json).');
-  assertHuman(toGameDataError(badName), { kind: 'invalid', message: badName.message });
-  assertHuman(toGameDataError(new Error('Unbekannter Atlas „x“ (erlaubt: blocks, items, entities).')), { kind: 'invalid' });
+  // Unbekannter Atlas (sources.js): Meldung bleibt, Art invalid
+  const badAtlas = new Error('Unbekannter Atlas „x“ (erlaubt: blocks, items, entities).');
+  assertHuman(toGameDataError(badAtlas), { kind: 'invalid', message: badAtlas.message });
+  // Strukturnamen gibt es nicht mehr: so ein Fehler ist nichts Besonderes mehr (allgemeine Meldung)
+  assertHuman(toGameDataError(new Error('Ungültiger Strukturname „x“.')), { kind: 'unknown', title: 'Spieldaten nicht nutzbar' });
   // GameDataError bleibt, wie er ist; Unbekanntes wird allgemein verständlich (Details in cause)
   assert.equal(toGameDataError(inner), inner);
   const odd = new TypeError('Cannot read properties of undefined (reading \'blocks\')');
@@ -441,12 +435,13 @@ test('Fortschritt: Stufe, deutscher Name, grober Gesamtanteil (nie rückwärts) 
   assert.equal(events[1].text, 'Spieldaten von GitHub laden (einmalig) … 33 %');
   assert.equal(events.at(-1).text, 'Spieldaten von GitHub laden (einmalig) … 100 %');
   for (const event of events) assert.doesNotMatch(event.text, COMMAND_PATTERN);
-  // Danach eine einzelne Struktur: neuer Ladevorgang ab 0, eigener Text
-  emit({ stage: 'structure', done: 0, total: 2, file: 'a__b.json' });
-  emit({ stage: 'structure', done: 1, total: 2, file: 'a__b.json' });
-  assert.deepEqual(events.slice(-2).map((event) => [event.share, event.text, event.file, event.label]), [
-    [0, 'Struktur von GitHub laden … 0 %', 'a__b.json', 'Struktur'],
-    [0.5, 'Struktur von GitHub laden … 50 %', 'a__b.json', 'Struktur'],
+  // Danach (alles fertig) eine neue Stufe, z. B. die Blockfarben: neuer Ladevorgang ab 0, gleicher Text; ein altes Feld
+  // file wird nicht weitergegeben
+  emit({ stage: 'block-colors', done: 0, total: 2 });
+  emit({ stage: 'block-colors', done: 1, total: 2, file: 'a__b.json' });
+  assert.deepEqual(events.slice(-2).map((event) => [event.share, event.text, event.label, 'file' in event]), [
+    [0, 'Spieldaten von GitHub laden (einmalig) … 0 %', 'Blockfarben', false],
+    [0.5, 'Spieldaten von GitHub laden (einmalig) … 50 %', 'Blockfarben', false],
   ]);
   // Unbekannte oder kaputte Meldungen stören nicht; abgemeldet kommt nichts mehr
   emit(null);
@@ -492,11 +487,8 @@ test('Standard-Quelle: remote.js über die Fassade (Fake-Daten, Fake-fetch), For
     assert.equal(textures.json.entries['block/stone'].atlas, 'blocks');
     const store = TextureStore.fromSource(textures);
     assert.equal((await store.image('block/stone')).width, 16);
-    const structure = await data.loadStructure('mini__house.json');
-    assert.deepEqual(structure.size, [3, 2, 2]);
-    await assert.rejects(data.loadStructure('gibt__es_nicht.json'), (error) => assertHuman(error, { kind: 'missing', title: 'Spieldaten nicht gefunden' }) ?? true);
-    await assert.rejects(data.loadStructure('../x.json'), (error) => assertHuman(error, { kind: 'invalid' }) ?? true);
     assert.ok(requests.length > 5);
+    assert.ok(!requests.some((url) => url.includes('/structure/')), 'keine Strukturdateien');
     assert.ok(requests.every((url) => url.startsWith(MCMETA_BASE)), 'nur misode/mcmeta, nie game-data/');
     assert.ok(events.some((event) => event.stage === 'names' && event.label === 'Blocknamen'));
     assert.ok(events.some((event) => event.stage === 'atlas:blocks' && event.label === 'Block-Texturen'));

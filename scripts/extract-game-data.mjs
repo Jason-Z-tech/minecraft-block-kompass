@@ -12,17 +12,15 @@ import crypto from 'node:crypto';
 import { parseArgs } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { openZip } from './lib/zip.mjs';
-import { readNbt } from './lib/nbt.mjs';
 import { buildBlockColors, OUTPUT_FILE as BLOCK_COLORS_FILE } from './build-block-colors.mjs';
 import { spawnSync } from 'node:child_process';
 import { RemoteSourceError, blockedDomainMessage, createDownloader, loadRemoteSources, proxyRelaunchPlan, REMOTE_DOMAINS } from './lib/remote-source.mjs';
 import {
-  MC_VERSION, MCMETA_TAG, ASSET_ROOT, TEXTURE_PREFIX, STRUCTURE_PREFIX, RESOURCE_PATH_PATTERN, DIRECTIONS, createWarnings, dict,
+  MC_VERSION, MCMETA_TAG, ASSET_ROOT, TEXTURE_PREFIX, DIRECTIONS, createWarnings, dict,
   parseJsonText, normalizeResourceName, formatState, buildNames, loadBlockstates, convertMcmetaBlocks, parseVariantKey,
   deriveBlocksFromBlockstates, compareBlocksWithBlockstates, parseMcmetaReport, mcmetaBlocksData, axisRotationMatrix,
   eulerRotationMatrix, applyRescale, defaultFaceUv, convertElementRotation, convertConditionTerms, convertCondition, buildModels,
-  findBlocksWithoutGeometry, readPngSize, parseAnimation, isIncludedTexture, selectTextureNames, textureEntry, parseStateString,
-  createStateNormalizer, encodeRle, convertStructure, structureFileName,
+  findBlocksWithoutGeometry, readPngSize, parseAnimation, isIncludedTexture, selectTextureNames, textureEntry,
 } from '../js/data/convert.js';
 
 // Die reine Umwandlung liegt in js/data/convert.js (läuft auch im Browser); hier unter den bisherigen Namen weiter exportiert.
@@ -30,8 +28,7 @@ export {
   MC_VERSION, MCMETA_TAG, DIRECTIONS, createWarnings, normalizeResourceName, formatState, buildNames, convertMcmetaBlocks,
   parseVariantKey, deriveBlocksFromBlockstates, compareBlocksWithBlockstates, axisRotationMatrix, eulerRotationMatrix, applyRescale,
   defaultFaceUv, convertElementRotation, convertConditionTerms, convertCondition, buildModels, findBlocksWithoutGeometry,
-  readPngSize, parseAnimation, isIncludedTexture, parseStateString, createStateNormalizer, encodeRle, convertStructure,
-  structureFileName,
+  readPngSize, parseAnimation, isIncludedTexture,
 };
 
 const DEFAULT_ASSET_INDEX = '32';
@@ -336,38 +333,6 @@ export function buildTextures({ assets, referenced, warnings }) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Strukturen (structures/)
-
-function buildStructures({ assets, normalizeState, warnings }) {
-  const structures = [];
-  const files = [];
-  const fileNames = new Set();
-  for (const entry of assets.list(STRUCTURE_PREFIX)) {
-    if (!entry.endsWith('.nbt')) continue;
-    const structurePath = entry.slice(STRUCTURE_PREFIX.length, -'.nbt'.length);
-    if (!RESOURCE_PATH_PATTERN.test(structurePath) || structurePath.split('/').some((part) => part === '.' || part === '..')) {
-      warnings.add(`Struktur mit ungewöhnlichem Pfad übersprungen: ${entry}`);
-      continue;
-    }
-    const file = structureFileName(structurePath);
-    if (fileNames.has(file)) {
-      warnings.add(`Struktur ${structurePath} übersprungen: Dateiname ${file} doppelt.`);
-      continue;
-    }
-    try {
-      const { value } = readNbt(assets.read(entry));
-      const result = convertStructure(structurePath, value, normalizeState, warnings);
-      fileNames.add(file);
-      structures.push({ path: structurePath, file, ...result.info });
-      files.push({ file, text: JSON.stringify(result.data) });
-    } catch (error) {
-      warnings.add(`Struktur ${structurePath} übersprungen: ${error.message}`);
-    }
-  }
-  return { index: { version: MC_VERSION, structures }, files };
-}
-
-// ---------------------------------------------------------------------------------------------
 // Schreiben und Ablauf
 
 function isProcessRunning(pid) {
@@ -389,20 +354,18 @@ function removeStaleStaging(outputDir) {
 }
 
 // Schreibt erst in einen versteckten Zwischenordner und tauscht dann aus. Andere Dateien in game-data/
-// (z. B. catalog.json, .cache/) bleiben unberührt; structures/ gehört ganz diesem Skript.
-function writeOutputs(files, structureFiles, outputDir = OUTPUT_DIR) {
+// (z. B. catalog.json, .cache/) bleiben unberührt. structures/ früherer Läufe gehört diesem Skript und wird
+// entfernt (Original-Strukturen gibt es nicht mehr).
+function writeOutputs(files, outputDir = OUTPUT_DIR) {
   removeStaleStaging(outputDir);
   const staging = path.join(outputDir, `.staging-${process.pid}`);
   fs.rmSync(staging, { recursive: true, force: true });
-  fs.mkdirSync(path.join(staging, 'structures'), { recursive: true });
+  fs.mkdirSync(staging, { recursive: true });
   for (const { name, data } of files) fs.writeFileSync(path.join(staging, name), data);
-  for (const { file, text } of structureFiles) fs.writeFileSync(path.join(staging, 'structures', file), text);
 
-  const targetStructures = path.join(outputDir, 'structures');
-  fs.rmSync(targetStructures, { recursive: true, force: true, maxRetries: 3 });
-  fs.renameSync(path.join(staging, 'structures'), targetStructures);
   for (const { name } of files) fs.renameSync(path.join(staging, name), path.join(outputDir, name));
   fs.rmSync(staging, { recursive: true, force: true });
+  fs.rmSync(path.join(outputDir, 'structures'), { recursive: true, force: true, maxRetries: 3 });
 }
 
 function timed(label, task, log) {
@@ -437,7 +400,7 @@ async function openRemoteSources({ offline, cacheDir }, warnings, log) {
   log(`Block-Kompass · Spieldaten für Minecraft Java ${MC_VERSION} aus öffentlichen Quellen (--remote${offline ? ', nur Cache' : ''})`);
   log(`  Cache:  ${cacheDir}`);
   try {
-    return await timed((r) => `Quellen bereit: ${r.refs.assets} + ${r.refs.data}, de_de.json von ${r.refs.lang}`,
+    return await timed((r) => `Quellen bereit: ${r.refs.assets}, de_de.json von ${r.refs.lang}`,
       () => loadRemoteSources({ version: MC_VERSION, cacheDir, offline, download: createDownloader({ log }), warnings, log }), log);
   } catch (error) {
     if (error instanceof RemoteSourceError) throw new UserError(error.message);
@@ -508,8 +471,6 @@ export async function extractGameData(options, log = console.log) {
     () => buildModels({ assets, blockstates, blocks: blocks.data.blocks, warnings }), log);
   const textures = timed((t) => `Texturen: ${formatNumber(Object.keys(t.data.entries).length)} Bilder (${t.animated} animiert), ${formatBytes(t.bin.length)}`,
     () => buildTextures({ assets, referenced: models.data.textures, warnings }), log);
-  const structures = timed((s) => `Strukturen: ${formatNumber(s.index.structures.length)} umgewandelt`,
-    () => buildStructures({ assets, normalizeState: createStateNormalizer(blocks.data, warnings), warnings }), log);
 
   const blocksWithoutGeometry = findBlocksWithoutGeometry(models.data);
   const blockColors = extractBlockColors({ models, blocks, textures, warnings, log });
@@ -525,7 +486,6 @@ export async function extractGameData(options, log = console.log) {
       blockstates: blockstates.size,
       models: models.data.models.length,
       textures: Object.keys(textures.data.entries).length,
-      structures: structures.index.structures.length,
       blockNames: Object.keys(names.block).length,
       itemNames: Object.keys(names.item).length,
     },
@@ -542,13 +502,10 @@ export async function extractGameData(options, log = console.log) {
     { name: 'meta.json', data: JSON.stringify(meta, null, 2) },
     ...(blockColors ? [{ name: BLOCK_COLORS_FILE, data: JSON.stringify(blockColors) }] : []),
   ];
-  const structureFiles = [{ file: 'index.json', text: JSON.stringify(structures.index) }, ...structures.files];
-  writeOutputs(files, structureFiles, outputDir);
+  writeOutputs(files, outputDir);
 
   log(`Ausgabe in ${outputLabel}/:`);
   for (const { name, data } of files) log(`  ${name.padEnd(16)} ${formatBytes(Buffer.byteLength(data)).padStart(9)}`);
-  const structureBytes = structureFiles.reduce((sum, { text }) => sum + Buffer.byteLength(text), 0);
-  log(`  ${'structures/'.padEnd(16)} ${formatBytes(structureBytes).padStart(9)}  (${formatNumber(structureFiles.length)} Dateien inkl. index.json)`);
   if (warnings.list.length > 0) {
     log(`Warnungen: ${warnings.list.length} (vollständig in ${outputLabel}/meta.json)`);
     for (const message of warnings.list.slice(0, 15)) log(`  - ${message}`);
@@ -582,7 +539,7 @@ if (isMainModule) {
       const { options, auto, jarPath } = chooseSource(parsed);
       if (auto) {
         console.log(`Keine Minecraft-Installation gefunden (${jarPath}).`);
-        console.log('Lade die Spieldaten ohne Minecraft aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 13 MB) …');
+        console.log('Lade die Spieldaten ohne Minecraft aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 7 MB) …');
       }
       if (!(options.remote && relaunchWithEnvProxy(auto ? ['--remote'] : []))) await extractGameData(options);
     }

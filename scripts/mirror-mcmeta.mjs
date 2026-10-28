@@ -1,23 +1,21 @@
 // Lokaler Spiegel der festen Spieldaten-Dateien aus misode/mcmeta (für Tests des Online-Modus ohne Netz):
 // alle festen Dateien aus js/data/sources.js (Zusammenfassungen, Atlanten, Sprachdateien, die .png.mcmeta der
-// Liste MCMETA_TEXTURES) und die Strukturen aller Katalog-Einträge mit "structure".
+// Liste MCMETA_TEXTURES).
 // Ablage: <out>/<voller Commit-SHA>/<pfad im Repo>, genau wie auf raw.githubusercontent.com. Vorhandenes bleibt.
 // Aufruf: node scripts/mirror-mcmeta.mjs [--out tmp/mcmeta-mirror] [--force]
 
 import fs from 'node:fs/promises';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { allFixedFiles, mcmetaUrl, structureRepoPath, isValidMcmetaPath, MCMETA_COMMITS, LIMITS } from '../js/data/sources.js';
-import { structurePathFromFile } from '../js/data/convert.js';
+import { allFixedFiles, mcmetaUrl, isValidMcmetaPath, MCMETA_COMMITS } from '../js/data/sources.js';
 import { fetchBytes, createLimiter } from '../js/data/net.js';
 import { proxyRelaunchPlan } from './lib/remote-source.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_MIRROR_DIR = path.join(ROOT, 'tmp', 'mcmeta-mirror');
-export const CATALOG_FILE = path.join(ROOT, 'data', 'catalog.json');
 const CONCURRENCY = 6;
 
 const USAGE = [
@@ -29,23 +27,9 @@ const USAGE = [
   '  --force          vorhandene Dateien neu laden',
 ].join('\n');
 
-// Strukturdateien („village__plains__houses__plains_small_house_1.json“) aller Katalog-Einträge, sortiert, ohne Doppelte.
-export function catalogStructureFiles(catalog) {
-  if (!Array.isArray(catalog?.builds)) throw new Error('Katalog: unbekanntes Format (builds fehlt).');
-  const files = new Set();
-  for (const build of catalog.builds) if (typeof build?.structure === 'string') files.add(build.structure);
-  return [...files].sort();
-}
-
-// Alle Dateien des Spiegels: [{ key, commit, path, limit }] – feste Dateien, dann die Strukturen.
-export function mirrorFileList({ catalog = JSON.parse(readFileSync(CATALOG_FILE, 'utf8')) } = {}) {
-  const structures = catalogStructureFiles(catalog).map((file) => ({
-    key: 'data',
-    commit: MCMETA_COMMITS.data,
-    path: structureRepoPath(structurePathFromFile(file)),
-    limit: LIMITS.nbt,
-  }));
-  return [...allFixedFiles(), ...structures];
+// Alle Dateien des Spiegels: [{ key, commit, path, limit }] (die festen Dateien aus js/data/sources.js).
+export function mirrorFileList() {
+  return allFixedFiles();
 }
 
 // Ablageort einer Datei im Spiegel; wirft bei unbekanntem Commit oder unsicherem Pfad.

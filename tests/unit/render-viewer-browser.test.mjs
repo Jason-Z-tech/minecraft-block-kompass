@@ -229,8 +229,11 @@ test('3D-Ansicht: laden, Fortschritt, Schnitt, Geist, Hervorhebung, Picking, Lau
   }
 });
 
-test('3D-Ansicht: Original-Strukturen (Dorfhaus, Iglu, Endschiff) mit Schritten in Ebenen', { timeout: 180000 }, async (t) => {
+// Früher: Original-Strukturen (die gibt es nicht mehr). Jetzt echte kleine Bau-Module aus drei Kategorien.
+test('3D-Ansicht: echte Bau-Module (Brunnen, Starterhaus, Wasseraufzug) vollständig und ohne fehlende Texturen', { timeout: 180000 }, async (t) => {
   if (!hasGameData) return t.skip('game-data/ fehlt');
+  const [{ setBlockData }, { Builder }] = await Promise.all([import('../../js/core/block-data.js'), import('../../js/core/builder.js')]);
+  setBlockData(JSON.parse(fs.readFileSync(path.join(ROOT, 'game-data', 'blocks.json'), 'utf8')));
   const server = await startServer({ port: 0 });
   const page = await openBrowser(t, { width: 800, height: 600 });
   if (!page) {
@@ -238,16 +241,18 @@ test('3D-Ansicht: Original-Strukturen (Dorfhaus, Iglu, Endschiff) mit Schritten 
     return;
   }
   try {
-    for (const file of ['village__plains__houses__plains_library_1.json', 'igloo__top.json', 'end_city__ship.json']) {
-      const structure = JSON.parse(fs.readFileSync(path.join(ROOT, 'game-data', 'structures', file), 'utf8'));
-      let blocks = 0;
-      for (let i = 0; i < structure.rle.length; i += 2) if (structure.rle[i] !== 0) blocks += structure.rle[i + 1];
-      const state = await openViewer(page, server, `structure=${file}&ui=0&progress=50`);
-      assert.equal(state.result.blockCount, blocks, file);
-      assert.deepEqual(state.result.phases, ['Aufbau']);
-      assert.deepEqual(state.stats.missingTextures, [], file);
+    for (const modulePath of ['js/builds/klein/dorfbrunnen.js', 'js/builds/haeuser/starterhaus-eiche.js', 'js/builds/farmen/wasser-aufzug.js']) {
+      const mod = await import(`../../${modulePath}`);
+      const b = new Builder();
+      mod.default(b, {});
+      const expected = b.finalize();
+      const state = await openViewer(page, server, `module=${modulePath}&ui=0&progress=50`);
+      assert.equal(state.result.blockCount, expected.blockCount, modulePath);
+      assert.equal(state.result.steps, expected.steps.length, modulePath);
+      assert.deepEqual(state.result.phases, expected.phases.map((phase) => phase.title), modulePath);
+      assert.deepEqual(state.stats.missingTextures, [], modulePath);
       assert.equal(await page.eval('window.__viewer.progress'), state.result.steps / 2);
-      t.diagnostic(`${file}: ${blocks} Blöcke, ${state.result.steps} Ebenen, ${state.stats.quads} Quads, Laden ${state.stats.loadMs} ms`);
+      t.diagnostic(`${modulePath}: ${expected.blockCount} Blöcke, ${state.result.steps} Schritte, ${state.stats.quads} Quads, Laden ${state.stats.loadMs} ms`);
     }
     assert.deepEqual(consoleErrors(page), [], 'Konsolenfehler');
   } finally {

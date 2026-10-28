@@ -3,18 +3,15 @@
 // Für Tests ersetzt der Testserver MCMETA_BASE beim Ausliefern durch '/__mcmeta/' (tests/lib/mcmeta-mirror.mjs);
 // die Zeile darum genau so lassen: export const MCMETA_BASE = '…';
 
-import { structurePathFromFile } from './convert.js';
-
 export const MCMETA_BASE = 'https://raw.githubusercontent.com/misode/mcmeta/';
 
 // summary: Blockbericht, alle Blockstates und Modelle · atlas: Textur-Atlanten · assets: .png.mcmeta der Texturen ·
-// assetsJson: Sprachdateien · data: Struktur-NBTs (alle für Minecraft Java 26.2)
+// assetsJson: Sprachdateien (alle für Minecraft Java 26.2)
 export const MCMETA_COMMITS = Object.freeze({
   summary: '711a353b47d84e6cb592a1b72f682e5f44759284',
   atlas: 'dbfab67355c11fdddefdab9f5099e3ae72e7c8f5',
   assets: 'a4151022c4c3870ac75e8d3a90e5c28e81137b60',
   assetsJson: '9a92e5dfd8f4539e636fa32e3e19879019d696ea',
-  data: '4d12c0553e21e461085d08dcb2c5d412398c494e',
 });
 
 export const GAME_VERSION = Object.freeze({ id: '26.2', dataVersion: 4903 });
@@ -67,19 +64,18 @@ const KIB = 1024;
 const MIB = 1024 * KIB;
 
 // Größte erlaubte Antwort je Dateiart (entpackt). Heute: Modelle ≈ 0,9 MB, Sprachdatei ≈ 0,6 MB, größter Atlas ≈ 1 MB,
-// .mcmeta < 1 KB, größte Struktur ≈ 80 KB.
+// .mcmeta < 1 KB.
 export const LIMITS = Object.freeze({
   json: 4 * MIB,
   lang: 2 * MIB,
   png: 4 * MIB,
   mcmeta: 64 * KIB,
-  nbt: 1 * MIB,
 });
 
 // Pfad im Repo: nur Kleinbuchstaben, Ziffern und _ . / -, keine leeren Segmente, kein „..“, nicht mit „/“ beginnend.
 const PATH_PATTERN = /^[a-z0-9_.-]+(?:\/[a-z0-9_.-]+)*$/;
 const MAX_PATH_LENGTH = 300;
-// Texturname („block/water_still“) und Strukturpfad unter data/minecraft/structure/ (ohne Endung): Segmente aus [a-z0-9_-]
+// Texturname („block/water_still“): Segmente aus [a-z0-9_-]
 const RESOURCE_PATH_PATTERN = /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)*$/;
 
 export function isValidMcmetaPath(path) {
@@ -114,25 +110,8 @@ export function textureMcmetaPath(textureName) {
   return `assets/minecraft/textures/${textureName}.png.mcmeta`;
 }
 
-// Pfad einer Struktur im data-Commit, z. B. „village/plains/houses/plains_small_house_1“
-export function structureRepoPath(structurePath) {
-  if (typeof structurePath !== 'string' || structurePath.length > MAX_PATH_LENGTH || !RESOURCE_PATH_PATTERN.test(structurePath)) {
-    throw new Error(`Ungültiger Strukturpfad „${shown(structurePath)}“.`);
-  }
-  return `data/minecraft/structure/${structurePath}.nbt`;
-}
-
-export function structureUrl(structurePath) {
-  return mcmetaUrl('data', structureRepoPath(structurePath));
-}
-
-// Dateiname wie in game-data/structures/ („village__plains__houses__plains_small_house_1.json“) → Adresse der .nbt
-export function structureFileToUrl(file) {
-  return structureUrl(structurePathFromFile(file));
-}
-
-// Alle festen Dateien (ohne Strukturen, die hängen vom Katalog ab): { key: Commit-Schlüssel, commit: voller SHA,
-// path, limit: Bytes }. Reihenfolge: summary, atlas, assetsJson, assets (.mcmeta).
+// Alle Dateien der Spieldaten: { key: Commit-Schlüssel, commit: voller SHA, path, limit: Bytes }.
+// Reihenfolge: summary, atlas, assetsJson, assets (.mcmeta).
 export function allFixedFiles() {
   const entry = (key, path, limit) => ({ key, commit: MCMETA_COMMITS[key], path, limit: LIMITS[limit] });
   return [

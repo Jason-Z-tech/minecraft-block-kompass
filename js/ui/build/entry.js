@@ -156,10 +156,9 @@ export function progressKeyFor(id, scale = null) {
   return scale === null || scale === undefined ? `bk:progress:${id}` : `bk:progress:${id}@${scaleToken(scale)}`;
 }
 
-/** Quelle für viewer.load oder null, wenn der Eintrag weder Modul noch Struktur hat. */
+/** Quelle für viewer.load oder null, wenn der Eintrag kein Bau-Modul hat. */
 export function sourceForEntry(entry) {
   if (entry?.module) return { kind: 'module', path: entry.module };
-  if (entry?.structure) return { kind: 'structure', file: entry.structure };
   return null;
 }
 

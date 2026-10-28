@@ -33,7 +33,7 @@ function quietly(fn) {
 const VALID_BUILD = {
   id: 'tokyo-skytree', title: 'Tokyo Skytree', category: 'wahrzeichen', subtitle: 'Fernseh- und Aussichtsturm in Tokio',
   tags: ['Japan', 'Turm'], aliases: ['skytree'], accuracy: 'massstab', size: [68, 634, 68], blocks: 123456,
-  steps: 420, topMaterials: [['white_concrete', 5000]], module: 'js/builds/wahrzeichen/tokyo-skytree.js', structure: null,
+  steps: 420, topMaterials: [['white_concrete', 5000]], module: 'js/builds/wahrzeichen/tokyo-skytree.js',
   scales: [1, 0.5, 0.25], tested: null, thumb: 'thumbs/tokyo-skytree.webp',
 };
 
@@ -87,7 +87,7 @@ test('loadJson lehnt unsichere Pfade ab, ohne überhaupt anzufragen', async () =
     await assert.rejects(loadJson(bad, { fetch, root: ROOT }), { kind: 'invalid-path' }, String(bad));
   }
   assert.equal(calls.length, 0);
-  assert.equal(isSafeDataPath('game-data/structures/village__plains__houses__plains_small_house_1.json'), true);
+  assert.equal(isSafeDataPath('game-data/unterordner/datei_1.json'), true);
 });
 
 test('recoverySteps: ein Hinweis zum Neuladen, nie ein Befehl', () => {
@@ -110,6 +110,17 @@ test('normalizeBuild: Schwierigkeit und Wissenswertes aus alten Katalogen fallen
   assert.equal(build.description, 'Text', 'die Beschreibung bleibt');
 });
 
+test('normalizeBuild: das Feld structure (Original-Strukturen) aus alten Katalogen fällt weg', () => {
+  const { build } = normalizeBuild({ ...VALID_BUILD, structure: 'village__plains__houses__plains_small_house_1.json' });
+  assert.equal(Object.hasOwn(build, 'structure'), false);
+  assert.equal(build.module, VALID_BUILD.module);
+  // Ein alter Struktur-Eintrag ohne Modul bleibt ein Katalog-Eintrag ohne Modul (die Bau-Seite zeigt dann einen Fehler)
+  const old = normalizeBuild({ ...VALID_BUILD, id: 'spiel-iglu', module: null, structure: 'igloo__top.json' });
+  assert.equal(old.ok, true);
+  assert.equal(old.build.module, null);
+  assert.equal(Object.hasOwn(old.build, 'structure'), false);
+});
+
 test('normalizeBuild: ohne ID, Titel oder Kategorie wird verworfen, andere Felder werden geleert', () => {
   assert.equal(normalizeBuild(null).ok, false);
   assert.equal(normalizeBuild({ ...VALID_BUILD, id: 'Tokyo Skytree' }).ok, false);
@@ -117,7 +128,7 @@ test('normalizeBuild: ohne ID, Titel oder Kategorie wird verworfen, andere Felde
   assert.equal(normalizeBuild({ ...VALID_BUILD, category: 'weltall' }).ok, false);
   const { build } = normalizeBuild({
     ...VALID_BUILD, accuracy: 'geraten', size: [10, 0, 10], blocks: -5, steps: 1.5, tested: 'ja',
-    thumb: '../geheim.webp', module: 'https://evil.example/x.js', structure: '../../x.json', scales: [1, 'x', 0, 9],
+    thumb: '../geheim.webp', module: 'https://evil.example/x.js', scales: [1, 'x', 0, 9],
     tags: ['ok', 42, '', 'x'.repeat(100)], topMaterials: [['stone', 3], ['Böse<>', 1], ['dirt', -1]],
   });
   assert.equal(build.accuracy, null);
@@ -127,7 +138,6 @@ test('normalizeBuild: ohne ID, Titel oder Kategorie wird verworfen, andere Felde
   assert.equal(build.tested, null);
   assert.equal(build.thumb, null);
   assert.equal(build.module, null);
-  assert.equal(build.structure, null);
   assert.deepEqual(build.scales, [1]);
   assert.deepEqual(build.tags, ['ok', 'x'.repeat(40)]);
   assert.deepEqual(build.topMaterials, [['stone', 3]]);

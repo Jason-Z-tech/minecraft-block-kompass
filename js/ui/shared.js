@@ -36,7 +36,7 @@ export const SIZE_CLASS_KEYS = Object.freeze(['klein', 'mittel', 'gross', 'riesi
 export const ICON_NAMES = Object.freeze([
   'search', 'home', 'grid', 'hammer', 'prev', 'next', 'play', 'pause', 'check', 'close', 'info', 'warning',
   'size', 'blocks', 'steps', 'copy', 'retry', 'cube', 'layers', 'chest', 'book', 'arrow-right', 'arrow-left',
-  'chevron-down', ...CATEGORIES.map((category) => category.icon),
+  'chevron-down', 'star', ...CATEGORIES.map((category) => category.icon),
 ]);
 
 export const SEARCH_MAX_LENGTH = 120;
@@ -252,14 +252,13 @@ export function icon(name, { size = 16, label = null, className = '' } = {}) {
 
 /* ------------------------------------------------------------------ Kopf und Suche */
 
-const NAV_FOR_PAGE = { home: 'home', category: 'category', create: 'create' };
+/** body[data-page] → Navigationspunkt [data-nav] (meine.html: data-page="mine") */
+export const NAV_FOR_PAGE = Object.freeze({ home: 'home', category: 'category', create: 'create', mine: 'mine' });
 
-/** Initialisiert Kopf (aktive Navigation, Suche) – zuerst in jedem Seitenmodul aufrufen. */
+/** Initialisiert den Kopf (aktive Navigation) – zuerst in jedem Seitenmodul aufrufen. */
 export function initPage() {
   const page = document.body.dataset.page ?? '';
-  markActiveNav(NAV_FOR_PAGE[page] ?? null);
-  const header = document.getElementById('site-header');
-  if (header) initHeader(header);
+  markActiveNav(Object.hasOwn(NAV_FOR_PAGE, page) ? NAV_FOR_PAGE[page] : null);
   return { page };
 }
 
@@ -270,29 +269,7 @@ export function markActiveNav(navKey) {
   }
 }
 
-function initHeader(header) {
-  const form = header.querySelector('#site-search-form');
-  const toggle = header.querySelector('#site-search-toggle');
-  if (!form) return;
-  const input = form.querySelector('input[name="q"]');
-  bindSearchForm(form, input);
-  if (!toggle) return;
-  // Handy: Suche ein- und ausklappen (aria-expanded sagt Screenreadern den Zustand)
-  const setOpen = (open, { focus = false } = {}) => {
-    header.classList.toggle('is-search-open', open);
-    toggle.setAttribute('aria-expanded', String(open));
-    if (open && focus) input.focus();
-  };
-  toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true', { focus: true }));
-  form.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && header.classList.contains('is-search-open')) {
-      setOpen(false);
-      toggle.focus();
-    }
-  });
-}
-
-/** Suchformular: bereinigt die Eingabe und leitet auf erstellen.html?q=… weiter. */
+/** Suchformular (Startseite): bereinigt die Eingabe und leitet auf erstellen.html?q=… weiter. */
 export function bindSearchForm(form, input) {
   if (!form || !input) throw new Error('Suchformular unvollständig (Formular oder Eingabefeld fehlt).');
   form.addEventListener('submit', (event) => {
@@ -396,23 +373,31 @@ export function createSkeletonCards(count = 3) {
         el('span', { class: 'skeleton skeleton--text', dataset: { width: 'short' } })))));
 }
 
-/** Kategorie-Kachel; count: undefined = lädt, null = unbekannt, Zahl = Anzahl Bauten. */
-export function createCategoryTile(category, { count } = {}) {
+/**
+ * Kategorie-Kachel; count: undefined = lädt, null = unbekannt, Zahl = Anzahl Bauten.
+ * compact: nur Icon, Name und Anzahl (Startseite); auf schmalen Schirmen der Kurzname.
+ */
+export function createCategoryTile(category, { count, compact = false } = {}) {
   const countNode = el('span', { class: 'category-tile__count' });
-  const tile = el('a', { class: 'category-tile', href: sitePath(`kategorie.html?k=${category.slug}`), dataset: { category: category.slug } },
-    el('span', { class: 'category-tile__icon' }, icon(category.icon, { size: 48 })),
-    el('span', { class: 'category-tile__title' }, category.title),
-    el('span', { class: 'category-tile__text' }, category.description),
+  const title = compact
+    ? el('span', { class: 'category-tile__title' },
+      el('span', { class: 'label-long' }, category.title),
+      el('span', { class: 'label-short' }, category.shortTitle))
+    : el('span', { class: 'category-tile__title' }, category.title);
+  const tile = el('a', { class: ['category-tile', compact && 'category-tile--compact'], href: sitePath(`kategorie.html?k=${category.slug}`), dataset: { category: category.slug } },
+    el('span', { class: 'category-tile__icon' }, icon(category.icon, { size: compact ? 32 : 48 })),
+    title,
+    compact ? null : el('span', { class: 'category-tile__text' }, category.description),
     countNode);
   setTileCount(tile, count);
   return tile;
 }
 
 /** Füllt eine Liste mit allen Kategorie-Kacheln; gibt Map slug → Kachel zurück. */
-export function renderCategoryGrid(list) {
+export function renderCategoryGrid(list, { compact = false } = {}) {
   const tiles = new Map();
   list.replaceChildren(...CATEGORIES.map((category) => {
-    const tile = createCategoryTile(category);
+    const tile = createCategoryTile(category, { compact });
     tiles.set(category.slug, tile);
     return el('li', null, tile);
   }));

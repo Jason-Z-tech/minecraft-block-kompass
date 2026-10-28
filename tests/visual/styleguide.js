@@ -135,9 +135,11 @@ function renderChips() {
 }
 
 function renderTiles() {
-  const tiles = renderCategoryGrid(requireElement('sg-tiles'));
-  const sampleCounts = { haeuser: 12, wahrzeichen: 1, fantasy: undefined, mittelalter: 0, klein: 27, farmen: null, infrastruktur: 3 };
-  for (const [slug, tile] of tiles) setTileCount(tile, sampleCounts[slug]);
+  const sampleCounts = { haeuser: 12, wahrzeichen: 1, fantasy: undefined, mittelalter: 0, klein: 27, farmen: null, infrastruktur: 12345 };
+  for (const [id, options] of [['sg-tiles', {}], ['sg-tiles-compact', { compact: true }]]) {
+    const tiles = renderCategoryGrid(requireElement(id), options);
+    for (const [slug, tile] of tiles) setTileCount(tile, sampleCounts[slug]);
+  }
 }
 
 // Kleine Pixel-Szene als Vorschaubild (Himmel, Hügel, Haus) – nur für den Styleguide

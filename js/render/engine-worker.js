@@ -1,4 +1,4 @@
-// Modul-Worker der 3D-Ansicht (ARCHITEKTUR §7.4): baut Bauten (Bau-Module, Original-Strukturen, Formen und
+// Modul-Worker der 3D-Ansicht (ARCHITEKTUR §7.4): baut Bauten (Bau-Module, Formen, hochgeladene Dateien und
 // Testquellen) mit dem Builder und meshet sie chunkweise, damit der Hauptthread flüssig bleibt.
 // Die Rechenlogik (Quellen prüfen, bauen, Kollisionsboxen, Galerie, Meshing) ist exportiert und in Node
 // testbar; die Nachrichten-Anbindung startet nur, wenn die Datei als Worker läuft.
@@ -12,7 +12,7 @@ import { isFence, isWall, isFenceGate } from '../core/connections.js';
 import { BlockModels } from './block-models.js';
 import { meshChunk, meshStep, meshCap } from './mesher.js';
 import {
-  loadGameBlockColors, loadGameBlocks, loadGameModels, loadGameStructure, onGameDataProgress, toGameDataError,
+  loadGameBlockColors, loadGameBlocks, loadGameModels, onGameDataProgress, toGameDataError,
 } from '../data/game-data.js';
 
 export class EngineError extends Error {
@@ -37,10 +37,9 @@ export function dataEngineError(error) {
 
 // ------------------------------------------------------------------ Quellen prüfen
 
-export const SOURCE_KINDS = Object.freeze(['module', 'structure', 'shape', 'gallery', 'synthetic', 'upload']);
+export const SOURCE_KINDS = Object.freeze(['module', 'shape', 'gallery', 'synthetic', 'upload']);
 const MODULE_PATTERN = /^[a-z0-9\-/]+\.js$/;
 const MODULE_ROOTS = ['js/builds/', 'tests/fixtures/'];
-const STRUCTURE_PATTERN = /^[a-z0-9_]+\.json$/;
 const SHAPE_PATTERN = /^[a-z0-9-]{1,40}$/;
 const PARAM_KEY = /^[a-zA-Z][a-zA-Z0-9]{0,31}$/;
 export const SYNTHETIC_MAX = 2_000_000;
@@ -59,13 +58,6 @@ export function checkModulePath(path) {
     throw new EngineError(`Ungültiger Modulpfad „${String(path).slice(0, 80)}“ – erlaubt sind nur Dateien unter js/builds/ oder tests/fixtures/ (a–z, 0–9, -, /, Endung .js).`, { code: 'source' });
   }
   return path;
-}
-
-export function checkStructureFile(file) {
-  if (typeof file !== 'string' || file.length > 160 || !STRUCTURE_PATTERN.test(file) || file === 'index.json') {
-    throw new EngineError(`Ungültiger Strukturname „${String(file).slice(0, 80)}“ – erwartet wird eine Datei aus game-data/structures/ (a–z, 0–9, _, Endung .json).`, { code: 'source' });
-  }
-  return file;
 }
 
 function checkValue(value, depth) {
@@ -117,7 +109,6 @@ export function checkSource(source) {
   }
   switch (source.kind) {
     case 'module': return { kind: 'module', path: checkModulePath(source.path) };
-    case 'structure': return { kind: 'structure', file: checkStructureFile(source.file) };
     case 'upload': return checkUploadSource(source);
     case 'shape': {
       if (typeof source.shape !== 'string' || !SHAPE_PATTERN.test(source.shape)) {
@@ -149,50 +140,6 @@ export function checkSource(source) {
 function wrapBuildError(label, error) {
   if (error instanceof EngineError) return error;
   return new EngineError(`${label} konnte nicht gebaut werden: ${error?.message ?? String(error)}`, { code: 'build', detail: error?.stack ?? null });
-}
-
-function checkStructureData(data) {
-  const fail = (what) => new EngineError(`Die Strukturdatei ist beschädigt (${what}).`, { code: 'data' });
-  if (!isPlainObject(data)) throw fail('kein Objekt');
-  const { size, palette, rle } = data;
-  if (!Array.isArray(size) || size.length !== 3 || !size.every((v) => Number.isInteger(v) && v > 0 && v <= 4064)) throw fail('size');
-  if (!Array.isArray(palette) || palette[0] !== 'air' || palette.length > 65535 || palette.some((s) => typeof s !== 'string')) throw fail('palette');
-  if (!Array.isArray(rle) || rle.length % 2 !== 0) throw fail('rle');
-  let cells = 0;
-  for (let i = 0; i < rle.length; i += 2) {
-    const index = rle[i], count = rle[i + 1];
-    if (!Number.isInteger(index) || index < 0 || index >= palette.length || !Number.isInteger(count) || count < 1) throw fail(`rle an Stelle ${i}`);
-    cells += count;
-  }
-  if (cells !== size[0] * size[1] * size[2]) throw fail('Anzahl der Zellen passt nicht zur Größe');
-}
-
-/** Original-Struktur (game-data/structures/<datei>.json) → BuildResult mit einem Kapitel „Aufbau“ in Ebenen. */
-export function buildStructure(data, { file = null } = {}) {
-  checkStructureData(data);
-  const [sx, , sz] = data.size;
-  const label = `Die Struktur „${data.path ?? file ?? '?'}“`;
-  try {
-    const b = new Builder();
-    b.phase('Aufbau');
-    let cell = 0;
-    for (let i = 0; i < data.rle.length; i += 2) {
-      const index = data.rle[i], count = data.rle[i + 1];
-      if (index !== 0) {
-        const state = data.palette[index];
-        for (let k = 0; k < count; k++) {
-          const c = cell + k;
-          b.set(c % sx, Math.floor(c / (sx * sz)), Math.floor(c / sx) % sz, state, { raw: true });
-        }
-      }
-      cell += count;
-    }
-    const result = b.finalize();
-    result.structure = { path: typeof data.path === 'string' ? data.path : null, file, size: [...data.size], entities: Number.isInteger(data.entities) ? data.entities : 0 };
-    return result;
-  } catch (error) {
-    throw wrapBuildError(label, error);
-  }
 }
 
 /** Bau-Modul (Namensraum des Imports) → BuildResult; meta wird mitgegeben. */
@@ -869,16 +816,14 @@ export class Engine {
 
   /**
    * Baut eine Quelle (geprüft mit checkSource). loaders: { importModule(path) → Namensraum,
-   * loadStructure(file) → JSON, importShapes() → Namensraum von js/create/shape-generators.js,
+   * importShapes() → Namensraum von js/create/shape-generators.js,
    * importUploader() → Namensraum von js/create/import/index.js, progress(message), loadBlockColors(), importVoxelizer() }.
    * Verändert die Engine nicht – das Ergebnis erst mit use(result) übernehmen.
    */
   async build(source, params, loaders) {
     const clean = checkSource(source);
     let result;
-    if (clean.kind === 'structure') {
-      result = buildStructure(await loaders.loadStructure(clean.file), { file: clean.file });
-    } else if (clean.kind === 'module') {
+    if (clean.kind === 'module') {
       result = buildModule(await loaders.importModule(clean.path), checkParams(params), clean.path);
     } else if (clean.kind === 'shape') {
       result = buildShapeResult(await loaders.importShapes(), clean.shape, clean.params);
@@ -1000,13 +945,6 @@ function startWorker(scope) {
         throw new EngineError(`Das Bau-Modul „${path}“ konnte nicht geladen werden.`, { code: 'build', detail: error?.stack ?? String(error) });
       }
     },
-    async loadStructure(file) {
-      try {
-        return await loadGameStructure(file);
-      } catch (error) {
-        throw dataEngineError(error);
-      }
-    },
     async importShapes() {
       try {
         return await import(new URL('js/create/shape-generators.js', rootUrl).href);
@@ -1050,14 +988,9 @@ function startWorker(scope) {
     boundGate = { job, ...deferred() };
     dataJob = job;
     status(job, 'data', 'Lade Spieldaten …');
-    // Original-Struktur gleich mitladen (parallel zu den Blockmodellen, Fortschritt noch in der Phase „data“); ihre
-    // Fehler meldet erst build() über dieselbe Promise
-    const structureFile = source?.kind === 'structure' && typeof source.file === 'string' && STRUCTURE_PATTERN.test(source.file) ? source.file : null;
-    const structure = structureFile ? loaders.loadStructure(structureFile) : null;
-    structure?.catch(() => {});
     let loaded;
     try {
-      [loaded] = await Promise.all([getEngine(), structure?.catch(() => null)]);
+      loaded = await getEngine();
     } finally {
       if (dataJob === job) dataJob = 0;
     }
@@ -1069,7 +1002,6 @@ function startWorker(scope) {
       if (job === currentJob) status(job, 'build', String(message).slice(0, 200));
     };
     const jobLoaders = { ...loaders, progress };
-    if (structure) jobLoaders.loadStructure = (file) => (file === structureFile ? structure : loaders.loadStructure(file));
     const result = await loaded.build(source, params, jobLoaders);
     if (job !== currentJob) return;
     engine = loaded;

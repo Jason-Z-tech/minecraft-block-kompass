@@ -2,11 +2,11 @@
   "generatedAt": "2026-10-23T08:00:00.000Z",
   "version": "26.2",
   "counts": {
-    "total": 5,
+    "total": 3,
     "byCategory": {
-      "haeuser": 2,
+      "haeuser": 1,
       "wahrzeichen": 1,
-      "mittelalter": 1,
+      "mittelalter": 0,
       "farmen": 1
     }
   },
@@ -33,7 +33,6 @@
       "credits": null,
       "tested": null,
       "module": "tests/fixtures/core/example-house.js",
-      "structure": null,
       "scales": null,
       "defaultScale": null,
       "size": [
@@ -121,7 +120,6 @@
       "credits": null,
       "tested": null,
       "module": "tests/fixtures/ui/big-plaza.js",
-      "structure": null,
       "scales": [
         1,
         0.5
@@ -238,7 +236,6 @@
       },
       "tested": false,
       "module": "tests/fixtures/core/example-house.js",
-      "structure": null,
       "scales": null,
       "defaultScale": null,
       "size": [
@@ -302,136 +299,6 @@
       ],
       "sizeClass": "klein",
       "thumb": null
-    },
-    {
-      "category": "haeuser",
-      "subtitle": "Original-Struktur aus einem Ebenen-Dorf",
-      "tags": [
-        "Original"
-      ],
-      "aliases": [
-        "dorfhaus"
-      ],
-      "accuracy": "original",
-      "description": "Ein kleines Haus aus einem Ebenen-Dorf, so wie es das Spiel erzeugt.",
-      "sources": [],
-      "credits": null,
-      "tested": null,
-      "module": null,
-      "structure": "village__plains__houses__plains_small_house_1.json",
-      "scales": null,
-      "defaultScale": null,
-      "size": [
-        7,
-        7,
-        7
-      ],
-      "blocks": 153,
-      "steps": 7,
-      "phases": 1,
-      "variants": null,
-      "topMaterials": [
-        [
-          "oak_stairs",
-          50
-        ],
-        [
-          "cobblestone",
-          43
-        ],
-        [
-          "oak_planks",
-          34
-        ],
-        [
-          "stripped_oak_log",
-          16
-        ],
-        [
-          "glass_pane",
-          3
-        ],
-        [
-          "wall_torch",
-          3
-        ],
-        [
-          "oak_door",
-          2
-        ],
-        [
-          "white_bed",
-          2
-        ]
-      ],
-      "sizeClass": "klein",
-      "thumb": null,
-      "id": "spiel-plains-small-house-1",
-      "title": "Kleines Ebenen-Dorfhaus 1"
-    },
-    {
-      "category": "mittelalter",
-      "subtitle": "Original-Struktur aus einer Bastionsruine",
-      "tags": [
-        "Original"
-      ],
-      "aliases": [],
-      "accuracy": "original",
-      "description": "Der Eingangsteil der Brücken-Bastion aus dem Nether.",
-      "sources": [],
-      "credits": null,
-      "tested": null,
-      "module": null,
-      "structure": "bastion__bridge__starting_pieces__entrance_base.json",
-      "scales": null,
-      "defaultScale": null,
-      "size": [
-        16,
-        32,
-        32
-      ],
-      "blocks": 14342,
-      "steps": 32,
-      "phases": 1,
-      "variants": null,
-      "topMaterials": [
-        [
-          "blackstone",
-          10685
-        ],
-        [
-          "polished_blackstone_bricks",
-          2953
-        ],
-        [
-          "cracked_polished_blackstone_bricks",
-          396
-        ],
-        [
-          "lava",
-          285
-        ],
-        [
-          "basalt",
-          10
-        ],
-        [
-          "chiseled_polished_blackstone",
-          7
-        ],
-        [
-          "gold_block",
-          2
-        ],
-        [
-          "lantern",
-          2
-        ]
-      ],
-      "sizeClass": "gross",
-      "thumb": null,
-      "id": "spiel-bastion-bridge-entrance-base",
-      "title": "Bastionsbrücke: Eingang"
     }
   ]
 }

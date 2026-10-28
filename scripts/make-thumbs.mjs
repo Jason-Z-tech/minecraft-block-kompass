@@ -1,7 +1,7 @@
 // Vorschaubilder des Katalogs (ARCHITEKTUR §10): rendert jeden Eintrag mit der echten 3D-Ansicht in Chrome
 // (tests/visual/thumb.html) als WebP 640×400 nach thumbs/<id>.webp. Ein Browser für alle Bilder.
-// Neu gerendert wird nur, wenn sich Eintrag, Modul-Quelltext (samt lokaler Importe), Strukturdatei oder
-// Spieldaten-Version geändert haben (Hash in thumbs/index.json).
+// Neu gerendert wird nur, wenn sich Eintrag, Modul-Quelltext (samt lokaler Importe) oder Spieldaten-Version
+// geändert haben (Hash in thumbs/index.json).
 // Aufruf: node scripts/make-thumbs.mjs [--force] [--only <id>] [--catalog <datei>] [--out <ordner>] [--data <ordner>]
 //                                      [--gpu hardware|swiftshader] [--prune]
 
@@ -27,7 +27,6 @@ export const THUMB_STYLE = 3;
 const INDEX_VERSION = 1;
 const ID_PATTERN = /^[a-z0-9-]{2,80}$/;
 const MODULE_PATTERN = /^(js\/builds|tests\/fixtures)\/[a-z0-9/-]+\.js$/;
-const STRUCTURE_PATTERN = /^[a-z0-9_]+\.json$/;
 const RENDER_TIMEOUT_MS = 180_000;
 
 const USAGE = `Aufruf: node scripts/make-thumbs.mjs [Optionen]
@@ -95,13 +94,12 @@ export async function dataStamp(dataDir) {
 }
 
 /** Hash eines Katalog-Eintrags für die Vorschau (ohne das Feld thumb). */
-export async function thumbHash(entry, { stamp, dataDir = DEFAULT_DATA_DIR, root = ROOT }) {
+export async function thumbHash(entry, { stamp, root = ROOT }) {
   const { thumb, ...rest } = entry;
   const parts = [`style ${THUMB_STYLE}`, `size ${THUMB_SIZE.join('x')}`, `data ${stamp}`, JSON.stringify(rest)];
   if (entry.module) {
     for (const { file, text } of await moduleSources(path.join(root, entry.module), { root })) parts.push(`${file}\n${sha1(text)}`);
   }
-  if (entry.structure) parts.push(`structure ${sha1(await readFile(path.join(dataDir, 'structures', entry.structure)))}`);
   return sha1(parts.join('\n'));
 }
 
@@ -111,11 +109,7 @@ export function jobFor(entry) {
     if (!MODULE_PATTERN.test(entry.module)) throw new Error(`ungültiger Modulpfad „${entry.module}“`);
     return { source: { kind: 'module', path: entry.module }, scale: entry.defaultScale ?? null };
   }
-  if (entry.structure) {
-    if (!STRUCTURE_PATTERN.test(entry.structure)) throw new Error(`ungültige Strukturdatei „${entry.structure}“`);
-    return { source: { kind: 'structure', file: entry.structure }, scale: null };
-  }
-  throw new Error('weder module noch structure gesetzt');
+  throw new Error('kein Bau-Modul gesetzt');
 }
 
 // ------------------------------------------------------------------ Index
@@ -239,7 +233,7 @@ export async function makeThumbs({
     let hash, job;
     try {
       job = jobFor(entry);
-      hash = await thumbHash(entry, { stamp, dataDir, root });
+      hash = await thumbHash(entry, { stamp, root });
     } catch (error) {
       errors.push(`${entry.id}: ${error.message}`);
       continue;

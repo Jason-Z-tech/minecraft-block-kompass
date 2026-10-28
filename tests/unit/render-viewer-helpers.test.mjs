@@ -184,8 +184,8 @@ test('Textur-Array: bind() fragt nicht jedes Mal gl.isTexture (synchron in Chrom
 });
 
 test('scripts/shot.mjs: Optionen werden geprüft', () => {
-  const options = parseArgs(['--structure', 'igloo__top.json', '--views', 'iso,top', '--progress', '25,50', '--clip', '3', '--size', '800x600', '--ghost']);
-  assert.deepEqual(options.source, { key: 'structure', value: 'igloo__top.json', name: 'igloo__top' });
+  const options = parseArgs(['--module', 'js/builds/klein/dorfbrunnen.js', '--views', 'iso,top', '--progress', '25,50', '--clip', '3', '--size', '800x600', '--ghost']);
+  assert.deepEqual(options.source, { key: 'module', value: 'js/builds/klein/dorfbrunnen.js', name: 'dorfbrunnen' });
   assert.deepEqual(options.views, ['iso', 'top']);
   assert.deepEqual(options.progress, [25, 50]);
   assert.equal(options.clip, 3);
@@ -193,7 +193,8 @@ test('scripts/shot.mjs: Optionen werden geprüft', () => {
   assert.equal(options.ghost, true);
   assert.deepEqual(parseArgs(['--gallery', 'all', '--page', '2', '--rows', '--focus', '1,0,2,1']).focus, [[1, 0, 2, 1]]);
   assert.equal(parseArgs(['--synthetic', '300000', '--bench', '3']).bench, 3);
-  for (const bad of [[], ['--module', '../x.js'], ['--structure', 'a.json', '--module', 'js/builds/x.js'], ['--views', 'iso,schräg', '--gallery', 'all'],
+  // --structure gibt es nicht mehr (keine Original-Strukturen)
+  for (const bad of [[], ['--module', '../x.js'], ['--structure', 'igloo__top.json'], ['--gallery', 'all', '--module', 'js/builds/x.js'], ['--views', 'iso,schräg', '--gallery', 'all'],
     ['--gallery', 'all', '--size', 'groß'], ['--gallery', 'all', '--clip'], ['--gallery', 'all', '--unbekannt'], ['--synthetic', '0'], ['--gallery', 'all', '--focus', '1,2']]) {
     assert.throws(() => parseArgs(bad), UsageError, bad.join(' '));
   }

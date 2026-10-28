@@ -88,10 +88,11 @@ test('findMinecraftJar: nur eine echte Datei zählt', () => {
 test('checkGameData und parseStartArgs', () => {
   const dir = path.join(ROOT, 'tmp', `start-test-data-${process.pid}`);
   fs.rmSync(dir, { recursive: true, force: true });
-  fs.mkdirSync(path.join(dir, 'structures'), { recursive: true });
+  fs.mkdirSync(dir, { recursive: true });
   try {
     assert.ok(checkGameData(dir).includes('meta.json fehlt'));
-    for (const file of ['blocks.json', 'names.json', 'models.json', 'textures.json', 'textures.bin', 'structures/index.json']) fs.writeFileSync(path.join(dir, file), '{}');
+    // Ohne structures/ (Original-Strukturen gibt es nicht mehr) sind die Spieldaten vollständig
+    for (const file of ['blocks.json', 'names.json', 'models.json', 'textures.json', 'textures.bin']) fs.writeFileSync(path.join(dir, file), '{}');
     fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify({ version: '26.1' }));
     assert.deepEqual(checkGameData(dir), ['meta.json nennt Version 26.1 statt 26.2']);
     fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify({ version: '26.2' }));

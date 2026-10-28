@@ -1,8 +1,8 @@
-// Reine Logik der Start- und Kategorie-Seite: Größenklassen, Filter, Sortierung, Zustand in der Adresse.
+// Reine Logik der Kategorie-Seite: Größenklassen, Filter, Sortierung, Zustand in der Adresse; Kontraste der Start- und Kategorie-Seite.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SIZE_CLASSES, sizeClassForBlocks, sizeClassOf, sizeClassRange, testStateOf, volumeOf, formatStatNumber,
+  SIZE_CLASSES, sizeClassForBlocks, sizeClassOf, sizeClassRange, testStateOf, volumeOf,
 } from '../../js/ui/browse/model.js';
 import {
   FILTER_KEYS, emptyFilters, filterValuesOf, matchesFilters, applyFilters, facetCounts, presentValues, visibleFilterOptions,
@@ -31,7 +31,7 @@ test('Größenklassen: Grenzen wie im Katalog (klein < 1 000 ≤ mittel < 10 000
   assert.equal(sizeClassRange('x'), null);
 });
 
-test('Test im Spiel, Rauminhalt und kompakte Zahlen', () => {
+test('Test im Spiel und Rauminhalt', () => {
   assert.equal(testStateOf({ tested: true }), 'getestet');
   assert.equal(testStateOf({ tested: false }), 'ungetestet');
   assert.equal(testStateOf({ tested: null }), 'ohne');
@@ -39,10 +39,6 @@ test('Test im Spiel, Rauminhalt und kompakte Zahlen', () => {
   assert.equal(volumeOf({ size: [2, 3, 4] }), 24);
   assert.equal(volumeOf({ size: [2, 0, 4] }), null);
   assert.equal(volumeOf({ size: null }), null);
-  assert.equal(formatStatNumber(12345), '12.345');
-  assert.equal(formatStatNumber(999999), '999.999');
-  assert.match(formatStatNumber(6_940_841), /^6,9\sMio\.$/);
-  assert.equal(formatStatNumber(NaN), '–');
 });
 
 test('Filter: „oder“ innerhalb einer Gruppe, „und“ zwischen Gruppen', () => {
@@ -160,7 +156,7 @@ test('Adresse: Schreiben und Lesen ergeben denselben Zustand, Standardwerte fehl
   assert.equal(resetBrowseState({ query: 'x', filters: emptyFilters(), sort: 'bloecke-ab' }).sort, 'bloecke-ab');
 });
 
-test('Kontraste der neuen Farbpaare (css/browse.css) erreichen WCAG AA', async () => {
+test('Kontraste der Farbpaare von Kategorie- und Startseite erreichen WCAG AA', async () => {
   const { readFile } = await import('node:fs/promises');
   const { contrastRatio, mixHex, CATEGORIES } = await import('../../js/ui/shared.js');
   const css = await readFile(new URL('../../css/style.css', import.meta.url), 'utf8');
@@ -169,8 +165,8 @@ test('Kontraste der neuen Farbpaare (css/browse.css) erreichen WCAG AA', async (
     assert.ok(match, `Token --${name} fehlt in style.css`);
     return match[1];
   };
-  const [text, muted, surface, surface2, grass, redstone, gold, onAccent, grassText, slot, head, bg, line] = [
-    'c-text', 'c-text-muted', 'c-surface', 'c-surface-2', 'c-grass', 'c-redstone', 'c-gold', 'c-on-accent', 'c-grass-text', 'c-slot', 'c-head', 'c-bg', 'c-line',
+  const [text, muted, surface, surface2, surface3, grass, redstone, gold, onAccent, grassText, slot, head, bg] = [
+    'c-text', 'c-text-muted', 'c-surface', 'c-surface-2', 'c-surface-3', 'c-grass', 'c-redstone', 'c-gold', 'c-on-accent', 'c-grass-text', 'c-slot', 'c-head', 'c-bg',
   ].map(token);
   const pairs = [
     ['Text auf aktivem Filter-Chip', text, mixHex(grass, surface2, 0.18), 4.5],
@@ -178,12 +174,19 @@ test('Kontraste der neuen Farbpaare (css/browse.css) erreichen WCAG AA', async (
     ['Gewählte Filteroption', grassText, surface, 4.5],
     ['Leere Filteroption, Anzahl und Bereich', muted, surface, 4.5],
     ['Zahl im Filter-Knopf', onAccent, gold, 4.5],
-    ['Schrittnummer „So funktioniert’s“', gold, slot, 4.5],
     ['Kennzahlen im Seitenkopf', muted, head, 4.5],
+    // Startseite: Titel auf dem Verlauf (Kopf → Grund), Kacheln, Links, Suche
+    ['Titel der Startseite', text, head, 4.5],
+    ['Akzent „bauen?“ im Titel', gold, head, 4.5],
+    ['Akzent „bauen?“ im Titel (unten im Verlauf)', gold, bg, 4.5],
+    ['Kachel-Name', text, surface, 4.5],
+    ['Kachel-Anzahl', muted, surface, 4.5],
+    ['Links „Selber erstellen“ / „Meine Bauten“', text, surface3, 4.5],
+    ['Knopf „Suchen“', onAccent, grass, 4.5],
   ];
   for (const category of CATEGORIES) {
-    pairs.push([`Link „Mehr davon“ ${category.slug}`, text, mixHex(category.color, surface, 0.2), 4.5]);
-    pairs.push([`Rand des Links ${category.slug} (Grafik)`, mixHex(category.color, line, 0.75), bg, 3]);
+    pairs.push([`Kachel-Icon ${category.slug} (Grafik)`, category.color, slot, 3]);
+    pairs.push([`Kategorie-Kante ${category.slug} (Grafik)`, category.color, surface, 3]);
   }
   for (const [label, fg, back, min] of pairs) {
     const ratio = contrastRatio(fg, back);
@@ -191,8 +194,10 @@ test('Kontraste der neuen Farbpaare (css/browse.css) erreichen WCAG AA', async (
   }
   // Die Mischanteile im Test entsprechen denen im CSS
   const browse = await readFile(new URL('../../css/browse.css', import.meta.url), 'utf8');
-  for (const snippet of ['var(--c-grass) 18%, var(--c-surface-2)', 'var(--c-redstone) 22%, var(--c-surface-2)', 'var(--cat) 20%, var(--c-surface)', 'var(--cat) 75%, var(--c-line)']) {
+  for (const snippet of ['var(--c-grass) 18%, var(--c-surface-2)', 'var(--c-redstone) 22%, var(--c-surface-2)']) {
     assert.ok(browse.includes(snippet), `browse.css: ${snippet}`);
   }
+  // Kachel-Icon steht auf --c-slot, die Kante unten in Kategoriefarbe auf --c-surface (style.css)
+  assert.match(css, /\.category-tile__icon \{[^}]*color: var\(--cat\);[^}]*background: var\(--c-slot\);/);
   assert.doesNotMatch(browse, /opacity:\s*0\.[0-6]/, 'keine stark ausgeblendeten Texte');
 });

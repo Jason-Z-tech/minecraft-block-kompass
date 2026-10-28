@@ -20,7 +20,7 @@ const BUILDS_DIR = path.join(ROOT, 'js', 'builds');
 const THUMBS_DIR = path.join(ROOT, 'thumbs');
 const DEFAULT_PORT = 8080;
 const PORT_TRIES = 10;
-const REQUIRED_DATA = ['meta.json', 'blocks.json', 'names.json', 'models.json', 'textures.json', 'textures.bin', 'structures/index.json'];
+const REQUIRED_DATA = ['meta.json', 'blocks.json', 'names.json', 'models.json', 'textures.json', 'textures.bin'];
 // Kategorie-Ordner wie in check-build (eine Liste für alle Skripte)
 const CATEGORY_DIRS = CATEGORIES;
 
@@ -111,9 +111,9 @@ export function ensureGameData({ remote = false, run = runNode, check = checkGam
     if (run('scripts/extract-game-data.mjs', []) === 0 && check().length === 0) return 'local';
     log('\nAus der Installation ging es nicht (Meldung oben). Lade die Spieldaten stattdessen aus öffentlichen Quellen …\n');
   } else if (remote) {
-    log('Lade sie aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 13 MB) …\n');
+    log('Lade sie aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 7 MB) …\n');
   } else {
-    log('Keine Minecraft-Installation gefunden – lade sie ohne Minecraft aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 13 MB) …\n');
+    log('Keine Minecraft-Installation gefunden – lade sie ohne Minecraft aus öffentlichen Quellen (misode/mcmeta auf GitHub, Mojang; einmalig ≈ 7 MB) …\n');
   }
   const status = run('scripts/extract-game-data.mjs', ['--remote']);
   const left = check();

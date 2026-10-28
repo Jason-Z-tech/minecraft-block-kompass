@@ -1,4 +1,4 @@
-// Abgeleitete Werte eines Katalog-Eintrags für Filter, Sortierung und Startseite.
+// Abgeleitete Werte eines Katalog-Eintrags für Filter und Sortierung der Kategorie-Seite.
 // Rein (kein DOM, kein Netzwerk) und deshalb auch in Node testbar.
 import { SIZE_CLASS_KEYS, formatNumber } from '../shared.js';
 
@@ -63,12 +63,4 @@ export function volumeOf(build) {
   const size = build.size;
   if (!Array.isArray(size) || size.length !== 3 || !size.every((n) => Number.isInteger(n) && n > 0)) return null;
   return size[0] * size[1] * size[2];
-}
-
-/** Zahl für Kennzahlen: unter einer Million exakt („12.345“), darüber kompakt („4,8 Mio.“) */
-const compactFormat = new Intl.NumberFormat('de-DE', { notation: 'compact', maximumFractionDigits: 1 });
-
-export function formatStatNumber(value) {
-  if (!Number.isFinite(value)) return '–';
-  return Math.abs(value) < 1_000_000 ? formatNumber(value) : compactFormat.format(value);
 }

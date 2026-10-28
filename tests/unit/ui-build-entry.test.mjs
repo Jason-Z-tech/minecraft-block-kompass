@@ -37,13 +37,13 @@ test('Test-Katalog hat das Format von Runde 2 und zeigt auf vorhandene Dateien',
   assert.equal(CATALOG.version, '26.2');
   assert.equal(CATALOG.counts.total, CATALOG.builds.length);
   const required = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources', 'credits',
-    'tested', 'module', 'structure', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials', 'sizeClass', 'thumb'];
+    'tested', 'module', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials', 'sizeClass', 'thumb'];
   for (const build of CATALOG.builds) {
     for (const key of required) assert.ok(Object.hasOwn(build, key), `${build.id}: ${key} fehlt`);
     for (const key of ['difficulty', 'facts']) assert.ok(!Object.hasOwn(build, key), `${build.id}: ${key} gibt es nicht mehr`);
     assert.ok(build.topMaterials.length <= 8);
-    if (build.module) assert.ok(existsSync(path.join(ROOT, build.module)), `${build.module} fehlt`);
-    if (build.structure) assert.ok(build.id.startsWith('spiel-') && build.accuracy === 'original' && build.module === null);
+    assert.ok(existsSync(path.join(ROOT, build.module)), `${build.module} fehlt`);
+    assert.ok(!Object.hasOwn(build, 'structure'), `${build.id}: keine Original-Strukturen mehr`);
   }
   const normalized = normalizeCatalog(CATALOG);
   assert.equal(normalized.builds.length, CATALOG.builds.length, 'kein Eintrag wird verworfen');
@@ -61,9 +61,15 @@ test('loadBuildEntry: Eintrag mit allen Feldern, Testmodule erlaubt, unbekannt �
   assert.deepEqual(plaza.scales, [1, 0.5]);
   assert.equal(plaza.defaultScale, 1);
   assert.deepEqual(variantFor(plaza, 0.5).size, [75, 23, 75]);
-  const structure = await loadBuildEntry('spiel-plains-small-house-1', { fetch, root: SITE });
-  assert.deepEqual(sourceForEntry(structure), { kind: 'structure', file: 'village__plains__houses__plains_small_house_1.json' });
   assert.equal(await loadBuildEntry('gibt-es-nicht', { fetch, root: SITE }), null);
+  // Alte Adressen der Original-Strukturen: unbekannt wie jede andere ID
+  assert.equal(await loadBuildEntry('spiel-plains-small-house-1', { fetch, root: SITE }), null);
+  // Ein alter Katalog mit Struktur-Eintrag: kein Modul → keine Quelle für die 3D-Ansicht
+  const oldCatalog = { ...CATALOG, builds: [...CATALOG.builds, { ...CATALOG.builds[0], id: 'spiel-iglu', module: null, structure: 'igloo__top.json' }] };
+  const old = await loadBuildEntry('spiel-iglu', { fetch: catalogFetch(oldCatalog), root: SITE });
+  assert.equal(Object.hasOwn(old, 'structure'), false);
+  assert.equal(sourceForEntry(old), null);
+  assert.equal(sourceForEntry({ structure: 'igloo__top.json' }), null);
 });
 
 test('Katalog fehlt: DataError „Katalog fehlt“ ohne Befehle', async () => {

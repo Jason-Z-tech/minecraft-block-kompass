@@ -7,9 +7,9 @@ import {
   MC_VERSION, MCMETA_TAG, UserError, createWarnings, parseCliArgs, defaultSourcePaths, buildNames,
   convertMcmetaBlocks, deriveBlocksFromBlockstates, compareBlocksWithBlockstates, extractBlocks, parseVariantKey,
   buildModels, findBlocksWithoutGeometry, defaultFaceUv, axisRotationMatrix, eulerRotationMatrix, applyRescale,
-  convertElementRotation, convertConditionTerms, readPngSize, parseAnimation, buildTextures, isIncludedTexture,
-  parseStateString, createStateNormalizer, convertStructure, encodeRle, structureFileName, formatState,
+  convertElementRotation, convertConditionTerms, readPngSize, parseAnimation, buildTextures, isIncludedTexture, formatState,
 } from '../../scripts/extract-game-data.mjs';
+import * as extractScript from '../../scripts/extract-game-data.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const GAME_DATA = path.join(ROOT, 'game-data');
@@ -355,93 +355,14 @@ test('PNG-Größe, Animationen und Texturauswahl', () => {
   assert.ok(warnings.list.some((w) => /block\/kaputt übersprungen/.test(w)));
 });
 
-test('Zustands-Strings wie im Spiel lesen (inkl. NBT und überzähliger Zeichen)', () => {
-  assert.deepEqual(plain(parseStateString('minecraft:oak_stairs[facing=east, half=top]')), { namespace: 'minecraft', id: 'oak_stairs', props: { facing: 'east', half: 'top' }, trailing: '' });
-  assert.equal(parseStateString('minecraft:acacia_fence[east=false]]').trailing, ']');
-  assert.equal(parseStateString('chest[facing=north]{Items:[]}').trailing, '{Items:[]}');
-  assert.equal(parseStateString('stone').namespace, 'minecraft');
-  assert.equal(parseStateString('minecraft:stone[facing]'), null);
-  assert.equal(parseStateString('minecraft:stone[facing=north'), null);
-  assert.equal(parseStateString('[x=y]'), null);
+test('Zustände formatieren: Eigenschaften sortiert', () => {
   assert.equal(formatState('oak_stairs', { half: 'top', facing: 'east' }), 'oak_stairs[facing=east,half=top]');
 });
 
-const STAIRS = {
-  props: { facing: ['north', 'south', 'west', 'east'], half: ['top', 'bottom'], shape: ['straight', 'inner_left'], waterlogged: ['true', 'false'] },
-  default: { facing: 'north', half: 'bottom', shape: 'straight', waterlogged: 'false' },
-};
-
-test('Strukturen: jigsaw → final_state, Luft/Datenblöcke weg, RLE y→z→x', () => {
-  const warnings = createWarnings();
-  const blockData = { source: 'mcmeta', blocks: { stone: { props: {}, default: {} }, oak_stairs: STAIRS } };
-  const normalize = createStateNormalizer(blockData, warnings);
-  const nbt = {
-    size: [2, 2, 2],
-    palette: [
-      { Name: 'minecraft:air' },
-      { Name: 'minecraft:stone' },
-      { Name: 'minecraft:jigsaw', Properties: { orientation: 'up_north' } },
-      { Name: 'minecraft:structure_block', Properties: { mode: 'data' } },
-      { Name: 'minecraft:cave_air' },
-      { Name: 'minecraft:oak_stairs', Properties: { facing: 'east', half: 'bottom', shape: 'straight', waterlogged: 'false' } },
-      { Name: 'minecraft:gibt_es_nicht' },
-    ],
-    blocks: [
-      { pos: [0, 0, 0], state: 1 },
-      { pos: [1, 0, 0], state: 2, nbt: { final_state: 'minecraft:oak_stairs[facing=south]' } },
-      { pos: [0, 1, 0], state: 3, nbt: { mode: 'DATA', metadata: 'chest' } },
-      { pos: [1, 1, 1], state: 5 },
-      { pos: [0, 0, 1], state: 2, nbt: { final_state: 'minecraft:structure_void' } },
-      { pos: [1, 0, 1], state: 4 },
-      { pos: [0, 1, 1], state: 2, nbt: { final_state: 'minecraft:stone' } },
-      { pos: [5, 0, 0], state: 1 },
-    ],
-    entities: [{ pos: [0.5, 0, 0.5], nbt: {} }],
-  };
-  const result = convertStructure('village/test/house_1', nbt, normalize, warnings);
-  assert.deepEqual(result.data, {
-    path: 'village/test/house_1',
-    size: [2, 2, 2],
-    palette: ['air', 'stone', 'oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]', 'oak_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]'],
-    rle: [1, 1, 3, 1, 0, 4, 1, 1, 2, 1],
-  });
-  assert.deepEqual(result.info, { size: [2, 2, 2], blocks: 4, paletteSize: 4, entities: 1 });
-  assert.ok(warnings.list.some((w) => /unbekannter Block „gibt_es_nicht“/.test(w)));
-  assert.ok(warnings.list.some((w) => /außerhalb der Größe/.test(w)));
-});
-
-test('Strukturen: mehrere Paletten → erste, fehlende Eigenschaften → Standard', () => {
-  const warnings = createWarnings();
-  const normalize = createStateNormalizer({ source: 'mcmeta', blocks: { oak_stairs: STAIRS } }, warnings);
-  const nbt = {
-    size: [1, 1, 2],
-    palettes: [[{ Name: 'minecraft:oak_stairs', Properties: { facing: 'west', bogus: 'x' } }], [{ Name: 'minecraft:air' }]],
-    blocks: [{ pos: [0, 0, 1], state: 0 }],
-  };
-  const result = convertStructure('shipwreck/x', nbt, normalize, warnings);
-  assert.deepEqual(result.data.palette, ['air', 'oak_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]']);
-  assert.deepEqual(result.data.rle, [0, 1, 1, 1]);
-  assert.equal(result.info.entities, 0);
-  assert.ok(warnings.list.some((w) => /keine Eigenschaft „bogus“/.test(w)));
-  assert.throws(() => convertStructure('x', { size: [1, 1], palette: [], blocks: [] }, normalize, warnings), /Größe/);
-  assert.throws(() => convertStructure('x', { size: [1, 1, 1], blocks: [] }, normalize, warnings), /Palette fehlt/);
-});
-
-test('Strukturen mit „derived“-Daten: nichts wegwerfen, nur ergänzen und sortieren', () => {
-  const warnings = createWarnings();
-  const normalize = createStateNormalizer({ source: 'derived', blocks: { oak_stairs: { props: { facing: ['north', 'east'] }, default: { facing: 'north' } } } }, warnings);
-  assert.equal(normalize(parseStateString('minecraft:oak_stairs[waterlogged=false,half=top]'), 'Test'), 'oak_stairs[facing=north,half=top,waterlogged=false]');
-  assert.equal(normalize(parseStateString('minecraft:neuer_block[b=1,a=2]'), 'Test'), 'neuer_block[a=2,b=1]');
-  assert.equal(normalize(parseStateString('minecraft:void_air'), 'Test'), 'air');
-  assert.equal(normalize(parseStateString('mod:stone'), 'Test'), 'air');
-  assert.equal(warnings.list.length, 1);
-  assert.match(warnings.list[0], /fremdem Namensraum/);
-});
-
-test('RLE und Dateinamen', () => {
-  assert.deepEqual(encodeRle(new Uint16Array([0, 0, 0, 1, 1, 0])), [0, 3, 1, 2, 0, 1]);
-  assert.deepEqual(encodeRle(new Uint16Array([])), []);
-  assert.equal(structureFileName('village/plains/houses/plains_small_house_1'), 'village__plains__houses__plains_small_house_1.json');
+test('Keine Original-Strukturen mehr: das Skript wandelt keine Strukturen um', () => {
+  for (const name of ['parseStateString', 'createStateNormalizer', 'convertStructure', 'encodeRle', 'structureFileName']) {
+    assert.equal(name in extractScript, false, name);
+  }
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -457,7 +378,7 @@ dataTest(`game-data: meta.json und names.json${SKIP_HINT}`, () => {
   assert.equal(meta.version, '26.2');
   assert.equal(meta.worldVersion, 4903);
   assert.ok(!Number.isNaN(Date.parse(meta.extractedAt)));
-  assert.ok(meta.counts.blocks > 1000 && meta.counts.models > 1000 && meta.counts.textures > 1000 && meta.counts.structures > 1000, JSON.stringify(meta.counts));
+  assert.ok(meta.counts.blocks > 1000 && meta.counts.models > 1000 && meta.counts.textures > 1000, JSON.stringify(meta.counts));
   assert.ok(Array.isArray(meta.warnings));
 
   const names = readGameJson('names.json');
@@ -535,29 +456,4 @@ dataTest(`game-data: textures.json + textures.bin${SKIP_HINT}`, () => {
   assert.equal(water.anim.frames.length, water.h / 16);
   assert.ok(water.anim.frames.every(([, ticks]) => ticks === 2));
   assert.equal(textures.entries['block/stone'].anim, null);
-});
-
-dataTest(`game-data: structures/${SKIP_HINT}`, () => {
-  const index = readGameJson('structures/index.json');
-  const files = fs.readdirSync(path.join(GAME_DATA, 'structures'));
-  assert.equal(files.length, index.structures.length + 1);
-  const house = index.structures.find((s) => s.path === 'village/plains/houses/plains_small_house_1');
-  assert.equal(house.file, 'village__plains__houses__plains_small_house_1.json');
-  for (const entry of index.structures) {
-    const data = readGameJson(`structures/${entry.file}`);
-    assert.equal(data.path, entry.path);
-    assert.deepEqual(data.size, entry.size);
-    assert.equal(data.palette[0], 'air');
-    assert.equal(data.palette.length, entry.paletteSize);
-    assert.ok(!data.palette.slice(1).some((state) => /^(air|cave_air|void_air|structure_void|structure_block|jigsaw)(\[|$)/.test(state)), entry.path);
-    let cells = 0;
-    let blocks = 0;
-    for (let i = 0; i < data.rle.length; i += 2) {
-      assert.ok(data.rle[i] < data.palette.length);
-      cells += data.rle[i + 1];
-      if (data.rle[i] !== 0) blocks += data.rle[i + 1];
-    }
-    assert.equal(cells, entry.size[0] * entry.size[1] * entry.size[2], entry.path);
-    assert.equal(blocks, entry.blocks, entry.path);
-  }
 });

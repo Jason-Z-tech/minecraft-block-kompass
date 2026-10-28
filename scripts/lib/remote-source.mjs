@@ -21,7 +21,7 @@ const DOWNLOAD_TIMEOUT_MS = 180_000;
 
 // Alle Domains, die der Remote-Modus braucht (README „In der Cloud“ listet dieselben).
 export const REMOTE_DOMAINS = [
-  { host: 'codeload.github.com', purpose: 'ZIP-Archive von misode/mcmeta (Blockstates, Modelle, Texturen, englische Namen, Strukturen)', required: true },
+  { host: 'codeload.github.com', purpose: 'ZIP-Archiv von misode/mcmeta (Blockstates, Modelle, Texturen, englische Namen)', required: true },
   { host: 'raw.githubusercontent.com', purpose: 'Blockbericht von misode/mcmeta (Eigenschaften und Standardwerte), Rückfall für de_de.json', required: true },
   { host: 'piston-meta.mojang.com', purpose: 'Mojang-Versionsliste, Versionsdatei und Asset-Index (Prüfsumme der deutschen Sprachdatei)', required: false },
   { host: 'resources.download.minecraft.net', purpose: 'deutsche Sprachdatei de_de.json (offizielle Quelle)', required: false },
@@ -39,9 +39,9 @@ export class RemoteSourceError extends Error {
 }
 
 // Tags von misode/mcmeta: „assets-tiny“ = Assets ohne Sounds und fremde Sprachen (Bytes wie in der Jar),
-// „data“ = Datenpaket mit den Struktur-NBTs, „assets“ (voll, ≈ 450 MB) nur für die einzelne de_de.json.
+// „assets“ (voll, ≈ 450 MB) nur für die einzelne de_de.json.
 export function mcmetaTags(version) {
-  return { assets: `${version}-assets-tiny`, data: `${version}-data`, fullAssets: `${version}-assets` };
+  return { assets: `${version}-assets-tiny`, fullAssets: `${version}-assets` };
 }
 
 export const mcmetaArchiveUrl = (tag) => `https://codeload.github.com/${MCMETA_REPO}/zip/refs/tags/${encodeURIComponent(tag)}`;
@@ -142,25 +142,6 @@ export function archiveAssets(zip, label) {
     list: (start) => zip.list(prefix + start).map((name) => name.slice(prefix.length)),
     read: (name) => zip.read(prefix + name),
     readJson: (name) => parseJsonBuffer(zip.read(prefix + name), name),
-  };
-}
-
-// Mehrere Quellen wie eine: die erste mit der Datei gewinnt, list() liefert die sortierte Vereinigung.
-export function mergeAssets(...sources) {
-  const owner = (name) => sources.find((source) => source.has(name));
-  return {
-    has: (name) => owner(name) !== undefined,
-    list: (start) => [...new Set(sources.flatMap((source) => source.list(start)))].sort(),
-    read: (name) => {
-      const source = owner(name);
-      if (!source) throw new Error(`Eintrag „${name}“ fehlt.`);
-      return source.read(name);
-    },
-    readJson: (name) => {
-      const source = owner(name);
-      if (!source) throw new Error(`Eintrag „${name}“ fehlt.`);
-      return source.readJson(name);
-    },
   };
 }
 
@@ -351,17 +332,13 @@ async function loadGermanLang({ version, cacheDir, offline, download, warnings, 
 export async function loadRemoteSources({ version, cacheDir, offline = false, download, warnings, log = () => {} }) {
   const tags = mcmetaTags(version);
   const assetsArchive = await loadMcmetaArchive({ tag: tags.assets, version, cacheDir, offline, download, warnings });
-  const dataArchive = await loadMcmetaArchive({ tag: tags.data, version, cacheDir, offline, download, warnings });
-  if (assetsArchive.version.worldVersion !== dataArchive.version.worldVersion) {
-    throw new RemoteSourceError(`${assetsArchive.ref} und ${dataArchive.ref} gehören zu verschiedenen Datenversionen (${assetsArchive.version.worldVersion} / ${dataArchive.version.worldVersion}).`);
-  }
   const german = await loadGermanLang({ version, cacheDir, offline, download, warnings, log });
   return {
-    assets: mergeAssets(assetsArchive.assets, dataArchive.assets),
+    assets: assetsArchive.assets,
     version: assetsArchive.version,
     germanLang: german.lang,
     assetIndex: german.assetIndex,
-    refs: { assets: assetsArchive.ref, data: dataArchive.ref, lang: german.source },
+    refs: { assets: assetsArchive.ref, lang: german.source },
   };
 }
 

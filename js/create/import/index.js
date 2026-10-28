@@ -2,7 +2,7 @@
 // Minecraft-Dateien (.schem v1–v3, .litematic, Strukturdatei .nbt) liest dieses Modul selbst; 3D-Modelle
 // (.vox, .stl, .obj, .glb, .gltf) gibt es an modelToVolume aus js/create/voxelize/index.js weiter.
 // Das Format wird am Inhalt erkannt (gzip-Kennung, NBT-Aufbau, Datei-Kennungen), nicht nur an der Endung.
-// Ergebnis: ImportResult (Kapitel mit Blocklisten) → importToBuildResult() → BuildResult wie bei Strukturen.
+// Ergebnis: ImportResult (Kapitel mit Blocklisten) → importToBuildResult() → BuildResult (Schritte Ebene für Ebene).
 
 import { readNbtAsync, detectCompression, NbtError } from './nbt.js';
 import { IMPORT_LIMITS, ImportError, BlockCollector, formatInt, formatMb, cleanText, isCompound } from './common.js';

@@ -96,6 +96,61 @@ test('Alle Seiten haben denselben Kopf und Fuß', async () => {
   }
 });
 
+test('Kopf: keine Suche, Navigation Start · Kategorien · Selber erstellen · Meine Bauten', async () => {
+  for (const spec of PAGES) {
+    const html = await read(spec.file);
+    const prefix = spec.file.includes('/') ? '../../' : '';
+    const header = between(html, '<header class="site-header"', '</header>');
+    // Die Suche gibt es nur noch auf der Startseite
+    assert.doesNotMatch(header, /site-search|search-toggle|role="search"|type="search"|name="q"|icons\.svg#search/, `${spec.file}: Suche im Kopf`);
+    const links = [...header.matchAll(/<a class="hotbar__slot" href="([^"]+)" data-nav="([^"]+)">([\s\S]*?)<\/a>/g)]
+      .map(([, href, nav, inner]) => ({ href, nav, icon: /icons\.svg#([a-z-]+)/.exec(inner)?.[1], labels: [...inner.matchAll(/<span(?: class="([^"]+)")?>([^<]+)<\/span>/g)].map((m) => [m[1] ?? '', m[2]]) }));
+    assert.deepEqual(links.map((link) => [link.href, link.nav, link.icon]), [
+      [`${prefix}index.html`, 'home', 'home'],
+      [`${prefix}kategorie.html`, 'category', 'grid'],
+      [`${prefix}erstellen.html`, 'create', 'hammer'],
+      [`${prefix}meine.html`, 'mine', 'star'],
+    ], spec.file);
+    // Handy: Kurzformen wie bei „Erstellen“
+    assert.deepEqual(links[2].labels, [['label-long', 'Selber erstellen'], ['label-short', 'Erstellen']]);
+    assert.deepEqual(links[3].labels, [['label-long', 'Meine Bauten'], ['label-short', 'Meine']]);
+    assert.equal((header.match(/<button\b/g) ?? []).length, 0, `${spec.file}: kein Knopf im Kopf`);
+  }
+  // Ohne Suche im Kopf gibt es auch kein Kopf-Suchskript und keine Kopf-Such-Styles mehr
+  const shared = await read('js/ui/shared.js');
+  assert.doesNotMatch(shared, /site-search|is-search-open/);
+  assert.match(shared, /NAV_FOR_PAGE = Object\.freeze\(\{ home: 'home', category: 'category', create: 'create', mine: 'mine' \}\)/);
+  for (const file of ['css/style.css', 'css/browse.css', 'css/create.css', 'css/build-view.css']) {
+    assert.doesNotMatch(await read(file), /\.site-search|is-search-open/, file);
+  }
+});
+
+test('Startseite: Titel, Suche, kompakte Kategorien und zwei Links – keine Bau-Reihen, kein Einleitungstext', async () => {
+  const html = await read('index.html');
+  const main = between(html, '<main id="main"', '</main>');
+  assert.match(main, /<h1 class="home__title" id="home-title">Was willst du <span class="home__title-accent">bauen\?<\/span><\/h1>/);
+  // Suche wie bisher über erstellen.html?q=…
+  assert.match(main, /<form class="home-search" id="home-search-form" action="erstellen\.html" method="get" role="search"/);
+  assert.match(main, /<input [^>]*id="home-search-input" type="search" name="q" maxlength="120"/);
+  assert.match(main, /<ul class="category-grid category-grid--compact" id="home-categories" role="list"/);
+  const links = between(main, '<ul class="home__links" id="home-links"', '</ul>');
+  assert.deepEqual([...links.matchAll(/<a [^>]*href="([^"]+)"[^>]*>[\s\S]*?<span>([^<]+)<\/span><\/a>/g)].map((m) => [m[1], m[2]]),
+    [['erstellen.html', 'Selber erstellen'], ['meine.html', 'Meine Bauten']]);
+  // Weg sind: Bau-Reihen, „So funktioniert’s“, Einleitungstext, Kennzahlen, „Stand …“, Augenbraue, Kompass-Bild
+  for (const gone of ['home-sections', 'home-total', 'shelf', 'how__', 'So funktioniert', 'eyebrow', 'hero__lead', 'hero-stats', 'Stand ', 'hero__compass', 'Riesenbauten', 'Klein &amp; schnell', 'Original aus dem Spiel', 'Nach echten Maßen']) {
+    assert.ok(!main.includes(gone), `index.html enthält noch „${gone}“`);
+  }
+  assert.equal((main.match(/<p\b/g) ?? []).length, 1, 'nur der noscript-Hinweis als Absatz');
+  const home = await read('js/ui/home.js');
+  assert.match(home, /renderCategoryGrid\([^)]*\{ compact: true \}\)/);
+  assert.doesNotMatch(home, /createBuildCard|home-sections|catalogTotals|selectHomeSections/);
+  // Code und Styles der alten Startseite sind weg
+  await assert.rejects(stat(path.join(ROOT, 'js/ui/browse/home-sections.js')), { code: 'ENOENT' });
+  const css = (await read('css/style.css')) + (await read('css/browse.css'));
+  for (const selector of ['.shelf', '.how', '.hero', '.eyebrow', '@keyframes float']) assert.ok(!css.includes(selector), `CSS enthält noch ${selector}`);
+  assert.doesNotMatch(html, /css\/browse\.css/, 'die Startseite braucht browse.css nicht mehr');
+});
+
 test('Die oben im Seitenmodul dokumentierten Container-IDs gibt es im HTML', async () => {
   for (const spec of PAGES.slice(0, 4)) {
     const [html, source] = await Promise.all([read(spec.file), read(spec.module)]);

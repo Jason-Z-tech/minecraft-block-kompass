@@ -1,5 +1,5 @@
 // Reine Umwandlung der Spieldaten (ARCHITEKTUR §5): Rohdateien aus dem Spiel bzw. aus misode/mcmeta → Format von
-// game-data/ (names.json, blocks.json, models.json, textures.json-Einträge, structures/). Ohne Node-Importe und
+// game-data/ (names.json, blocks.json, models.json, textures.json-Einträge). Ohne Node-Importe und
 // Node-Globale: läuft in Browser, Worker und Node. scripts/extract-game-data.mjs nutzt genau diese Funktionen
 // (Ergebnis Byte für Byte gleich); Dateien, Zip, Netz und Schreiben bleiben dort.
 
@@ -15,7 +15,6 @@ export const ASSET_ROOT = 'assets/minecraft/';
 export const BLOCKSTATE_PREFIX = `${ASSET_ROOT}blockstates/`;
 export const MODEL_PREFIX = `${ASSET_ROOT}models/`;
 export const TEXTURE_PREFIX = `${ASSET_ROOT}textures/`;
-export const STRUCTURE_PREFIX = 'data/minecraft/structure/';
 
 export const ID_PATTERN = /^[a-z0-9_]+$/;
 export const RESOURCE_PATH_PATTERN = /^[a-z0-9_.-]+(?:\/[a-z0-9_.-]+)*$/;
@@ -24,9 +23,6 @@ const QUADRANTS = [0, 90, 180, 270];
 const AXES = ['x', 'y', 'z'];
 // Eingebaute Spieltextur ohne Datei (lila-schwarzes Schachbrett).
 const BUILTIN_MISSING_TEXTURE = 'missingno';
-// Fallen in Strukturen weg (Luftarten, Platzhalter, Datenblöcke).
-const REMOVED_STRUCTURE_BLOCKS = new Set(['air', 'cave_air', 'void_air', 'structure_void', 'structure_block']);
-const MAX_STRUCTURE_VOLUME = 8_000_000;
 
 // Welche Texturen in textures.bin landen (Pfade wie in 26.2; Betten und Schilder nutzen dort Block-Texturen).
 const TEXTURE_INCLUDE_PATTERNS = [
@@ -862,231 +858,6 @@ export function textureEntry({ name, width, height, meta, warnings }) {
     warnings.add(`Textur ${name}: .mcmeta unbrauchbar (${error.message}) – ohne Animation übernommen.`);
   }
   return entry;
-}
-
-// ---------------------------------------------------------------------------------------------
-// Strukturen (structures/)
-
-// Zustands-String wie in Befehlen: „minecraft:oak_stairs[facing=east]{…}“ → { namespace, id, props, trailing }.
-export function parseStateString(text) {
-  if (typeof text !== 'string') return null;
-  const match = /^\s*(?:([a-z0-9_.-]+):)?([a-z0-9_./-]+)/.exec(text);
-  if (!match) return null;
-  const props = dict();
-  let rest = text.slice(match[0].length);
-  if (rest.startsWith('[')) {
-    const close = rest.indexOf(']');
-    if (close < 0) return null;
-    const body = rest.slice(1, close).trim();
-    if (body !== '') {
-      for (const pair of body.split(',')) {
-        const parts = pair.split('=').map((part) => part.trim());
-        if (parts.length !== 2 || !ID_PATTERN.test(parts[0]) || !ID_PATTERN.test(parts[1])) return null;
-        props[parts[0]] = parts[1];
-      }
-    }
-    rest = rest.slice(close + 1);
-  }
-  return { namespace: match[1] ?? 'minecraft', id: match[2], props, trailing: rest.trim() };
-}
-
-function readPaletteEntry(entry) {
-  if (!isPlainObject(entry) || typeof entry.Name !== 'string') return null;
-  const parsed = parseStateString(entry.Name);
-  if (!parsed || parsed.trailing !== '' || Object.keys(parsed.props).length > 0) return null;
-  if (entry.Properties !== undefined) {
-    if (!isPlainObject(entry.Properties)) return null;
-    for (const [key, value] of Object.entries(entry.Properties)) {
-      if (typeof value !== 'string' || !ID_PATTERN.test(key) || !ID_PATTERN.test(value)) return null;
-      parsed.props[key] = value;
-    }
-  }
-  return parsed;
-}
-
-// Vervollständigt einen Zustand mit den Standardwerten aus blocks.json (wie das Spiel beim Laden).
-// Mit vollständigen Daten (mcmeta) fallen unbekannte Blöcke/Eigenschaften wie im Spiel weg.
-export function createStateNormalizer(blockData, warnings) {
-  const strict = blockData.source === 'mcmeta';
-  return function normalizeState({ namespace, id, props }, context) {
-    if (namespace !== 'minecraft') {
-      warnings.once(`ns:${namespace}:${id}`, `${context}: Block ${namespace}:${id} aus fremdem Namensraum – entfällt.`);
-      return 'air';
-    }
-    if (REMOVED_STRUCTURE_BLOCKS.has(id)) return 'air';
-    const info = Object.hasOwn(blockData.blocks, id) ? blockData.blocks[id] : null;
-    if (!info) {
-      if (!strict) return formatState(id, props);
-      warnings.once(`block:${id}`, `${context}: unbekannter Block „${id}“ – entfällt.`);
-      return 'air';
-    }
-    const full = dict();
-    for (const [key, value] of Object.entries(props)) {
-      if (strict && !Object.hasOwn(info.props, key)) {
-        warnings.once(`prop:${id}:${key}`, `${context}: ${id} hat keine Eigenschaft „${key}“ – ignoriert.`);
-        continue;
-      }
-      if (strict && !info.props[key].includes(value)) {
-        warnings.once(`value:${id}:${key}:${value}`, `${context}: ${id}[${key}=${value}] gibt es nicht – Standardwert verwendet.`);
-        continue;
-      }
-      full[key] = value;
-    }
-    for (const [key, value] of Object.entries(info.default)) {
-      if (!(key in full)) full[key] = value;
-    }
-    return formatState(id, full);
-  };
-}
-
-export function encodeRle(cells) {
-  const rle = [];
-  if (cells.length === 0) return rle;
-  let current = cells[0];
-  let run = 1;
-  for (let i = 1; i < cells.length; i++) {
-    if (cells[i] === current) {
-      run++;
-    } else {
-      rle.push(current, run);
-      current = cells[i];
-      run = 1;
-    }
-  }
-  rle.push(current, run);
-  return rle;
-}
-
-function readStructureSize(value) {
-  if (!Array.isArray(value) || value.length !== 3 || !value.every((n) => Number.isInteger(n) && n >= 0)) {
-    throw new Error('ungültige Größe (size)');
-  }
-  if (value[0] * value[1] * value[2] > MAX_STRUCTURE_VOLUME) throw new Error(`zu groß (${value.join('×')})`);
-  return value;
-}
-
-function pickPalette(nbt) {
-  if (Array.isArray(nbt.palette)) return nbt.palette;
-  if (Array.isArray(nbt.palettes) && Array.isArray(nbt.palettes[0])) return nbt.palettes[0];
-  throw new Error('Palette fehlt');
-}
-
-// Ungenutzte Paletteneinträge entfernen, „air“ bleibt Index 0.
-function compactPalette(cells, palette) {
-  const used = new Uint8Array(palette.length);
-  for (const value of cells) used[value] = 1;
-  const remap = new Uint16Array(palette.length);
-  const compact = ['air'];
-  for (let i = 1; i < palette.length; i++) {
-    if (!used[i]) continue;
-    remap[i] = compact.length;
-    compact.push(palette[i]);
-  }
-  for (let i = 0; i < cells.length; i++) cells[i] = remap[cells[i]];
-  return compact;
-}
-
-// Wandelt eine Strukturvorlage (NBT-Wurzel) ins Format aus ARCHITEKTUR §5.
-export function convertStructure(structurePath, nbt, normalizeState, warnings) {
-  if (!isPlainObject(nbt)) throw new Error('Wurzel ist kein Compound');
-  const [sx, sy, sz] = readStructureSize(nbt.size);
-  const rawPalette = pickPalette(nbt);
-  const context = `Struktur ${structurePath}`;
-  const palette = ['air'];
-  const paletteIndices = new Map([['air', 0]]);
-  const indexOfState = (state) => {
-    if (!paletteIndices.has(state)) {
-      if (palette.length >= 65535) throw new Error('mehr als 65535 verschiedene Zustände');
-      paletteIndices.set(state, palette.length);
-      palette.push(state);
-    }
-    return paletteIndices.get(state);
-  };
-  const JIGSAW = -1;
-  const paletteMap = rawPalette.map((entry) => {
-    const parsed = readPaletteEntry(entry);
-    if (!parsed) {
-      warnings.add(`${context}: ungültiger Paletteneintrag ${JSON.stringify(entry)} – entfällt.`);
-      return 0;
-    }
-    if (parsed.namespace === 'minecraft' && parsed.id === 'jigsaw') return JIGSAW;
-    return indexOfState(normalizeState(parsed, context));
-  });
-
-  const jigsawCache = new Map();
-  const jigsawIndex = (blockNbt) => {
-    if (!isPlainObject(blockNbt)) {
-      warnings.once(`${context}:jigsaw-nbt`, `${context}: Jigsaw-Block ohne NBT – entfällt.`);
-      return 0;
-    }
-    const finalState = typeof blockNbt.final_state === 'string' ? blockNbt.final_state : 'minecraft:air';
-    if (!jigsawCache.has(finalState)) {
-      const parsed = parseStateString(finalState);
-      let index = 0;
-      if (!parsed) {
-        warnings.add(`${context}: final_state „${finalState}“ nicht lesbar – Block entfällt (wie im Spiel).`);
-      } else {
-        if (parsed.trailing !== '' && !parsed.trailing.startsWith('{')) {
-          warnings.add(`${context}: final_state „${finalState}“ hat überzählige Zeichen „${parsed.trailing}“ (das Spiel ignoriert sie ebenfalls).`);
-        }
-        if (!(parsed.namespace === 'minecraft' && parsed.id === 'jigsaw')) index = indexOfState(normalizeState(parsed, context));
-      }
-      jigsawCache.set(finalState, index);
-    }
-    return jigsawCache.get(finalState);
-  };
-
-  const cells = new Uint16Array(sx * sy * sz);
-  const blockList = Array.isArray(nbt.blocks) ? nbt.blocks : [];
-  for (const block of blockList) {
-    const pos = block?.pos;
-    if (!Array.isArray(pos) || pos.length !== 3 || !pos.every(Number.isInteger)) {
-      warnings.once(`${context}:pos`, `${context}: Block mit ungültiger Position – übersprungen.`);
-      continue;
-    }
-    const [x, y, z] = pos;
-    if (x < 0 || y < 0 || z < 0 || x >= sx || y >= sy || z >= sz) {
-      warnings.once(`${context}:outside`, `${context}: Block außerhalb der Größe ${sx}×${sy}×${sz} – übersprungen.`);
-      continue;
-    }
-    let value = Number.isInteger(block.state) ? paletteMap[block.state] : undefined;
-    if (value === undefined) {
-      warnings.once(`${context}:state`, `${context}: Block verweist auf fehlenden Paletteneintrag – übersprungen.`);
-      continue;
-    }
-    if (value === JIGSAW) value = jigsawIndex(block.nbt);
-    cells[(y * sz + z) * sx + x] = value;
-  }
-
-  const compact = compactPalette(cells, palette);
-  let blockCount = 0;
-  for (const value of cells) if (value !== 0) blockCount++;
-  const size = [sx, sy, sz];
-  return {
-    data: { path: structurePath, size, palette: compact, rle: encodeRle(cells) },
-    info: { size, blocks: blockCount, paletteSize: compact.length, entities: Array.isArray(nbt.entities) ? nbt.entities.length : 0 },
-  };
-}
-
-export function structureFileName(structurePath) {
-  return `${structurePath.split('/').join('__')}.json`;
-}
-
-// Ein Teil des Strukturpfads: Kleinbuchstaben, Ziffern, einzelne „_“ dazwischen. Am Rand oder doppelt wäre der
-// Dateiname mehrdeutig („a_/b“ und „a/_b“ ergäben beide „a___b.json“).
-const STRUCTURE_SEGMENT_PATTERN = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
-const MAX_STRUCTURE_FILE_LENGTH = 255;
-
-// Umkehrung von structureFileName: „village__plains__houses__plains_small_house_1.json“ →
-// „village/plains/houses/plains_small_house_1“. Wirft bei allem anderen (fremde Zeichen, „..“, „/“, fehlendes .json).
-export function structurePathFromFile(file) {
-  const valid = typeof file === 'string' && file.length <= MAX_STRUCTURE_FILE_LENGTH && file.endsWith('.json')
-    && file.slice(0, -'.json'.length).split('__').every((segment) => STRUCTURE_SEGMENT_PATTERN.test(segment));
-  if (!valid) {
-    const shown = typeof file === 'string' ? file.slice(0, 80) : typeof file;
-    throw new Error(`Ungültiger Strukturname „${shown}“ (erwartet z. B. village__plains__houses__plains_small_house_1.json).`);
-  }
-  return file.slice(0, -'.json'.length).split('__').join('/');
 }
 
 // ---------------------------------------------------------------------------------------------

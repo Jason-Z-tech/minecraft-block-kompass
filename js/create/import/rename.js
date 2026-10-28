@@ -29,7 +29,7 @@ function renameValue(id, key, value) {
   return value;
 }
 
-/** Fallen beim Import weg (wie bei den Original-Strukturen, §5). */
+/** Fallen beim Import weg (Luftarten und Platzhalter). */
 export const DROPPED_IDS = Object.freeze(new Set(['air', 'cave_air', 'void_air', 'structure_void']));
 
 const NAME = /^[a-z0-9_.\-/]+$/;

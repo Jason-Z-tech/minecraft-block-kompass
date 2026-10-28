@@ -8,7 +8,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { parseZip } from '../../scripts/lib/zip.mjs';
 import {
-  REMOTE_DOMAINS, RemoteSourceError, archiveAssets, mergeAssets, readMcmetaVersion, createDownloader, loadRemoteSources,
+  REMOTE_DOMAINS, RemoteSourceError, archiveAssets, readMcmetaVersion, createDownloader, loadRemoteSources, mcmetaTags,
   blockedDomainMessage, mcmetaArchiveUrl, mcmetaRawUrl, mojangObjectUrl, proxyRelaunchPlan,
 } from '../../scripts/lib/remote-source.mjs';
 import { MC_VERSION, MCMETA_TAG, UserError, parseCliArgs, extractGameData, chooseSource } from '../../scripts/extract-game-data.mjs';
@@ -68,22 +68,6 @@ function makeZip(files) {
   return Buffer.concat([...locals, centralDir, end]);
 }
 
-// Ungepacktes NBT für eine 1×1×1-Struktur mit einem Steinblock.
-function structureNbt() {
-  const parts = [];
-  const u8 = (v) => parts.push(Buffer.from([v]));
-  const i32 = (v) => { const b = Buffer.alloc(4); b.writeInt32BE(v); parts.push(b); };
-  const str = (s) => { const b = Buffer.from(s, 'utf8'); const len = Buffer.alloc(2); len.writeUInt16BE(b.length); parts.push(len, b); };
-  const intList = (name, values) => { u8(9); str(name); u8(3); i32(values.length); values.forEach(i32); };
-  u8(10); str('');
-  intList('size', [1, 1, 1]);
-  u8(9); str('palette'); u8(10); i32(1); u8(8); str('Name'); str('minecraft:stone'); u8(0);
-  u8(9); str('blocks'); u8(10); i32(1); intList('pos', [0, 0, 0]); u8(3); str('state'); i32(0); u8(0);
-  u8(9); str('entities'); u8(0); i32(0);
-  u8(0);
-  return Buffer.concat(parts);
-}
-
 function pngHeader(width, height) {
   const buffer = Buffer.alloc(33);
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(buffer, 0);
@@ -110,10 +94,6 @@ function remoteFixture({ deLang = DE_LANG } = {}) {
     },
     'mcmeta-26.2-assets-tiny/assets/minecraft/textures/block/stone.png': pngHeader(16, 16),
   });
-  const dataZip = makeZip({
-    'mcmeta-26.2-data/version.json': VERSION_JSON,
-    'mcmeta-26.2-data/data/minecraft/structure/test/one_stone.nbt': structureNbt(),
-  });
   const deBytes = toBuffer(deLang);
   const index = toBuffer({ objects: { 'minecraft/lang/de_de.json': { hash: sha1(deBytes), size: deBytes.length } } });
   const indexUrl = `https://piston-meta.mojang.com/v1/packages/${sha1(index)}/32.json`;
@@ -122,7 +102,6 @@ function remoteFixture({ deLang = DE_LANG } = {}) {
   const manifest = toBuffer({ versions: [{ id: '26.1', url: 'https://piston-meta.mojang.com/x/26.1.json', sha1: '0'.repeat(40) }, { id: MC_VERSION, url: versionUrl, sha1: sha1(versionFile) }] });
   return new Map([
     [mcmetaArchiveUrl('26.2-assets-tiny'), assetsZip],
-    [mcmetaArchiveUrl('26.2-data'), dataZip],
     ['https://piston-meta.mojang.com/mc/game/version_manifest_v2.json', manifest],
     [versionUrl, versionFile],
     [indexUrl, index],
@@ -145,7 +124,7 @@ function fakeFetch(responses, { blocked = [], status = {} } = {}) {
   return { impl, calls };
 }
 
-test('Archive: Hauptordner wird abgeschnitten, Ordner zählen nicht, Quellen lassen sich zusammenlegen', () => {
+test('Archive: Hauptordner wird abgeschnitten, Ordner zählen nicht', () => {
   const zip = parseZip(makeZip({ 'repo-tag/': '', 'repo-tag/a/x.json': { v: 1 }, 'repo-tag/a/b/': '', 'repo-tag/a/b/y.txt': 'y', 'repo-tag/version.json': VERSION_JSON }));
   const assets = archiveAssets(zip, 'Test');
   assert.deepEqual(assets.list('a/'), ['a/b/y.txt', 'a/x.json']);
@@ -154,13 +133,6 @@ test('Archive: Hauptordner wird abgeschnitten, Ordner zählen nicht, Quellen las
   assert.deepEqual(assets.readJson('a/x.json'), { v: 1 });
   assert.equal(assets.read('a/b/y.txt').toString(), 'y');
   assert.throws(() => archiveAssets(parseZip(makeZip({ 'eins/a.txt': 'a', 'zwei/b.txt': 'b' })), 'Test'), /kein gemeinsamer Hauptordner/);
-
-  const other = archiveAssets(parseZip(makeZip({ 'r/a/x.json': { v: 2 }, 'r/a/c.json': {} })), 'Zwei');
-  const merged = mergeAssets(assets, other);
-  assert.deepEqual(merged.list('a/'), ['a/b/y.txt', 'a/c.json', 'a/x.json']);
-  assert.deepEqual(merged.readJson('a/x.json'), { v: 1 }, 'die erste Quelle gewinnt');
-  assert.deepEqual(merged.readJson('a/c.json'), {});
-  assert.throws(() => merged.read('fehlt.json'), /fehlt/);
 
   assert.deepEqual(readMcmetaVersion(assets, MC_VERSION, 'Test'), { id: MC_VERSION, worldVersion: 4903, resourcePack: 88, dataPack: 107 });
   assert.throws(() => readMcmetaVersion(assets, '26.1', 'Test'), /gebraucht wird genau 26\.1/);
@@ -179,7 +151,7 @@ test('Downloader: Prüfsumme, Größengrenze, erlaubte Domains und klare Meldung
   await assert.rejects(download(mcmetaRawUrl('x', 'gesperrt')), (error) => error.blocked && /HTTP 403/.test(error.message) && /raw\.githubusercontent\.com/.test(error.message));
 
   const offline = createDownloader({ fetchImpl: fakeFetch(new Map(), { blocked: ['codeload.github.com'] }).impl });
-  await assert.rejects(offline(mcmetaArchiveUrl('26.2-data')), (error) => {
+  await assert.rejects(offline(mcmetaArchiveUrl('26.2-assets-tiny')), (error) => {
     assert.ok(error instanceof RemoteSourceError);
     assert.equal(error.host, 'codeload.github.com');
     assert.match(error.message, /Die Domain „codeload\.github\.com“ ist nicht erreichbar \(ENOTFOUND/);
@@ -197,7 +169,7 @@ test('Downloader: Prüfsumme, Größengrenze, erlaubte Domains und klare Meldung
   assert.ok(!viaProxy.includes('geheim'), 'Zugangsdaten des Proxys erscheinen nie in der Meldung');
 });
 
-test('Remote-Quellen: Archive + Mojang-Kette mit SHA-1, danach komplett aus dem Cache', async () => {
+test('Remote-Quellen: Assets-Archiv + Mojang-Kette mit SHA-1, danach komplett aus dem Cache', async () => {
   const cacheDir = tempDir('cache');
   try {
     const responses = remoteFixture();
@@ -207,20 +179,20 @@ test('Remote-Quellen: Archive + Mojang-Kette mit SHA-1, danach komplett aus dem 
     assert.deepEqual(result.version, { id: MC_VERSION, worldVersion: 4903, resourcePack: 88, dataPack: 107 });
     assert.deepEqual(result.germanLang, DE_LANG);
     assert.equal(result.assetIndex, '32');
-    assert.deepEqual(result.refs, { assets: 'misode/mcmeta@26.2-assets-tiny', data: 'misode/mcmeta@26.2-data', lang: 'mojang' });
-    assert.deepEqual(result.assets.list('data/minecraft/structure/'), ['data/minecraft/structure/test/one_stone.nbt']);
+    assert.deepEqual(result.refs, { assets: 'misode/mcmeta@26.2-assets-tiny', lang: 'mojang' });
     assert.equal(result.assets.has('assets/minecraft/blockstates/stone.json'), true);
-    assert.equal(calls.length, 6);
+    assert.equal(calls.length, 5);
     assert.ok(!calls.some((url) => url.includes('raw.githubusercontent.com')), 'kein Rückfall nötig');
+    assert.ok(!calls.some((url) => url.includes('-data')), 'das Datenpaket (Original-Strukturen) wird nicht mehr geladen');
     assert.deepEqual(warnings.list, []);
-    assert.deepEqual(fs.readdirSync(cacheDir).sort(), ['mcmeta-26.2-assets-tiny.zip', 'mcmeta-26.2-data.zip', 'mojang-26.2.json', 'mojang-assets-32.json', 'mojang-de_de.json']);
+    assert.deepEqual(fs.readdirSync(cacheDir).sort(), ['mcmeta-26.2-assets-tiny.zip', 'mojang-26.2.json', 'mojang-assets-32.json', 'mojang-de_de.json']);
 
     const noNetwork = async () => { throw new Error('darf nicht laden'); };
     const again = await loadRemoteSources({ version: MC_VERSION, cacheDir, offline: true, download: createDownloader({ fetchImpl: noNetwork }), warnings });
     assert.deepEqual(again.germanLang, DE_LANG);
 
     // Kaputter Cache wird gemeldet und neu geladen; manipulierte Sprachdatei fällt über die Prüfsumme auf.
-    fs.writeFileSync(path.join(cacheDir, 'mcmeta-26.2-data.zip'), 'kaputt');
+    fs.writeFileSync(path.join(cacheDir, 'mcmeta-26.2-assets-tiny.zip'), 'kaputt');
     fs.writeFileSync(path.join(cacheDir, 'mojang-de_de.json'), JSON.stringify({ 'block.minecraft.stone': 'Falsch' }));
     const fresh = fakeFetch(responses);
     const repaired = createWarnings();
@@ -228,7 +200,7 @@ test('Remote-Quellen: Archive + Mojang-Kette mit SHA-1, danach komplett aus dem 
     assert.deepEqual(third.germanLang, DE_LANG);
     assert.equal(fresh.calls.length, 2);
     assert.equal(repaired.list.length, 2);
-    assert.match(repaired.list.join('\n'), /mcmeta-26\.2-data\.zip unbrauchbar/);
+    assert.match(repaired.list.join('\n'), /mcmeta-26\.2-assets-tiny\.zip unbrauchbar/);
     assert.match(repaired.list.join('\n'), /mojang-de_de\.json unbrauchbar \(Prüfsumme stimmt nicht\)/);
 
     await assert.rejects(
@@ -240,15 +212,15 @@ test('Remote-Quellen: Archive + Mojang-Kette mit SHA-1, danach komplett aus dem 
   }
 });
 
-test('Remote-Quellen: falsche Version im Archiv wird abgelehnt', async () => {
+test('Remote-Quellen: falsche Version im Archiv wird abgelehnt, das Datenpaket spielt keine Rolle mehr', async () => {
   const cacheDir = tempDir('version');
   try {
     const responses = remoteFixture();
+    // Ein Datenpaket mit anderer Datenversion stört nicht: es wird gar nicht mehr geladen
     responses.set(mcmetaArchiveUrl('26.2-data'), makeZip({ 'mcmeta-26.2-data/version.json': { ...VERSION_JSON, data_version: 4800 } }));
-    await assert.rejects(
-      loadRemoteSources({ version: MC_VERSION, cacheDir, download: createDownloader({ fetchImpl: fakeFetch(responses).impl }), warnings: createWarnings() }),
-      /verschiedenen Datenversionen \(4903 \/ 4800\)/,
-    );
+    const ok = await loadRemoteSources({ version: MC_VERSION, cacheDir, download: createDownloader({ fetchImpl: fakeFetch(responses).impl }), warnings: createWarnings() });
+    assert.equal(ok.version.worldVersion, 4903);
+    assert.deepEqual(mcmetaTags(MC_VERSION), { assets: '26.2-assets-tiny', fullAssets: '26.2-assets' });
     responses.set(mcmetaArchiveUrl('26.2-assets-tiny'), makeZip({ 'mcmeta-26.2-assets-tiny/version.json': { ...VERSION_JSON, id: '26.1' } }));
     fs.rmSync(cacheDir, { recursive: true, force: true });
     await assert.rejects(
@@ -353,6 +325,9 @@ function mcmetaBlocksFixture() {
 
 test('extractGameData --remote: komplette Ausgabe aus Fake-Quellen, danach offline aus dem Cache', async () => {
   const out = tempDir('extract');
+  // structures/ eines früheren Laufs (Original-Strukturen) wird beim nächsten Lauf entfernt
+  fs.mkdirSync(path.join(out, 'structures'), { recursive: true });
+  fs.writeFileSync(path.join(out, 'structures', 'index.json'), '{"structures":[]}');
   const originalFetch = globalThis.fetch;
   try {
     const cacheDir = path.join(out, '.cache');
@@ -363,19 +338,18 @@ test('extractGameData --remote: komplette Ausgabe aus Fake-Quellen, danach offli
     globalThis.fetch = impl;
     const lines = [];
     const meta = await extractGameData({ remote: true, out, offline: false }, (line) => lines.push(line));
-    assert.equal(calls.length, 6);
+    assert.equal(calls.length, 5);
     assert.equal(meta.worldVersion, 4903);
     assert.equal(meta.resourcePack, 88);
     assert.equal(meta.dataPack, 107);
     assert.deepEqual(meta.sources, {
       blocks: 'mcmeta', blocksRef: `misode/mcmeta@${MCMETA_TAG}`, assetIndex: '32',
-      remote: { assets: 'misode/mcmeta@26.2-assets-tiny', data: 'misode/mcmeta@26.2-data', lang: 'mojang' },
+      remote: { assets: 'misode/mcmeta@26.2-assets-tiny', lang: 'mojang' },
     });
-    assert.deepEqual(meta.counts.structures, 1);
+    assert.equal('structures' in meta.counts, false, 'keine Original-Strukturen mehr');
     const names = JSON.parse(fs.readFileSync(path.join(out, 'names.json'), 'utf8'));
     assert.deepEqual(names.block.stone, { de: 'Stein', en: 'Stone' });
-    const index = JSON.parse(fs.readFileSync(path.join(out, 'structures', 'index.json'), 'utf8'));
-    assert.deepEqual(index.structures.map((entry) => [entry.path, entry.blocks]), [['test/one_stone', 1]]);
+    assert.equal(fs.existsSync(path.join(out, 'structures')), false, 'structures/ wird nicht mehr geschrieben');
     for (const file of ['blocks.json', 'models.json', 'textures.json', 'textures.bin', 'meta.json']) assert.ok(fs.existsSync(path.join(out, file)), file);
     assert.ok(lines.some((line) => line.startsWith(`Ausgabe in ${path.relative(ROOT, out).split(path.sep).join('/')}/`)));
 

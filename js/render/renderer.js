@@ -397,7 +397,7 @@ export class Viewer {
   }
 
   /**
-   * Lädt einen Bau. source: { kind:'module', path } | { kind:'structure', file } | { kind:'shape', shape, params }
+   * Lädt einen Bau. source: { kind:'module', path } | { kind:'shape', shape, params } | { kind:'upload', format, name, data, params }
    * (Testquellen: { kind:'gallery', group, page } | { kind:'synthetic', count }). params gehen an das Bau-Modul.
    * Ergebnis: BuildResult (volume = Kopie im Hauptthread). Ein neuer load bricht den laufenden ab (code 'cancelled').
    */

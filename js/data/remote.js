@@ -10,23 +10,19 @@
 //   models       models.json       (alle Blockstates und Modelle)
 //   textures     textures.json     (Atlas-Einträge { atlas, x, y, w, h, anim, mip? }, .png.mcmeta der Animationen)
 //   atlas:<name> PNG-Bytes eines Atlas (blocks, items, entities)
-//   structure:<datei>             eine Datei aus game-data/structures/ (Stufe in onProgress: 'structure')
 //   block-colors block-colors.json (nur auf Wunsch, Modell-Import)
 // Fehler: NetError aus net.js (Netz, 404, 429, beschädigte Dateien – kind 'format') mit deutscher Meldung ohne Befehle.
 
 import { NetError, createLimiter, fetchBytes as defaultFetchBytes, fetchJson as defaultFetchJson } from './net.js';
 import { STORE_VERSION, createStore, withLock as defaultWithLock } from './store.js';
 import {
-  ATLASES, GAME_VERSION, LANG_FILES, LIMITS, MCMETA_COMMITS, MCMETA_TEXTURES, SUMMARY_FILES, atlasFiles, mcmetaUrl,
-  structureUrl, textureMcmetaPath,
+  ATLASES, GAME_VERSION, LANG_FILES, LIMITS, MCMETA_COMMITS, MCMETA_TEXTURES, SUMMARY_FILES, atlasFiles, mcmetaUrl, textureMcmetaPath,
 } from './sources.js';
 import { BLOCK_COLORS_FORMAT } from '../create/voxelize/colors.js';
 import {
-  CONVERT_VERSION, MC_VERSION, buildModels, buildNames, convertMcmetaBlocks, convertStructure, createAssetsFromSummary, createStateNormalizer,
-  createWarnings, dict, isPlainObject, loadBlockstates, mcmetaBlocksData, readPngSize, selectTextureNames, structurePathFromFile,
-  textureEntry,
+  CONVERT_VERSION, MC_VERSION, buildModels, buildNames, convertMcmetaBlocks, createAssetsFromSummary, createWarnings, dict,
+  isPlainObject, loadBlockstates, mcmetaBlocksData, readPngSize, selectTextureNames, textureEntry,
 } from './convert.js';
-import { readNbtAsync } from '../create/import/nbt.js';
 
 // Schlüssel im Speicher: v<Speicherformat>.<Umwandlung>.<Blockfarben-Format>|<je 7 Zeichen der Commits>|<Stufe>. Ändert sich
 // ein Commit, die Umwandlung (CONVERT_VERSION) oder ein Format, gelten die alten Einträge nicht mehr (keepOnly räumt sie
@@ -43,15 +39,12 @@ export const STAGE_LABELS = Object.freeze({
   'atlas:blocks': 'Block-Texturen',
   'atlas:items': 'Gegenstands-Texturen',
   'atlas:entities': 'Objekt-Texturen',
-  structure: 'Struktur',
   'block-colors': 'Blockfarben',
 });
 
 // .png.mcmeta: höchstens so viele Downloads gleichzeitig (GitHub begrenzt ohne feste Zahl). Über HTTP/2 laufen sie auf einer
 // Verbindung; 16 statt 6 spart beim ersten Besuch etwa eine halbe Sekunde (gemessen gegen raw.githubusercontent.com).
 const MCMETA_CONCURRENCY = 16;
-// Entpackte Größe einer Struktur-NBT (gepackt höchstens LIMITS.nbt; die größte in 26.2 hat gepackt 80 KB, entpackt 1,1 MB).
-const MAX_STRUCTURE_UNPACKED = 16 * LIMITS.nbt;
 const FIXED_STAGES = new Set(['names', 'blocks', 'atlas-data', 'models', 'textures', 'block-colors']);
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
@@ -71,14 +64,6 @@ function isStageName(name) {
   if (typeof name !== 'string') return false;
   if (FIXED_STAGES.has(name)) return true;
   if (name.startsWith('atlas:')) return ATLASES.includes(name.slice('atlas:'.length));
-  if (name.startsWith('structure:')) {
-    try {
-      structurePathFromFile(name.slice('structure:'.length));
-      return true;
-    } catch {
-      return false;
-    }
-  }
   return false;
 }
 
@@ -101,7 +86,7 @@ function checkAtlasData(raw, url) {
 /**
  * Quelle für die Spieldaten aus misode/mcmeta. Alle Methoden liefern Promises; Objekte sind geteilt (nicht verändern).
  * Optionen (für Tests austauschbar): fetchJson/fetchBytes (net.js), store (createStore()), withLock (store.js),
- * onProgress({ stage, done, total, file? }) – nur wenn wirklich geladen oder umgewandelt wird –, readNbt (readNbtAsync).
+ * onProgress({ stage, done, total }) – nur wenn wirklich geladen oder umgewandelt wird.
  */
 export function createRemoteSource({
   fetchJson = defaultFetchJson,
@@ -109,7 +94,6 @@ export function createRemoteSource({
   store = null,
   withLock = defaultWithLock,
   onProgress = null,
-  readNbt = readNbtAsync,
 } = {}) {
   const storage = store ?? createStore();
   const memo = new Map();
@@ -117,10 +101,10 @@ export function createRemoteSource({
   const limit = createLimiter(MCMETA_CONCURRENCY);
   let prepared = null;
 
-  const progress = (stage, done, total, extra = null) => {
+  const progress = (stage, done, total) => {
     if (typeof onProgress !== 'function') return;
     try {
-      onProgress({ stage, done, total, ...extra });
+      onProgress({ stage, done, total });
     } catch { /* Anzeige darf das Laden nie stören */ }
   };
 
@@ -360,29 +344,6 @@ export function createRemoteSource({
     return bytes.slice();
   }
 
-  // Eine Struktur wie game-data/structures/<file> ({ path, size, palette, rle }).
-  async function structure(file) {
-    const structurePath = structurePathFromFile(file);
-    return stage(`structure:${file}`, async () => {
-      const total = 2;
-      progress('structure', 0, total, { file });
-      const url = structureUrl(structurePath);
-      const [blocksData, bytes] = await Promise.all([blocks(), fetchBytes(url, { maxBytes: LIMITS.nbt })]);
-      progress('structure', 1, total, { file });
-      let data;
-      try {
-        const { value } = await readNbt(bytes, { maxBytes: MAX_STRUCTURE_UNPACKED });
-        const warnings = createWarnings();
-        data = convertStructure(structurePath, value, createStateNormalizer(blocksData, warnings), warnings).data;
-      } catch (error) {
-        throw formatError(url, error, `Die Struktur „${structurePath}“`);
-      }
-      const text = JSON.stringify(data);
-      progress('structure', total, total, { file });
-      return text;
-    });
-  }
-
   // Blockfarben für den Modell-Import (wie game-data/block-colors.json): Texturen aus den Atlanten ausschneiden.
   function blockColors() {
     return stage('block-colors', async () => {
@@ -435,5 +396,5 @@ export function createRemoteSource({
     return true;
   }
 
-  return { names, blocks, models, textures, atlas, structure, blockColors, isCached };
+  return { names, blocks, models, textures, atlas, blockColors, isCached };
 }

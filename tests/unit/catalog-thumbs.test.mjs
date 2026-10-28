@@ -12,7 +12,7 @@ import { fitOrbitDistance, sceneBounds } from '../../js/render/renderer.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DATA_DIR = path.join(ROOT, 'game-data');
-const NO_DATA = existsSync(path.join(DATA_DIR, 'meta.json')) && existsSync(path.join(DATA_DIR, 'structures', 'igloo__top.json'))
+const NO_DATA = existsSync(path.join(DATA_DIR, 'meta.json')) && existsSync(path.join(DATA_DIR, 'models.json'))
   ? false : 'game-data/ fehlt (node scripts/extract-game-data.mjs)';
 
 let workDir;
@@ -25,13 +25,15 @@ after(async () => {
 });
 
 const entry = (over = {}) => ({
-  id: 'spiel-iglu', title: 'Iglu', category: 'haeuser', module: null, structure: 'igloo__top.json', defaultScale: null, thumb: null, ...over,
+  id: 'example-house', title: 'Beispielhaus', category: 'haeuser', module: 'tests/fixtures/core/example-house.js', defaultScale: null, thumb: null, ...over,
 });
+// Zweiter Eintrag für die Browser-Tests: dasselbe kleine Beispielhaus unter anderer ID (schnell zu rendern)
+const twin = (over = {}) => entry({ id: 'zweites-haus', title: 'Zweites Haus', ...over });
 
 describe('Helfer', () => {
   test('parseArgs', () => {
-    const o = parseArgs(['--force', '--only', 'spiel-iglu', '--only', 'example-house', '--gpu', 'swiftshader', '--prune']);
-    assert.deepEqual(o.only, ['spiel-iglu', 'example-house']);
+    const o = parseArgs(['--force', '--only', 'zweites-haus', '--only', 'example-house', '--gpu', 'swiftshader', '--prune']);
+    assert.deepEqual(o.only, ['zweites-haus', 'example-house']);
     assert.ok(o.force && o.prune);
     assert.equal(o.gpu, 'swiftshader');
     assert.throws(() => parseArgs(['--only', '../x']), UsageError);
@@ -40,15 +42,16 @@ describe('Helfer', () => {
   });
 
   test('jobFor prüft Pfade, validateJob ebenso auf der Seite', () => {
-    assert.deepEqual(jobFor(entry()), { source: { kind: 'structure', file: 'igloo__top.json' }, scale: null });
-    assert.deepEqual(jobFor(entry({ structure: null, module: 'js/builds/haeuser/a-b.js', defaultScale: 0.5 })), { source: { kind: 'module', path: 'js/builds/haeuser/a-b.js' }, scale: 0.5 });
-    assert.throws(() => jobFor(entry({ structure: '../../etc.json' })), /ungültige Strukturdatei/);
-    assert.throws(() => jobFor(entry({ structure: null, module: 'https://x.y/a.js' })), /ungültiger Modulpfad/);
-    assert.throws(() => jobFor(entry({ structure: null })), /weder module noch structure/);
+    assert.deepEqual(jobFor(entry()), { source: { kind: 'module', path: 'tests/fixtures/core/example-house.js' }, scale: null });
+    assert.deepEqual(jobFor(entry({ module: 'js/builds/haeuser/a-b.js', defaultScale: 0.5 })), { source: { kind: 'module', path: 'js/builds/haeuser/a-b.js' }, scale: 0.5 });
+    assert.throws(() => jobFor(entry({ module: 'https://x.y/a.js' })), /ungültiger Modulpfad/);
+    // Original-Strukturen gibt es nicht mehr: ein Eintrag ohne Bau-Modul (auch mit altem Feld structure) ist ein Fehler
+    assert.throws(() => jobFor(entry({ module: null })), /kein Bau-Modul/);
+    assert.throws(() => jobFor(entry({ module: null, structure: 'igloo__top.json' })), /kein Bau-Modul/);
     assert.throws(() => validateJob({ source: { kind: 'module', path: '/etc/passwd.js' } }), /Ungültiger Modulpfad/);
     assert.throws(() => validateJob({ source: { kind: 'shape' } }), /Quelle/);
-    assert.throws(() => validateJob({ source: { kind: 'structure', file: 'a.json' }, scale: -1 }), /Maßstab/);
-    assert.deepEqual(validateJob({ source: { kind: 'structure', file: 'a.json', extra: 1 } }), { source: { kind: 'structure', file: 'a.json' }, scale: null });
+    assert.throws(() => validateJob({ source: { kind: 'module', path: 'js/builds/haeuser/a.js' }, scale: -1 }), /Maßstab/);
+    assert.deepEqual(validateJob({ source: { kind: 'module', path: 'js/builds/haeuser/a.js', extra: 1 } }), { source: { kind: 'module', path: 'js/builds/haeuser/a.js' }, scale: null });
   });
 
   test('webpSize liest VP8, VP8L und VP8X und lehnt anderes ab', () => {
@@ -78,7 +81,7 @@ describe('Helfer', () => {
     const sources = await moduleSources(path.join(dir, 'haeuser', 'haus.js'), { root: workDir });
     assert.deepEqual(sources.map((s) => s.file), ['js/builds/haeuser/haus.js', 'js/builds/lib/a.js', 'js/builds/lib/b.js']);
 
-    const mod = entry({ id: 'haus', structure: null, module: 'js/builds/haeuser/haus.js' });
+    const mod = entry({ id: 'haus', module: 'js/builds/haeuser/haus.js' });
     const base = await thumbHash(mod, { stamp: 's1', root: workDir });
     assert.equal(await thumbHash({ ...mod, thumb: 'thumbs/haus.webp' }, { stamp: 's1', root: workDir }), base, 'thumb zählt nicht');
     assert.notEqual(await thumbHash({ ...mod, title: 'Anders' }, { stamp: 's1', root: workDir }), base, 'Eintrag');
@@ -138,16 +141,13 @@ describe('Seitenwahl', () => {
 });
 
 describe('Vorschaubilder im Browser', { skip: NO_DATA }, () => {
-  test('rendert Struktur und Modul als WebP 640×400, zweiter Lauf überspringt, --force rendert neu', { timeout: 240_000 }, async () => {
+  test('rendert Bau-Module als WebP 640×400, zweiter Lauf überspringt, --force rendert neu', { timeout: 240_000 }, async () => {
     const outDir = path.join(workDir, 'out');
-    const catalog = { builds: [
-      entry(),
-      entry({ id: 'example-house', structure: null, module: 'tests/fixtures/core/example-house.js' }),
-    ] };
+    const catalog = { builds: [twin(), entry()] };
     const lines = [];
     const first = await makeThumbs({ catalog, outDir, dataDir: DATA_DIR, log: (l) => lines.push(l) });
     assert.deepEqual(first.errors, [], lines.join('\n'));
-    assert.deepEqual(first.rendered.sort(), ['example-house', 'spiel-iglu']);
+    assert.deepEqual(first.rendered.sort(), ['example-house', 'zweites-haus']);
     for (const id of first.rendered) {
       const buffer = await readFile(path.join(outDir, `${id}.webp`));
       assert.deepEqual(webpSize(buffer), [640, 400]);
@@ -155,19 +155,19 @@ describe('Vorschaubilder im Browser', { skip: NO_DATA }, () => {
     }
     const index = JSON.parse(await readFile(path.join(outDir, 'index.json'), 'utf8'));
     assert.equal(index.version, 1);
-    assert.deepEqual(Object.keys(index.entries).sort(), ['example-house', 'spiel-iglu']);
+    assert.deepEqual(Object.keys(index.entries).sort(), ['example-house', 'zweites-haus']);
     const stamp = await dataStamp(DATA_DIR);
-    assert.equal(index.entries['spiel-iglu'].hash, await thumbHash(catalog.builds[0], { stamp, dataDir: DATA_DIR }));
+    assert.equal(index.entries['zweites-haus'].hash, await thumbHash(catalog.builds[0], { stamp }));
 
-    const before = (await stat(path.join(outDir, 'spiel-iglu.webp'))).mtimeMs;
+    const before = (await stat(path.join(outDir, 'zweites-haus.webp'))).mtimeMs;
     const second = await makeThumbs({ catalog, outDir, dataDir: DATA_DIR });
     assert.deepEqual(second.rendered, []);
-    assert.deepEqual(second.skipped.sort(), ['example-house', 'spiel-iglu']);
-    assert.equal((await stat(path.join(outDir, 'spiel-iglu.webp'))).mtimeMs, before);
+    assert.deepEqual(second.skipped.sort(), ['example-house', 'zweites-haus']);
+    assert.equal((await stat(path.join(outDir, 'zweites-haus.webp'))).mtimeMs, before);
 
-    const changed = { builds: [{ ...catalog.builds[0], title: 'Iglu (neu)' }, catalog.builds[1]] };
-    const third = await makeThumbs({ catalog: changed, outDir, dataDir: DATA_DIR, only: ['spiel-iglu'] });
-    assert.deepEqual(third.rendered, ['spiel-iglu']);
+    const changed = { builds: [{ ...catalog.builds[0], title: 'Zweites Haus (neu)' }, catalog.builds[1]] };
+    const third = await makeThumbs({ catalog: changed, outDir, dataDir: DATA_DIR, only: ['zweites-haus'] });
+    assert.deepEqual(third.rendered, ['zweites-haus']);
     const forced = await makeThumbs({ catalog: changed, outDir, dataDir: DATA_DIR, force: true, only: ['example-house', 'gibt-es-nicht'] });
     assert.deepEqual(forced.rendered, ['example-house']);
     assert.ok(forced.errors.some((e) => /gibt-es-nicht: nicht im Katalog/.test(e)));
@@ -181,9 +181,9 @@ describe('Vorschaubilder im Browser', { skip: NO_DATA }, () => {
 
   test('Fehler eines Eintrags halten die anderen nicht auf', { timeout: 240_000 }, async () => {
     const outDir = path.join(workDir, 'out-error');
-    const catalog = { builds: [entry({ id: 'kaputt', structure: 'gibt_es_nicht.json' }), entry()] };
+    const catalog = { builds: [entry({ id: 'kaputt', module: 'tests/fixtures/core/gibt-es-nicht.js' }), entry()] };
     const result = await makeThumbs({ catalog, outDir, dataDir: DATA_DIR });
-    assert.deepEqual(result.rendered, ['spiel-iglu']);
+    assert.deepEqual(result.rendered, ['example-house']);
     assert.ok(result.errors.some((e) => /^kaputt: /.test(e)), result.errors.join('\n'));
   });
 });

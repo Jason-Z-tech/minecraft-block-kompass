@@ -1,6 +1,6 @@
 /* Block-Kompass – Design-System
    1 Schriften · 2 Tokens · 3 Basis · 4 Layout und Hilfsklassen · 5 Pixel-Grundformen
-   6 Kopf, Navigation, Suche, Fuß · 7 Komponenten · 8 Seiten · 9 Bewegung */
+   6 Kopf, Navigation, Fuß · 7 Komponenten · 8 Seiten · 9 Bewegung */
 
 /* ---------------------------------------------------------------- 1 Schriften */
 /* Lokal, OFL, Quellen in assets/fonts/QUELLEN.md. unicode-range von Google Fonts übernommen.
@@ -557,7 +557,7 @@ ol.cluster {
   padding: var(--space-5);
 }
 
-/* ---------------------------------------------------------------- 6 Kopf, Navigation, Suche, Fuß */
+/* ---------------------------------------------------------------- 6 Kopf, Navigation, Fuß */
 .site-header {
   position: relative;
   z-index: var(--z-header);
@@ -570,8 +570,7 @@ ol.cluster {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     'brand'
-    'nav'
-    'search';
+    'nav';
   gap: var(--space-3);
   padding-block: var(--space-3);
 }
@@ -721,61 +720,8 @@ ol.cluster {
   pointer-events: none;
 }
 
-.hotbar__slot[aria-expanded='true'] {
-  color: var(--c-text);
-  background: var(--c-slot-active);
-}
-
 .label-long {
   display: none;
-}
-
-.site-search-toggle {
-  flex: 0 0 25%;
-}
-
-/* Suchfeld im Kopf */
-.site-search {
-  grid-area: search;
-  display: none;
-  gap: var(--space-2);
-}
-
-.site-header.is-search-open .site-search {
-  display: flex;
-  animation: drop-in var(--dur) var(--ease-out) both;
-}
-
-.site-search__field {
-  position: relative;
-  flex: 1;
-}
-
-.site-search__input {
-  padding-right: 48px;
-}
-
-.site-search__submit {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  bottom: 2px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  padding: 0;
-  color: var(--c-text-muted);
-  background: transparent;
-  border: 0;
-  transition: color var(--dur-fast) var(--ease-out);
-}
-
-.site-search__submit:hover {
-  color: var(--c-gold);
-}
-
-.site-search__submit:focus-visible {
-  outline-offset: -3px;
 }
 
 .is-shaking {
@@ -794,8 +740,8 @@ ol.cluster {
   }
 
   .site-header__bar {
-    grid-template-columns: auto minmax(0, 1fr) minmax(220px, 300px);
-    grid-template-areas: 'brand nav search';
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'brand nav';
     align-items: center;
     gap: var(--space-5);
     min-height: var(--header-h);
@@ -803,7 +749,7 @@ ol.cluster {
   }
 
   .site-nav {
-    justify-self: center;
+    justify-self: end;
   }
 
   .hotbar__list > li {
@@ -816,16 +762,6 @@ ol.cluster {
     min-height: 44px;
     padding: 0 var(--space-4);
     font-size: var(--fs-sm);
-  }
-
-  .site-search-toggle {
-    display: none;
-  }
-
-  .site-search,
-  .site-header.is-search-open .site-search {
-    display: flex;
-    animation: none;
   }
 }
 
@@ -1455,6 +1391,121 @@ ol.cluster {
 
   .category-tile__text {
     display: block;
+  }
+}
+
+/* Kompakte Kachel (Startseite): Icon links, Name und Anzahl rechts; ungerade Reste mittig */
+.category-grid--compact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.category-grid--compact > li {
+  flex: 0 0 calc((100% - var(--space-2)) / 2);
+  min-width: 0;
+}
+
+@media (max-width: 339px) {
+  .category-grid--compact > li {
+    flex-basis: 100%;
+  }
+}
+
+/* Handy: Kurzname und Anzahl passen je in eine Zeile (auch „Infrastruktur“ und „12.345 Bauten“) */
+.category-tile--compact {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 2px var(--space-2);
+  min-height: 64px;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+}
+
+.category-tile--compact .category-tile__icon {
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 40px;
+  height: 40px;
+}
+
+.category-tile--compact .category-tile__title {
+  align-self: end;
+  font-size: var(--fs-xs);
+}
+
+.category-tile--compact .category-tile__count {
+  align-self: start;
+  font-size: 0.8125rem;
+}
+
+@media (min-width: 560px) {
+  .category-grid--compact {
+    gap: var(--space-3);
+  }
+
+  .category-grid--compact > li {
+    flex-basis: calc((100% - var(--space-3)) / 2);
+  }
+
+  .category-tile--compact {
+    gap: 2px var(--space-3);
+    padding: 10px var(--space-3) 14px;
+  }
+
+  .category-tile--compact .category-tile__icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .category-tile--compact .category-tile__title {
+    font-size: var(--fs-sm);
+  }
+
+  .category-tile--compact .category-tile__count {
+    font-size: var(--fs-xs);
+  }
+}
+
+@media (min-width: 720px) {
+  .category-grid--compact {
+    gap: var(--space-4);
+  }
+
+  .category-grid--compact > li {
+    flex-basis: calc((100% - 2 * var(--space-4)) / 3);
+  }
+
+  .category-tile--compact {
+    grid-template-rows: auto auto;
+    min-height: 80px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .category-grid--compact > li {
+    flex-basis: calc((100% - 3 * var(--space-4)) / 4);
+  }
+}
+
+@media (min-width: 960px) {
+  .category-tile--compact {
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
+
+  .category-tile--compact .category-tile__icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .category-tile--compact .category-tile__icon .icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .category-tile--compact .category-tile__title {
+    font-size: var(--fs-base);
   }
 }
 
@@ -2443,108 +2494,66 @@ textarea.field__input {
 
 /* ---------------------------------------------------------------- 8 Seiten */
 
-/* Start: Bauplan-Raster, Kompass und Gelände-Streifen */
-.hero {
+/* Start: Bauplan-Raster, Titel, Suche, kompakte Kacheln, Gelände-Streifen – alles ohne Scrollen sichtbar */
+.home {
   position: relative;
   overflow: hidden;
-  padding-top: var(--space-7);
   background:
     linear-gradient(rgb(255 255 255 / 0.035) 2px, transparent 2px) 0 0 / 32px 32px,
     linear-gradient(90deg, rgb(255 255 255 / 0.035) 2px, transparent 2px) 0 0 / 32px 32px,
     linear-gradient(180deg, var(--c-head) 0%, var(--c-bg) 85%);
 }
 
-.hero__inner {
-  position: relative;
+.home__inner {
   display: grid;
-  gap: var(--space-6);
-  align-items: center;
-  padding-bottom: var(--space-7);
+  gap: var(--space-5);
+  padding-block: var(--space-6) var(--space-5);
 }
 
-.hero__text {
-  display: grid;
-  gap: var(--space-4);
-  max-width: 640px;
+.home__inner > .status-region:empty {
+  display: none;
 }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--c-grass-text);
-  letter-spacing: 0.04em;
+.home__inner > .status-region:not(:empty) {
+  margin-bottom: 0;
 }
 
-.hero__title {
+.home__title {
   font-family: var(--font-display);
-  font-size: var(--fs-3xl);
+  font-size: var(--fs-2xl);
   font-weight: 700;
-  line-height: 1.02;
+  line-height: 1.05;
 }
 
-.hero__title-accent {
+.home__title-accent {
   color: var(--c-gold);
 }
 
-.hero__lead {
-  max-width: 52ch;
-  font-size: var(--fs-md);
-  color: var(--c-text-muted);
-}
-
-.hero-search {
-  display: grid;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.hero-search__row {
+.home-search {
   display: flex;
   gap: var(--space-3);
+  max-width: 720px;
 }
 
-.hero-search__row .field__input {
+.home-search .field__input {
   flex: 1;
   min-width: 0;
 }
 
-.hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
-  min-height: 28px;
+/* Zwei kleine Links unter den Kacheln; auf dem Handy je eine halbe Zeile */
+.home__links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home__links .btn {
+  width: 100%;
+  padding-inline: var(--space-3);
   font-size: var(--fs-sm);
-  color: var(--c-text-muted);
-}
-
-.hero__art {
-  display: none;
-  justify-self: center;
-  position: relative;
-}
-
-.hero__compass {
-  width: 192px;
-  height: 192px;
-  image-rendering: pixelated;
-  filter: drop-shadow(8px 8px 0 rgb(0 0 0 / 0.45));
-  animation: float 2.4s steps(4) infinite alternate;
-}
-
-/* Schatten unter dem schwebenden Kompass */
-.hero__art::after {
-  content: '';
-  display: block;
-  width: 128px;
-  height: 8px;
-  margin: 24px auto 0;
-  background: rgb(0 0 0 / 0.4);
-  clip-path: polygon(8px 0, calc(100% - 8px) 0, calc(100% - 8px) 2px, 100% 2px, 100% 6px, calc(100% - 8px) 6px, calc(100% - 8px) 100%, 8px 100%, 8px 6px, 0 6px, 0 2px, 8px 2px);
 }
 
 .terrain {
@@ -2552,13 +2561,22 @@ textarea.field__input {
   background: url('../assets/patterns/terrain.svg') repeat-x 0 0 / 288px 54px;
 }
 
-@media (min-width: 900px) {
-  .hero__inner {
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.6fr);
+@media (min-width: 560px) {
+  .home__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
-  .hero__art {
-    display: block;
+  .home__links .btn {
+    width: auto;
+    padding-inline: 1.15rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .home__inner {
+    padding-top: var(--space-7);
   }
 
   .terrain {
@@ -2824,11 +2842,6 @@ textarea.field__input {
   50% { transform: translateY(-3px); }
 }
 
-@keyframes float {
-  from { transform: translateY(0); }
-  to { transform: translateY(-12px); }
-}
-
 @keyframes pop {
   0% { transform: translateX(-50%) scale(1); }
   40% { transform: translateX(-50%) scale(1.35); }
@@ -2880,7 +2893,6 @@ textarea.field__input {
 
   .spinner,
   .skeleton::after,
-  .hero__compass,
   .btn.is-busy .icon,
   .category-tile:hover .category-tile__icon .icon {
     animation: none !important;

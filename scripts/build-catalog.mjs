@@ -1,36 +1,31 @@
 // Katalog der Bauten (ARCHITEKTUR §9): prüft alle Bau-Module js/builds/<kategorie>/<id>.js mit checkBuild (für jeden
-// Maßstab) und die Original-Strukturen aus js/builds/game-structures.js und schreibt data/catalog.json atomar.
+// Maßstab) und schreibt data/catalog.json atomar.
 // Der Katalog liegt im Repo und wird mit der Webseite veröffentlicht: Er enthält nur Projekttexte, Größen, Zahlen und
 // Block-IDs, keine Spieldaten und keine Vorschaubilder (die liegen nur lokal in thumbs/, siehe thumbs/index.json).
 // „inputs“ hält einen Fingerabdruck der Eingaben (Quelltext und Spieldaten); passt er nicht mehr, ist der Katalog veraltet.
-// Aufruf: node scripts/build-catalog.mjs [--thumbs [--force]] [--modules-dir <ordner>] [--structures <datei> | --no-structures]
-//                                        [--data <ordner>] [--out <datei>] [--thumbs-dir <ordner>]
+// Aufruf: node scripts/build-catalog.mjs [--thumbs [--force]] [--modules-dir <ordner>] [--data <ordner>] [--out <datei>]
+//                                        [--thumbs-dir <ordner>]
 // Fehlerhafte Einträge fehlen im Katalog (Hinweis unter „warnings“); alle Fehler stehen am Ende, Exit-Code 1.
 
 import { readFile, readdir, rename, writeFile, unlink, mkdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { checkBuild, CATEGORIES, ACCURACIES, difficultyTags } from './check-build.mjs';
+import { checkBuild, CATEGORIES } from './check-build.mjs';
 import { moduleSources } from './lib/module-sources.mjs';
-import { materialsFromPaletteCounts } from '../js/core/materials.js';
 import { CATEGORIES as CATEGORY_INFO } from '../js/ui/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_MODULES_DIR = path.join(ROOT, 'js', 'builds');
-export const DEFAULT_STRUCTURES_FILE = path.join(ROOT, 'js', 'builds', 'game-structures.js');
 export const DEFAULT_DATA_DIR = path.join(ROOT, 'game-data');
 export const DEFAULT_THUMBS_DIR = path.join(ROOT, 'thumbs');
 export const DEFAULT_OUT = path.join(ROOT, 'data', 'catalog.json');
 const SELF_FILE = fileURLToPath(import.meta.url);
-// Einstiegspunkte des Fingerabdrucks (samt aller relativ importierten Dateien), dazu jedes Bau-Modul und die Strukturliste
+// Einstiegspunkte des Fingerabdrucks (samt aller relativ importierten Dateien), dazu jedes Bau-Modul
 const FINGERPRINT_ENTRIES = [path.join(ROOT, 'scripts', 'check-build.mjs'), path.join(ROOT, 'js', 'core', 'materials.js')];
 
 export const TOP_MATERIALS = 8;
-export const STRUCTURE_ID_PREFIX = 'spiel-';
 export const SIZE_CLASSES = Object.freeze([['klein', 1_000], ['mittel', 10_000], ['gross', 100_000], ['riesig', Infinity]]);
-const ID_PATTERN = /^[a-z0-9-]{2,80}$/;
-const STRUCTURE_PATH_PATTERN = /^[a-z0-9_]+(?:\/[a-z0-9_]+)*$/;
 const MAX_WARNINGS_PER_ENTRY = 20;
 // Ordner unter js/builds/, die keine Bauten enthalten (Hilfsbibliothek)
 const HELPER_FOLDERS = new Set(['lib']);
@@ -39,8 +34,6 @@ const USAGE = `Aufruf: node scripts/build-catalog.mjs [Optionen]
   --thumbs                 danach Vorschaubilder erzeugen (scripts/make-thumbs.mjs) und eintragen
   --force                  mit --thumbs: alle Vorschaubilder neu rendern
   --modules-dir <ordner>   Bau-Module (<ordner>/<kategorie>/<id>.js), Standard js/builds
-  --structures <datei>     Liste der Original-Strukturen, Standard js/builds/game-structures.js
-  --no-structures          keine Original-Strukturen aufnehmen
   --data <ordner>          Spieldaten, Standard game-data
   --out <datei>            Ziel, Standard data/catalog.json
   --thumbs-dir <ordner>    Ordner der Vorschaubilder, Standard thumbs`;
@@ -54,8 +47,7 @@ export class UsageError extends Error {
 
 export function parseArgs(argv) {
   const options = {
-    modulesDir: DEFAULT_MODULES_DIR, structuresFile: DEFAULT_STRUCTURES_FILE, dataDir: DEFAULT_DATA_DIR,
-    out: null, thumbsDir: DEFAULT_THUMBS_DIR, thumbs: false, force: false, help: false,
+    modulesDir: DEFAULT_MODULES_DIR, dataDir: DEFAULT_DATA_DIR, out: null, thumbsDir: DEFAULT_THUMBS_DIR, thumbs: false, force: false, help: false,
   };
   const take = (i) => {
     const value = argv[i + 1];
@@ -67,9 +59,7 @@ export function parseArgs(argv) {
     switch (arg) {
       case '--thumbs': options.thumbs = true; break;
       case '--force': options.force = true; break;
-      case '--no-structures': options.structuresFile = null; break;
       case '--modules-dir': options.modulesDir = path.resolve(take(i++)); break;
-      case '--structures': options.structuresFile = path.resolve(take(i++)); break;
       case '--data': options.dataDir = path.resolve(take(i++)); break;
       case '--out': options.out = path.resolve(take(i++)); break;
       case '--thumbs-dir': options.thumbsDir = path.resolve(take(i++)); break;
@@ -113,13 +103,13 @@ const textHash = (text) => sha256(text.replace(/\r\n/g, '\n'));
 const byName = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
- * Fingerabdruck des Quelltexts, der den Katalog bestimmt: dieses Skript, scripts/check-build.mjs, js/core/materials.js,
- * alle Bau-Module und die Strukturliste, jeweils samt aller relativ importierten Dateien (Hilfsbibliothek, Kern, …).
+ * Fingerabdruck des Quelltexts, der den Katalog bestimmt: dieses Skript, scripts/check-build.mjs, js/core/materials.js
+ * und alle Bau-Module, jeweils samt aller relativ importierten Dateien (Hilfsbibliothek, Kern, …).
  * Die Oberfläche (js/ui/) zählt nicht. → sha256 als Hex-Text
  */
-export async function codeFingerprint({ modulesDir = DEFAULT_MODULES_DIR, structuresFile = DEFAULT_STRUCTURES_FILE, root = ROOT } = {}) {
+export async function codeFingerprint({ modulesDir = DEFAULT_MODULES_DIR, root = ROOT } = {}) {
   const { modules } = await findModules(modulesDir);
-  const entries = [...FINGERPRINT_ENTRIES, ...modules.map((mod) => mod.file), ...(structuresFile ? [structuresFile] : [])];
+  const entries = [...FINGERPRINT_ENTRIES, ...modules.map((mod) => mod.file)];
   const files = new Map();
   for (const entry of entries) {
     try {
@@ -136,8 +126,8 @@ export async function codeFingerprint({ modulesDir = DEFAULT_MODULES_DIR, struct
 }
 
 /**
- * Fingerabdruck der Spieldaten, die den Katalog bestimmen: Version, blocks.json und structures/index.json (mit Größe und
- * Blockzahl jeder Struktur). Unabhängig davon, ob die Daten aus der Jar oder aus öffentlichen Quellen stammen.
+ * Fingerabdruck der Spieldaten, die den Katalog bestimmen: Version und blocks.json. Unabhängig davon, ob die Daten aus
+ * der Jar oder aus öffentlichen Quellen stammen.
  */
 export async function dataFingerprint(dataDir = DEFAULT_DATA_DIR) {
   const parts = [];
@@ -148,24 +138,19 @@ export async function dataFingerprint(dataDir = DEFAULT_DATA_DIR) {
     if (error.code !== 'ENOENT') throw error;
     parts.push('version ?');
   }
-  for (const name of ['blocks.json', path.join('structures', 'index.json')]) {
-    try {
-      parts.push(`${toPosix(name)} ${sha256(await readFile(path.join(dataDir, name)))}`);
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-      parts.push(`${toPosix(name)} fehlt`);
-    }
+  try {
+    parts.push(`blocks.json ${sha256(await readFile(path.join(dataDir, 'blocks.json')))}`);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    parts.push('blocks.json fehlt');
   }
   return sha256(parts.join('\n'));
 }
 
 /** Beide Fingerabdrücke für das Feld „inputs“ des Katalogs. */
-export async function catalogInputs({ modulesDir = DEFAULT_MODULES_DIR, structuresFile = DEFAULT_STRUCTURES_FILE, dataDir = DEFAULT_DATA_DIR, root = ROOT } = {}) {
-  return { code: await codeFingerprint({ modulesDir, structuresFile, root }), data: await dataFingerprint(dataDir) };
+export async function catalogInputs({ modulesDir = DEFAULT_MODULES_DIR, dataDir = DEFAULT_DATA_DIR, root = ROOT } = {}) {
+  return { code: await codeFingerprint({ modulesDir, root }), data: await dataFingerprint(dataDir) };
 }
-
-const isNonEmptyText = (value) => typeof value === 'string' && value.trim() !== '';
-const isTextList = (value) => Array.isArray(value) && value.every(isNonEmptyText);
 
 /** Größenklasse nach Blockzahl: klein < 1 000 ≤ mittel < 10 000 ≤ gross < 100 000 ≤ riesig. */
 export function sizeClass(blocks) {
@@ -251,7 +236,6 @@ export async function catalogModule({ file, folder, fileId }, { dataDir = DEFAUL
     // Unter js/builds/ prüft checkBuild den Ordner selbst; bei --modules-dir anderswo hier
     const checkedByCheckBuild = /^js\/builds\/[^/]+\/[^/]+\.js$/.test(label);
     if (!checkedByCheckBuild && meta.category !== folder) errors.push(`${label}: meta.category „${meta.category}“ passt nicht zum Ordner „${folder}“.`);
-    if (typeof meta.id === 'string' && meta.id.startsWith(STRUCTURE_ID_PREFIX)) errors.push(`${label}: IDs mit der Vorsilbe „${STRUCTURE_ID_PREFIX}“ sind für Original-Strukturen reserviert.`);
   }
   const scales = moduleScales(meta);
   const reports = [];
@@ -283,7 +267,6 @@ export async function catalogModule({ file, folder, fileId }, { dataDir = DEFAUL
     credits: meta.credits ? { author: meta.credits.author, url: meta.credits.url, license: meta.credits.license } : null,
     tested: typeof meta.tested === 'boolean' ? meta.tested : null,
     module: projectPath(file),
-    structure: null,
     scales: scales ? [...scales] : null,
     defaultScale,
     size: main.size,
@@ -296,187 +279,6 @@ export async function catalogModule({ file, folder, fileId }, { dataDir = DEFAUL
     thumb: null,
   };
   return { entry, errors: [], warnings };
-}
-
-// ------------------------------------------------------------------ Original-Strukturen
-
-/** Lädt die Strukturliste (Export GAME_STRUCTURES, optional GAME_STRUCTURE_DEFAULTS). */
-export async function loadStructureDefinitions(file) {
-  const mod = await importModule(file);
-  if (!Array.isArray(mod.GAME_STRUCTURES)) throw new Error(`${projectPath(file)} exportiert keine Liste GAME_STRUCTURES.`);
-  return { definitions: mod.GAME_STRUCTURES, defaults: mod.GAME_STRUCTURE_DEFAULTS ?? null };
-}
-
-/** Dateiname in game-data/structures/ zum Spielpfad (village/plains/… → village__plains__….json). */
-export function structureFileName(structurePath) {
-  return `${structurePath.split('/').join('__')}.json`;
-}
-
-/** Prüft die Felder einer Struktur-Definition (ohne Spieldaten). → [Fehlertexte] */
-export function validateStructureDefinition(def) {
-  const errors = [];
-  if (!def || typeof def !== 'object') return ['Eintrag ist kein Objekt.'];
-  if (typeof def.id !== 'string' || !ID_PATTERN.test(def.id) || !def.id.startsWith(STRUCTURE_ID_PREFIX)) {
-    errors.push(`id muss mit „${STRUCTURE_ID_PREFIX}“ beginnen und aus 2–80 Zeichen a–z, 0–9 und - bestehen.`);
-  }
-  if (typeof def.structure !== 'string' || !STRUCTURE_PATH_PATTERN.test(def.structure)) errors.push('structure muss ein Spielpfad wie „village/plains/houses/plains_library_1“ sein.');
-  for (const key of ['title', 'subtitle', 'description']) if (!isNonEmptyText(def[key])) errors.push(`${key} fehlt oder ist leer.`);
-  if (!CATEGORIES.includes(def.category)) errors.push(`category muss eine von ${CATEGORIES.join(', ')} sein.`);
-  for (const key of ['tags', 'aliases']) if (!isTextList(def[key]) || def[key].length === 0) errors.push(`${key} muss eine nicht leere Liste aus Texten sein.`);
-  // Schwierigkeit und Wissenswertes gibt es nicht mehr
-  if (Object.hasOwn(def, 'difficulty')) errors.push('difficulty gibt es nicht mehr.');
-  if (Object.hasOwn(def, 'facts')) errors.push('facts gibt es nicht mehr.');
-  for (const tag of difficultyTags(def.tags)) errors.push(`tags: „${tag}“ ist eine Schwierigkeit – die gibt es nicht mehr.`);
-  if (isTextList(def.aliases) && def.aliases.some((a) => a !== a.toLowerCase())) errors.push('aliases müssen klein geschrieben sein.');
-  return errors;
-}
-
-function checkStructureDefaults(defaults) {
-  const errors = [];
-  if (!defaults) return ['GAME_STRUCTURE_DEFAULTS fehlt (accuracy, sources, credits, tested).'];
-  if (defaults.accuracy !== 'original' || !ACCURACIES.includes(defaults.accuracy)) errors.push('GAME_STRUCTURE_DEFAULTS.accuracy muss „original“ sein.');
-  if (!Array.isArray(defaults.sources)) errors.push('GAME_STRUCTURE_DEFAULTS.sources muss eine Liste sein.');
-  const c = defaults.credits;
-  if (!c || !isNonEmptyText(c.author) || !isNonEmptyText(c.license) || !/^https:\/\//.test(c.url ?? '')) errors.push('GAME_STRUCTURE_DEFAULTS.credits braucht author, url (https) und license.');
-  if (defaults.tested !== null) errors.push('GAME_STRUCTURE_DEFAULTS.tested muss null sein.');
-  return errors;
-}
-
-async function loadStructureIndex(dataDir) {
-  const file = path.join(dataDir, 'structures', 'index.json');
-  let index;
-  try {
-    index = await readJson(file);
-  } catch (error) {
-    const hint = error.code === 'ENOENT' ? 'fehlt' : `ist nicht lesbar (${error.message})`;
-    throw new Error(`${projectPath(file)} ${hint} – erzeuge die Spieldaten mit: node scripts/extract-game-data.mjs`);
-  }
-  if (!Array.isArray(index?.structures)) throw new Error(`${projectPath(file)} hat kein Feld „structures“ – erzeuge die Spieldaten neu: node scripts/extract-game-data.mjs`);
-  return new Map(index.structures.map((s) => [s.path, s]));
-}
-
-/**
- * Wertet eine Strukturdatei aus (Format §5): Begrenzung der Blöcke, Blockzahl, belegte Ebenen, Mengen je Palette.
- * Wirft bei beschädigten Daten.
- */
-export function analyzeStructure(data) {
-  const { size, palette, rle } = data ?? {};
-  if (!Array.isArray(size) || size.length !== 3 || !size.every((v) => Number.isInteger(v) && v > 0)) throw new Error('Feld „size“ ist ungültig.');
-  if (!Array.isArray(palette) || palette[0] !== 'air' || palette.some((s) => typeof s !== 'string')) throw new Error('Feld „palette“ ist ungültig.');
-  if (!Array.isArray(rle) || rle.length % 2 !== 0) throw new Error('Feld „rle“ ist ungültig.');
-  const [sx, sy, sz] = size;
-  const counts = new Float64Array(palette.length);
-  const layers = new Uint8Array(sy);
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  let cell = 0;
-  let blocks = 0;
-  for (let i = 0; i < rle.length; i += 2) {
-    const index = rle[i], count = rle[i + 1];
-    if (!Number.isInteger(index) || index < 0 || index >= palette.length || !Number.isInteger(count) || count < 1) throw new Error(`„rle“ ist an Stelle ${i} ungültig.`);
-    if (index !== 0) {
-      counts[index] += count;
-      blocks += count;
-      for (let c = cell; c < cell + count; c++) {
-        const x = c % sx, z = Math.floor(c / sx) % sz, y = Math.floor(c / (sx * sz));
-        layers[y] = 1;
-        if (x < min[0]) min[0] = x;
-        if (x > max[0]) max[0] = x;
-        if (y < min[1]) min[1] = y;
-        if (y > max[1]) max[1] = y;
-        if (z < min[2]) min[2] = z;
-        if (z > max[2]) max[2] = z;
-      }
-    }
-    cell += count;
-  }
-  if (cell !== sx * sy * sz) throw new Error('Die Zahl der Zellen passt nicht zur Größe.');
-  if (blocks === 0) throw new Error('Die Struktur enthält keine Blöcke.');
-  return {
-    bounds: max.map((m, i) => m - min[i] + 1),
-    blocks,
-    steps: layers.reduce((n, v) => n + v, 0),
-    materials: materialsFromPaletteCounts(palette, counts),
-  };
-}
-
-/**
- * Prüft die Original-Strukturen gegen game-data/structures/ und baut ihre Katalog-Einträge.
- * → { entries, errors, warnings }
- */
-export async function catalogStructures(definitions, defaults, { dataDir = DEFAULT_DATA_DIR } = {}) {
-  const entries = [];
-  const errors = [];
-  const warnings = [];
-  const defaultErrors = checkStructureDefaults(defaults);
-  if (defaultErrors.length) return { entries, errors: defaultErrors, warnings };
-  let index;
-  try {
-    index = await loadStructureIndex(dataDir);
-  } catch (error) {
-    return { entries, errors: [error.message], warnings };
-  }
-  const seenPaths = new Map();
-  for (const [position, def] of definitions.entries()) {
-    const label = `Original-Struktur ${typeof def?.id === 'string' ? def.id : `Nr. ${position + 1}`}`;
-    const fieldErrors = validateStructureDefinition(def);
-    if (fieldErrors.length) {
-      errors.push(...fieldErrors.map((e) => `${label}: ${e}`));
-      continue;
-    }
-    if (seenPaths.has(def.structure)) {
-      errors.push(`${label}: die Struktur ${def.structure} ist schon als ${seenPaths.get(def.structure)} eingetragen.`);
-      continue;
-    }
-    seenPaths.set(def.structure, def.id);
-    const info = index.get(def.structure);
-    const file = structureFileName(def.structure);
-    if (!info) {
-      errors.push(`${label}: die Struktur ${def.structure} gibt es nicht in game-data/structures/index.json.`);
-      continue;
-    }
-    if (info.file !== file) {
-      errors.push(`${label}: index.json nennt die Datei ${info.file} statt ${file}.`);
-      continue;
-    }
-    let analysis;
-    try {
-      const data = await readJson(path.join(dataDir, 'structures', file));
-      analysis = analyzeStructure(data);
-      if (data.size.join() !== info.size.join()) throw new Error(`Größe ${data.size.join('×')} passt nicht zu index.json (${info.size.join('×')}).`);
-      if (analysis.blocks !== info.blocks) throw new Error(`Blockzahl ${analysis.blocks} passt nicht zu index.json (${info.blocks}).`);
-    } catch (error) {
-      const reason = error.code === 'ENOENT' ? `die Datei game-data/structures/${file} fehlt` : `game-data/structures/${file}: ${error.message}`;
-      errors.push(`${label}: ${reason} – erzeuge die Spieldaten neu: node scripts/extract-game-data.mjs`);
-      continue;
-    }
-    entries.push({
-      id: def.id,
-      title: def.title,
-      category: def.category,
-      subtitle: def.subtitle,
-      tags: [...def.tags],
-      aliases: [...def.aliases],
-      accuracy: defaults.accuracy,
-      description: def.description,
-      sources: defaults.sources.map((s) => ({ title: s.title, url: s.url })),
-      credits: { author: defaults.credits.author, url: defaults.credits.url, license: defaults.credits.license },
-      tested: defaults.tested,
-      module: null,
-      structure: file,
-      scales: null,
-      defaultScale: null,
-      size: analysis.bounds,
-      blocks: analysis.blocks,
-      steps: analysis.steps,
-      phases: 1,
-      variants: null,
-      topMaterials: topMaterialsOf(analysis.materials),
-      sizeClass: sizeClass(analysis.blocks),
-      thumb: null,
-    });
-  }
-  return { entries, errors, warnings };
 }
 
 // ------------------------------------------------------------------ Katalog
@@ -546,13 +348,11 @@ export function countBuilds(builds) {
  * Baut den Katalog im Speicher. → { catalog, errors, notes, stats }
  * errors: Fehler (Einträge fehlen im Katalog); notes: Hinweise für die Konsole.
  */
-export async function buildCatalog({
-  modulesDir = DEFAULT_MODULES_DIR, structuresFile = DEFAULT_STRUCTURES_FILE, dataDir = DEFAULT_DATA_DIR, onProgress = null,
-} = {}) {
+export async function buildCatalog({ modulesDir = DEFAULT_MODULES_DIR, dataDir = DEFAULT_DATA_DIR, onProgress = null } = {}) {
   const started = performance.now();
   const version = await readGameDataVersion(dataDir);
   // Fingerabdruck vor dem Bauen: ändert sich eine Eingabe während des Laufs, gilt der Katalog danach als veraltet
-  const inputs = await catalogInputs({ modulesDir, structuresFile, dataDir });
+  const inputs = await catalogInputs({ modulesDir, dataDir });
   const errors = [];
   const warnings = [];
   const notes = [];
@@ -569,26 +369,6 @@ export async function buildCatalog({
     else warnings.push(`${projectPath(mod.file)}: wegen Fehlern nicht im Katalog.`);
   }
 
-  let structureCount = 0;
-  if (structuresFile) {
-    let list;
-    try {
-      list = await loadStructureDefinitions(structuresFile);
-    } catch (error) {
-      errors.push(`Original-Strukturen: ${error.message}`);
-    }
-    if (list) {
-      structureCount = list.definitions.length;
-      onProgress?.({ kind: 'structures', total: structureCount });
-      const result = await catalogStructures(list.definitions, list.defaults, { dataDir });
-      errors.push(...result.errors);
-      warnings.push(...result.warnings);
-      for (const entry of result.entries) collected.push({ entry, source: `${projectPath(structuresFile)} (${entry.structure})` });
-      const skipped = structureCount - result.entries.length;
-      if (skipped > 0) warnings.push(`Original-Strukturen: ${skipped} von ${structureCount} wegen Fehlern nicht im Katalog.`);
-    }
-  }
-
   const builds = sortBuilds(removeDuplicateIds(collected, errors, warnings));
   warnDuplicateTitles(builds, warnings);
   const catalog = {
@@ -603,7 +383,7 @@ export async function buildCatalog({
     catalog,
     errors,
     notes,
-    stats: { modules: modules.length, structures: structureCount, durationMs: Math.round(performance.now() - started) },
+    stats: { modules: modules.length, durationMs: Math.round(performance.now() - started) },
   };
 }
 
@@ -673,11 +453,11 @@ export function summaryTable(catalog) {
   const titles = new Map(CATEGORY_INFO.map((c) => [c.slug, c.title]));
   const rows = CATEGORIES.map((slug) => {
     const builds = catalog.builds.filter((b) => b.category === slug);
-    return [titles.get(slug) ?? slug, builds.length, builds.filter((b) => b.module).length, builds.filter((b) => b.structure).length, builds.reduce((n, b) => n + b.blocks, 0)];
+    return [titles.get(slug) ?? slug, builds.length, builds.reduce((n, b) => n + b.blocks, 0)];
   });
   const all = catalog.builds;
-  rows.push(['Gesamt', all.length, all.filter((b) => b.module).length, all.filter((b) => b.structure).length, all.reduce((n, b) => n + b.blocks, 0)]);
-  const header = ['Kategorie', 'Bauten', 'Module', 'Original', 'Blöcke'];
+  rows.push(['Gesamt', all.length, all.reduce((n, b) => n + b.blocks, 0)]);
+  const header = ['Kategorie', 'Bauten', 'Blöcke'];
   const cells = [header, ...rows.map((r) => [r[0], ...r.slice(1).map(formatNumber)])];
   const widths = header.map((_, i) => Math.max(...cells.map((row) => String(row[i]).length)));
   const line = (row) => row.map((cell, i) => (i === 0 ? String(cell).padEnd(widths[i]) : String(cell).padStart(widths[i]))).join('  ');
@@ -712,7 +492,6 @@ export async function main(argv = process.argv.slice(2)) {
       ...options,
       onProgress: (p) => {
         if (p.kind === 'module' && p.total > 0 && (p.index % 10 === 0 || p.index === p.total - 1)) console.log(`Prüfe Bau-Module … ${p.index + 1}/${p.total}`);
-        if (p.kind === 'structures') console.log(`Prüfe ${p.total} Original-Strukturen …`);
       },
     });
   } catch (error) {

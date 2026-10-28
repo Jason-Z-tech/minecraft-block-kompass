@@ -1,21 +1,20 @@
-// Rechenkern des 3D-Workers (js/render/engine-worker.js) in Node: Quellen prüfen, Strukturen/Module/Galerie/
+// Rechenkern des 3D-Workers (js/render/engine-worker.js) in Node: Quellen prüfen, Module/Galerie/
 // Testvolumen bauen, Kollisionsboxen, Paletten-Infos und Meshing über die Engine. Mit echten Spieldaten.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { dataTest, loadGameData, textureMap, GAME_DATA } from './render-models-fixture.test.mjs';
+import { dataTest, loadGameData, textureMap } from './render-models-fixture.test.mjs';
+import * as engineWorker from '../../js/render/engine-worker.js';
 import {
-  Engine, EngineError, checkSource, checkModulePath, checkStructureFile, checkParams, buildStructure, buildModule, buildGallery,
+  Engine, EngineError, checkSource, checkModulePath, checkParams, buildModule, buildGallery,
   buildSynthetic, buildShapeResult, galleryBlockIds, galleryPageCount, GALLERY_GROUP_NAMES, GALLERY_PAGE_SIZE, collisionBoxes, paletteInfo,
-  serializeResult, meshTransferList, SYNTHETIC_MAX,
+  serializeResult, meshTransferList, SYNTHETIC_MAX, SOURCE_KINDS,
 } from '../../js/render/engine-worker.js';
 import { setBlockData } from '../../js/core/block-data.js';
 import { BlockVolume } from '../../js/core/volume.js';
 
 const rejects = (fn, pattern) => assert.throws(fn, (error) => error instanceof EngineError && pattern.test(error.message));
 
-test('Quellen: nur erlaubte Modulpfade, Strukturnamen und Parameter', () => {
+test('Quellen: nur erlaubte Modulpfade und Parameter; Original-Strukturen gibt es nicht mehr', () => {
   for (const ok of ['js/builds/haeuser/turm.js', 'tests/fixtures/core/example-house.js', 'js/builds/wahrzeichen/tokyo-skytree.js']) {
     assert.equal(checkModulePath(ok), ok);
   }
@@ -23,10 +22,9 @@ test('Quellen: nur erlaubte Modulpfade, Strukturnamen und Parameter', () => {
     'https://example.com/js/builds/x.js', 'js/builds/x.mjs', 'js/builds/.hidden/x.js', 42, null]) {
     rejects(() => checkModulePath(bad), /Ungültiger Modulpfad/);
   }
-  assert.equal(checkStructureFile('igloo__top.json'), 'igloo__top.json');
-  for (const bad of ['index.json', '../igloo.json', 'igloo.JSON', 'a/b.json', 'igloo', '', `${'a'.repeat(200)}.json`]) {
-    rejects(() => checkStructureFile(bad), /Ungültiger Strukturname/);
-  }
+  assert.deepEqual(SOURCE_KINDS, ['module', 'shape', 'gallery', 'synthetic', 'upload']);
+  rejects(() => checkSource({ kind: 'structure', file: 'igloo__top.json' }), /Unbekannte Quelle/);
+  for (const name of ['checkStructureFile', 'buildStructure']) assert.equal(name in engineWorker, false, name);
   assert.deepEqual(checkSource({ kind: 'gallery' }), { kind: 'gallery', group: 'all', page: 0 });
   assert.deepEqual(checkSource({ kind: 'gallery', group: 'stairs', page: 0 }), { kind: 'gallery', group: 'stairs', page: 0 });
   rejects(() => checkSource({ kind: 'gallery', group: 'toString' }), /Unbekannte Galerie/);
@@ -68,28 +66,6 @@ dataTest('Bau-Module: meta wird übernommen, Fehler werden verständlich gemelde
   rejects(() => buildModule({}, {}, 'js/builds/x.js'), /ist kein Bau-Modul/);
   rejects(() => buildModule({ default: (b) => b.set(0, 0, 0, 'gibtsnicht') }, {}, 'js/builds/x.js'), /Das Bau-Modul „js\/builds\/x\.js“ konnte nicht gebaut werden: .*gibtsnicht/);
   rejects(() => buildModule({ default: async () => {} }, {}, 'js/builds/x.js'), /synchron/);
-});
-
-dataTest('Original-Struktur → BuildResult mit Kapitel „Aufbau“ in Ebenen', () => {
-  setBlockData(loadGameData().blocks);
-  const file = 'igloo__top.json';
-  const data = JSON.parse(fs.readFileSync(path.join(GAME_DATA, 'structures', file), 'utf8'));
-  let solid = 0;
-  for (let i = 0; i < data.rle.length; i += 2) if (data.rle[i] !== 0) solid += data.rle[i + 1];
-  const result = buildStructure(data, { file });
-  assert.equal(result.blockCount, solid);
-  assert.equal(result.phases.length, 1);
-  assert.equal(result.phases[0].title, 'Aufbau');
-  // Kapitel nur mit Titel, Schritte ohne Titel und Text, keine Notizen
-  assert.deepEqual(result.phases, [{ title: 'Aufbau', steps: result.steps.map((s) => s.index) }]);
-  for (const step of result.steps) assert.deepEqual(Object.keys(step).sort(), ['blockCount', 'index', 'layerY', 'materials', 'phase']);
-  assert.equal('notes' in result, false);
-  assert.ok(result.steps.every((s, i) => i === 0 || s.layerY > result.steps[i - 1].layerY), 'Ebenen von unten nach oben');
-  assert.deepEqual(result.structure.size, data.size);
-  assert.equal(result.structure.file, file);
-  // Beschädigte Datei: Anzahl der Zellen passt nicht
-  assert.throws(() => buildStructure({ ...data, rle: data.rle.slice(0, -2) }, { file }), (e) => e instanceof EngineError && e.code === 'data');
-  assert.throws(() => buildStructure({ ...data, palette: ['stone'] }, { file }), (e) => e instanceof EngineError && /palette/.test(e.message));
 });
 
 dataTest('Galerie: alle Gruppen ohne Warnungen, „all“ zeigt jeden Block genau einmal', () => {
@@ -174,10 +150,10 @@ dataTest('Engine: bauen, Texturen binden, Chunks, Schritt und Kappe meshen, Erge
   const engine = new Engine({ modelsJson: models, blocksJson: blocks });
   const loaders = {
     importModule: (p) => import(`../../${p}`),
-    loadStructure: (file) => JSON.parse(fs.readFileSync(path.join(GAME_DATA, 'structures', file), 'utf8')),
     importShapes: async () => ({}),
   };
   await assert.rejects(engine.build({ kind: 'module', path: '../secret.js' }, {}, loaders), EngineError);
+  await assert.rejects(engine.build({ kind: 'structure', file: 'igloo__top.json' }, {}, loaders), /Unbekannte Quelle/);
   await assert.rejects(engine.build({ kind: 'shape', shape: 'kugel' }, {}, loaders), /Formen-Generator/);
   const result = await engine.build({ kind: 'module', path: 'tests/fixtures/core/example-house.js' }, {}, loaders);
   assert.equal(engine.volume, null, 'build verändert die Engine nicht');

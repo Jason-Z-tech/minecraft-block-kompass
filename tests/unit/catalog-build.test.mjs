@@ -5,21 +5,21 @@ import { mkdtemp, mkdir, copyFile, readFile, writeFile, rm, readdir } from 'node
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as buildCatalogModule from '../../scripts/build-catalog.mjs';
 import {
-  buildCatalog, parseArgs, sizeClass, defaultScaleOf, structureFileName, analyzeStructure, validateStructureDefinition,
-  serializeCatalog, writeCatalog, writeCatalogIfChanged, countBuilds, findModules, main, UsageError, TOP_MATERIALS,
-  codeFingerprint, dataFingerprint, DEFAULT_OUT,
+  buildCatalog, parseArgs, sizeClass, defaultScaleOf, serializeCatalog, writeCatalog, writeCatalogIfChanged, countBuilds, findModules,
+  main, UsageError, TOP_MATERIALS, codeFingerprint, dataFingerprint, DEFAULT_OUT,
 } from '../../scripts/build-catalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DATA_DIR = path.join(ROOT, 'game-data');
-const HAS_GAME_DATA = existsSync(path.join(DATA_DIR, 'structures', 'index.json')) && existsSync(path.join(DATA_DIR, 'blocks.json'));
+const HAS_GAME_DATA = existsSync(path.join(DATA_DIR, 'meta.json')) && existsSync(path.join(DATA_DIR, 'blocks.json'));
 const NO_DATA = HAS_GAME_DATA ? false : 'game-data/ fehlt (node scripts/extract-game-data.mjs)';
 const EXAMPLE_HOUSE = path.join(ROOT, 'tests', 'fixtures', 'core', 'example-house.js');
 const CATEGORIES = ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'farmen', 'infrastruktur'];
 const ACCURACIES = ['original', 'massstab', 'vorlage', 'nachempfunden', 'eigenes'];
 const ENTRY_KEYS = ['id', 'title', 'category', 'subtitle', 'tags', 'aliases', 'accuracy', 'description', 'sources',
-  'credits', 'tested', 'module', 'structure', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials',
+  'credits', 'tested', 'module', 'scales', 'defaultScale', 'size', 'blocks', 'steps', 'phases', 'variants', 'topMaterials',
   'sizeClass', 'thumb'];
 
 let workDir;
@@ -42,16 +42,8 @@ async function moduleDir(name, files) {
   return dir;
 }
 
-async function structuresFile(name, source) {
-  const file = path.join(workDir, `${name}.js`);
-  await writeFile(file, source);
-  return file;
-}
-
-const DEFAULTS = `export const GAME_STRUCTURE_DEFAULTS = { accuracy: 'original', sources: [],
-  credits: { author: 'Mojang Studios', url: 'https://www.minecraft.net/', license: 'Teil von Minecraft Java 26.2' }, tested: null };`;
-const iglu = (id = 'spiel-test-iglu', structure = 'igloo/top') => `{ id: '${id}', structure: '${structure}', title: 'Test ${id}', subtitle: 'Untertitel',
-  category: 'haeuser', tags: ['Schnee'], aliases: ['iglu'], description: 'Ein Iglu. Zum Testen.' }`;
+// Beispielhaus mit anderer ID und anderem Titel (gleicher Bau)
+const houseVariant = (source, id) => source.replace("id: 'example-house'", `id: '${id}'`).replace("title: 'Beispielhaus'", `title: '${id}'`);
 
 /** Prüft einen Eintrag gegen das Katalog-Format aus ARCHITEKTUR §9. */
 function assertEntrySchema(entry) {
@@ -66,14 +58,8 @@ function assertEntrySchema(entry) {
   assert.ok(Array.isArray(entry.sources) && entry.sources.every((s) => Object.keys(s).sort().join() === 'title,url'));
   assert.ok(entry.credits === null || Object.keys(entry.credits).sort().join() === 'author,license,url');
   assert.ok(entry.tested === null || typeof entry.tested === 'boolean');
-  assert.ok((entry.module === null) !== (entry.structure === null), 'genau eins von module/structure');
-  if (entry.module) assert.match(entry.module, /\.js$/);
-  if (entry.structure) {
-    assert.match(entry.structure, /^[a-z0-9_]+\.json$/);
-    assert.ok(entry.id.startsWith('spiel-'));
-    assert.equal(entry.accuracy, 'original');
-    assert.equal(entry.scales, null);
-  }
+  assert.equal('structure' in entry, false, `${entry.id}: Original-Strukturen gibt es nicht mehr`);
+  assert.match(entry.module, /\.js$/, `${entry.id}: jeder Eintrag ist ein Bau-Modul`);
   assert.ok(entry.size.length === 3 && entry.size.every((v) => Number.isInteger(v) && v > 0));
   for (const key of ['blocks', 'steps', 'phases']) assert.ok(Number.isInteger(entry[key]) && entry[key] > 0, `${entry.id}.${key}`);
   if (entry.scales) {
@@ -118,15 +104,14 @@ describe('Hilfsfunktionen', () => {
     assert.throws(() => sizeClass(1.5));
   });
 
-  test('defaultScaleOf und structureFileName', () => {
+  test('defaultScaleOf', () => {
     assert.equal(defaultScaleOf([0.5, 1, 0.25]), 1);
     assert.equal(defaultScaleOf([0.5, 0.25]), 0.5);
-    assert.equal(structureFileName('village/plains/houses/plains_small_house_1'), 'village__plains__houses__plains_small_house_1.json');
   });
 
   test('parseArgs: Standardwerte, Optionen und Fehler', () => {
-    const o = parseArgs(['--modules-dir', 'x', '--no-structures', '--thumbs', '--force']);
-    assert.equal(o.structuresFile, null);
+    const o = parseArgs(['--modules-dir', 'x', '--thumbs', '--force']);
+    assert.equal('structuresFile' in o, false, 'keine Strukturliste mehr');
     assert.equal(o.modulesDir, path.resolve('x'));
     assert.ok(o.thumbs && o.force);
     assert.equal(parseArgs([]).out, DEFAULT_OUT);
@@ -134,38 +119,17 @@ describe('Hilfsfunktionen', () => {
     assert.throws(() => parseArgs(['--bla']), UsageError);
     assert.throws(() => parseArgs(['--force']), UsageError);
     assert.throws(() => parseArgs(['--out']), UsageError);
+    // Original-Strukturen gibt es nicht mehr: die Optionen dafür auch nicht
+    assert.throws(() => parseArgs(['--no-structures']), /Unbekannte Option --no-structures/);
+    assert.throws(() => parseArgs(['--structures', 'liste.js']), /Unbekannte Option --structures/);
   });
 
-  test('analyzeStructure: Begrenzung, Blöcke, belegte Ebenen, Material', () => {
-    // 3×3×2: unten ein Stein in der Ecke, oben zwei Bretter; Luft dazwischen
-    const data = { size: [3, 3, 2], palette: ['air', 'stone', 'oak_planks'], rle: [1, 1, 0, 5, 0, 6, 2, 2, 0, 4] };
-    const a = analyzeStructure(data);
-    assert.equal(a.blocks, 3);
-    assert.equal(a.steps, 2, 'Ebene 0 und 2 belegt, Ebene 1 leer');
-    assert.deepEqual(a.bounds, [2, 3, 1], 'x 0…1, y 0…2, z 0');
-    assert.deepEqual(a.materials, [['oak_planks', 2], ['stone', 1]]);
-    assert.throws(() => analyzeStructure({ ...data, rle: [1, 1] }), /Zellen/);
-    assert.throws(() => analyzeStructure({ ...data, rle: [7, 18] }), /rle/);
-    assert.throws(() => analyzeStructure({ ...data, palette: ['stone'] }), /palette/);
-    assert.throws(() => analyzeStructure({ size: [1, 1, 1], palette: ['air'], rle: [0, 1] }), /keine Blöcke/);
-  });
-
-  test('validateStructureDefinition meldet fehlende und falsche Felder', () => {
-    const good = { id: 'spiel-x', structure: 'igloo/top', title: 'T', subtitle: 'U', category: 'klein', tags: ['a'], aliases: ['b'], description: 'D.' };
-    assert.deepEqual(validateStructureDefinition(good), []);
-    const errors = validateStructureDefinition({ id: 'iglu', structure: '../x', title: '', category: 'burgen', tags: [], aliases: ['Groß'] });
-    assert.ok(errors.length >= 7, errors.join('\n'));
-  });
-
-  test('validateStructureDefinition: Schwierigkeit, Wissenswertes und Redstone gibt es nicht mehr', () => {
-    const good = { id: 'spiel-x', structure: 'igloo/top', title: 'T', subtitle: 'U', category: 'klein', tags: ['a'], aliases: ['b'], description: 'D.' };
-    assert.deepEqual(validateStructureDefinition({ ...good, difficulty: 2 }), ['difficulty gibt es nicht mehr.']);
-    assert.deepEqual(validateStructureDefinition({ ...good, facts: ['x'] }), ['facts gibt es nicht mehr.']);
-    assert.deepEqual(validateStructureDefinition({ ...good, facts: [] }), ['facts gibt es nicht mehr.'], 'auch eine leere Liste');
-    assert.deepEqual(validateStructureDefinition({ ...good, tags: ['Dorf', 'Anfänger'] }), ['tags: „Anfänger“ ist eine Schwierigkeit – die gibt es nicht mehr.']);
-    const redstone = validateStructureDefinition({ ...good, category: 'redstone' });
-    assert.equal(redstone.length, 1);
-    assert.match(redstone[0], /^category muss eine von haeuser, wahrzeichen, fantasy, mittelalter, klein, farmen, infrastruktur sein\.$/);
+  test('Keine Original-Strukturen mehr: nur Bau-Module, keine Struktur-Funktionen', () => {
+    for (const name of ['catalogStructures', 'analyzeStructure', 'validateStructureDefinition', 'structureFileName', 'loadStructureDefinitions',
+      'DEFAULT_STRUCTURES_FILE', 'STRUCTURE_ID_PREFIX']) {
+      assert.equal(name in buildCatalogModule, false, name);
+    }
+    assert.equal(existsSync(path.join(ROOT, 'js', 'builds', 'game-structures.js')), false, 'Strukturliste gelöscht');
   });
 
   test('findModules nimmt nur Kategorie-Ordner und überspringt lib/', async () => {
@@ -183,26 +147,26 @@ describe('Hilfsfunktionen', () => {
 });
 
 describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
-  test('Beispielhaus über --modules-dir plus Original-Strukturen: Schema stimmt', async () => {
-    const dir = await moduleDir('ok', { 'haeuser/example-house.js': EXAMPLE_HOUSE });
-    const file = await structuresFile('ok-structures', `${DEFAULTS}\nexport const GAME_STRUCTURES = [${iglu()}];`);
-    const { catalog, errors } = await buildCatalog({ modulesDir: dir, structuresFile: file, thumbsDir: path.join(workDir, 'keine-bilder') });
+  test('Beispielhaus über --modules-dir: Schema stimmt, nur Bau-Module (eine alte Strukturliste zählt nicht)', async () => {
+    const dir = await moduleDir('ok', {
+      'haeuser/example-house.js': EXAMPLE_HOUSE,
+      // Eine liegen gebliebene Strukturliste wie früher js/builds/game-structures.js wird nicht mehr gelesen
+      'game-structures.js': `export const GAME_STRUCTURE_DEFAULTS = { accuracy: 'original', sources: [], credits: null, tested: null };
+        export const GAME_STRUCTURES = [{ id: 'spiel-test-iglu', structure: 'igloo/top', title: 'Iglu', subtitle: 'U', category: 'haeuser',
+          tags: ['Schnee'], aliases: ['iglu'], description: 'Ein Iglu.' }];`,
+    });
+    const { catalog, errors, stats } = await buildCatalog({ modulesDir: dir, thumbsDir: path.join(workDir, 'keine-bilder') });
     assert.deepEqual(errors, []);
     assertCatalogSchema(catalog);
-    assert.equal(catalog.counts.total, 2);
-    const house = catalog.builds.find((b) => b.id === 'example-house');
+    assert.equal(catalog.counts.total, 1);
+    assert.deepEqual(catalog.builds.map((b) => b.id), ['example-house']);
+    assert.equal('structures' in stats, false);
+    const house = catalog.builds[0];
     assert.equal(house.module, path.relative(ROOT, path.join(dir, 'haeuser', 'example-house.js')).split(path.sep).join('/'));
-    assert.equal(house.structure, null);
     assert.equal(house.accuracy, 'eigenes');
     assert.ok(house.phases >= 2 && house.steps >= house.phases);
-    const igloo = catalog.builds.find((b) => b.id === 'spiel-test-iglu');
-    assert.equal(igloo.structure, 'igloo__top.json');
-    assert.equal(igloo.phases, 1);
-    assert.deepEqual(igloo.credits, { author: 'Mojang Studios', url: 'https://www.minecraft.net/', license: 'Teil von Minecraft Java 26.2' });
-    assert.equal('facts' in igloo, false, 'kein Wissenswertes, auch nicht der Name der Vorlage');
-    assert.equal('difficulty' in igloo || 'difficulty' in house, false, 'keine Schwierigkeit');
-    assert.equal(igloo.description, 'Ein Iglu. Zum Testen.', 'Beschreibung bleibt');
-    assert.equal(igloo.topMaterials[0][0], 'snow_block');
+    assert.equal('difficulty' in house || 'facts' in house, false, 'keine Schwierigkeit, kein Wissenswertes');
+    assert.ok(house.description.startsWith('Ein kleines Haus'), 'Beschreibung bleibt');
   });
 
   test('Kaputtes Modul: Fehler gesammelt, gute Einträge bleiben, Hinweis unter warnings', async () => {
@@ -213,7 +177,7 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
         accuracy: 'eigenes', description: 'Kaputt.', sources: [], credits: null, tested: null };
         export default function build(b) { b.set(0, 0, 0, 'gibt_es_nicht_block'); }`,
     });
-    const { catalog, errors } = await buildCatalog({ modulesDir: dir, structuresFile: null, thumbsDir: workDir });
+    const { catalog, errors } = await buildCatalog({ modulesDir: dir, thumbsDir: workDir });
     assert.deepEqual(catalog.builds.map((b) => b.id), ['example-house']);
     assert.ok(errors.some((e) => /kaputt-syntax\.js: Modul lässt sich nicht laden/.test(e)), errors.join('\n'));
     assert.ok(errors.some((e) => /kaputt-bau\.js: .*(gibt_es_nicht_block|Bau fehlgeschlagen)/.test(e)), errors.join('\n'));
@@ -229,23 +193,23 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
       'haeuser/mit-schwierigkeit.js': variant('mit-schwierigkeit', 'difficulty: 2'),
       'haeuser/mit-wissen.js': variant('mit-wissen', "facts: ['Ein Satz']"),
     });
-    const { catalog, errors } = await buildCatalog({ modulesDir: dir, structuresFile: null, thumbsDir: workDir });
+    const { catalog, errors } = await buildCatalog({ modulesDir: dir, thumbsDir: workDir });
     assert.deepEqual(catalog.builds.map((b) => b.id), ['example-house']);
     assert.ok(errors.some((e) => /mit-schwierigkeit\.js: meta\.difficulty gibt es nicht mehr\./.test(e)), errors.join('\n'));
     assert.ok(errors.some((e) => /mit-wissen\.js: meta\.facts gibt es nicht mehr\./.test(e)), errors.join('\n'));
     assertCatalogSchema(catalog);
   });
 
-  test('Modul im falschen Kategorie-Ordner und reservierte Vorsilbe spiel- sind Fehler', async () => {
+  test('Modul im falschen Kategorie-Ordner ist ein Fehler; die Vorsilbe spiel- ist nicht mehr reserviert', async () => {
     const source = (await readFile(EXAMPLE_HOUSE, 'utf8'));
     const dir = await moduleDir('wrong', {
       'klein/example-house.js': source,
-      'haeuser/spiel-haus.js': source.replace("id: 'example-house'", "id: 'spiel-haus'"),
+      'haeuser/spiel-haus.js': houseVariant(source, 'spiel-haus'),
     });
-    const { catalog, errors } = await buildCatalog({ modulesDir: dir, structuresFile: null, thumbsDir: workDir });
-    assert.equal(catalog.builds.length, 0);
-    assert.ok(errors.some((e) => /passt nicht zum Ordner „klein“/.test(e)), errors.join('\n'));
-    assert.ok(errors.some((e) => /Vorsilbe „spiel-“/.test(e)), errors.join('\n'));
+    const { catalog, errors } = await buildCatalog({ modulesDir: dir, thumbsDir: workDir });
+    assert.deepEqual(catalog.builds.map((b) => b.id), ['spiel-haus']);
+    assert.equal(errors.length, 1, errors.join('\n'));
+    assert.match(errors[0], /passt nicht zum Ordner „klein“/);
   });
 
   test('Doppelte ID: alle Einträge mit der ID fallen weg', async () => {
@@ -253,49 +217,22 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     const dir = await moduleDir('dupe', {
       'haeuser/example-house.js': source,
       'klein/example-house.js': source.replace("category: 'haeuser'", "category: 'klein'"),
+      'haeuser/einzeln.js': houseVariant(source, 'einzeln'),
     });
-    const file = await structuresFile('dupe-structures', `${DEFAULTS}\nexport const GAME_STRUCTURES = [${iglu('spiel-doppelt')}, ${iglu('spiel-doppelt', 'igloo/bottom')}, ${iglu('spiel-einzeln', 'end_city/ship')}];`);
-    const { catalog, errors } = await buildCatalog({ modulesDir: dir, structuresFile: file, thumbsDir: workDir });
-    assert.deepEqual(catalog.builds.map((b) => b.id), ['spiel-einzeln']);
+    const { catalog, errors } = await buildCatalog({ modulesDir: dir, thumbsDir: workDir });
+    assert.deepEqual(catalog.builds.map((b) => b.id), ['einzeln']);
     assert.ok(errors.some((e) => /Doppelte ID „example-house“/.test(e)), errors.join('\n'));
-    assert.ok(errors.some((e) => /Doppelte ID „spiel-doppelt“/.test(e)), errors.join('\n'));
-  });
-
-  test('Fehlende Struktur: unbekannter Pfad, fehlende Datei, doppelte Vorlage', async () => {
-    // Eigene Spieldaten-Kopie mit index.json, deren Datei fehlt
-    const data = path.join(workDir, 'data-missing');
-    await mkdir(path.join(data, 'structures'), { recursive: true });
-    for (const name of ['meta.json', 'blocks.json', 'names.json']) await copyFile(path.join(DATA_DIR, name), path.join(data, name));
-    const index = JSON.parse(await readFile(path.join(DATA_DIR, 'structures', 'index.json'), 'utf8'));
-    index.structures = index.structures.filter((s) => s.path === 'igloo/top' || s.path === 'igloo/bottom');
-    await writeFile(path.join(data, 'structures', 'index.json'), JSON.stringify(index));
-    await copyFile(path.join(DATA_DIR, 'structures', 'igloo__top.json'), path.join(data, 'structures', 'igloo__top.json'));
-    const file = await structuresFile('missing-structures', `${DEFAULTS}\nexport const GAME_STRUCTURES = [
-      ${iglu('spiel-gut')}, ${iglu('spiel-ohne-datei', 'igloo/bottom')}, ${iglu('spiel-unbekannt', 'village/gibt_es_nicht')}, ${iglu('spiel-nochmal')}];`);
-    const { catalog, errors } = await buildCatalog({ modulesDir: path.join(workDir, 'leer'), structuresFile: file, dataDir: data, thumbsDir: workDir });
-    assert.deepEqual(catalog.builds.map((b) => b.id), ['spiel-gut']);
-    assert.ok(errors.some((e) => /spiel-ohne-datei: die Datei game-data\/structures\/igloo__bottom\.json fehlt/.test(e)), errors.join('\n'));
-    assert.ok(errors.some((e) => /spiel-unbekannt: die Struktur village\/gibt_es_nicht gibt es nicht/.test(e)), errors.join('\n'));
-    assert.ok(errors.some((e) => /spiel-nochmal: die Struktur igloo\/top ist schon als spiel-gut eingetragen/.test(e)), errors.join('\n'));
-    assert.ok(catalog.warnings.some((w) => /3 von 4 wegen Fehlern nicht im Katalog/.test(w)));
-  });
-
-  test('Strukturliste ohne Standardwerte oder ohne GAME_STRUCTURES ist ein Fehler', async () => {
-    const noDefaults = await structuresFile('no-defaults', `export const GAME_STRUCTURES = [${iglu()}];`);
-    const a = await buildCatalog({ modulesDir: path.join(workDir, 'leer'), structuresFile: noDefaults, thumbsDir: workDir });
-    assert.ok(a.errors.some((e) => /GAME_STRUCTURE_DEFAULTS fehlt/.test(e)));
-    const noList = await structuresFile('no-list', DEFAULTS);
-    const b = await buildCatalog({ modulesDir: path.join(workDir, 'leer'), structuresFile: noList, thumbsDir: workDir });
-    assert.ok(b.errors.some((e) => /exportiert keine Liste GAME_STRUCTURES/.test(e)));
+    assert.ok(catalog.warnings.some((w) => /example-house: doppelte ID – alle 2 Einträge wurden übersprungen/.test(w)), catalog.warnings.join('\n'));
   });
 
   test('thumb bleibt im Katalog immer null, auch wenn lokal ein Bild existiert (der Katalog wird veröffentlicht)', async () => {
     const thumbs = path.join(workDir, 'thumbs-attach');
     await mkdir(thumbs, { recursive: true });
-    await writeFile(path.join(thumbs, 'spiel-test-iglu.webp'), 'x');
-    const file = await structuresFile('thumb-structures', `${DEFAULTS}\nexport const GAME_STRUCTURES = [${iglu()}, ${iglu('spiel-ohne-bild', 'igloo/bottom')}];`);
-    const { catalog } = await buildCatalog({ modulesDir: path.join(workDir, 'leer'), structuresFile: file, thumbsDir: thumbs });
-    assert.deepEqual(Object.fromEntries(catalog.builds.map((b) => [b.id, b.thumb])), { 'spiel-test-iglu': null, 'spiel-ohne-bild': null });
+    await writeFile(path.join(thumbs, 'example-house.webp'), 'x');
+    const source = await readFile(EXAMPLE_HOUSE, 'utf8');
+    const dir = await moduleDir('thumb', { 'haeuser/example-house.js': source, 'haeuser/ohne-bild.js': houseVariant(source, 'ohne-bild') });
+    const { catalog } = await buildCatalog({ modulesDir: dir, thumbsDir: thumbs });
+    assert.deepEqual(Object.fromEntries(catalog.builds.map((b) => [b.id, b.thumb])), { 'example-house': null, 'ohne-bild': null });
   });
 
   test('main: schreibt atomar (keine Zwischendatei bleibt), Exit-Code 1 bei Fehlern, 2 bei falschen Optionen', async () => {
@@ -308,7 +245,7 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     console.error = (...a) => logs.push(a.join(' '));
     let code, usage;
     try {
-      code = await main(['--modules-dir', dir, '--no-structures', '--out', out, '--thumbs-dir', workDir]);
+      code = await main(['--modules-dir', dir, '--out', out, '--thumbs-dir', workDir]);
       usage = await main(['--unbekannt']);
     } finally {
       Object.assign(console, original);
@@ -320,6 +257,7 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     assert.deepEqual(written.builds.map((b) => b.id), ['example-house']);
     assert.deepEqual((await readdir(outDir)).filter((n) => n.endsWith('.tmp')), []);
     assert.ok(logs.some((l) => /Häuser & Wohnen\s+1/.test(l)), logs.join('\n'));
+    assert.ok(logs.some((l) => /^Kategorie\s+Bauten\s+Blöcke$/m.test(l)), 'Übersicht ohne Spalte für Original-Strukturen');
     assert.ok(logs.some((l) => /Laufzeit/.test(l)));
   });
 });
@@ -330,22 +268,21 @@ test('Fingerabdruck: reagiert auf Modul, Hilfsdatei und Spieldaten, nicht auf Ze
   await mkdir(path.join(dir, 'lib'), { recursive: true });
   await writeFile(path.join(dir, 'lib', 'hilfe.js'), 'export const wert = 1;\n');
   await writeFile(path.join(dir, 'haeuser', 'haus.js'), "import { wert } from '../lib/hilfe.js';\nexport const meta = { wert };\n");
-  const base = await codeFingerprint({ modulesDir: dir, structuresFile: null });
+  const base = await codeFingerprint({ modulesDir: dir });
   assert.match(base, /^[0-9a-f]{64}$/);
-  assert.equal(await codeFingerprint({ modulesDir: dir, structuresFile: null }), base, 'stabil');
+  assert.equal(await codeFingerprint({ modulesDir: dir }), base, 'stabil');
   await writeFile(path.join(dir, 'haeuser', 'haus.js'), "import { wert } from '../lib/hilfe.js';\r\nexport const meta = { wert };\r\n");
-  assert.equal(await codeFingerprint({ modulesDir: dir, structuresFile: null }), base, 'CRLF zählt nicht');
+  assert.equal(await codeFingerprint({ modulesDir: dir }), base, 'CRLF zählt nicht');
   await writeFile(path.join(dir, 'lib', 'hilfe.js'), 'export const wert = 2;\n');
-  const helperChanged = await codeFingerprint({ modulesDir: dir, structuresFile: null });
+  const helperChanged = await codeFingerprint({ modulesDir: dir });
   assert.notEqual(helperChanged, base, 'importierte Hilfsdatei zählt');
   await writeFile(path.join(dir, 'haeuser', 'zweites.js'), 'export const meta = {};\n');
-  assert.notEqual(await codeFingerprint({ modulesDir: dir, structuresFile: null }), helperChanged, 'neues Modul zählt');
+  assert.notEqual(await codeFingerprint({ modulesDir: dir }), helperChanged, 'neues Modul zählt');
 
   const data = path.join(workDir, 'fingerprint-data');
-  await mkdir(path.join(data, 'structures'), { recursive: true });
+  await mkdir(data, { recursive: true });
   await writeFile(path.join(data, 'meta.json'), JSON.stringify({ version: '26.2', worldVersion: 4903 }));
   await writeFile(path.join(data, 'blocks.json'), '{"a":1}');
-  await writeFile(path.join(data, 'structures', 'index.json'), '{"structures":[]}');
   const dataBase = await dataFingerprint(data);
   await writeFile(path.join(data, 'blocks.json'), '{"a":2}');
   assert.notEqual(await dataFingerprint(data), dataBase, 'blocks.json zählt');
@@ -353,9 +290,10 @@ test('Fingerabdruck: reagiert auf Modul, Hilfsdatei und Spieldaten, nicht auf Ze
   assert.equal(await dataFingerprint(data), dataBase);
   await writeFile(path.join(data, 'names.json'), '{"egal":true}');
   assert.equal(await dataFingerprint(data), dataBase, 'names.json zählt nicht (je nach Quelle leicht verschieden, für den Katalog egal)');
+  // Original-Strukturen gibt es nicht mehr: ein alter Ordner structures/ ändert den Katalog nicht
+  await mkdir(path.join(data, 'structures'), { recursive: true });
   await writeFile(path.join(data, 'structures', 'index.json'), '{"structures":[{"file":"a.json"}]}');
-  assert.notEqual(await dataFingerprint(data), dataBase, 'structures/index.json zählt');
-  await writeFile(path.join(data, 'structures', 'index.json'), '{"structures":[]}');
+  assert.equal(await dataFingerprint(data), dataBase, 'structures/index.json zählt nicht mehr');
   await writeFile(path.join(data, 'meta.json'), JSON.stringify({ version: '26.2', worldVersion: 4904, extractedAt: 'x' }));
   assert.notEqual(await dataFingerprint(data), dataBase, 'Datenversion zählt');
   await writeFile(path.join(data, 'meta.json'), JSON.stringify({ version: '26.2', worldVersion: 4903, extractedAt: 'andere Zeit', sources: { x: 1 } }));
@@ -379,10 +317,10 @@ test('Fingerabdruck bricht bei kaputtem Import nicht ab und ändert sich, sobald
   const dir = path.join(workDir, 'fingerprint-broken');
   await mkdir(path.join(dir, 'haeuser'), { recursive: true });
   await writeFile(path.join(dir, 'haeuser', 'haus.js'), "import { x } from './gibt-es-nicht.js';\nexport const meta = { x };\n");
-  const broken = await codeFingerprint({ modulesDir: dir, structuresFile: null });
+  const broken = await codeFingerprint({ modulesDir: dir });
   assert.match(broken, /^[0-9a-f]{64}$/);
   await writeFile(path.join(dir, 'haeuser', 'gibt-es-nicht.js'), 'export const x = 1;\n');
-  assert.notEqual(await codeFingerprint({ modulesDir: dir, structuresFile: null }), broken);
+  assert.notEqual(await codeFingerprint({ modulesDir: dir }), broken);
 });
 
 test('parseArgs: mit eigenen Spieldaten (--data) landet der Katalog dort, nicht im Repo', () => {

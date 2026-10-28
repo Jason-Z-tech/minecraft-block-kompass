@@ -129,27 +129,26 @@ const MINI_TEXTURES = {
     'item/stick': { atlas: 'items', x: 0, y: 0, w: 16, h: 16, anim: null },
   },
 };
-// 3 × 2 × 2: Treppe mit Standardwerten ergänzt, Jigsaw → sea_lantern, fremder/unbekannter Block → Luft
-const MINI_STRUCTURE = {
-  path: 'mini/house',
-  size: [3, 2, 2],
-  palette: ['air', 'stone', 'oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]', 'glass', 'sea_lantern'],
-  rle: [1, 4, 3, 1, 1, 1, 2, 1, 0, 4, 4, 1],
-};
+// Schlüssel-Präfix vor dem Entfernen der Original-Strukturen (mit dem Commit „data“ der Struktur-NBTs)
+const OLD_DATA_COMMIT = '4d12c0553e21e461085d08dcb2c5d412398c494e';
+const OLD_STORE_PREFIX = `v${STORE_VERSION}.${convert.CONVERT_VERSION}.${BLOCK_COLORS_FORMAT}|${[...Object.values(MCMETA_COMMITS), OLD_DATA_COMMIT].map((sha) => sha.slice(0, 7)).join('.')}|`;
 
 // ---------------------------------------------------------------------------------------------
 // (a) Fake-Daten
 
 test('Speicher-Schlüssel: v<STORE_VERSION>.<CONVERT_VERSION>.<Blockfarben-Format>|<je 7 Zeichen aller Commits>|<Stufe>, Stufen-Namen auf Deutsch', () => {
   assert.equal(STORE_PREFIX, `v${STORE_VERSION}.${convert.CONVERT_VERSION}.${BLOCK_COLORS_FORMAT}|${Object.values(MCMETA_COMMITS).map((sha) => sha.slice(0, 7)).join('.')}|`);
-  assert.match(STORE_PREFIX, /^v\d+\.\d+\.\d+\|[0-9a-f]{7}(?:\.[0-9a-f]{7}){4}\|$/);
-  for (const stage of ['names', 'blocks', 'models', 'textures', 'atlas:blocks', 'structure', 'block-colors']) {
+  // vier Commits (summary, atlas, assets, assetsJson); der Commit „data“ der Original-Strukturen ist weg
+  assert.match(STORE_PREFIX, /^v\d+\.\d+\.\d+\|[0-9a-f]{7}(?:\.[0-9a-f]{7}){3}\|$/);
+  assert.notEqual(STORE_PREFIX, OLD_STORE_PREFIX, 'neuer Präfix: alte Einträge (auch alte Strukturen) räumt keepOnly einmal weg');
+  for (const stage of ['names', 'blocks', 'models', 'textures', 'atlas:blocks', 'block-colors']) {
     assert.equal(typeof STAGE_LABELS[stage], 'string', stage);
   }
+  assert.equal('structure' in STAGE_LABELS, false);
   assert.ok(Object.isFrozen(STAGE_LABELS));
 });
 
-test('Fake-Daten: names, blocks, models, textures, atlas und structure im Format von game-data/', async () => {
+test('Fake-Daten: names, blocks, models, textures und atlas im Format von game-data/', async () => {
   const network = fakeNet();
   const source = miniSource({ network });
 
@@ -206,9 +205,10 @@ test('Fake-Daten: names, blocks, models, textures, atlas und structure im Format
   const chest = await store.image('entity/chest/normal');
   assert.deepEqual([...chest.data.subarray(0, 4)], [150, 110, 40, 255]);
 
-  const structure = await source.structure('mini__house.json');
-  assert.deepEqual(structure, MINI_STRUCTURE);
-  assert.equal(JSON.stringify(structure), JSON.stringify(MINI_STRUCTURE));
+  // Original-Strukturen gibt es nicht mehr: kein Ladeweg und keine Anfrage an den Struktur-Commit
+  assert.equal('structure' in source, false);
+  assert.deepEqual(Object.keys(source).sort(), ['atlas', 'blockColors', 'blocks', 'isCached', 'models', 'names', 'textures']);
+  assert.ok(network.requests.every((request) => !request.startsWith('data/')), network.requests.join(', '));
 });
 
 test('Fake-Daten: blockColors aus den Atlanten (ganze Würfel, Animation gemittelt), Modelle bleiben unverändert', async () => {
@@ -234,7 +234,7 @@ test('Fake-Daten: blockColors aus den Atlanten (ganze Würfel, Animation gemitte
 test('Fake-Daten: Größengrenzen aus sources.js je Dateiart', async () => {
   const network = fakeNet();
   const source = miniSource({ network });
-  await Promise.all([source.names(), source.textures(), source.atlas('entities'), source.structure('mini__house.json')]);
+  await Promise.all([source.names(), source.textures(), source.atlas('entities')]);
   const limits = Object.fromEntries(network.limits);
   assert.equal(limits['summary/version.json'], LIMITS.json);
   assert.equal(limits['summary/blocks/data.min.json'], LIMITS.json);
@@ -244,7 +244,7 @@ test('Fake-Daten: Größengrenzen aus sources.js je Dateiart', async () => {
   assert.equal(limits['atlas/entities/atlas.png'], LIMITS.png);
   assert.equal(limits['assetsJson/assets/minecraft/lang/de_de.json'], LIMITS.lang);
   assert.equal(limits['assets/assets/minecraft/textures/block/sea_lantern.png.mcmeta'], LIMITS.mcmeta);
-  assert.equal(limits['data/data/minecraft/structure/mini/house.nbt'], LIMITS.nbt);
+  assert.equal(LIMITS.nbt, undefined, 'keine Grenze für Struktur-NBTs mehr');
 });
 
 test('Zwischenspeicher: zweiter Aufruf ohne fetch, neue Quelle mit demselben Speicher ebenso; isCached', async () => {
@@ -253,14 +253,12 @@ test('Zwischenspeicher: zweiter Aufruf ohne fetch, neue Quelle mit demselben Spe
   const first = miniSource({ network, store });
   assert.equal(await first.isCached('models'), false);
   assert.equal(await first.isCached('atlas:blocks'), false);
-  assert.equal(await first.isCached('structure:mini__house.json'), false);
   const loadAll = (source) => Promise.all([
-    source.names(), source.blocks(), source.models(), source.textures(), source.atlas('blocks'),
-    source.structure('mini__house.json'), source.blockColors(),
+    source.names(), source.blocks(), source.models(), source.textures(), source.atlas('blocks'), source.blockColors(),
   ]);
   const results = await loadAll(first);
   const downloads = network.requests.length;
-  assert.equal(downloads, 13, `je Datei genau ein Download: ${network.requests.join(', ')}`);
+  assert.equal(downloads, 12, `je Datei genau ein Download: ${network.requests.join(', ')}`);
   assert.equal(new Set(network.requests).size, downloads);
 
   // gleiche Quelle: alles aus dem Arbeitsspeicher (gleiche Objekte)
@@ -269,7 +267,7 @@ test('Zwischenspeicher: zweiter Aufruf ohne fetch, neue Quelle mit demselben Spe
   for (const [index, value] of again.entries()) {
     if (index !== 4) assert.equal(value, results[index], 'gleiches Objekt');
   }
-  for (const name of ['names', 'blocks', 'models', 'textures', 'atlas:blocks', 'structure:mini__house.json', 'block-colors']) {
+  for (const name of ['names', 'blocks', 'models', 'textures', 'atlas:blocks', 'block-colors']) {
     assert.equal(await first.isCached(name), true, name);
   }
   assert.equal(await first.isCached('atlas:items'), false);
@@ -286,7 +284,6 @@ test('Zwischenspeicher: zweiter Aufruf ohne fetch, neue Quelle mit demselben Spe
   // gespeichert als JSON-Text bzw. PNG-Bytes unter dem Präfix
   assert.equal(typeof await store.get(`${STORE_PREFIX}models`), 'string');
   assert.ok((await store.get(`${STORE_PREFIX}atlas:blocks`)) instanceof Uint8Array);
-  assert.equal(typeof await store.get(`${STORE_PREFIX}structure:mini__house.json`), 'string');
 });
 
 test('Gleichzeitige Aufrufe: im selben Kontext und über zwei Quellen mit gemeinsamer Sperre je Datei ein Download', async () => {
@@ -305,16 +302,11 @@ test('Gleichzeitige Aufrufe: im selben Kontext und über zwei Quellen mit gemein
   const lock = (name, fn) => withLock(name, fn, { locks });
   const page = miniSource({ network: shared, store, withLock: lock });
   const worker = miniSource({ network: shared, store, withLock: lock });
-  const both = await Promise.all([
-    page.models(), worker.models(), worker.blocks(), page.textures(), worker.textures(),
-    page.structure('mini__house.json'), worker.structure('mini__house.json'),
-  ]);
+  const both = await Promise.all([page.models(), worker.models(), worker.blocks(), page.textures(), worker.textures()]);
   assert.equal(JSON.stringify(both[0]), JSON.stringify(both[1]));
   assert.equal(JSON.stringify(both[3]), JSON.stringify(both[4]));
-  assert.deepEqual(both[5], MINI_STRUCTURE);
-  assert.deepEqual(both[6], MINI_STRUCTURE);
   assert.equal(new Set(shared.requests).size, shared.requests.length, `doppelt geladen: ${shared.requests.join(', ')}`);
-  assert.equal(shared.requests.length, 10);
+  assert.equal(shared.requests.length, 9);
   assert.ok(locks.requests > 0, 'die Sperre wurde benutzt');
 });
 
@@ -333,31 +325,28 @@ test('Versionsfehler: version.json passt nicht → klare Meldung, nichts gespeic
   assert.equal(error.message, 'Die Spieldaten auf GitHub passen nicht zu Minecraft Java 26.2 (gefunden: Version „26.1“, Datenversion 4800, erwartet: Datenversion 4903).');
   assert.doesNotMatch(error.message, /node |npm |scripts\//, 'keine Befehle in der Meldung');
   await assert.rejects(source.models(), (failure) => failure.kind === 'format' && /passen nicht/.test(failure.message));
-  await assert.rejects(source.structure('mini__house.json'), /passen nicht/);
   assert.equal(await store.get(`${STORE_PREFIX}blocks`), undefined);
   assert.equal(await store.get(`${STORE_PREFIX}models`), undefined);
   wrongVersion = false;
   assert.equal(Object.keys((await source.models()).blocks).length, 5, 'Fehler nicht gemerkt');
 });
 
-test('Strukturen: 404, ungültige Namen und unbekannte Atlanten/Stufen', async () => {
-  const network = fakeNet();
+test('404, unbekannte Atlanten und Stufen; Strukturen gibt es nicht mehr', async () => {
+  const network = fakeNet({ respond: (where) => (where?.key === 'atlas' && where.path === 'items/atlas.png' ? new Response('weg', { status: 404 }) : null) });
   const source = miniSource({ network });
-  const missing = await source.structure('mini__gibt_es_nicht.json').then(() => null, (failure) => failure);
+  const missing = await source.atlas('items').then(() => null, (failure) => failure);
   assert.ok(missing instanceof net.NetError);
   assert.equal(missing.kind, 'http');
   assert.equal(missing.status, 404);
-  assert.equal(missing.message, 'Die Spieldaten-Datei „gibt_es_nicht.nbt“ wurde nicht gefunden (404).');
-  assert.ok(network.requests.includes('data/data/minecraft/structure/mini/gibt_es_nicht.nbt'));
+  assert.equal(missing.message, 'Die Spieldaten-Datei „atlas.png“ wurde nicht gefunden (404).');
+  assert.ok(network.requests.includes('atlas/items/atlas.png'));
 
   const before = network.requests.length;
-  for (const bad of ['../geheim.json', 'mini/house.json', 'mini__house', 'Mini__House.json', 'mini__house.json?x=1', '', 42, null]) {
-    await assert.rejects(source.structure(bad), /Ungültiger Strukturname/, String(bad));
-  }
   await assert.rejects(source.atlas('gui'), /Unbekannter Atlas „gui“/);
   await assert.rejects(source.atlas('__proto__'), /Unbekannter Atlas/);
   await assert.rejects(source.isCached('quatsch'), TypeError);
-  await assert.rejects(source.isCached('structure:../x.json'), TypeError);
+  await assert.rejects(source.isCached('structure'), TypeError);
+  await assert.rejects(source.isCached('structure:mini__house.json'), TypeError, 'Strukturen sind keine Stufe mehr');
   await assert.rejects(source.isCached('atlas:gui'), TypeError);
   assert.equal(network.requests.length, before, 'ungültige Namen lösen keinen Download aus');
 });
@@ -382,7 +371,6 @@ test('Fehler werden nicht gemerkt: Netz weg → NetError, danach klappt derselbe
 test('Beschädigte Dateien → NetError „format“ mit menschlicher Meldung; Unbrauchbares im Speicher wird ersetzt', async () => {
   const broken = new Map([
     ['atlas/blocks/atlas.png', () => new Response('kein Bild', { status: 200 })],
-    ['data/data/minecraft/structure/mini/house.nbt', () => new Response(new Uint8Array([0x1f, 0x8b, 8, 0, 1, 2, 3]), { status: 200 })],
     ['atlas/items/data.min.json', () => new Response('{"item/stick":[1,2]}', { status: 200 })],
   ]);
   const network = fakeNet({ respond: (where) => (where && broken.has(`${where.key}/${where.path}`) ? broken.get(`${where.key}/${where.path}`)() : null) });
@@ -390,8 +378,6 @@ test('Beschädigte Dateien → NetError „format“ mit menschlicher Meldung; U
   const source = miniSource({ network, store });
   await assert.rejects(source.atlas('blocks'), (error) => error instanceof net.NetError && error.kind === 'format'
     && /^Der Textur-Atlas „blocks“ ist beschädigt oder hat ein unerwartetes Format \(keine PNG-Datei\)\.$/.test(error.message));
-  await assert.rejects(source.structure('mini__house.json'), (error) => error.kind === 'format'
-    && /^Die Struktur „mini\/house“ ist beschädigt/.test(error.message) && error.cause?.name === 'NbtError');
   await assert.rejects(source.models(), (error) => error.kind === 'format' && /„data\.min\.json“ ist beschädigt.*item\/stick/.test(error.message));
   await assert.rejects(source.textures(), (error) => error.kind === 'format');
 
@@ -428,7 +414,7 @@ test('Speicherfehler (get/put/keepOnly) verhindern kein Ergebnis', async () => {
   };
   const source = miniSource({ network, store: failing });
   assert.deepEqual(await source.names(), MINI_NAMES);
-  assert.deepEqual(await source.structure('mini__house.json'), MINI_STRUCTURE);
+  assert.deepEqual(Buffer.from(await source.atlas('items')), readMini('atlas', 'items/atlas.png'));
   assert.equal(await source.isCached('names'), true, 'im Arbeitsspeicher der Quelle');
   const downloads = network.requests.length;
   await source.names();
@@ -447,9 +433,9 @@ test('Fortschritt: onProgress({ stage, done, total }) nur beim echten Laden, Feh
     { stage: 'names', done: 2, total: 3 }, { stage: 'names', done: 3, total: 3 },
   ]);
   events.length = 0;
-  await Promise.all([source.textures(), source.structure('mini__house.json'), source.atlas('items')]);
+  await Promise.all([source.textures(), source.atlas('items')]);
   const stages = [...new Set(events.map((event) => event.stage))].sort();
-  assert.deepEqual(stages, ['atlas-data', 'atlas:items', 'blocks', 'models', 'structure', 'textures']);
+  assert.deepEqual(stages, ['atlas-data', 'atlas:items', 'blocks', 'models', 'textures']);
   for (const stage of stages) {
     const list = events.filter((event) => event.stage === stage);
     assert.equal(list[0].done, 0, stage);
@@ -457,12 +443,12 @@ test('Fortschritt: onProgress({ stage, done, total }) nur beim echten Laden, Feh
     assert.ok(list.every((event, i) => event.done <= event.total && (i === 0 || event.done >= list[i - 1].done)), stage);
   }
   assert.deepEqual(events.filter((event) => event.stage === 'textures').map((event) => `${event.done}/${event.total}`), ['0/3', '1/3', '2/3', '3/3']);
-  assert.ok(events.filter((event) => event.stage === 'structure').every((event) => event.file === 'mini__house.json'));
+  assert.ok(events.every((event) => Object.keys(event).sort().join() === 'done,stage,total'), 'nur stage, done und total');
 
   // aus dem Speicher: keine Fortschrittsmeldungen
   const quiet = [];
   const cached = miniSource({ network, store, onProgress: (event) => quiet.push(event) });
-  await Promise.all([cached.names(), cached.textures(), cached.structure('mini__house.json')]);
+  await Promise.all([cached.names(), cached.textures()]);
   assert.deepEqual(quiet, []);
 
   // Ein Empfänger, der wirft, bricht nichts ab.
@@ -477,6 +463,9 @@ test('keepOnly beim ersten Zugriff: alte Versionen und Commits verschwinden, eig
   await store.put('v0|1111111.2222222.3333333.4444444.5555555|models', 'alt');
   await store.put(`v${STORE_VERSION}|aaaaaaa.bbbbbbb.ccccccc.ddddddd.eeeeeee|names`, 'anderer Commit');
   await store.put('fremd', 'weg damit');
+  // Stand vor dem Entfernen der Original-Strukturen: anderer Präfix (fünf Commits), auch die gespeicherten Strukturen
+  await store.put(`${OLD_STORE_PREFIX}names`, JSON.stringify(MINI_NAMES));
+  await store.put(`${OLD_STORE_PREFIX}structure:igloo__top.json`, '{"path":"igloo/top"}');
   await store.put(`${STORE_PREFIX}names`, JSON.stringify(MINI_NAMES));
   let keepOnlyCalls = 0;
   const counting = { ...store, keepOnly: (prefix) => {
@@ -490,6 +479,8 @@ test('keepOnly beim ersten Zugriff: alte Versionen und Commits verschwinden, eig
   assert.equal(await store.get('v0|1111111.2222222.3333333.4444444.5555555|models'), undefined);
   assert.equal(await store.get(`v${STORE_VERSION}|aaaaaaa.bbbbbbb.ccccccc.ddddddd.eeeeeee|names`), undefined);
   assert.equal(await store.get('fremd'), undefined);
+  assert.equal(await store.get(`${OLD_STORE_PREFIX}names`), undefined);
+  assert.equal(await store.get(`${OLD_STORE_PREFIX}structure:igloo__top.json`), undefined, 'alte Strukturen werden weggeräumt');
   assert.equal(await store.get(`${STORE_PREFIX}names`), JSON.stringify(MINI_NAMES));
   await Promise.all([source.blocks(), source.isCached('models'), source.atlas('items')]);
   assert.equal(keepOnlyCalls, 1, 'nur einmal je Quelle');
@@ -498,12 +489,10 @@ test('keepOnly beim ersten Zugriff: alte Versionen und Commits verschwinden, eig
 // ---------------------------------------------------------------------------------------------
 // (b) Gleichheit mit game-data/ (echter Spiegel)
 
-const REAL_FILES = ['names.json', 'blocks.json', 'models.json', 'textures.json', 'textures.bin', 'block-colors.json', 'structures/index.json'];
+const REAL_FILES = ['names.json', 'blocks.json', 'models.json', 'textures.json', 'textures.bin', 'block-colors.json'];
 const realSkip = !mirrorAvailable() ? 'Spiegel fehlt (node scripts/mirror-mcmeta.mjs)'
   : REAL_FILES.some((file) => !existsSync(path.join(GAME_DATA, file))) ? 'game-data/ fehlt (node scripts/extract-game-data.mjs --remote)' : false;
 const readGameData = (file) => readFileSync(path.join(GAME_DATA, ...file.split('/')), 'utf8');
-const catalogStructures = () => [...new Set(JSON.parse(readFileSync(path.join(ROOT, 'data', 'catalog.json'), 'utf8')).builds
-  .map((build) => build.structure).filter(Boolean))].sort();
 
 // Eine gemeinsame Quelle für alle Vergleiche (jede Stufe nur einmal rechnen); Zeiten je Stufe in ms.
 let realContext = null;
@@ -567,19 +556,6 @@ test('Echte Daten: textures wie game-data/textures.json (w, h, anim, mip) und pi
   assert.deepEqual(pixelDifferences, [], `${expectedNames.length} Texturen geprüft`);
 });
 
-test('Echte Daten: alle Strukturen aus data/catalog.json JSON-identisch zu game-data/structures/', { skip: realSkip, timeout: 180_000 }, async () => {
-  const { source } = realSource();
-  const files = catalogStructures();
-  assert.ok(files.length >= 200, `${files.length} Strukturen im Katalog`);
-  const limit = net.createLimiter(8);
-  const different = [];
-  await timed('structures (alle Katalog-Strukturen)', () => Promise.all(files.map((file) => limit(async () => {
-    const structure = await source.structure(file);
-    if (JSON.stringify(structure) !== readGameData(`structures/${file}`)) different.push(file);
-  }))));
-  assert.deepEqual(different, [], `${files.length} Strukturen verglichen`);
-});
-
 test('Echte Daten: blockColors identisch zu game-data/block-colors.json (ohne generatedAt)', { skip: realSkip, timeout: 120_000 }, async () => {
   const { source } = realSource();
   const colors = await timed('block-colors', () => source.blockColors());
@@ -592,15 +568,13 @@ test('Echte Daten: blockColors identisch zu game-data/block-colors.json (ohne ge
 test('Echte Daten: zweiter Durchlauf (neue Quelle, gleicher Speicher) ohne Download; Zeiten', { skip: realSkip, timeout: 120_000 }, async (t) => {
   const { network, store, source, timings } = realSource();
   // Falls die Tests oben übersprungen wurden: einmal alles laden.
-  const sample = catalogStructures()[0];
-  await Promise.all([source.names(), source.textures(), source.atlas('blocks'), source.structure(sample), source.blockColors()]);
+  await Promise.all([source.names(), source.textures(), source.atlas('blocks'), source.blockColors()]);
   const downloads = network.requests.length;
   const second = miniSource({ network, store });
   const secondTimings = {};
   for (const [label, task] of [
     ['names', () => second.names()], ['blocks', () => second.blocks()], ['models', () => second.models()],
-    ['textures', () => second.textures()], ['atlas:blocks', () => second.atlas('blocks')],
-    [`structure:${sample}`, () => second.structure(sample)], ['block-colors', () => second.blockColors()],
+    ['textures', () => second.textures()], ['atlas:blocks', () => second.atlas('blocks')], ['block-colors', () => second.blockColors()],
   ]) {
     const started = performance.now();
     await task();
@@ -661,14 +635,13 @@ test('remote.js im echten Chrome: game-data-Format, zweiter Durchlauf nach Neula
         return mirror(pathname);
       },
     });
-    const file = catalogStructures()[0];
     const dbName = `block-kompass-remote-test-${process.pid}-${Date.now()}`;
     const run = () => browser.eval(`(async () => {
       const { createRemoteSource } = await import('/js/data/remote.js');
       const { createStore } = await import('/js/data/store.js');
       const { MCMETA_BASE } = await import('/js/data/sources.js');
       const store = createStore({ name: ${JSON.stringify(dbName)} });
-      const stages = ['names', 'blocks', 'models', 'textures', 'atlas:blocks', ${JSON.stringify(`structure:${file}`)}];
+      const stages = ['names', 'blocks', 'models', 'textures', 'atlas:blocks'];
       const probe = createRemoteSource({ store });
       const cachedBefore = {};
       for (const stage of stages) cachedBefore[stage] = await probe.isCached(stage);
@@ -690,7 +663,6 @@ test('remote.js im echten Chrome: game-data-Format, zweiter Durchlauf nach Neula
       const models = await time('models', () => source.models());
       const textures = await time('textures', () => source.textures());
       const atlas = await time('atlas:blocks', () => source.atlas('blocks'));
-      const structure = await time('structure', () => source.structure(${JSON.stringify(file)}));
       timings.total = Math.round(performance.now() - started);
       return {
         base: MCMETA_BASE,
@@ -700,7 +672,7 @@ test('remote.js im echten Chrome: game-data-Format, zweiter Durchlauf nach Neula
         timings,
         hashes: {
           names: await hash(names), blocks: await hash(blocks), models: await hash(models),
-          atlas: await hash(atlas), structure: await hash(structure),
+          atlas: await hash(atlas),
         },
         textures: JSON.stringify(textures),
         samples: { stone: names.block.stone, stairs: blocks.blocks.oak_stairs.default, models: models.models.length },
@@ -714,14 +686,13 @@ test('remote.js im echten Chrome: game-data-Format, zweiter Durchlauf nach Neula
       const firstRequests = mirrorRequests - before;
       assert.equal(first.base, MIRROR_PREFIX, 'sources.js zeigt auf den Spiegel');
       assert.equal(first.backend, 'indexeddb');
-      assert.deepEqual(Object.values(first.cachedBefore), [false, false, false, false, false, false]);
-      assert.deepEqual(first.progress, ['atlas-data', 'atlas:blocks', 'blocks', 'models', 'names', 'structure', 'textures']);
+      assert.deepEqual(Object.values(first.cachedBefore), [false, false, false, false, false]);
+      assert.deepEqual(first.progress, ['atlas-data', 'atlas:blocks', 'blocks', 'models', 'names', 'textures']);
       const expectedHashes = {
         names: sha256(readGameData('names.json')),
         blocks: sha256(readGameData('blocks.json')),
         models: sha256(readGameData('models.json')),
         atlas: sha256(readFileSync(mirrorFilePath(MIRROR, MCMETA_COMMITS.atlas, 'blocks/atlas.png'))),
-        structure: sha256(readGameData(`structures/${file}`)),
       };
       assert.deepEqual(first.hashes, expectedHashes);
       assert.deepEqual(first.samples.stone, { de: 'Stein', en: 'Stone' });
@@ -739,7 +710,7 @@ test('remote.js im echten Chrome: game-data-Format, zweiter Durchlauf nach Neula
       mirrorRequests = 0;
       const second = await run();
       assert.equal(mirrorRequests, 0, 'zweiter Durchlauf ohne Anfragen an /__mcmeta/');
-      assert.deepEqual(Object.values(second.cachedBefore), [true, true, true, true, true, true]);
+      assert.deepEqual(Object.values(second.cachedBefore), [true, true, true, true, true]);
       assert.deepEqual(second.progress, [], 'kein Fortschritt, weil nichts geladen wird');
       assert.deepEqual(second.hashes, expectedHashes);
       assert.equal(second.textures, first.textures);
@@ -827,15 +798,16 @@ test('Gespeicherte Blockfarben in altem Format gelten als „nicht da“', async
 // Wächter für CONVERT_VERSION (js/data/convert.js): Prüfsumme der umgewandelten Daten je Version. Ändert sich die Ausgabe
 // der Umwandlung, behielten Besucher sonst veraltete Daten im Browser-Speicher. Dann CONVERT_VERSION erhöhen und hier die
 // neue Prüfsumme für die neue Version eintragen (die alte Zeile darf bleiben).
+// Seit dem Entfernen der Original-Strukturen ohne Strukturteil (names, blocks, models, textures und Blockfarben sind
+// unverändert: mit dem alten Strukturteil ergibt dieselbe Rechnung weiter 59ff0a27…).
 const CONVERT_OUTPUT_SHA256 = Object.freeze({
-  1: '59ff0a27bbb22753c902ce5a773c9d1a78b1ce062d58ecaf07bac6cccda38bf8',
+  1: '6b6286eb34a36a0eba1b6dea1cae515d424d9f2bc8dbf897c34b7e86cdb95e98',
 });
 
 test('Echte Daten: Ausgabe passt zur CONVERT_VERSION (sonst Version erhöhen)', { skip: realSkip, timeout: 120_000 }, async () => {
   const { source } = realSource();
   const { generatedAt, ...colors } = await source.blockColors();
-  const parts = [await source.names(), await source.blocks(), await source.models(), await source.textures(), colors,
-    await source.structure('village__plains__houses__plains_small_house_1.json')];
+  const parts = [await source.names(), await source.blocks(), await source.models(), await source.textures(), colors];
   const sha = createHash('sha256').update(parts.map((part) => JSON.stringify(part)).join('\n')).digest('hex');
   const expected = CONVERT_OUTPUT_SHA256[convert.CONVERT_VERSION];
   assert.ok(expected, `Für CONVERT_VERSION ${convert.CONVERT_VERSION} ist keine Prüfsumme eingetragen (neu: ${sha}).`);

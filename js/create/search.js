@@ -180,7 +180,7 @@ function fieldTexts(entry) {
     if (typeof value === 'string' && value.trim()) out.push([field, value]);
   };
   add('title', entry.title);
-  if (typeof entry.id === 'string') add('id', entry.id.replace(/^spiel-/, '').replace(/-/g, ' '));
+  if (typeof entry.id === 'string') add('id', entry.id.replace(/-/g, ' '));
   for (const alias of Array.isArray(entry.aliases) ? entry.aliases : []) add('aliases', alias);
   for (const tag of Array.isArray(entry.tags) ? entry.tags : []) add('tags', tag);
   add('subtitle', entry.subtitle);

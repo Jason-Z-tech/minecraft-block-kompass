@@ -15,7 +15,6 @@
   <link rel="preload" href="assets/fonts/pixelify-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/atkinson-hyperlegible-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/browse.css">
   <script type="module" src="js/ui/home.js"></script>
 </head>
 <body data-page="home">
@@ -35,86 +34,32 @@
           <li><a class="hotbar__slot" href="index.html" data-nav="home"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#home"></use></svg><span>Start</span></a></li>
           <li><a class="hotbar__slot" href="kategorie.html" data-nav="category"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#grid"></use></svg><span>Kategorien</span></a></li>
           <li><a class="hotbar__slot" href="erstellen.html" data-nav="create"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#hammer"></use></svg><span class="label-long">Selber erstellen</span><span class="label-short">Erstellen</span></a></li>
+          <li><a class="hotbar__slot" href="meine.html" data-nav="mine"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#star"></use></svg><span class="label-long">Meine Bauten</span><span class="label-short">Meine</span></a></li>
         </ul>
-        <button class="hotbar__slot site-search-toggle" id="site-search-toggle" type="button" aria-expanded="false" aria-controls="site-search-form"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Suche</span></button>
       </nav>
-      <form class="site-search" id="site-search-form" action="erstellen.html" method="get" role="search" aria-label="Bauten suchen">
-        <div class="site-search__field">
-          <label class="visually-hidden" for="site-search-input">Bauten suchen</label>
-          <input class="field__input site-search__input" id="site-search-input" type="search" name="q" maxlength="120" placeholder="Bau suchen …" autocomplete="off" enterkeyhint="search" spellcheck="false">
-          <button class="site-search__submit" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span class="visually-hidden">Suchen</span></button>
-        </div>
-      </form>
     </div>
   </header>
 
   <main id="main" tabindex="-1">
     <noscript><p class="noscript">Der Block-Kompass braucht JavaScript für Katalog, 3D-Ansicht und Anleitungen. Bitte aktiviere JavaScript für diese Seite.</p></noscript>
 
-    <section class="hero" aria-labelledby="home-title">
-      <div class="container hero__inner">
-        <div class="hero__text">
-          <p class="eyebrow">Minecraft Java Edition 26.2</p>
-          <h1 class="hero__title" id="home-title">Was willst du <span class="hero__title-accent">bauen?</span></h1>
-          <p class="hero__lead">Such dir ein Projekt aus und bau es Block für Block nach – mit 3D-Ansicht, Ebenen-Plan und Materialliste.</p>
-          <form class="hero-search" id="home-search-form" action="erstellen.html" method="get" role="search" aria-label="Projekt suchen oder beschreiben">
-            <label class="field__label" for="home-search-input">Suche einen Bau oder beschreibe deine Idee</label>
-            <div class="hero-search__row">
-              <input class="field__input field__input--lg" id="home-search-input" type="search" name="q" maxlength="120" placeholder="Was soll es werden?" autocomplete="off" enterkeyhint="search">
-              <button class="btn btn--primary btn--lg" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Los</span></button>
-            </div>
-          </form>
-          <div class="hero__meta" id="home-total"></div>
-        </div>
-        <div class="hero__art" aria-hidden="true">
-          <img class="hero__compass" src="assets/logo.svg" alt="" width="192" height="192">
-        </div>
+    <section class="home" aria-labelledby="home-title">
+      <div class="container home__inner">
+        <h1 class="home__title" id="home-title">Was willst du <span class="home__title-accent">bauen?</span></h1>
+        <form class="home-search" id="home-search-form" action="erstellen.html" method="get" role="search" aria-label="Bauten suchen">
+          <label class="visually-hidden" for="home-search-input">Bau suchen</label>
+          <input class="field__input field__input--lg" id="home-search-input" type="search" name="q" maxlength="120" placeholder="Bau suchen …" autocomplete="off" enterkeyhint="search" spellcheck="false">
+          <button class="btn btn--primary btn--lg" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#search"></use></svg><span>Suchen</span></button>
+        </form>
+        <div class="status-region" id="home-status" role="status" aria-live="polite"></div>
+        <h2 class="visually-hidden" id="home-categories-title">Kategorien</h2>
+        <ul class="category-grid category-grid--compact" id="home-categories" role="list" aria-labelledby="home-categories-title"></ul>
+        <ul class="home__links" id="home-links" role="list">
+          <li><a class="btn btn--secondary" href="erstellen.html"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#hammer"></use></svg><span>Selber erstellen</span></a></li>
+          <li><a class="btn btn--secondary" href="meine.html"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#star"></use></svg><span>Meine Bauten</span></a></li>
+        </ul>
       </div>
       <div class="terrain" aria-hidden="true"></div>
-    </section>
-
-    <section class="section" aria-labelledby="home-categories-title">
-      <div class="container">
-        <div class="section__head">
-          <h2 class="section__title" id="home-categories-title">Kategorien</h2>
-          <p class="section__lead">Von der kleinen Hütte bis zum Wahrzeichen – wähle ein Thema.</p>
-        </div>
-        <div class="status-region" id="home-status" role="status" aria-live="polite"></div>
-        <ul class="category-grid" id="home-categories" role="list"></ul>
-      </div>
-    </section>
-
-    <div class="shelves" id="home-sections"></div>
-
-    <section class="section how" aria-labelledby="home-how-title">
-      <div class="container">
-        <div class="section__head">
-          <h2 class="section__title" id="home-how-title">So funktioniert’s</h2>
-        </div>
-        <ol class="how__steps" role="list">
-          <li class="how__step">
-            <span class="how__number" aria-hidden="true">1</span>
-            <div class="how__text">
-              <h3 class="how__title"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#grid"></use></svg><span>Bau aussuchen</span></h3>
-              <p>Stöbere in den Kategorien oder such nach einem Namen. Jede Karte zeigt Größe und Blockzahl.</p>
-            </div>
-          </li>
-          <li class="how__step">
-            <span class="how__number" aria-hidden="true">2</span>
-            <div class="how__text">
-              <h3 class="how__title"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#cube"></use></svg><span>In 3D ansehen</span></h3>
-              <p>Dreh den Bau, schneide ihn Ebene für Ebene auf oder lauf wie im Spiel hindurch.</p>
-            </div>
-          </li>
-          <li class="how__step">
-            <span class="how__number" aria-hidden="true">3</span>
-            <div class="how__text">
-              <h3 class="how__title"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons.svg#layers"></use></svg><span>Schritt für Schritt bauen</span></h3>
-              <p>Folge den Schritten, hak das Material ab und nimm den Ebenen-Plan zu Hilfe. Dein Fortschritt bleibt gespeichert.</p>
-            </div>
-          </li>
-        </ol>
-      </div>
     </section>
   </main>
 

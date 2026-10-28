@@ -15,7 +15,7 @@ const STALE = 'data/catalog.json ist veraltet – neu erzeugen: node scripts/bui
 
 const catalog = JSON.parse(readFileSync(DEFAULT_OUT, 'utf8'));
 
-test('data/catalog.json passt zum Quelltext (Bau-Module, Strukturliste, Kern, Prüf- und Katalog-Skript)', async () => {
+test('data/catalog.json passt zum Quelltext (Bau-Module, Kern, Prüf- und Katalog-Skript)', async () => {
   assert.equal(catalog.inputs?.code, await codeFingerprint(), STALE);
 });
 
@@ -31,11 +31,13 @@ test('data/catalog.json ist vollständig gültig, ohne Vorschaubilder (online gi
   assert.equal(normalized.skipped, 0, 'kein Eintrag wird von der Seite verworfen');
   assert.equal(normalized.builds.length, catalog.builds.length);
   for (const build of catalog.builds) assert.equal(build.thumb, null, `${build.id}: kein Vorschaubild-Pfad im veröffentlichten Katalog`);
-  // Schwierigkeit, Wissenswertes und die Kategorie Redstone gibt es nicht mehr
+  // Schwierigkeit, Wissenswertes, die Kategorie Redstone und Original-Strukturen gibt es nicht mehr
   for (const build of catalog.builds) {
     assert.equal('difficulty' in build, false, `${build.id}: difficulty`);
     assert.equal('facts' in build, false, `${build.id}: facts`);
     assert.notEqual(build.category, 'redstone', build.id);
+    assert.equal('structure' in build, false, `${build.id}: structure`);
+    assert.ok(typeof build.module === 'string' && build.module.startsWith('js/builds/'), `${build.id}: jeder Bau ist ein Bau-Modul`);
   }
 });
 

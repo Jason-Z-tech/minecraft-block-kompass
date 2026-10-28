@@ -3,22 +3,26 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as sources from '../../js/data/sources.js';
 import {
   MCMETA_BASE, MCMETA_COMMITS, GAME_VERSION, ATLASES, MCMETA_TEXTURES, LIMITS, SUMMARY_FILES, LANG_FILES,
-  isValidMcmetaPath, mcmetaUrl, atlasFiles, textureMcmetaPath, structureRepoPath, structureUrl, structureFileToUrl, allFixedFiles,
+  isValidMcmetaPath, mcmetaUrl, atlasFiles, textureMcmetaPath, allFixedFiles,
 } from '../../js/data/sources.js';
-import { catalogStructureFiles, mirrorFileList, mirrorFilePath } from '../../scripts/mirror-mcmeta.mjs';
+import * as mirror from '../../scripts/mirror-mcmeta.mjs';
+import { mirrorFileList, mirrorFilePath } from '../../scripts/mirror-mcmeta.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const TEXTURES_JSON = path.join(ROOT, 'game-data', 'textures.json');
 
 test('Quellen: feste Commits (volle SHAs), Version, Atlanten und Grenzen', () => {
   assert.equal(MCMETA_BASE, 'https://raw.githubusercontent.com/misode/mcmeta/');
-  assert.deepEqual(Object.keys(MCMETA_COMMITS), ['summary', 'atlas', 'assets', 'assetsJson', 'data']);
+  // Ohne Original-Strukturen braucht es den Commit „data“ (Struktur-NBTs) nicht mehr
+  assert.deepEqual(Object.keys(MCMETA_COMMITS), ['summary', 'atlas', 'assets', 'assetsJson']);
   for (const sha of Object.values(MCMETA_COMMITS)) assert.match(sha, /^[0-9a-f]{40}$/);
-  assert.equal(new Set(Object.values(MCMETA_COMMITS)).size, 5);
+  assert.equal(new Set(Object.values(MCMETA_COMMITS)).size, 4);
   assert.deepEqual(GAME_VERSION, { id: '26.2', dataVersion: 4903 });
   assert.deepEqual(ATLASES, ['blocks', 'items', 'entities']);
+  assert.deepEqual(Object.keys(LIMITS), ['json', 'lang', 'png', 'mcmeta'], 'keine Grenze für Struktur-NBTs mehr');
   for (const value of Object.values(LIMITS)) assert.ok(Number.isInteger(value) && value > 0);
   assert.equal(LIMITS.json, 4 * 1024 * 1024);
   assert.equal(LIMITS.mcmeta, 64 * 1024);
@@ -38,29 +42,20 @@ test('mcmetaUrl: baut die Adresse und lehnt unsichere Pfade und fremde Commits a
     assert.equal(isValidMcmetaPath(bad), false, `gültig: ${JSON.stringify(bad)}`);
     assert.throws(() => mcmetaUrl('summary', bad), /Ungültiger Dateipfad/, `kein Fehler: ${JSON.stringify(bad)}`);
   }
-  for (const bad of ['main', 'toString', '__proto__', 'constructor', '', null, MCMETA_COMMITS.summary]) {
+  for (const bad of ['main', 'data', 'toString', '__proto__', 'constructor', '', null, MCMETA_COMMITS.summary]) {
     assert.throws(() => mcmetaUrl(bad, 'version.json'), /Unbekannte Spieldaten-Quelle/);
   }
   assert.ok(isValidMcmetaPath('a-b_c.d/e9'));
 });
 
-test('Atlanten, Texturen und Strukturen: Pfade und Adressen', () => {
+test('Atlanten und Texturen: Pfade und Adressen; keine Strukturen mehr', () => {
   assert.deepEqual(atlasFiles('blocks'), { png: 'blocks/atlas.png', data: 'blocks/data.min.json' });
   assert.throws(() => atlasFiles('all'), /Unbekannter Atlas/);
   assert.throws(() => atlasFiles('../blocks'), /Unbekannter Atlas/);
   assert.equal(textureMcmetaPath('entity/conduit/wind'), 'assets/minecraft/textures/entity/conduit/wind.png.mcmeta');
   for (const bad of ['../x', 'block//x', 'Block/X', '', 7]) assert.throws(() => textureMcmetaPath(bad), /Ungültiger Texturname/);
 
-  const plains = 'village/plains/houses/plains_small_house_1';
-  assert.equal(structureRepoPath(plains), `data/minecraft/structure/${plains}.nbt`);
-  assert.equal(structureUrl(plains), `${MCMETA_BASE}${MCMETA_COMMITS.data}/data/minecraft/structure/${plains}.nbt`);
-  assert.equal(structureFileToUrl('village__plains__houses__plains_small_house_1.json'), structureUrl(plains));
-  for (const bad of ['', '/a', 'a/', 'a//b', '../a', 'a/../b', 'a.nbt', 'A', 'a b', 'a/./b', null]) {
-    assert.throws(() => structureUrl(bad), /Ungültiger Strukturpfad/, `kein Fehler: ${JSON.stringify(bad)}`);
-  }
-  for (const bad of ['village/plains.json', 'a__b.nbt', '../x.json', 'x.json/../y.json', '__a.json', 'a.JSON', 7]) {
-    assert.throws(() => structureFileToUrl(bad), /Ungültiger Strukturname/, `kein Fehler: ${JSON.stringify(bad)}`);
-  }
+  for (const name of ['structureRepoPath', 'structureUrl', 'structureFileToUrl']) assert.equal(name in sources, false, name);
 });
 
 test('MCMETA_TEXTURES: 101 sortierte, eindeutige Namen, gleich wie game-data/textures.json (anim oder mip)', (t) => {
@@ -102,18 +97,12 @@ test('allFixedFiles: Zusammenfassungen, Atlanten, Sprachdateien und alle .mcmeta
   assert.equal(allFixedFiles().length, 113);
 });
 
-test('Spiegel-Liste: feste Dateien plus alle Katalog-Strukturen, Ablage nur im Spiegel', () => {
-  const catalog = JSON.parse(readFileSync(path.join(ROOT, 'data', 'catalog.json'), 'utf8'));
-  const structures = catalogStructureFiles(catalog);
-  assert.ok(structures.length >= 200, `nur ${structures.length} Strukturen im Katalog`);
-  assert.deepEqual(structures, [...new Set(structures)].sort());
-  const list = mirrorFileList({ catalog });
-  assert.equal(list.length, 113 + structures.length);
-  const plains = list.find((file) => file.path === 'data/minecraft/structure/village/savanna/houses/savanna_library_1.nbt');
-  assert.deepEqual(plains, { key: 'data', commit: MCMETA_COMMITS.data, path: plains.path, limit: LIMITS.nbt });
-  assert.deepEqual(catalogStructureFiles({ builds: [{ structure: 'b__c.json' }, { structure: null }, { structure: 'a.json' }, { structure: 'a.json' }] }), ['a.json', 'b__c.json']);
-  assert.throws(() => catalogStructureFiles({}), /unbekanntes Format/);
-  assert.throws(() => mirrorFileList({ catalog: { builds: [{ structure: '../x.json' }] } }), /Ungültiger Strukturname/);
+test('Spiegel-Liste: genau die festen Dateien (ohne Strukturen, unabhängig vom Katalog), Ablage nur im Spiegel', () => {
+  const list = mirrorFileList();
+  assert.deepEqual(list, allFixedFiles());
+  assert.equal(list.length, 113);
+  assert.ok(list.every((file) => !file.path.startsWith('data/')), 'keine Struktur-NBTs');
+  assert.equal('catalogStructureFiles' in mirror, false);
 
   const dir = path.join(ROOT, 'tmp', 'spiegel');
   assert.equal(mirrorFilePath(dir, MCMETA_COMMITS.atlas, 'blocks/atlas.png'), path.join(dir, MCMETA_COMMITS.atlas, 'blocks', 'atlas.png'));

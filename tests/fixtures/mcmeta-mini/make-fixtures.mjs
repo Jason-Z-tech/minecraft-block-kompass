@@ -5,10 +5,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { encodePng, createImage } from '../../../js/render/texture-store.js';
-import { encodeNbt, nbt } from '../create/import/make-fixtures.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -158,42 +156,6 @@ const LANG_DE = {
   'gui.done': 'Fertig',
 };
 
-// ------------------------------------------------------------------ Struktur (NBT wie im data-Commit, gzip)
-
-// 3 × 2 × 2 (x, y, z): Stein, Treppe mit unvollständigen Eigenschaften, Glas, Luft, ein Jigsaw-Block (wird zu sea_lantern),
-// ein Block aus fremdem Namensraum und ein unbekannter Block (beide entfallen wie im Spiel).
-function structureNbt() {
-  const palette = [
-    { Name: 'minecraft:stone' },
-    { Name: 'minecraft:oak_stairs', Properties: { facing: 'east' } },
-    { Name: 'minecraft:glass' },
-    { Name: 'minecraft:air' },
-    { Name: 'minecraft:jigsaw', Properties: { orientation: 'up_north' } },
-    { Name: 'create:shaft', Properties: { axis: 'y' } },
-    { Name: 'minecraft:gibt_es_nicht' },
-  ];
-  const blocks = [
-    [0, 0, 0, 0], [1, 0, 0, 0], [2, 0, 0, 0], [0, 0, 1, 0], [1, 0, 1, 2], [2, 0, 1, 0],
-    [0, 1, 0, 1], [1, 1, 0, 3], [2, 1, 0, 5], [0, 1, 1, 6], [2, 1, 1, 4],
-  ];
-  const stateCompound = ({ Name, Properties }) => nbt.compound({
-    Name: nbt.string(Name),
-    ...(Properties ? { Properties: nbt.compound(Object.fromEntries(Object.entries(Properties).map(([k, v]) => [k, nbt.string(v)]))) } : {}),
-  });
-  const list = blocks.map(([x, y, z, state]) => nbt.compound({
-    pos: nbt.list(3, [nbt.int(x), nbt.int(y), nbt.int(z)]),
-    state: nbt.int(state),
-    ...(state === 4 ? { nbt: nbt.compound({ id: nbt.string('minecraft:jigsaw'), final_state: nbt.string('minecraft:sea_lantern'), joint: nbt.string('rollable') }) } : {}),
-  }));
-  return encodeNbt('', nbt.compound({
-    DataVersion: nbt.int(4903),
-    size: nbt.list(3, [nbt.int(3), nbt.int(2), nbt.int(2)]),
-    palette: nbt.list(10, palette.map(stateCompound)),
-    blocks: nbt.list(10, list),
-    entities: nbt.list(10, []),
-  }));
-}
-
 // ------------------------------------------------------------------ Schreiben
 
 function write(relative, data) {
@@ -221,7 +183,6 @@ async function main() {
   write('assetsJson/assets/minecraft/lang/de_de.json', `﻿${JSON.stringify(LANG_DE, null, 2)}`);
   write('assets/assets/minecraft/textures/block/sea_lantern.png.mcmeta', JSON.stringify({ animation: { frametime: 5 } }, null, 2));
   write('assets/assets/minecraft/textures/block/glass.png.mcmeta', JSON.stringify({ texture: { mipmap_strategy: 'mean' } }, null, 2));
-  write('data/data/minecraft/structure/mini/house.nbt', zlib.gzipSync(structureNbt(), { level: 9, mtime: 0 }));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();

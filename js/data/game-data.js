@@ -1,5 +1,5 @@
 // Einzige Quelle der Spieldaten für die Seite (Fenster und Worker, ohne DOM): Namen, Blockliste, Blockmodelle,
-// Texturen, Original-Strukturen und Blockfarben.
+// Texturen und Blockfarben.
 //   lokal  (127.0.0.1, localhost, [::1] und game-data/meta.json vorhanden): genau die Dateien aus game-data/
 //   remote (sonst, z. B. GitHub Pages oder das Handy): js/data/remote.js lädt sie aus misode/mcmeta und wandelt sie im
 //          Browser in dasselbe Format um (Zwischenspeicher im Browser, beim zweiten Besuch ohne Download).
@@ -10,8 +10,6 @@
 const LOCAL_HOSTS = Object.freeze(['127.0.0.1', 'localhost', '[::1]']);
 const DATA_ROOT = new URL('../../game-data/', import.meta.url);
 const LOCAL_TIMEOUT_MS = 60_000;
-// Lokale Strukturdateien wie in game-data/structures/ (gleiche Regel wie engine-worker.js)
-const LOCAL_STRUCTURE_PATTERN = /^[a-z0-9_]{1,255}\.json$/;
 // Stufen, die beim ersten Besuch einmal geladen werden (für needsDownload)
 const FIRST_VISIT_STAGES = Object.freeze(['names', 'blocks', 'models', 'textures']);
 // Grobe Gewichte der Stufen (etwa Downloadgröße bzw. Rechenzeit) für den Gesamtanteil der Anzeige
@@ -24,11 +22,9 @@ const STAGE_WEIGHTS = Object.freeze({
   'atlas:blocks': 7,
   'atlas:items': 2,
   'atlas:entities': 10,
-  structure: 1,
   'block-colors': 8,
 });
 const ONE_TIME_TITLE = 'Spieldaten von GitHub laden (einmalig)';
-const STRUCTURE_TITLE = 'Struktur von GitHub laden';
 
 export function isLocalHost(hostname) {
   return typeof hostname === 'string' && LOCAL_HOSTS.includes(hostname);
@@ -102,7 +98,7 @@ function fromNetError(error) {
 
 /**
  * Beliebiger Fehler beim Laden der Spieldaten → GameDataError mit menschlicher Meldung (Ursache in cause).
- * Versteht NetError (net.js), TextureSourceError (texture-store.js), ungültige Struktur- oder Atlasnamen.
+ * Versteht NetError (net.js), TextureSourceError (texture-store.js), ungültige Atlasnamen.
  */
 export function toGameDataError(error) {
   if (error instanceof GameDataError || error?.name === 'GameDataError') return error;
@@ -116,7 +112,7 @@ export function toGameDataError(error) {
       { kind: 'damaged', title: 'Texturen beschädigt', cause: error });
   }
   const message = typeof error?.message === 'string' ? error.message : '';
-  if (/^(Ungültiger Strukturname|Unbekannter Atlas)/.test(message)) {
+  if (/^Unbekannter Atlas/.test(message)) {
     return new GameDataError(message, { kind: 'invalid', title: 'Ungültige Spieldaten-Anfrage', cause: error });
   }
   if (error?.name === 'AbortError') {
@@ -132,7 +128,7 @@ function isPlainObject(value) {
 
 // Fortschritt mehrerer Stufen (Gewichte STAGE_WEIGHTS) → ein grober Gesamtanteil 0 … 1 für die Anzeige. Er steigt
 // innerhalb eines Ladevorgangs nie zurück: Kommt eine Stufe hinzu, verteilt sich der Rest bis 100 % neu. Sind alle
-// Stufen fertig, beginnt die nächste neue Stufe einen neuen Ladevorgang bei 0 (z. B. eine weitere Struktur).
+// Stufen fertig, beginnt die nächste neue Stufe einen neuen Ladevorgang bei 0 (z. B. später die Blockfarben).
 function createProgressTracker() {
   let stages = new Map();
   let shown = 0;
@@ -149,7 +145,7 @@ function createProgressTracker() {
     return weight > 0 ? sum / weight : 0;
   };
   return (event) => {
-    const key = event.stage === 'structure' && event.file ? `structure:${event.file}` : event.stage;
+    const key = event.stage;
     const total = Number.isFinite(event.total) && event.total > 0 ? event.total : 1;
     const done = Number.isFinite(event.done) ? Math.max(0, Math.min(total, event.done)) : 0;
     const finished = stages.size > 0 && [...stages.values()].every((entry) => entry.done >= entry.total);
@@ -166,8 +162,7 @@ function createProgressTracker() {
     }
     const next = current >= 1 || rawBase >= 1 ? 1 : base + ((1 - base) * Math.max(0, current - rawBase)) / (1 - rawBase);
     shown = Math.min(1, Math.max(shown, next));
-    const oneTime = [...stages.values()].some((entry) => entry.stage !== 'structure');
-    return { share: shown, title: oneTime ? ONE_TIME_TITLE : STRUCTURE_TITLE };
+    return { share: shown, title: ONE_TIME_TITLE };
   };
 }
 
@@ -219,7 +214,6 @@ export function createGameData({
       label: labels[raw.stage] ?? raw.stage,
       done: raw.done,
       total: raw.total,
-      ...(raw.file ? { file: raw.file } : {}),
       share,
       text: `${title} … ${Math.floor(share * 100)} %`,
     };
@@ -305,12 +299,6 @@ export function createGameData({
       const [json, bin] = await Promise.all([fetchLocal('textures.json', 'json'), fetchLocal('textures.bin', 'bytes')]);
       return { json, bin };
     }),
-    structure: (file) => {
-      if (typeof file !== 'string' || !LOCAL_STRUCTURE_PATTERN.test(file)) {
-        return Promise.reject(new GameDataError(`Ungültiger Strukturname „${String(file).slice(0, 80)}“.`, { kind: 'invalid', title: 'Ungültige Spieldaten-Anfrage' }));
-      }
-      return fetchLocal(`structures/${file}`, 'json');
-    },
     blockColors: () => localOnce('block-colors', () => fetchLocal('block-colors.json', 'json')),
   };
 
@@ -375,7 +363,6 @@ export function createGameData({
     loadBlocks: () => pick(local.blocks, () => remote((source) => source.blocks())),
     loadModels: () => pick(local.models, () => remote((source) => source.models())),
     loadTextures: () => pick(local.textures, remoteTexturesOnce),
-    loadStructure: (file) => pick(() => local.structure(file), () => remote((source) => source.structure(file))),
     loadBlockColors: () => pick(local.blockColors, () => remote((source) => source.blockColors())),
     // Muss beim ersten Laden etwas heruntergeladen werden? (lokal nie; online, bis alles im Browser gespeichert ist)
     async needsDownload(stages = FIRST_VISIT_STAGES) {
@@ -406,11 +393,10 @@ export const loadGameBlocks = () => defaultData.loadBlocks();
 export const loadGameModels = () => defaultData.loadModels();
 /** lokal: { json, bin } (textures.bin) · remote: { json, atlas: (name) => Promise<PNG-Bytes> } – für TextureStore.fromSource */
 export const loadGameTextures = () => defaultData.loadTextures();
-export const loadGameStructure = (file) => defaultData.loadStructure(file);
 export const loadGameBlockColors = () => defaultData.loadBlockColors();
 export const needsDownload = (stages) => defaultData.needsDownload(stages);
 /**
- * listener({ stage, label, done, total, file?, share, text }) bei jedem Lade- oder Umwandlungsschritt der Remote-Quelle
+ * listener({ stage, label, done, total, share, text }) bei jedem Lade- oder Umwandlungsschritt der Remote-Quelle
  * (nicht beim Lesen aus dem Speicher, lokal nie). share: grober Gesamtanteil 0 … 1; text: fertige Anzeige, z. B.
  * „Spieldaten von GitHub laden (einmalig) … 42 %“. → Abmeldefunktion
  */

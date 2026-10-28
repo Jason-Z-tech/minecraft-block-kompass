@@ -1,11 +1,15 @@
-// Vollständigkeit: jeder Zustand jedes Blocks aus 26.2 und jeder Zustand aus den Original-Strukturen
+// Vollständigkeit: jeder Zustand jedes Blocks aus 26.2 und jeder Zustand aus den Bau-Modulen
 // lässt sich mit den echten Daten in Quads umwandeln (keine Ausnahme, gültige Werte).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { dataTest, createModels, textureMap, loadGameData, GAME_DATA } from './render-models-fixture.test.mjs';
+import { pathToFileURL } from 'node:url';
+import { dataTest, createModels, textureMap, loadGameData, ROOT } from './render-models-fixture.test.mjs';
 import { LAYERS } from '../../js/render/block-models.js';
 import { formatState } from '../../js/core/blockstate.js';
+import { setBlockData } from '../../js/core/block-data.js';
+import { Builder } from '../../js/core/builder.js';
+import { CATEGORIES } from '../../scripts/check-build.mjs';
 
 function allStates(blocks) {
   const states = [];
@@ -62,18 +66,30 @@ dataTest('Alle 32 366 Blockzustände: Texturnamen, Bindung und Quads ohne Fehler
   assert.ok(opaque > 300, `nur ${opaque} voll deckende Zustände`);
 });
 
-dataTest('Alle Zustände der Original-Strukturen (Dörfer, Bastionen …) ergeben Quads', async () => {
-  const dir = path.join(GAME_DATA, 'structures');
+// Früher prüfte dieser Test die Zustände der Original-Strukturen; die gibt es nicht mehr. Jetzt: alle Bau-Module
+// (Standard-Maßstab wie im Katalog: 1, wenn erlaubt, sonst der erste).
+dataTest('Alle Zustände der Bau-Module ergeben Quads', { timeout: 120_000 }, async (t) => {
+  setBlockData(loadGameData().blocks);
   const states = new Set();
-  for (const file of fs.readdirSync(dir)) {
-    if (file === 'index.json' || !file.endsWith('.json')) continue;
-    for (const state of JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')).palette) if (state !== 'air') states.add(state);
+  let modules = 0;
+  for (const category of CATEGORIES) {
+    const dir = path.join(ROOT, 'js', 'builds', category);
+    for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.js')).sort()) {
+      const mod = await import(pathToFileURL(path.join(dir, file)).href);
+      const scales = Array.isArray(mod.meta?.scales) && mod.meta.scales.length ? mod.meta.scales : null;
+      const b = new Builder();
+      mod.default(b, scales ? { scale: scales.includes(1) ? 1 : scales[0] } : {});
+      for (const state of b.finalize().volume.palette) if (state !== 'air') states.add(state);
+      modules++;
+    }
   }
+  t.diagnostic(`${modules} Bau-Module, ${states.size} verschiedene Zustände`);
+  assert.ok(modules >= 69, `nur ${modules} Bau-Module`);
   const models = createModels();
   const map = await textureMap(models.textureNames(states));
   models.bindTextures(map);
   const layers = new Set([...map.values()].map((entry) => entry.layer));
   for (const state of states) checkQuads(state, models.quads(state, 0, 0, 0), layers);
-  assert.ok(states.size > 1000);
+  assert.ok(states.size > 1000, `nur ${states.size} Zustände`);
   assert.deepEqual(models.warnings, []);
 });

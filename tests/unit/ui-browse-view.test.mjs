@@ -1,18 +1,17 @@
-// Textsuche, Ansicht der Kategorie-Seite und Abschnitte der Startseite – mit dem Test-Katalog
+// Textsuche, Ansicht der Kategorie-Seite und Anzahlen der Startseite – mit dem Test-Katalog
 // tests/fixtures/ui/browse-catalog.json (Format von Runde 2).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { normalizeCatalog } from '../../js/ui/data.js';
+import { normalizeCatalog, countByCategory } from '../../js/ui/data.js';
 import { CATEGORY_SLUGS } from '../../js/ui/shared.js';
 import { searchCatalog } from '../../js/create/search.js';
 import { createBrowseIndex, computeView, initialShown, nextShown, BATCH_SIZE } from '../../js/ui/browse/view.js';
 import { emptyFilters } from '../../js/ui/browse/filters.js';
 import { parseBrowseState, browseSearch } from '../../js/ui/browse/url-state.js';
 import { sizeClassForBlocks, sizeClassOf } from '../../js/ui/browse/model.js';
-import { selectHomeSections, catalogTotals, diversify, HOME_SECTIONS, SECTION_SIZE } from '../../js/ui/browse/home-sections.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const raw = JSON.parse(readFileSync(path.join(ROOT, 'tests/fixtures/ui/browse-catalog.json'), 'utf8'));
@@ -118,62 +117,16 @@ test('Ansicht: über 300 Einträge schnell genug, Nachladen in Schritten', () =>
   assert.equal(nextShown(24, 100), 48);
 });
 
-test('Startseite: feste Auswahl aus echten Daten, kein Bau doppelt, gleiche Eingabe → gleiches Ergebnis', () => {
-  const sections = selectHomeSections(catalog.builds);
-  assert.deepEqual(sections.map((section) => section.id), HOME_SECTIONS.map((section) => section.id));
-  const shown = sections.flatMap((section) => section.builds.map((build) => build.id));
-  assert.equal(new Set(shown).size, shown.length, 'kein Bau in zwei Abschnitten');
-  for (const section of sections) assert.ok(section.builds.length > 0 && section.builds.length <= SECTION_SIZE);
-  assert.deepEqual(selectHomeSections([...catalog.builds].reverse()).map((s) => s.builds.map((b) => b.id)), sections.map((s) => s.builds.map((b) => b.id)), 'unabhängig von der Reihenfolge im Katalog');
-  const byId = Object.fromEntries(sections.map((section) => [section.id, section]));
-  assert.deepEqual(sections.map((section) => section.title), ['Riesenbauten', 'Klein & schnell gebaut', 'Original aus dem Spiel', 'Nach echten Maßen', 'Farmen']);
-  assert.equal(byId.riesig.builds[0].id, 'cheops-pyramide', 'die meisten Blöcke zuerst');
-  // Klein & schnell gebaut: Größenklasse klein, die kleinsten zuerst (bei gleicher Zahl nach Titel)
-  const smallest = catalog.builds.filter((build) => sizeClassOf(build) === 'klein').sort((a, b) => a.blocks - b.blocks || a.title.localeCompare(b.title, 'de'));
-  assert.equal(byId.schnell.total, smallest.length);
-  assert.ok(byId.schnell.builds.every((build) => sizeClassOf(build) === 'klein' && build.blocks < 1000));
-  assert.equal(byId.schnell.builds[0].id, smallest[0].id);
-  assert.ok(byId.original.builds.every((build) => build.accuracy === 'original'));
-  assert.equal(byId.original.total, 13);
-  assert.ok(byId.massstab.builds.every((build) => build.accuracy === 'massstab'));
-  // Farmen: nur die Kategorie Farmen, die größten zuerst
-  assert.equal(byId.farmen.total, inCategory('farmen').length);
-  assert.ok(byId.farmen.builds.every((build) => build.category === 'farmen'));
-  for (let i = 1; i < byId.farmen.builds.length; i++) assert.ok(byId.farmen.builds[i - 1].blocks >= byId.farmen.builds[i].blocks);
-  // Weder Abschnitte noch ihre Links nutzen die Schwierigkeit
-  for (const section of HOME_SECTIONS) {
-    assert.ok(!Object.hasOwn(section.filters, 'schwierigkeit') && !section.sort.startsWith('schwierigkeit'), section.id);
-  }
-  assert.ok(new Set(byId.original.builds.map((build) => build.category)).size >= 3, 'abwechselnd aus mehreren Kategorien');
-  // Leerer Katalog oder ein Bau: keine leeren Abschnitte
-  assert.deepEqual(selectHomeSections([]), []);
-  assert.deepEqual(selectHomeSections([catalog.builds.find((b) => b.id === 'spiel-igloo-top')]).map((s) => s.id), ['schnell', 'original']);
-});
-
-test('Startseite: Links „N Bauten in …“ führen auf genau diese Auswahl der Kategorie-Seite', () => {
-  for (const section of selectHomeSections(catalog.builds)) {
-    assert.ok(section.links.length >= 1 && section.links.length <= 2, section.id);
-    for (const link of section.links) {
-      const url = new URL(link.href, 'https://test.invalid/');
-      assert.equal(url.pathname, '/kategorie.html');
-      const slug = url.searchParams.get('k');
-      assert.equal(slug, link.slug);
-      const view = computeView(createBrowseIndex(inCategory(slug)), state(url.search));
-      assert.equal(view.results.length, link.count, `${section.id} → ${slug}`);
-      assert.match(link.label, /^\d+ Bauten? in /);
-      assert.equal(browseSearch(slug, state(url.search)), url.search, 'Adresse ist schon in Normalform');
-    }
-  }
-});
-
-test('Startseite: Gesamtzahlen und reihum-Auswahl', () => {
-  const totals = catalogTotals(catalog.builds);
-  assert.equal(totals.builds, 155);
-  assert.equal(totals.categories, 7);
-  assert.equal(totals.originals, 13);
-  assert.equal(totals.blocks, catalog.builds.reduce((sum, build) => sum + build.blocks, 0));
-  assert.equal(totals.untested, catalog.builds.filter((build) => build.tested === false).length);
-  assert.deepEqual(diversify(['a1', 'a2', 'a3', 'b1', 'c1', 'b2'], (x) => x[0], 4), ['a1', 'b1', 'c1', 'a2']);
-  assert.deepEqual(diversify(['a1', 'a2'], (x) => x[0], 4), ['a1', 'a2']);
+test('Startseite: Anzahl je Kategorie für die Kacheln – alle sieben, fehlende mit 0, Summe = Katalog', () => {
+  const counts = countByCategory(catalog);
+  assert.deepEqual(Object.keys(counts), [...CATEGORY_SLUGS]);
+  for (const slug of CATEGORY_SLUGS) assert.equal(counts[slug], inCategory(slug).length, slug);
+  assert.equal(Object.values(counts).reduce((sum, n) => sum + n, 0), catalog.builds.length);
+  assert.equal(counts.klein, 41);
+  // Kategorie ohne Bauten → 0 (die Kachel zeigt „Noch keine Bauten“), kein Eintrag für alte Kategorien
+  const withoutFarms = countByCategory({ builds: catalog.builds.filter((build) => build.category !== 'farmen') });
+  assert.equal(withoutFarms.farmen, 0);
+  assert.equal(Object.hasOwn(withoutFarms, 'redstone'), false);
+  assert.deepEqual(countByCategory({ builds: [] }), Object.fromEntries(CATEGORY_SLUGS.map((slug) => [slug, 0])));
   assert.deepEqual(emptyFilters(), { groesse: [], herkunft: [], test: [] });
 });

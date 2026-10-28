@@ -2,13 +2,13 @@
  "generatedAt": "2026-10-23T08:00:00.000Z",
  "version": "26.2",
  "counts": {
-  "total": 27,
+  "total": 24,
   "byCategory": {
    "wahrzeichen": 6,
    "fantasy": 3,
    "infrastruktur": 4,
-   "haeuser": 5,
-   "mittelalter": 5,
+   "haeuser": 3,
+   "mittelalter": 4,
    "klein": 2,
    "farmen": 2
   }
@@ -42,7 +42,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/tokyo-skytree.js",
-   "structure": null,
    "scales": [
     1,
     0.5,
@@ -118,7 +117,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/tokyo-tower.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -188,7 +186,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/infinity-castle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -233,7 +230,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/eiffelturm.js",
-   "structure": null,
    "scales": [
     1,
     0.5,
@@ -311,7 +307,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/big-ben.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -378,7 +373,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/kolosseum.js",
-   "structure": null,
    "scales": [
     1,
     0.5
@@ -446,7 +440,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/wahrzeichen/cheops-pyramide.js",
-   "structure": null,
    "scales": [
     1,
     0.5,
@@ -522,7 +515,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/golden-gate-bridge.js",
-   "structure": null,
    "scales": [
     0.5,
     0.25
@@ -587,7 +579,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/steinbruecke.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -631,7 +622,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/bahnhof.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -675,7 +665,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/infrastruktur/leuchtturm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -720,7 +709,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/kleines-holzhaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -764,7 +752,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/moderne-villa.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -808,7 +795,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/haeuser/japanisches-teehaus.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -852,7 +838,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/mittelalterliche-burg.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -895,7 +880,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/wachturm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -938,7 +922,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/windmuehle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -983,7 +966,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/mittelalter/neuschwanstein.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1028,7 +1010,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/hobbit-hoehle.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1072,7 +1053,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/fantasy/zaubererturm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1117,7 +1097,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/kirschbluetenbaum.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1160,7 +1139,6 @@
    "credits": null,
    "tested": null,
    "module": "js/builds/klein/steinbrunnen.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1205,7 +1183,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/eisenfarm.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1249,7 +1226,6 @@
    "credits": null,
    "tested": false,
    "module": "js/builds/farmen/weizenfarm-automatisch.js",
-   "structure": null,
    "scales": null,
    "defaultScale": null,
    "size": [
@@ -1272,137 +1248,6 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "spiel-plains-small-house-1",
-   "title": "Kleines Ebenen-Dorfhaus",
-   "category": "haeuser",
-   "subtitle": "Original aus einem Ebenen-Dorf",
-   "tags": [
-    "Dorf",
-    "Original"
-   ],
-   "aliases": [
-    "dorfhaus",
-    "plains house"
-   ],
-   "accuracy": "original",
-   "description": "Original aus einem Ebenen-Dorf.",
-   "sources": [],
-   "credits": null,
-   "tested": null,
-   "module": null,
-   "structure": "village__plains__houses__plains_small_house_1.json",
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    7,
-    7,
-    7
-   ],
-   "blocks": 153,
-   "steps": 20,
-   "phases": 3,
-   "variants": null,
-   "topMaterials": [
-    [
-     "stone_bricks",
-     92
-    ],
-    [
-     "oak_planks",
-     31
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "spiel-igloo-top",
-   "title": "Iglu",
-   "category": "haeuser",
-   "subtitle": "Original-Iglu aus der Schneetundra",
-   "tags": [
-    "Schnee",
-    "Original"
-   ],
-   "aliases": [
-    "igloo"
-   ],
-   "accuracy": "original",
-   "description": "Original-Iglu aus der Schneetundra.",
-   "sources": [],
-   "credits": null,
-   "tested": null,
-   "module": null,
-   "structure": "igloo__top.json",
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    7,
-    5,
-    8
-   ],
-   "blocks": 180,
-   "steps": 20,
-   "phases": 3,
-   "variants": null,
-   "topMaterials": [
-    [
-     "stone_bricks",
-     108
-    ],
-    [
-     "oak_planks",
-     36
-    ]
-   ],
-   "sizeClass": "klein",
-   "thumb": null
-  },
-  {
-   "id": "spiel-pillager-outpost-watchtower",
-   "title": "Plünderer-Außenposten",
-   "category": "mittelalter",
-   "subtitle": "Original-Wachturm der Plünderer",
-   "tags": [
-    "Turm",
-    "Original",
-    "Plünderer"
-   ],
-   "aliases": [
-    "pillager outpost"
-   ],
-   "accuracy": "original",
-   "description": "Original-Wachturm der Plünderer.",
-   "sources": [],
-   "credits": null,
-   "tested": null,
-   "module": null,
-   "structure": "pillager_outpost__watchtower.json",
-   "scales": null,
-   "defaultScale": null,
-   "size": [
-    15,
-    23,
-    15
-   ],
-   "blocks": 1100,
-   "steps": 20,
-   "phases": 3,
-   "variants": null,
-   "topMaterials": [
-    [
-     "stone_bricks",
-     660
-    ],
-    [
-     "oak_planks",
-     220
-    ]
-   ],
-   "sizeClass": "mittel",
    "thumb": null
   }
  ]
