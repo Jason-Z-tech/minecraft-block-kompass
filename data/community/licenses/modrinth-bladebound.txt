@@ -1,0 +1,28 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/bladebound
+Beleg: Modrinth bladebound Version 2.0.0 (mv1K42LZ), Datei bladebound-2.0.0.jar (sha1 14df2abc1b35bf291250948519086690016204b5); im Jar LICENSE_bladebound: „MIT License / Copyright (c) 2025 Owen“; fabric.mod.json: „"license": "MIT"“, „"authors": ["Owen"]“; Modrinth-Lizenzfeld: MIT. Quell-Repo omueller5/bladebound @c552a743858c5e4a61a31f9a89b87f1edf4e4a0f: LICENSE (gleicher Text), README: „Made by Owen / Bladebound“
+Lizenz: MIT (https://github.com/omueller5/bladebound/blob/c552a743858c5e4a61a31f9a89b87f1edf4e4a0f/LICENSE)
+Betrifft: blade-dojo, blade-schrein-mit-torii, blade-magierturm
+
+--- LICENSE_bladebound im Jar (gleich der LICENSE im Repo omueller5/bladebound, Commit c552a743858c5e4a61a31f9a89b87f1edf4e4a0f, Text unverändert) ---
+
+MIT License
+
+Copyright (c) 2025 Owen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

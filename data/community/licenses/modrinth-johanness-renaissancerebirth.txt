@@ -1,0 +1,10 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/johanness-renaissancerebirth
+Beleg: Modrinth johanness-renaissancerebirth Version 0.3.0 (BzKFao8q), Datei johannessrenaissance-0.3.0-fabric-26.1.2.jar (sha1 022831fc7776a47c8acf9a2b668adc04a9bcf821); fabric.mod.json: „"license": "Public Domain"“, „"authors": ["binbin2007, MCreator"]“; Modrinth-Lizenzfeld: CC0-1.0 (Owner Musket_Binnoc_Jacket)
+Lizenz: CC0-1.0 (https://creativecommons.org/publicdomain/zero/1.0/)
+Betrifft: johannes-luftschiff
+
+--- CC0-1.0 ---
+
+Creative Commons CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+Full text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+Summary: https://creativecommons.org/publicdomain/zero/1.0/

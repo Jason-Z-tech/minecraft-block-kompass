@@ -1,0 +1,28 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/divine-relics
+Beleg: Modrinth divine-relics Version 1.19.2-1.0.3 (TheD4e6B), Datei divinerelics-1.19.2-1.0.3.jar (sha1 b8fcb8612c3334ec2d70ec4ce3d571fa18a94785); META-INF/mods.toml: „license="The MIT License (MIT)"“, „authors="DERIYS"“; Modrinth-Lizenzfeld: MIT (Owner DERIYS). Quell-Repo DERIYS/divine-relics @275ddb318030ff40bc37e7714a4f57eab41c8c89, LICENSE.txt: MIT; README und Modrinth-Credits: „My best friend Caranthir who helped with testing, building, and provided various ideas.“
+Lizenz: MIT (https://opensource.org/license/mit)
+Betrifft: drelics-taverne, drelics-kratos-tempel
+
+--- LICENSE.txt im Quell-Repo DERIYS/divine-relics (Commit 275ddb318030ff40bc37e7714a4f57eab41c8c89, Text unverändert) ---
+
+MIT License
+
+Copyright (c) 2024 Lev Franko
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

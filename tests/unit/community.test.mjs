@@ -553,7 +553,8 @@ describe('Echte Daten: data/community/', () => {
     assert.deepEqual(errors, []);
     assert.deepEqual(warnings, []);
     assert.equal(entries.length, list.length);
-    assert.ok(list.length >= 100, `${list.length} Community-Bauten`);
+    // 106 Bauten aus 11 Quellen (2026-10-28), dazu 55 aus 31 Quellen (2026-10-29)
+    assert.ok(list.length >= 161, `${list.length} Community-Bauten`);
     let total = 0;
     for (const file of readdirSync(dir, { recursive: true })) {
       const info = statSync(path.join(dir, file));

@@ -1,0 +1,14 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/trek
+Beleg: Modrinth trek Version B0.6.2.1+mod (v6y24ZlJ), Datei trek-B0.6.2.1.jar (sha1 929210eaf9b03768b9e23b3d491327bb7d7c8b55); fabric.mod.json: „"license":"MIT"“, „"authors":["hotsuop","Hugger","ALDgamer"]“; Modrinth-Lizenzfeld: MIT mit Link auf hotsu0p/Trek-Issues, dort @9462e04a2718ad195395bd998f283b39d050295f Datei license: MIT, „Copyright 2024 hotsuop“. Übernommen sind nur Treks eigene Bauten (trek:-Strukturen), keine geänderten Dörfer und keine Bauten anderer Ersteller
+Lizenz: MIT (https://github.com/hotsu0p/Trek-Issues/blob/9462e04a2718ad195395bd998f283b39d050295f/license)
+Betrifft: trek-burg-der-dorfbewohner, trek-festung-der-dorfbewohner, trek-verschneite-burg, trek-holz-herrenhaus, trek-spukhaus, trek-handelsgaleone, trek-handelsschiff-rote-segel, trek-handelsschiff-gestreifte-segel, trek-forscherhuette, trek-hexenturm, trek-schneemann-haus, trek-kirche, trek-cottage-mit-garten, trek-inselstadt
+
+--- license im Repo hotsu0p/Trek-Issues (Commit 9462e04a2718ad195395bd998f283b39d050295f, Text unverändert) ---
+
+Copyright 2024 hotsuop
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

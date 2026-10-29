@@ -1,0 +1,28 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/luwus-wayfarers-capsule
+Beleg: Modrinth luwus-wayfarers-capsule Version 1.1.0 (yKV7UhRs), Datei luwus_wayfarers_capsule-1.1.0.jar (sha1 c4719e68a55759b204c58d25061be97204f26ed3); fabric.mod.json: „"authors": ["Luwu"]“, „"license": "MIT License"“; Modrinth-Lizenzfeld: MIT (Owner Luwushi). Quell-Repo laut Beschreibung Luwu0721/Wayfarer-s-Capsule @7f7205eedf54bdd421d877ee0108e52cdff118c5, LICENSE: „MIT License / Copyright (c) 2026 Luwu0721“
+Lizenz: MIT (https://opensource.org/license/mit)
+Betrifft: luwu-wanderer-kapsel
+
+--- LICENSE im Quell-Repo Luwu0721/Wayfarer-s-Capsule (Commit 7f7205eedf54bdd421d877ee0108e52cdff118c5, Text unverändert) ---
+
+MIT License
+
+Copyright (c) 2026 Luwu0721
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

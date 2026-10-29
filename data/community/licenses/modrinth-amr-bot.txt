@@ -1,0 +1,26 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/amr-bot
+Beleg: Modrinth amr-bot Version 1.1.1+mod (e8UBdSAr), Datei amr-bot-1.1.1.jar (sha1 f078e4dd9f9c95e8b8fd00476a5d4506cb3e28ea); Projektbeschreibung, Abschnitt „License“: „Project license: MIT License — this datapack is released under MIT.“; fabric.mod.json: „"authors": ["CR-019"]“, „"license": "MIT"“; Modrinth-Lizenzfeld: MIT (Owner CR-019). airship1.nbt hat im Repo astrbot-dev/datapack Matuvent eingecheckt
+Lizenz: MIT (https://opensource.org/license/mit)
+Betrifft: amrbot-weisses-luftschiff
+
+--- MIT License (Standardtext; Rechteinhaber laut Mod-Angaben) ---
+
+Copyright (c) CR-019 (AMR Bot)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

@@ -1,0 +1,10 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/elemental-sharpness
+Beleg: Modrinth elemental-sharpness Datapack-Version 1.0 (RQooHgdS), Datei „Elemental Sharpness Datapack.zip“ (sha1 e0dea7906a2f528cf8628972134b8b770ec66845); Modrinth-Lizenzfeld: CC-BY-NC-4.0 (Owner jeancrafteo); die Mod-Fassung 1.0+mod (wFlvIpSd) mit denselben Strukturdateien nennt in fabric.mod.json „"authors":["jeancrafteo"]“ und „"license":"CC-BY-NC-4.0"“
+Lizenz: CC-BY-NC-4.0 (https://creativecommons.org/licenses/by-nc/4.0/)
+Betrifft: esharp-anemo-tempel, esharp-anemo-turm
+
+--- CC-BY-NC-4.0 ---
+
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+Full text: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+Summary: https://creativecommons.org/licenses/by-nc/4.0/

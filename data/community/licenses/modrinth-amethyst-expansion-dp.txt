@@ -1,0 +1,10 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/amethyst-expansion-dp
+Beleg: Modrinth amethyst-expansion-dp Version 26.1+mod (M57Xdh9H), Datei amethyst-expansion-dp-26.1.jar (sha1 5509c58ff65de076b8106a054ef94ae8cfc0d6e6); fabric.mod.json: „"authors":["jeancrafteo"]“, „"license":"CC-BY-NC-4.0"“; META-INF/mods.toml: „license='CC-BY-NC-4.0'“; Modrinth-Lizenzfeld: CC-BY-NC-4.0 (Owner jeancrafteo; gilt für diese Version)
+Lizenz: CC-BY-NC-4.0 (https://creativecommons.org/licenses/by-nc/4.0/)
+Betrifft: amethyst-turm
+
+--- CC-BY-NC-4.0 ---
+
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+Full text: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+Summary: https://creativecommons.org/licenses/by-nc/4.0/

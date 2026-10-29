@@ -1,0 +1,30 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/ruined-worlds
+Beleg: Modrinth ruined-worlds Version 0.5.5.BETA (2A1lLqhB), Datei ruinedworld-0.5.5.BETA-1.19.4.jar (sha1 8c9df8d7920a1c3abada192fdf6929ce9954470c); META-INF/mods.toml: „license="MIT"“, „authors="JoasJSD"“; Modrinth-Lizenzfeld: MIT. Quell-Repo JoasJSD/minecraft_ruinedworld @5514e4bba19bb1bf04ddafa2b81868688e5aa40d, LICENSE.md: „This project is licensed under the terms of the MIT license.“
+Lizenz: MIT (https://github.com/JoasJSD/minecraft_ruinedworld/blob/5514e4bba19bb1bf04ddafa2b81868688e5aa40d/LICENSE.md)
+Betrifft: ruinedw-haendlerhaus
+
+--- LICENSE.md im Quell-Repo JoasJSD/minecraft_ruinedworld (Commit 5514e4bba19bb1bf04ddafa2b81868688e5aa40d, Text unverändert) ---
+
+This project is licensed under the terms of the MIT license.
+
+--- MIT License (Standardtext; Rechteinhaber laut Mod-Angaben) ---
+
+Copyright (c) JoasJSD
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

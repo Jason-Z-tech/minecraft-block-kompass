@@ -1,0 +1,26 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/cs-towers
+Beleg: Modrinth cs-towers Version 0.2.0 (JyjLg1rW), Datei cs_towers-0.2.0-neoforge_1.21.x.jar (sha1 50f9c95893047e47b87050e544a0bbf97543209e); META-INF/neoforge.mods.toml: „license="MIT License"“, „authors="ElAguilaMC623"“, „displayName="Complementary Structures: Towers"“; Modrinth-Lizenzfeld: MIT (Owner ElAguilaMC623, gleicher Ersteller wie Complementary Structures)
+Lizenz: MIT (https://opensource.org/license/mit)
+Betrifft: cstowers-verlassener-turm
+
+--- MIT License (Standardtext; Rechteinhaber laut Mod-Angaben) ---
+
+Copyright (c) ElAguilaMC623
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

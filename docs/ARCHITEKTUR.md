@@ -1206,8 +1206,8 @@ Angaben in `data/community/builds.json` (Liste, ein Eintrag je Zeile):
   Commit, Pfad und Zitat belegt; keine Spielstrukturen, Redstone-Bauten, Farmen, Testmuster oder Gelände ohne Bau, auch keine
   Neugestaltungen oder umgefärbten Kopien von Spielstrukturen (Wüsten- und Dschungelpyramide, Iglu, Dorfhäuser,
   Plünderer-Außenposten, Schiffswrack, Hexenhütte, Ozeanmonument, Waldanwesen, Bastion, Antike Stadt, Prüfungskammern,
-  Ruinenportal; erkennbar an Name, Quelle oder Grundriss). Stand 2026-10-28: 106 Bauten aus 11 Quellen (4 GitHub-Repos,
-  7 Modrinth-Projekte, zusammen gut 5 MB; 100 `.nbt`, 6 `.litematic`). Abgelehnt u. a. Cinchs Villager Statues (die
+  Ruinenportal; erkennbar an Name, Quelle oder Grundriss). Stand 2026-10-29: 161 Bauten aus 42 Quellen (7 GitHub-Repos,
+  35 Modrinth-Projekte, zusammen knapp 10 MB; 155 `.nbt`, 6 `.litematic`). Abgelehnt u. a. Cinchs Villager Statues (die
   .nbt-Dateien sind laut LICENSE „All Rights Reserved“); nach der Prüfung entfernt: Thun-bit (Spiel-Schiffswrack als eigene
   Arbeit, Herkunft der übrigen nicht belegbar), big-mod (Plünderer-Turm), Muffin's Structures (umgefärbtes Dorfhaus,
   Sumpfhütte), Panda Temple (Entwurf eines Dritten ohne Erlaubnis), Snowy Ruins (Ersteller will nur Modrinth als Quelle),
