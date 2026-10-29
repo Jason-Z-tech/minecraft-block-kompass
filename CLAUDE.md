@@ -43,7 +43,7 @@ Verbindliche Spezifikation: `docs/ARCHITEKTUR.md` (Ordner, Schnittstellen, Daten
 
 ## Stand (2026-10-28)
 - Farmen entfernt, 106 Community-Bauten mit offener Lizenz übernommen (11 Quellen), Katalog: 165 Bauten (59 Module + 106 Community) in 6 Kategorien. Lauf-Modus: keine hängenden Tasten mehr nach Esc/Kontextmenü/Cmd-Kombinationen (auch Orbit). Tests: Unit 995/997 (2 ohne GPU), e2e 198/200 (2 Bildraten), e2e-remote 214/214 (Spiegel und live).
-- Offen (User fragen): Redstone-Mechanik in qrafty-maya-tempel und sakes-verbotenes-haus behalten? Chip „Nicht im Spiel getestet“ nur noch bei bahnhof-loren.
+- Entschieden 2026-10-29: Redstone-Mechanik in qrafty-maya-tempel und sakes-verbotenes-haus bleibt; Chip „Nicht im Spiel getestet“ bei bahnhof-loren bleibt.
 - Spiel-Strukturen samt Ladeweg entfernt, einfache Startseite, Kopf ohne Suche, „Meine Bauten“ (`meine.html`, `js/data/my-builds.js`, `bau.html?meine=<id>`). Katalog: 69 eigene Module in 7 Kategorien. Redstone, Anleitungstexte, Wissenswertes und Schwierigkeit entfernt. Alle Bauten blockgleich zum Stand davor. Tests: Unit 945/947 (2 ohne GPU), e2e 180/182 (2 Bildraten), e2e-remote 182/182 (Spiegel und live).
 - Webseite (Weg A) fertig: Katalog im Repo, Spieldaten lädt der Browser selbst aus misode/mcmeta (`js/data/`, Fassade `js/data/game-data.js`, Cache in IndexedDB), Vorschaubilder online als Icons. Online-Klick-Test `node tests/e2e-remote.mjs [--live]` im Pages-Nachbau. Lokal mit `game-data/` läuft alles wie vorher.
 - Runde 1 fertig und geprüft (alle Unit-Tests grün): Spieldaten-Extraktion, Kern (Builder-API, Auto-Verbindungen, Schritte, Materialien), 3D-Ansicht mit Spieltexturen und Lauf-Modus, Seitenhülle und Design, Recherche Tokyo Skytree und Infinity Castle.
