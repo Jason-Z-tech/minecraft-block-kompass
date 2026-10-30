@@ -1,7 +1,7 @@
 Lizenz der Community-Bauten aus https://github.com/kogtyv/kogtyv-WOM
 Beleg: kogtyv/kogtyv-WOM @913cb02cf01d226981d29c2c4289b6a91ec70da1, LICENSE: „Creative Commons Legal Code – CC0 1.0 Universal“; src/main/resources/README.txt: „Name: kogtyv-Towny And Village [k-TAV] / Author: kogtyv / Helping Build: Mr_Divar“; src/main/resources/LICENSE (neben den Bau-Dateien): „MIT License – Copyright (c) 2023 - 2025 kogtyv“
 Lizenz: MIT (https://github.com/kogtyv/kogtyv-WOM/blob/913cb02cf01d226981d29c2c4289b6a91ec70da1/src/main/resources/LICENSE)
-Betrifft: kogtyv-plattenbau-neun, kogtyv-hoher-wohnblock, kogtyv-punkthochhaus, kogtyv-grosser-wohnblock, kogtyv-ziegel-wohnhaus, kogtyv-rotes-ziegelhaus, kogtyv-holzbaracke, kogtyv-langer-wohnblock, kogtyv-fuenfgeschosser, kogtyv-europaeisches-stadthaus, kogtyv-europaeisches-stadthaus-klein, kogtyv-griechisches-rathaus, kogtyv-griechisches-haus
+Betrifft: kogtyv-plattenbau-neun, kogtyv-hoher-wohnblock, kogtyv-punkthochhaus, kogtyv-grosser-wohnblock, kogtyv-ziegel-wohnhaus, kogtyv-rotes-ziegelhaus, kogtyv-holzbaracke, kogtyv-langer-wohnblock, kogtyv-fuenfgeschosser, kogtyv-europaeisches-stadthaus, kogtyv-europaeisches-stadthaus-klein, kogtyv-griechisches-rathaus, kogtyv-griechisches-haus, kogtyv-modernes-hochhaus, kogtyv-keramik-hochhaus, kogtyv-backsteinhaus-satteldach, kogtyv-griechisches-dorfzentrum, kogtyv-springbrunnen-platz
 
 --- LICENSE im Repository (Commit 913cb02cf01d226981d29c2c4289b6a91ec70da1, unverändert) ---
 

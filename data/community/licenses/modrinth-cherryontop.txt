@@ -1,0 +1,26 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/cherryontop
+Beleg: Modrinth cherryontop Version 1.0.1+mod (AfvGNvps), Datei cherryontop-1.0.1.jar (sha1 25b26b405bd7ab3d9db9f4e5b0d057871ff1b0ed); fabric.mod.json: „"license":"MIT"“, „"authors":["Gumillea"]“; META-INF/mods.toml: „license = 'MIT'“; Modrinth-Lizenzfeld: MIT (Mitglied Gumillea, Organisation State of Wy'carlson)
+Lizenz: MIT (https://opensource.org/license/mit)
+Betrifft: cherryontop-kirschladen
+
+--- MIT License (Standardtext; Rechteinhaber laut Mod-Angaben) ---
+
+Copyright (c) Gumillea
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

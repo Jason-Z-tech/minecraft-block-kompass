@@ -1,0 +1,10 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/limbo-dimension-datapack
+Beleg: Modrinth limbo-dimension-datapack Version 4.0.1+mod (WY5NVK9n), Datei limbo-dimension-datapack-4.0.1.jar (sha1 a021df15003c2f8cefb6764a044208e751360f80); fabric.mod.json: „"license":"CC-BY-4.0"“, „"authors":["Reppeti"]“; META-INF/mods.toml und neoforge.mods.toml: „license = 'CC-BY-4.0'“; pack.mcmeta: „A datapack that adds the LIMBO dimension By Reppeti“; Modrinth-Lizenzfeld: CC-BY-4.0 (Owner Reppeti)
+Lizenz: CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/)
+Betrifft: limbo-basaltfort, limbo-blasseichen-ausguck
+
+--- CC-BY-4.0 ---
+
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+Full text: https://creativecommons.org/licenses/by/4.0/legalcode
+Summary: https://creativecommons.org/licenses/by/4.0/

@@ -41,8 +41,12 @@ Verbindliche Spezifikation: `docs/ARCHITEKTUR.md` (Ordner, Schnittstellen, Daten
 - Bau prüfen: `node scripts/check-build.mjs <modulpfad> [--scale <zahl>] [--json]`
 - Screenshots: `node scripts/shot.mjs --module <pfad>` (Chrome headless über `tests/browser.mjs`, Pfad notfalls per `CHROME_PATH`).
 
-## Stand (2026-10-28)
-- Farmen entfernt, 106 Community-Bauten mit offener Lizenz übernommen (11 Quellen), Katalog: 165 Bauten (59 Module + 106 Community) in 6 Kategorien. Lauf-Modus: keine hängenden Tasten mehr nach Esc/Kontextmenü/Cmd-Kombinationen (auch Orbit). Tests: Unit 995/997 (2 ohne GPU), e2e 198/200 (2 Bildraten), e2e-remote 214/214 (Spiegel und live).
+## Stand (2026-10-30)
+- 81 weitere Community-Bauten (insgesamt 187 aus 57 Quellen), Katalog: 246 Bauten (59 Module + 187 Community). Jeder neue Bau zweifach geprüft (Skeptiker je Quelle + Endprüfung); aussortiert u. a. fog-spukvilla, sinchurch, Industrie-/Kasten-Bauten von kogtyv. Materialliste ohne Lichtblock/Barriere/Strukturleere, befallene Blöcke zählen als normale. Wahrzeichen (14) und Infrastruktur (19) haben noch wenig Community-Bauten.
+- Eigene Großbauten (Himmelsinseln, Neuschwanstein, Burgstadt, Handelshafen): Jury 6,5–7/10, nicht im Katalog; Entwürfe in Branch-Commits 2bef47b/f412923. Nur mit ≥ 8/10 aufnehmen.
+- Tests: Unit 996/998 (2 ohne GPU), e2e 198/200 (2 Bildraten), e2e-remote 214/214 (Spiegel und live).
+- Testumgebung: launchBrowser (tests/browser.mjs) beendet Chrome nicht, wenn waitForDebugger fehlschlägt – kann einen Unit-Lauf blockieren.
+- (2026-10-28) Farmen entfernt, 106 Community-Bauten mit offener Lizenz übernommen (11 Quellen), Katalog: 165 Bauten (59 Module + 106 Community) in 6 Kategorien. Lauf-Modus: keine hängenden Tasten mehr nach Esc/Kontextmenü/Cmd-Kombinationen (auch Orbit). Tests: Unit 995/997 (2 ohne GPU), e2e 198/200 (2 Bildraten), e2e-remote 214/214 (Spiegel und live).
 - Entschieden 2026-10-29: Redstone-Mechanik in qrafty-maya-tempel und sakes-verbotenes-haus bleibt; Chip „Nicht im Spiel getestet“ bei bahnhof-loren bleibt.
 - Spiel-Strukturen samt Ladeweg entfernt, einfache Startseite, Kopf ohne Suche, „Meine Bauten“ (`meine.html`, `js/data/my-builds.js`, `bau.html?meine=<id>`). Katalog: 69 eigene Module in 7 Kategorien. Redstone, Anleitungstexte, Wissenswertes und Schwierigkeit entfernt. Alle Bauten blockgleich zum Stand davor. Tests: Unit 945/947 (2 ohne GPU), e2e 180/182 (2 Bildraten), e2e-remote 182/182 (Spiegel und live).
 - Webseite (Weg A) fertig: Katalog im Repo, Spieldaten lädt der Browser selbst aus misode/mcmeta (`js/data/`, Fassade `js/data/game-data.js`, Cache in IndexedDB), Vorschaubilder online als Icons. Online-Klick-Test `node tests/e2e-remote.mjs [--live]` im Pages-Nachbau. Lokal mit `game-data/` läuft alles wie vorher.

@@ -554,6 +554,9 @@ Feldfrüchte → Saatgut/Frucht (`wheat` → `wheat_seeds`, `carrots` → `carro
 (Hinweis „mit Hacke bearbeiten“), `dirt_path` → `dirt` („mit Schaufel“);
 `null` für `air`, `piston_head`, `moving_piston`, `fire`, `soul_fire`, `nether_portal`,
 `end_portal`, `end_gateway`, `bubble_column`, `frosted_ice`.
+Änderung 2026-10-30: auch `null` für die unsichtbaren Technik-Blöcke `light`, `barrier` und `structure_void`
+(kein Material); befallene Blöcke zählen als ihr sichtbares Gegenstück (`infested_stone_bricks` → `stone_bricks`
+usw.), `petrified_oak_slab` als `oak_slab`. Die Blöcke selbst bleiben im Bau (Dateien unverändert).
 
 Änderung: `itemForState` liefert optional `extra: [[item, n], …]` (zweiter Gegenstand: Blumentopf + Pflanze,
 Kessel + Eimer, Kuchen + Kerze) und `hint` (z. B. „Erde mit einer Hacke bearbeiten“). Weitere Regeln:
@@ -1113,7 +1116,8 @@ verschiedene Blockzahlen (beim Tokyo Skytree 1:1 waren es 3 Blöcke; `tokyo-skyt
 
 `scripts/build-catalog.mjs` liest alle Module, prüft sie und schreibt
 `game-data/catalog.json`. Änderung (2026-10-28): Original-Strukturen aus dem Spiel (`game-structures.js`, IDs `spiel-…`, Feld
-`structure`) gibt es nicht mehr – der Katalog enthält nur eigene Bau-Module (Stand: 69 Bauten in 7 Kategorien); die Vorsilbe `spiel-`
+`structure`) gibt es nicht mehr – der Katalog enthielt damals nur eigene Bau-Module (69 Bauten in 7 Kategorien; heutiger Stand
+mit Community-Bauten siehe §9.2); die Vorsilbe `spiel-`
 ist nicht mehr reserviert. Alte Adressen `bau.html?id=spiel-…` zeigen die normale Anzeige „Bau nicht gefunden“.
 Änderung (Webseite, Etappe 1): Ziel ist `data/catalog.json` (im Repo, wird mit der Seite veröffentlicht). Neu ist das Feld
 `"inputs": { "code": sha256, "data": sha256 }` nach `version`: `code` = Fingerabdruck dieses Skripts (nur die Datei), von
@@ -1206,13 +1210,17 @@ Angaben in `data/community/builds.json` (Liste, ein Eintrag je Zeile):
   Commit, Pfad und Zitat belegt; keine Spielstrukturen, Redstone-Bauten, Farmen, Testmuster oder Gelände ohne Bau, auch keine
   Neugestaltungen oder umgefärbten Kopien von Spielstrukturen (Wüsten- und Dschungelpyramide, Iglu, Dorfhäuser,
   Plünderer-Außenposten, Schiffswrack, Hexenhütte, Ozeanmonument, Waldanwesen, Bastion, Antike Stadt, Prüfungskammern,
-  Ruinenportal; erkennbar an Name, Quelle oder Grundriss). Stand 2026-10-29: 161 Bauten aus 42 Quellen (7 GitHub-Repos,
-  35 Modrinth-Projekte, zusammen knapp 10 MB; 155 `.nbt`, 6 `.litematic`). Abgelehnt u. a. Cinchs Villager Statues (die
+  Ruinenportal; erkennbar an Name, Quelle oder Grundriss). Stand 2026-10-30: 187 Bauten aus 57 Quellen (12 GitHub-Repos,
+  45 Modrinth-Projekte, zusammen rund 11 MB; 181 `.nbt`, 6 `.litematic`). Abgelehnt u. a. Cinchs Villager Statues (die
   .nbt-Dateien sind laut LICENSE „All Rights Reserved“); nach der Prüfung entfernt: Thun-bit (Spiel-Schiffswrack als eigene
   Arbeit, Herkunft der übrigen nicht belegbar), big-mod (Plünderer-Turm), Muffin's Structures (umgefärbtes Dorfhaus,
   Sumpfhütte), Panda Temple (Entwurf eines Dritten ohne Erlaubnis), Snowy Ruins (Ersteller will nur Modrinth als Quelle),
   Valkyrien Pirates und Sohatuy (Mod-Blöcke fehlen), End-Haus (Dach aus der End-City), Große Wüstenpyramide,
-  Dschungelpyramide und Iglu-Dorf (Neugestaltungen von Spielstrukturen).
+  Dschungelpyramide und Iglu-Dorf (Neugestaltungen von Spielstrukturen); am 2026-10-30 Kirche der Sünde (Ersteller unklar,
+  Redstone-Mechanik), Spukvilla aus From The Fog (unbenutzte Entwicklungsdatei, Erbauer nicht belegt), Dorfbewohner-Statue
+  aus Pixelburen (Erbauer „kb_“ nicht belegt), Hui-Tempel (löchriges Dach) und elf schwache kogtyv-Bauten (Kästen mit
+  Flachdach ohne Inneres, Industrie- und Verwaltungsbauten, Dorfkirche auf einem Bruchstein-Klotz). Die Satellitenschüssel
+  steht unter der ursprünglichen Lizenz CC BY-NC-SA 4.0 aus st0x0ef/stellaris (nicht unter MIT aus stellaris-2.0).
 - Lizenzregeln: Ins Repo kommt nur, was eine offene Lizenz aus `OPEN_LICENSES` hat (LICENSE-Datei der Quelle oder
   Lizenzangabe des Modrinth-Projekts bzw. Mod-Jars) oder eine ausdrückliche schriftliche Erlaubnis zum Weitergeben; ohne Lizenz
   oder mit „All rights reserved“ nie (solche Bauten fügt der User selbst über „Meine Bauten“ hinzu). Jeder Eintrag nennt

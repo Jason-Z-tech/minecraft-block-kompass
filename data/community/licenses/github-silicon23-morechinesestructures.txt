@@ -1,7 +1,7 @@
 Lizenz der Community-Bauten aus https://github.com/Silicon23/MoreChineseStructures
 Beleg: Silicon23/MoreChineseStructures @3da53915cd7658b5085f5926ff0205ebd30ee9d9, LICENSE: „MIT License – Copyright (c) 2024 Silicon23 – Permission is hereby granted, free of charge, to any person obtaining a copy …“
 Lizenz: MIT (https://github.com/Silicon23/MoreChineseStructures/blob/3da53915cd7658b5085f5926ff0205ebd30ee9d9/LICENSE)
-Betrifft: mcs-ganlan-pfahlhaus, mcs-ganlan-haus-2, mcs-yaodong-grosse-hoehlenwohnung, mcs-yaodong-hoehlenwohnung, mcs-grosse-jurte, mcs-jurte, mcs-hui-wohnhaus, mcs-hui-gasthaus, mcs-huegeltempel, mcs-tempel-sonnenblumen, mcs-wuestentempel, mcs-tempel-ebene, mcs-tempel-savanne, mcs-tempel-wald, mcs-tempel-schnee, mcs-ganlan-tempel, mcs-schrein, mcs-hui-brunnen, mcs-schatzschiff
+Betrifft: mcs-ganlan-pfahlhaus, mcs-ganlan-haus-2, mcs-yaodong-grosse-hoehlenwohnung, mcs-yaodong-hoehlenwohnung, mcs-grosse-jurte, mcs-jurte, mcs-hui-wohnhaus, mcs-hui-gasthaus, mcs-huegeltempel, mcs-tempel-sonnenblumen, mcs-wuestentempel, mcs-tempel-ebene, mcs-tempel-savanne, mcs-tempel-wald, mcs-tempel-schnee, mcs-ganlan-tempel, mcs-schrein, mcs-hui-brunnen, mcs-schatzschiff, mcs-hui-pavillon, mcs-hui-bibliothek, mcs-hui-badehaus
 
 --- LICENSE im Repository (Commit 3da53915cd7658b5085f5926ff0205ebd30ee9d9, unverändert) ---
 

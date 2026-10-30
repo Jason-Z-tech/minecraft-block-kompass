@@ -1,0 +1,8 @@
+Lizenz der Community-Bauten aus https://github.com/st0x0ef/stellaris
+Beleg: st0x0ef/stellaris @b5f723ce1de6dadfa1f35599a31f89a2758aa609, LICENSE: „Stellaris © 2025 by Exodus Studio is licensed under CC BY-NC-SA 4.0“. Die Datei common/src/main/resources/data/stellaris/structure/earth_satellite.nbt (git-Blob ae44a97dfe4b80bf0298c5472af692ea1f07df3c) kam mit Commit d54249cc (st0x0ef, 2024-10-15, „add earth structure + fix crash with machines“) ins Repository und hat seit Commit b445d41f (st0x0ef, 2025-02-10, „fix earth satellite“) genau diesen Inhalt; LICENSE zu dieser Zeit: „Stellaris © 2024 by St0x0ef is licensed under CC BY-NC-SA 4.0“. Modrinth-Projekt stellaris: Lizenzfeld CC-BY-NC-SA-4.0. Dieselbe Datei liegt byte-gleich auch in st0x0ef/stellaris-2.0 (dort seit Commit d302f22e, 2026-07-04, „added old structures + globes“, LICENSE „MIT License – Copyright (c) 2026 st0x0ef“); übernommen wird sie unter der ursprünglichen Lizenz CC BY-NC-SA 4.0.
+Lizenz: CC-BY-NC-SA-4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+Betrifft: stellaris-satellitenschuessel
+
+--- LICENSE im Repository (Commit b5f723ce1de6dadfa1f35599a31f89a2758aa609, Text unverändert) ---
+
+Stellaris © 2025 by Exodus Studio is licensed under CC BY-NC-SA 4.0

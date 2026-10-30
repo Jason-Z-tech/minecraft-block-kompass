@@ -553,8 +553,9 @@ describe('Echte Daten: data/community/', () => {
     assert.deepEqual(errors, []);
     assert.deepEqual(warnings, []);
     assert.equal(entries.length, list.length);
-    // 106 Bauten aus 11 Quellen (2026-10-28), dazu 55 aus 31 Quellen (2026-10-29)
-    assert.ok(list.length >= 161, `${list.length} Community-Bauten`);
+    // 106 Bauten aus 11 Quellen (2026-10-28), dazu 55 aus 31 Quellen (2026-10-29) und 41 aus 20 Quellen (2026-10-30);
+    // nach der Prüfung am 2026-10-30 wieder 15 entfernt (Herkunft unklar, Redstone, schwache Kasten-Bauten) → 187 aus 57 Quellen
+    assert.ok(list.length >= 187, `${list.length} Community-Bauten`);
     let total = 0;
     for (const file of readdirSync(dir, { recursive: true })) {
       const info = statSync(path.join(dir, file));
@@ -577,6 +578,17 @@ describe('Echte Daten: data/community/', () => {
       'modrinth.com/project/muffins-structures', 'modrinth.com/project/panda-temple', 'modrinth.com/project/sohatuys-medieval-structures'];
     for (const source of rejected) assert.equal(list.some((item) => item.url.includes(source)), false, source);
     assert.equal(list.some((item) => item.id === 'complementary-end-haus'), false);
+    // Entfernt nach der Prüfung (2026-10-30): Ersteller unklar und Redstone-Mechanik (Kirche der Sünde, Konto lädt fremde
+    // Bauten hoch), unbenutzte Entwicklungsdatei ohne belegten Erbauer (From The Fog), Erbauer „kb_“ nicht belegt (Pixelburen)
+    for (const source of ['modrinth.com/project/dark-fantasy-church-of-sin-vanilla', 'modrinth.com/project/from-the-fog', 'github.com/EquintaZ/pixelburen-datapack']) {
+      assert.equal(list.some((item) => item.url.includes(source)), false, source);
+    }
+    assert.equal(list.some((item) => /development_structures|\/test_|_test\b/i.test(item.sourcePath)), false, 'Entwicklungs- oder Testdateien');
+    // Satellitenschüssel: ursprünglich in st0x0ef/stellaris unter CC BY-NC-SA 4.0 veröffentlicht – diese Lizenz gilt
+    for (const item of list.filter((entry) => entry.url.includes('github.com/st0x0ef/'))) {
+      assert.equal(item.license, 'CC-BY-NC-SA-4.0', item.id);
+      assert.match(item.url, /^https:\/\/github\.com\/st0x0ef\/stellaris\/blob\//, item.id);
+    }
     // Keine Standard-Bauten: Neugestaltungen von Spielstrukturen (Wüsten- und Dschungelpyramide, Iglu) sind ebenfalls raus
     for (const id of ['complementary-grosse-wuestenpyramide', 'complementary-dschungelpyramide', 'qrafty-iglu-dorf']) {
       assert.equal(list.some((item) => item.id === id), false, id);
@@ -611,6 +623,11 @@ describe('Echte Daten: data/community/', () => {
     }
     const communityInCatalog = catalog.builds.filter((b) => b.community);
     assert.equal(communityInCatalog.length, list.length);
+    // Titel und Untertitel nennen Blöcke mit dem deutschen Spielnamen (de_de.json): Keramik, Schwarzeiche, Karmesinhyphen
+    const wrongNames = /terrakotta|dunkeleiche|karmesin-hyphe/i;
+    for (const build of catalog.builds) {
+      assert.doesNotMatch(`${build.title} | ${build.subtitle}`, wrongNames, `${build.id}: Blockname wie im Spiel`);
+    }
     for (const category of ['haeuser', 'wahrzeichen', 'fantasy', 'mittelalter', 'klein', 'infrastruktur']) {
       assert.ok(communityInCatalog.some((b) => b.category === category), `${category}: mindestens ein Community-Bau`);
     }

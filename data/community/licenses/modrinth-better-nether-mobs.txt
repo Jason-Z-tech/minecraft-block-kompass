@@ -1,0 +1,10 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/better-nether-mobs
+Beleg: Modrinth better-nether-mobs Version v6.9-mod (rbXxDhEm), Datei better-nether-mobs-v6.9-mod.jar (sha1 2cfd833482a098b6ce37ae080a99e4f3bfe54af0); fabric.mod.json: „"license":"CC-BY-4.0"“, „"authors":["MCSilver64"]“; META-INF/mods.toml: „license = 'CC-BY-4.0'“; pack.mcmeta: „MCS Nether Mobs Datapack v6.9 (1.21.6-1.21.7) by MC Silver“; Modrinth-Lizenzfeld: CC-BY-4.0 (Owner MCSilver64)
+Lizenz: CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/)
+Betrifft: mcsnether-netherherz
+
+--- CC-BY-4.0 ---
+
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+Full text: https://creativecommons.org/licenses/by/4.0/legalcode
+Summary: https://creativecommons.org/licenses/by/4.0/

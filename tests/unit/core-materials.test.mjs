@@ -101,6 +101,25 @@ test('itemForState: Sonderfälle nach §6.5', () => {
   }
 });
 
+test('itemForState: unsichtbare Technik-Blöcke sind kein Material, befallene Blöcke zählen als ihr sichtbares Gegenstück', () => {
+  const item = (state) => {
+    const r = itemForState(state);
+    return r && [r.item, r.count].join(' ');
+  };
+  for (const state of ['light[level=15,waterlogged=false]', 'light', 'barrier[waterlogged=false]', 'structure_void']) {
+    assert.equal(itemForState(state), null, state);
+  }
+  assert.equal(item('infested_stone'), 'stone 1');
+  assert.equal(item('infested_cobblestone'), 'cobblestone 1');
+  assert.equal(item('infested_stone_bricks'), 'stone_bricks 1');
+  assert.equal(item('infested_mossy_stone_bricks'), 'mossy_stone_bricks 1');
+  assert.equal(item('infested_cracked_stone_bricks'), 'cracked_stone_bricks 1');
+  assert.equal(item('infested_chiseled_stone_bricks'), 'chiseled_stone_bricks 1');
+  assert.equal(item('infested_deepslate[axis=y]'), 'deepslate 1');
+  assert.equal(item('petrified_oak_slab[type=bottom,waterlogged=false]'), 'oak_slab 1');
+  assert.equal(item('petrified_oak_slab[type=double,waterlogged=false]'), 'oak_slab 2');
+});
+
 test('countMaterials zählt Türen, Betten und doppelte Pflanzen einmal, Doppelstufen doppelt', () => {
   loadFixtureData();
   const b = new Builder();

@@ -1,0 +1,28 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/the-midnight-lurker
+Beleg: Modrinth the-midnight-lurker Version 4.0.0-D3-beta (9qio3FxR), Datei the_midnight_lurker-face_your_fears-4.0.0-D3_beta-1.20.1.jar (sha1 9f1e8ac48f0a3ca109756e059e7f788951e1950d); META-INF/mods.toml: „license="MIT License"“, „authors="Voxla"“, „credits="Mod made by Voxla - Created using mod maker MCreator - …"“ (fremd sind nur Sounds); Modrinth-Lizenzfeld: MIT. Quell-Repo Voxla/midnightlurker @7de48d09fbe64ca2060c12bbcbbde99de990016c, LICENSE: „MIT License / Copyright (c) 2023 Voxla“
+Lizenz: MIT (https://opensource.org/license/mit)
+Betrifft: lurker-kirchenruine
+
+--- LICENSE im Quell-Repo Voxla/midnightlurker (Commit 7de48d09fbe64ca2060c12bbcbbde99de990016c, Text unverändert) ---
+
+MIT License
+
+Copyright (c) 2023 Voxla
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

@@ -1,0 +1,45 @@
+Lizenz der Community-Bauten aus https://modrinth.com/project/contract-blade
+Beleg: Modrinth contract-blade Version 1.2.0hotfix (59DWdAkk), Datei contract-blade-forge-1.20.1-1.2.0hotfix.jar (sha1 5dc6f5c3cf96be5da2aa97a9ea4ed2bcb8a4fa7d); Modrinth-Lizenzfeld: MIT; META-INF/mods.toml: „license = "MIT (code); CC BY-NC-SA-4.0 (fox models)"“. Quell-Repo Bluelgin/Contract-Blade @941ba52e7072ee5e39da101f4e9b6c7fea648b91: LICENSE „MIT License / Copyright (c) 2026 maid_weapon contributors“; README (License): „Code and original assets in this repository are available under the MIT License … The bundled derivative White/Black Fox model pack retains its separate CC BY-NC-SA 4.0 license“; ASSET_SOURCES.md: „data/maid_weapon/structures/shinkitsu_shrine.nbt is the user's original Shinkitsu Shrine build … It contains only vanilla block references“. Die Repo-Datei ist byte-gleich mit der Datei im Jar
+Lizenz: MIT (https://github.com/Bluelgin/Contract-Blade/blob/941ba52e7072ee5e39da101f4e9b6c7fea648b91/LICENSE)
+Betrifft: cblade-shinkitsu-schrein
+
+--- Auszug aus README.md im Quell-Repo Bluelgin/Contract-Blade (Commit 941ba52e7072ee5e39da101f4e9b6c7fea648b91, wörtlich) ---
+
+## License
+
+Code and original assets in this repository are available under the MIT License. See [LICENSE](LICENSE) and [ASSET_SOURCES.md](ASSET_SOURCES.md).
+The bundled derivative White/Black Fox model pack retains its separate
+CC BY-NC-SA 4.0 license and original attribution, included inside its archive.
+
+--- Auszug aus ASSET_SOURCES.md im Quell-Repo Bluelgin/Contract-Blade (Commit 941ba52e7072ee5e39da101f4e9b6c7fea648b91, wörtlich) ---
+
+`data/maid_weapon/structures/shinkitsu_shrine.nbt` is the user's original
+Shinkitsu Shrine build supplied from the paused BladeChronicle project.
+The runtime copy keeps the authored blocks and SlashBlade White Fox offering,
+removes test/gallery entities and fixes a corrupted sign. It contains only
+vanilla block references and SlashBlade entity/item state; no third-party
+textures, models or code are bundled. The source structure is left untouched.
+
+--- LICENSE im Quell-Repo Bluelgin/Contract-Blade (Commit 941ba52e7072ee5e39da101f4e9b6c7fea648b91, Text unverändert) ---
+
+MIT License
+
+Copyright (c) 2026 maid_weapon contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

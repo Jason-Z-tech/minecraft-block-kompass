@@ -2,10 +2,20 @@
 
 import { parseStateCached } from './blockstate.js';
 
+// Kein Material: Luftarten, Teile, die von selbst entstehen, und unsichtbare Technik-Blöcke (Lichtblock, Barriere,
+// Strukturleere) – im Spiel nicht zu sehen und für das Nachbauen nicht nötig.
 const NO_ITEM = new Set([
   'air', 'cave_air', 'void_air', 'piston_head', 'moving_piston', 'fire', 'soul_fire', 'nether_portal',
-  'end_portal', 'end_gateway', 'bubble_column', 'frosted_ice',
+  'end_portal', 'end_gateway', 'bubble_column', 'frosted_ice', 'light', 'barrier', 'structure_void',
 ]);
+
+// Sieht aus wie ein normaler Block, ist im Überleben aber nicht zu bekommen → zählt als sein sichtbares Gegenstück
+// (infested_stone_bricks → stone_bricks, petrified_oak_slab → oak_slab).
+function visibleCounterpart(id) {
+  if (id.startsWith('infested_')) return id.slice('infested_'.length);
+  if (id === 'petrified_oak_slab') return 'oak_slab';
+  return null;
+}
 
 const DIRECT_ITEMS = {
   redstone_wire: 'redstone', tripwire: 'string',
@@ -63,7 +73,7 @@ function resolveItem(state) {
   if (id === 'candle_cake' || id.endsWith('_candle_cake')) {
     return { item: 'cake', count: 1, extra: [[id.slice(0, -'_cake'.length), 1]] };
   }
-  const item = DIRECT_ITEMS[id] ?? wallVariantBase(id) ?? id;
+  const item = DIRECT_ITEMS[id] ?? visibleCounterpart(id) ?? wallVariantBase(id) ?? id;
   const result = { item, count: countFromProps(id, props) };
   if (HINTS[id]) result.hint = HINTS[id];
   return result;
