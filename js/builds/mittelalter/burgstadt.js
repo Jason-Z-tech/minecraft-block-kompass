@@ -1,8 +1,9 @@
 // Burgstadt: Höhenburg auf einem Felsen über einer ummauerten Stadt.
 // Burg (Norden, Felsplateau y 15): Kernburg mit Bergfried, Palas, Torhaus mit Zugbrücke über den Halsgraben,
-// Ecktürmen, Wirtschaftshaus und Brunnen; ringsum der Burg-Zwinger mit zweiter Mauer an der Felskante.
-// Stadt (Süden): Oberstadt (y 6) mit Marktplatz, Marktbrunnen, Kirche und Rathaus, Burgstiege hinauf zum Felsen;
-// Stützmauer mit Treppe zur Unterstadt (y 2) mit Haupt- und Quergasse und Fachwerkhäusern.
+// Ecktürmen, Wirtschaftshaus, Ziehbrunnen und Linde; ringsum der Burg-Zwinger mit zweiter Mauer an der Felskante.
+// Stadt (Süden): Oberstadt (y 6) mit Marktplatz (Marktbrunnen, Stände, Linden), Backsteinkirche mit Westturm und
+// Kupferhelm, Rathaus mit Laube und Eckerkern, Burgstiege hinauf zum Felsen;
+// Stützmauer mit Treppe zur Unterstadt (y 2) mit Haupt- und Quergasse, Fachwerkhäusern und Gärten.
 // Doppelte Stadtmauer: hohe innere Mauer mit Rundtürmen, davor der Zwinger und die niedrige Zwingermauer,
 // Haupttor mit Vortor, Steinbrücke und Zugbrücke über den Wassergraben.
 // Koordinaten: x → Osten, z → Süden; Höhe = Oberkante des Bodens (Wiese 0, Zwinger 1, Unterstadt 2, Oberstadt 6, Fels 15).
@@ -20,7 +21,7 @@ export const meta = {
   subtitle: 'Höhenburg über einer Stadt mit doppelter Mauer, Markt, Kirche und Fachwerkhäusern',
   tags: [
     'Burg', 'Stadt', 'Mittelalter', 'Höhenburg', 'Bergfried', 'Palas', 'Torhaus', 'Zugbrücke', 'Stadtmauer', 'Zwinger',
-    'Wassergraben', 'Fachwerk', 'Marktplatz', 'Brunnen', 'Kirche', 'Rathaus', 'Innenräume', 'Riesenprojekt',
+    'Wassergraben', 'Fachwerk', 'Marktplatz', 'Brunnen', 'Kirche', 'Backsteingotik', 'Rathaus', 'Innenräume', 'Riesenprojekt',
   ],
   aliases: [
     'burgstadt', 'burg stadt', 'burgstat', 'burgstaat', 'mittelalterliche stadt', 'mittelalter stadt', 'medieval town',
@@ -31,8 +32,10 @@ export const meta = {
   description: 'Eine Höhenburg auf ihrem Felsen und darunter eine ganze Stadt: Die Kernburg mit rundem Bergfried, '
     + 'Palas mit Rittersaal, Ecktürmen und einem Torhaus mit Zugbrücke über den Halsgraben, ringsum der Burg-Zwinger. '
     + 'Unter dem Felsen liegt die Stadt hinter einer doppelten Mauer mit Rundtürmen, Zwinger, Vortor und Zugbrücke über '
-    + 'den Wassergraben. In der Oberstadt stehen Marktplatz mit Brunnen, Backsteinkirche und Rathaus, in der Unterstadt '
-    + 'Gassen voller Fachwerkhäuser mit Innenräumen. Die Burgstiege führt vom Markt hinauf zur Burg.',
+    + 'den Wassergraben. In der Oberstadt liegt der Marktplatz mit Brunnen, Marktständen und Linden, daneben eine '
+    + 'Backsteinkirche mit Westturm, Kupferhelm und bunten Glasfenstern und ein Rathaus mit steinerner Laube, Fachwerk '
+    + 'und Eckerkern. In der Unterstadt stehen Gassen voller Fachwerkhäuser mit Innenräumen und Gärten an der Mauer. '
+    + 'Die Burgstiege führt vom Markt hinauf zur Burg.',
   sources: [],
   credits: null,
   tested: null,
@@ -132,7 +135,7 @@ const mix = (entries, x, y, z, salt) => weighted(entries, rand01(x, y, z, salt))
 const patch = (entries, x, y, z, salt, scale = 3) => weighted(entries, Math.min(0.999, Math.max(0, noise2(x + y * 7, z - y * 5, scale, salt) * 0.8 + rand01(x, y, z, salt + 1) * 0.2)));
 
 const WALL_LOW = [['cobblestone', 4], ['mossy_cobblestone', 4], ['mossy_stone_bricks', 4], ['stone_bricks', 4], ['andesite', 1], ['tuff', 1]];
-const WALL_MID = [['stone_bricks', 14], ['cracked_stone_bricks', 2], ['mossy_stone_bricks', 2], ['andesite', 1], ['cobblestone', 1]];
+const WALL_MID = [['stone_bricks', 12], ['cracked_stone_bricks', 3], ['mossy_stone_bricks', 2], ['andesite', 2], ['cobblestone', 1], ['tuff_bricks', 1]];
 const WALL_TOP = [['stone_bricks', 12], ['cracked_stone_bricks', 2], ['polished_andesite', 1], ['stone_bricks', 2]];
 const ROCK_STONE = [['stone', 8], ['andesite', 4], ['cobblestone', 2], ['tuff', 2], ['mossy_cobblestone', 2], ['gravel', 1], ['stone', 2]];
 
@@ -156,7 +159,8 @@ function rockHeight(x, z, town) {
   if (d <= 2.5) return ROCK;
   const e = d - 2.5;
   const n = noise2(x, z, 5, 11) - 0.5;
-  return Math.round(ROCK - 2 * Math.min(e, 4) - 0.8 * Math.max(e - 4, 0) + n * 3);
+  const crag = noise2(x, z, 2.2, 12) - 0.5;
+  return Math.round(ROCK - 2.6 * Math.min(e, 4) - 1.0 * Math.max(e - 4, 0) + n * 3.5 + crag * 1.5);
 }
 
 function computeGround() {
@@ -192,8 +196,11 @@ const kindAt = (x, z) => (inArea(x, z) ? GROUND.kind[(z - Z0) * GW + (x - X0)] :
 function terrainState(kind, x, y, z, depth, steep) {
   if (kind === KIND.ROCK) {
     if (steep >= 2 || depth > 2) return patch(ROCK_STONE, x, y, z, 41, 2.5);
-    if (depth === 0) return patch([['grass_block', 10], ['coarse_dirt', 2], ['moss_block', 1], ['podzol', 1]], x, y, z, 42, 3);
-    return 'dirt';
+    if (depth === 0) {
+      if (y < ROCK && y > MEADOW + 1 && steep >= 1 && noise2(x + y, z, 3.5, 47) > 0.4) return patch([...ROCK_STONE, ['moss_block', 3]], x, y, z, 48, 2);
+      return patch([['grass_block', 10], ['coarse_dirt', 2], ['moss_block', 1], ['podzol', 1]], x, y, z, 42, 3);
+    }
+    return steep >= 1 ? patch(ROCK_STONE, x, y, z, 41, 2.5) : 'dirt';
   }
   if (kind === KIND.MOAT) return depth === 0 ? patch([['gravel', 4], ['clay', 2], ['sand', 2], ['mud', 1]], x, y, z, 43, 2) : 'dirt';
   if (depth === 0) {
@@ -230,7 +237,7 @@ function terrain(b) {
 
 // Mauer entlang eines Achtecks: Band lo … hi um die Mittellinie, Fuß auf dem Gelände, Wehrgang bei walk(x, z, fuß).
 // Außen Brüstung und Zinnen mit Abdeckplatte; plinth: geböschter Sockel außen.
-function ringWall(b, { poly, edges, lo, hi, walk, keep = () => true, plinth = 0, slits = 0 }) {
+function ringWall(b, { poly, edges, lo, hi, walk, keep = () => true, plinth = 0, slits = 0, pilasters = 0, cornice = true }) {
   const pad = Math.ceil(hi) + 2;
   for (let z = poly.z1 - pad; z <= poly.z2 + pad; z++) {
     for (let x = poly.x1 - pad; x <= poly.x2 + pad; x++) {
@@ -255,11 +262,20 @@ function ringWall(b, { poly, edges, lo, hi, walk, keep = () => true, plinth = 0,
             for (let y = w - 3; y <= w - 2; y++) b.set(x, y, z, 'air');
           }
         }
-      } else if (plinth > 0 && d > hi && d <= hi + (diag ? 0.75 : 1)) {
+      } else if (d > hi && d <= hi + (diag ? 0.75 : 1)) {
+        // Vor der Außenseite: Sockel, Strebepfeiler, Gesims unter der Brüstung.
         const w = walk(x, z, g);
-        if (w - g < plinth + 2) continue;
+        const toWall = towardWall(edge, diag, x, z);
+        if (cornice && w - g >= 4 && b.get(x, w, z) === 'air') b.set(x, w, z, `stone_brick_stairs[facing=${toWall},half=top]`);
+        const pier = pilasters && !diag && ((along % pilasters) + pilasters) % pilasters === 0 && w - g >= plinth + 5;
+        if (pier) {
+          for (let y = g + 1; y <= w - 2; y++) b.set(x, y, z, wallStone(x, y, z, g));
+          b.set(x, w - 1, z, `stone_brick_stairs[facing=${toWall},half=bottom]`);
+          continue;
+        }
+        if (plinth <= 0 || w - g < plinth + 2) continue;
         for (let y = g + 1; y <= g + plinth; y++) b.set(x, y, z, patch(WALL_LOW, x, y, z, 34, 2));
-        b.set(x, g + plinth + 1, z, `cobblestone_stairs[facing=${towardWall(edge, diag, x, z)},half=bottom]`);
+        b.set(x, g + plinth + 1, z, `cobblestone_stairs[facing=${toWall},half=bottom]`);
       }
     }
   }
@@ -281,12 +297,12 @@ function townWalls(b) {
   b.phase('Innere Stadtmauer');
   ringWall(b, {
     poly: TOWN, edges: [EDGE.W, EDGE.SW, EDGE.S, EDGE.SE, EDGE.E, EDGE.NE, EDGE.NW], lo: -1.5, hi: 1.25,
-    walk: (x, z, g) => Math.max(TOWN_WALK, g + 4), keep: outsideBurg, plinth: 2, slits: 7,
+    walk: (x, z, g) => Math.max(TOWN_WALK, g + 4), keep: outsideBurg, plinth: 2, slits: 7, pilasters: 8,
   });
   b.phase('Zwingermauer');
   ringWall(b, {
     poly: TOWN, edges: [EDGE.W, EDGE.SW, EDGE.S, EDGE.SE, EDGE.E, EDGE.NE, EDGE.NW], lo: 6.6, hi: 8.25,
-    walk: (x, z, g) => Math.max(OUTER_WALK, g + 3), keep: outsideBurg, plinth: 1,
+    walk: (x, z, g) => Math.max(OUTER_WALK, g + 3), keep: outsideBurg, plinth: 1, pilasters: 6,
   });
 }
 
@@ -294,12 +310,12 @@ function castleWalls(b) {
   b.phase('Burg-Zwingermauer');
   ringWall(b, {
     poly: ZWB, edges: [0, 1, 2, 3, 4, 5, 6, 7], lo: -1.5, hi: 0.5,
-    walk: (x, z, g) => Math.max(ZWB_WALK, g + 3), plinth: 0,
+    walk: (x, z, g) => Math.max(ZWB_WALK, g + 3), plinth: 0, pilasters: 7,
   });
   b.phase('Ringmauer der Kernburg');
   ringWall(b, {
     poly: KERN, edges: [0, 1, 2, 3, 4, 5, 6, 7], lo: -1.5, hi: 1.25,
-    walk: () => KERN_WALK, plinth: 2, slits: 6,
+    walk: () => KERN_WALK, plinth: 2, slits: 6, pilasters: 6,
   });
 }
 
@@ -326,7 +342,8 @@ function towardCenter(dx, dz) {
 }
 
 // Kegeldach: Ringe aus Treppen über Vollblöcken, Neigung slope Ebenen je Block, Traufe bei y0 mit Radius R.
-function coneRoof(b, { x, z, y, r, slope = 2, stairs = 'deepslate_tile_stairs', full = 'deepslate_tiles', tip = 'rod' }) {
+function coneRoof(b, { x, z, y, r, slope = 2, stairs = 'deepslate_tile_stairs', full = 'deepslate_tiles', tip = 'rod', set = null, salt = 0 }) {
+  const mat = (dx, dz) => (set ? pickRoof(set, x + dx, z + dz + y * 3, salt) : [stairs, full]);
   const level = new Map();
   const key = (dx, dz) => `${dx},${dz}`;
   for (let dz = -r; dz <= r; dz++) {
@@ -341,11 +358,12 @@ function coneRoof(b, { x, z, y, r, slope = 2, stairs = 'deepslate_tile_stairs', 
     const [dx, dz] = k.split(',').map(Number);
     let low = Infinity;
     for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) low = Math.min(low, level.get(key(dx + ax, dz + az)) ?? -1);
-    for (let l = Math.max(0, low + 1); l < lv; l++) b.set(x + dx, y + l, z + dz, full);
+    const [st, fu] = mat(dx, dz);
+    for (let l = Math.max(0, low + 1); l < lv; l++) b.set(x + dx, y + l, z + dz, fu);
     if (dx === 0 && dz === 0) {
-      b.set(x, y + lv, z, full);
+      b.set(x, y + lv, z, fu);
       peak = lv;
-    } else b.set(x + dx, y + lv, z + dz, `${stairs}[facing=${towardCenter(dx, dz)},half=bottom]`);
+    } else b.set(x + dx, y + lv, z + dz, `${st}[facing=${towardCenter(dx, dz)},half=bottom]`);
   }
   if (tip === 'rod') {
     b.set(x, y + peak + 1, z, 'deepslate_tile_wall');
@@ -357,10 +375,30 @@ function coneRoof(b, { x, z, y, r, slope = 2, stairs = 'deepslate_tile_stairs', 
   return y + peak;
 }
 
+// Achteckiger Turmhelm: je Ebene ein Achteck mit Radius (r + 0.5)·(1 − l/h); Kante oben mit Treppen, sonst Vollblöcke.
+function octSpire(b, { x, z, y, r, h, set, salt = 0 }) {
+  const oct = (dx, dz) => Math.max(Math.abs(dx), Math.abs(dz), (Math.abs(dx) + Math.abs(dz)) * 0.72);
+  const radius = (l) => (r + 0.5) * (1 - l / h);
+  const inside = (dx, dz, l) => l < h && oct(dx, dz) <= radius(l) + 1e-6;
+  for (let l = 0; l < h; l++) {
+    for (let dz = -r; dz <= r; dz++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (!inside(dx, dz, l)) continue;
+        const edge = !inside(dx + 1, dz, l) || !inside(dx - 1, dz, l) || !inside(dx, dz + 1, l) || !inside(dx, dz - 1, l);
+        const topEdge = !inside(dx, dz, l + 1);
+        if (!edge && !topEdge) continue;
+        const [st, full] = pickRoof(set, x + dx, z + dz + l * 7, salt);
+        b.set(x + dx, y + l, z + dz, topEdge && (dx !== 0 || dz !== 0) ? `${st}[facing=${towardCenter(dx, dz)},half=bottom]` : full);
+      }
+    }
+  }
+  return y + h - 1;
+}
+
 // Rundturm: Mantel vom Gelände bis top, Böden, Leiter, Zinnenkranz auf Konsolen und Kegeldach darüber.
 // walkLevels: Höhen, auf denen Wehrgänge anschließen (dort Durchgänge im Mantel, wo walkCells es sagen).
 function roundTower(b, t) {
-  const { x, z, r, top, floors = [], roof = 'cone', roofColor = null, slope = 2, passages = [], stairs = 'deepslate_tile_stairs', full = 'deepslate_tiles' } = t;
+  const { x, z, r, top, floors = [], roof = 'cone', roofColor = null, slope = 2, passages = [], stairs = 'deepslate_tile_stairs', full = 'deepslate_tiles', roofSet = 'schiefer', door = null, ladder = 'north' } = t;
   const { shell, inner } = discCells(r);
   let foot = Infinity;
   for (const [dx, dz] of [...shell, ...inner]) foot = Math.min(foot, groundAt(x + dx, z + dz));
@@ -374,11 +412,12 @@ function roundTower(b, t) {
     for (const f of floors) b.set(x + dx, f, z + dz, 'spruce_planks');
     b.set(x + dx, top, z + dz, roof === 'cone' ? 'spruce_planks' : wallStone(x + dx, top, z + dz, foot));
   }
-  // Leiter an der Nordwand, Löcher in den Böden.
+  // Leiter an der Nord- (oder Süd-)wand, Löcher in den Böden.
   const lx = x;
-  const lz = z - r + 1;
-  for (let y = foot + 1; y < top; y++) b.set(lx, y, lz, 'ladder[facing=south]');
-  b.set(lx, top, lz, 'spruce_trapdoor[facing=south,half=top,open=false]');
+  const lz = ladder === 'north' ? z - r + 1 : z + r - 1;
+  const lf = ladder === 'north' ? 'south' : 'north';
+  for (let y = foot + 1; y < top; y++) b.set(lx, y, lz, `ladder[facing=${lf}]`);
+  b.set(lx, top, lz, `spruce_trapdoor[facing=${lf},half=top,open=false]`);
   for (const p of passages) for (let y = p.y + 1; y <= p.y + 2; y++) b.set(p.x, y, p.z, 'air');
   // Sockel (Böschung) außen.
   for (const [dx, dz] of discCells(r + 1).shell) {
@@ -386,6 +425,37 @@ function roundTower(b, t) {
     if (b.get(x + dx, g + 1, z + dz) !== 'air') continue;
     b.set(x + dx, g + 1, z + dz, patch(WALL_LOW, x + dx, g + 1, z + dz, 52, 2));
     b.set(x + dx, g + 2, z + dz, `cobblestone_stairs[facing=${towardCenter(dx, dz)},half=bottom]`);
+  }
+  // Gesims auf halber Höhe, Schießscharten über jedem Boden (nicht auf der Leiterseite).
+  if (top - foot >= 12) {
+    const mid = foot + Math.round((top - foot) * 0.55);
+    for (const [dx, dz] of discCells(r + 1).shell) if (b.get(x + dx, mid, z + dz) === 'air') b.set(x + dx, mid, z + dz, `stone_brick_stairs[facing=${towardCenter(dx, dz)},half=top]`);
+  }
+  for (const f of [foot, ...floors]) {
+    const y = f + 2;
+    if (y + 1 >= top) continue;
+    for (const dir of ['north', 'south', 'east', 'west']) {
+      if (dir === ladder || dir === door) continue;
+      const [dx, dz] = STEP[dir];
+      const [sx, sz] = [x + dx * r, z + dz * r];
+      const [ox, oz] = [x + dx * (r + 1), z + dz * (r + 1)];
+      if (b.get(ox, y, oz) !== 'air' || b.get(ox, y + 1, oz) !== 'air' || groundAt(ox, oz) >= y) continue;
+      b.set(sx, y, sz, 'air');
+      b.set(sx, y + 1, sz, 'air');
+    }
+  }
+  // Tür am Boden: Boden innen auf Höhe des Geländes davor, Sockel vor der Tür frei.
+  if (door) {
+    const [dx, dz] = STEP[door];
+    const [sx, sz] = [x + dx * r, z + dz * r];
+    const [ox, oz] = [x + dx * (r + 1), z + dz * (r + 1)];
+    const g = groundAt(ox, oz);
+    if (g > foot) for (const [ix, iz] of inner) if (x + ix !== lx || z + iz !== lz) b.set(x + ix, g, z + iz, 'spruce_planks');
+    b.set(sx, g, sz, 'stone_bricks');
+    b.door(sx, g + 1, sz, 'spruce_door', { facing: OPP[door], hinge: 'left' });
+    b.set(sx, g + 3, sz, 'stone_brick_stairs[facing=' + OPP[door] + ',half=top]');
+    for (let y = g + 1; y <= g + 2; y++) b.set(ox, y, oz, 'air');
+    wallLantern(b, { x: ox + (dz !== 0 ? 1 : 0), y: g + 3, z: oz + (dx !== 0 ? 1 : 0), facing: door, style: 'bracket', arm: 'spruce_fence' });
   }
   // Kranz: Konsolen unter einem vorspringenden Ring, darauf Brüstung und Zinnen.
   const ring = discCells(r + 1).shell;
@@ -397,7 +467,7 @@ function roundTower(b, t) {
       b.set(x + dx, top + 3, z + dz, 'stone_brick_slab[type=bottom]');
     }
   }
-  if (roof === 'cone') return coneRoof(b, { x, z, y: top + 2, r: r + 2, slope, stairs, full, tip: roofColor ?? 'rod' });
+  if (roof === 'cone') return coneRoof(b, { x, z, y: top + 2, r: r + 2, slope, stairs, full, tip: roofColor ?? 'rod', set: roofSet ? ROOF_SETS[roofSet] : null, salt: 111 });
   return top + 3;
 }
 
@@ -564,22 +634,24 @@ const TOWN_EDGES = [EDGE.W, EDGE.SW, EDGE.S, EDGE.SE, EDGE.E, EDGE.NE, EDGE.NW];
 const townWalk = (x, z, g) => Math.max(TOWN_WALK, g + 4);
 const outerWalk = (x, z, g) => Math.max(OUTER_WALK, g + 3);
 
+// [x, z, Höhe, Fahne, Tür]; Türen nur dort, wo vor dem Turm Platz ist.
 const INNER_TOWERS = [
-  [-49, -22, 26, 'rot'], [-49, -6, 22, null], [-49, 14, 22, null], [-43, 35, 23, 'blau'], [-22, 41, 22, null],
-  [22, 41, 22, null], [43, 35, 23, 'blau'], [49, 14, 22, null], [49, -6, 22, null], [49, -22, 26, 'rot'],
+  [-49, -22, 26, 'rot', null], [-49, -6, 22, null, 'east'], [-49, 14, 22, null, null], [-43, 35, 23, 'blau', 'east'], [-22, 41, 22, null, 'north'],
+  [22, 41, 22, null, 'north'], [43, 35, 23, 'blau', 'west'], [49, 14, 22, null, null], [49, -6, 22, null, 'west'], [49, -22, 26, 'rot', null],
 ];
-const OUTER_TOWERS = [[-56, 4], [-47, 40], [-30, 48], [30, 48], [47, 40], [56, 4]];
+const OUTER_TOWERS = [[-56, 4, 'east'], [-47, 40, 'east'], [-30, 48, 'north'], [30, 48, 'north'], [47, 40, 'west'], [56, 4, 'west']];
 
 function townTowers(b) {
   b.phase('Türme der inneren Stadtmauer');
-  for (const [x, z, top, flag] of INNER_TOWERS) {
+  for (const [x, z, top, flag, door] of INNER_TOWERS) {
     const passages = walkPassages(TOWN, TOWN_EDGES, -1.5, 0.5, townWalk, x, z, 4, outsideBurg);
-    roundTower(b, { x, z, r: 4, top, floors: [8, TOWN_WALK], passages, slope: 1.6, roofColor: flag });
+    const floors = z < STEP_Z ? [11, TOWN_WALK] : [8, TOWN_WALK];
+    roundTower(b, { x, z, r: 4, top, floors, passages, slope: 1.6, roofColor: flag, roofSet: 'ziegel', door, ladder: door === 'north' ? 'south' : 'north' });
   }
   b.phase('Türme der Zwingermauer');
-  for (const [x, z] of OUTER_TOWERS) {
+  for (const [x, z, door] of OUTER_TOWERS) {
     const passages = walkPassages(TOWN, TOWN_EDGES, 6.6, 7.25, outerWalk, x, z, 3, outsideBurg);
-    roundTower(b, { x, z, r: 3, top: 11, floors: [OUTER_WALK], passages, roof: 'crenel' });
+    roundTower(b, { x, z, r: 3, top: 11, floors: [OUTER_WALK], passages, roof: 'crenel', door, ladder: door === 'north' ? 'south' : 'north' });
   }
 }
 
@@ -686,18 +758,19 @@ function outerGate(b) {
 const ALL_EDGES = [0, 1, 2, 3, 4, 5, 6, 7];
 const KERN_TOWERS = [[-29, -35, 'rot'], [29, -35, 'rot'], [-29, -59, 'gelb'], [29, -59, 'gelb']];
 const ZWB_TOWERS = [[-36, -28], [36, -28], [-36, -65], [36, -65]];
+const towardMiddle = (x) => (x < 0 ? 'east' : 'west');
 const zwbWalk = (x, z, g) => Math.max(ZWB_WALK, g + 3);
 
 function castleTowers(b) {
   b.phase('Ecktürme der Kernburg');
   for (const [x, z, flag] of KERN_TOWERS) {
     const passages = walkPassages(KERN, ALL_EDGES, -1.5, 0.25, () => KERN_WALK, x, z, 4);
-    roundTower(b, { x, z, r: 4, top: 33, floors: [KERN_WALK], passages, slope: 2, roofColor: flag });
+    roundTower(b, { x, z, r: 4, top: 33, floors: [KERN_WALK], passages, slope: 2, roofColor: flag, door: towardMiddle(x) });
   }
   b.phase('Türme der Burg-Zwingermauer');
   for (const [x, z] of ZWB_TOWERS) {
     const passages = walkPassages(ZWB, ALL_EDGES, -1.5, -0.5, zwbWalk, x, z, 3);
-    roundTower(b, { x, z, r: 3, top: 27, floors: [ZWB_WALK], passages, slope: 1.6 });
+    roundTower(b, { x, z, r: 3, top: 27, floors: [ZWB_WALK], passages, slope: 1.6, door: towardMiddle(x) });
   }
 }
 
@@ -850,7 +923,7 @@ function bergfried(b) {
   for (const [dx, dz] of discCells(4).shell) for (let y = top + 1; y <= top + 2; y++) b.set(x + dx, y, z + dz, wallStone(x + dx, y, z + dz, 15));
   for (const [dx, dz] of [[0, 4], [4, 0], [0, -4], [-4, 0]]) b.set(x + dx, top + 1, z + dz, dz === 4 ? 'air' : 'glass_pane');
   b.set(x, top + 2, z + 4, 'air');
-  coneRoof(b, { x, z, y: top + 3, r: 5, slope: 2.2, tip: 'rot' });
+  coneRoof(b, { x, z, y: top + 3, r: 5, slope: 2.2, tip: 'rot', set: ROOF_SETS.schiefer, salt: 112 });
   // Einrichtung: Verlies, Wachstube, Kammer, Rüstkammer, Ausguck.
   const ix = x - 2;
   const iz = z - 1;
@@ -1009,7 +1082,7 @@ function stairTower(b) {
   for (const y of [22, 30]) b.set(cx, y + 1, cz + 2, 'glass_pane');
   for (const y of [26, 33]) b.set(cx - 2, y, cz, 'glass_pane');
   rectCrownRound(b, cx, cz, 2, top);
-  coneRoof(b, { x: cx, z: cz, y: top + 2, r: 3, slope: 2.4, tip: 'gelb' });
+  coneRoof(b, { x: cx, z: cz, y: top + 2, r: 3, slope: 2.4, tip: 'gelb', set: ROOF_SETS.schiefer, salt: 113 });
   lightRoom(b, { x1: cx - 1, y1: 16, z1: cz - 1, x2: cx + 1, y2: top - 1, z2: cz + 1 });
 }
 
@@ -1030,7 +1103,7 @@ const ROOF_SETS = {
   schiefer: [[['deepslate_tile_stairs', 'deepslate_tiles', 'deepslate_tile_slab'], 10], [['deepslate_brick_stairs', 'deepslate_bricks', 'deepslate_brick_slab'], 3], [['cobbled_deepslate_stairs', 'cobbled_deepslate', 'cobbled_deepslate_slab'], 2]],
   holz: [[['spruce_stairs', 'spruce_planks', 'spruce_slab'], 8], [['dark_oak_stairs', 'dark_oak_planks', 'dark_oak_slab'], 3]],
   granit: [[['polished_granite_stairs', 'polished_granite', 'polished_granite_slab'], 6], [['granite_stairs', 'granite', 'granite_slab'], 3], [['brick_stairs', 'bricks', 'brick_slab'], 1]],
-  harz: [[['resin_brick_stairs', 'resin_bricks', 'resin_brick_slab'], 8], [['brick_stairs', 'bricks', 'brick_slab'], 2]],
+  glasur: [[['red_nether_brick_stairs', 'red_nether_bricks', 'red_nether_brick_slab'], 6], [['brick_stairs', 'bricks', 'brick_slab'], 3], [['nether_brick_stairs', 'nether_bricks', 'nether_brick_slab'], 1]],
   kupfer: [[['waxed_oxidized_cut_copper_stairs', 'waxed_oxidized_cut_copper', 'waxed_oxidized_cut_copper_slab'], 7], [['waxed_weathered_cut_copper_stairs', 'waxed_weathered_cut_copper', 'waxed_weathered_cut_copper_slab'], 2]],
 };
 
@@ -1151,7 +1224,7 @@ const HOUSE_FILLS = [
   ['pink_terracotta', 1], ['light_blue_terracotta', 1], ['birch_planks', 1],
 ];
 const FRAME_WEIGHTS = [['dunkel', 6], ['rinde', 3], ['fichte', 3], ['rot', 1]];
-const ROOF_WEIGHTS = [['ziegel', 6], ['schiefer', 4], ['holz', 2], ['granit', 2], ['harz', 1]];
+const ROOF_WEIGHTS = [['ziegel', 6], ['schiefer', 4], ['holz', 2], ['granit', 2], ['glasur', 1]];
 
 // Gefache einer Wand von Ecke zu Ecke: 'P' Ständer/Pfeiler, 'W' Fenster, 'F' Feld, 'D' Tür, 'O' Ladenöffnung.
 // Fassade: Einheiten 'WP' und 'WWP' (symmetrisch bevorzugt); fields: mittlere kurze Einheit als Feld.
@@ -1264,8 +1337,8 @@ function storyCell(h, st, side, u, r, c, x, z) {
     case 'P':
       return stone ? wallBlock() : `${h.frame.log}[axis=y]`;
     case 'W': {
-      const lo = st.rows >= 4 && !st.ground && stone ? 1 : 2;
-      const hi = st.rows >= 4 ? 3 : st.rows;
+      const lo = st.win?.[0] ?? (st.rows >= 4 && !st.ground && stone ? 1 : 2);
+      const hi = st.win?.[1] ?? (st.rows >= 4 ? 3 : st.rows);
       if (r >= lo && r <= hi) return st.ground && h.bars ? 'iron_bars' : 'glass_pane';
       if (top && st.rows >= 4) return stone ? 'lintel' : `${h.frame.log}[axis=${side.axis}]`;
       return wallBlock();
@@ -1793,6 +1866,649 @@ function upperTown(b) {
   houseRow(b, { y: OBER, facing: 'north', front: -3, d: 7, plots: [[19, 7], [26, 5], [31, 7], [38, 6]], opts: { uppers: [1, 2], gableJet: false, jet2: false } });
 }
 
+// ------------------------------------------------------------------ Burghof und Umland
+
+const WAY = [['cobblestone', 4], ['gravel', 3], ['coarse_dirt', 2], ['andesite', 1], ['mossy_cobblestone', 1]];
+
+// Weg aus Rechtecken [x1, z1, x2, z2] auf dem Gelände (nur Gras, Erde und Moos werden ersetzt).
+function paveWay(b, rects, salt) {
+  for (const [x1, z1, x2, z2] of rects) {
+    for (let z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
+      for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
+        const y = groundAt(x, z);
+        if (!/^(grass_block|dirt|coarse_dirt|podzol|moss_block)/.test(b.get(x, y, z))) continue;
+        b.set(x, y, z, patch(WAY, x, y, z, salt, 2));
+        if (b.get(x, y + 1, z) !== 'air' && isPlantId(b.get(x, y + 1, z).split('[')[0])) b.set(x, y + 1, z, 'air');
+      }
+    }
+  }
+}
+
+// Ziehbrunnen: runder Kranz, Schacht mit Wasser, Pfosten mit Haspel und Satteldach.
+function drawWell(b, x, z, y) {
+  const { shell, inner } = discCells(2);
+  for (const [dx, dz] of inner) {
+    for (let yy = y - 7; yy <= y; yy++) b.set(x + dx, yy, z + dz, yy <= y - 2 ? 'water[level=0]' : 'air');
+    b.set(x + dx, y - 8, z + dz, 'gravel');
+  }
+  for (const [dx, dz] of shell) {
+    for (let yy = y - 8; yy <= y + 1; yy++) b.set(x + dx, yy, z + dz, patch([['stone_bricks', 4], ['mossy_stone_bricks', 2], ['cobblestone', 1]], x + dx, yy, z + dz, 141, 2));
+    b.set(x + dx, y + 2, z + dz, 'stone_brick_slab[type=bottom]');
+  }
+  for (const dx of [-2, 2]) for (let yy = y + 2; yy <= y + 4; yy++) b.set(x + dx, yy, z, 'stripped_spruce_log[axis=y]');
+  for (let dx = -2; dx <= 2; dx++) b.set(x + dx, y + 5, z, 'stripped_spruce_log[axis=x]');
+  for (let dx = -3; dx <= 3; dx++) {
+    b.set(x + dx, y + 4, z - 2, 'spruce_stairs[facing=south,half=bottom]');
+    b.set(x + dx, y + 5, z - 1, 'spruce_stairs[facing=south,half=bottom]');
+    b.set(x + dx, y + 4, z + 2, 'spruce_stairs[facing=north,half=bottom]');
+    b.set(x + dx, y + 5, z + 1, 'spruce_stairs[facing=north,half=bottom]');
+    b.set(x + dx, y + 6, z, 'spruce_slab[type=bottom]');
+  }
+  for (let yy = y; yy <= y + 4; yy++) b.set(x, yy, z, 'iron_chain[axis=y]');
+}
+
+function castleYard(b) {
+  b.phase('Burghof');
+  const y = ROCK;
+  paveWay(b, [[-2, -38, 2, -47], [-7, -46, -3, -47], [3, -42, 19, -44], [-11, -39, -3, -45], [-24, -38, -12, -40], [8, -44, 12, -46]], 142);
+  drawWell(b, -7, -42, y);
+  townHouse(b, { x: 20, y, z: -46, w: 7, d: 9, facing: 'west', type: 'giebel', uppers: [1, 1], shop: true, goods: 'baecker', frame: 'fichte', fill: 'packed_mud', roof: 'schiefer', jet: 1, jet2: false, gableJet: false, deco: 'shutters', chimney: true });
+  b.step();
+  tree(b, { x: 13, y: y + 1, z: -40, species: 'eiche', size: 'mittel', seed: 21 });
+  for (const [x, z, s] of [[18, -38, 'hay_block[axis=x]'], [18, -39, 'hay_block[axis=z]'], [19, -38, 'barrel[facing=up]'], [17, -48, 'barrel[facing=up]'], [18, -48, 'barrel[facing=north]'], [-27, -46, 'hay_block[axis=x]'], [-27, -45, 'composter[level=4]']]) {
+    if (b.get(x, y + 1, z) === 'air') b.set(x, y + 1, z, s);
+  }
+  b.set(18, y + 2, -38, 'hay_block[axis=x]');
+  // Brennholzstapel an der Kernmauer.
+  for (let x = -26; x <= -22; x++) for (let yy = y + 1; yy <= y + 2; yy++) b.set(x, yy, -37, 'oak_log[axis=x]');
+  for (let x = -26; x <= -22; x++) b.set(x, y + 3, -37, 'spruce_slab[type=bottom]');
+}
+
+// Bäume, Büsche und Felsen außerhalb der Mauern, Landstraße vom Brückenkopf nach Süden.
+function countryside(b) {
+  b.phase('Umland: Landstraße, Bäume und Felsen');
+  for (let z = 59; z <= Z1; z++) {
+    const wig = Math.round((noise2(0, z, 6, 151) - 0.5) * 2);
+    for (let x = -3 + wig; x <= 3 + wig; x++) {
+      const g = groundAt(x, z);
+      const edge = Math.abs(x - wig) === 3;
+      b.set(x, g, z, edge ? patch([['coarse_dirt', 2], ['grass_block', 2], ['gravel', 1]], x, g, z, 152, 2) : patch([['dirt_path', 6], ['gravel', 2], ['coarse_dirt', 2], ['cobblestone', 1]], x, g, z, 153, 2));
+    }
+  }
+  const trees = [
+    [-66, -50, 'fichte', 'mittel'], [-67, -34, 'eiche', 'mittel'], [-65, -12, 'birke', 'mittel'], [-67, 8, 'eiche', 'mittel'], [-66, 27, 'fichte', 'mittel'],
+    [-66, 46, 'eiche', 'mittel'], [-58, 63, 'birke', 'klein'], [-40, 63, 'eiche', 'mittel'], [-22, 63, 'eiche', 'klein'], [16, 63, 'eiche', 'mittel'],
+    [33, 64, 'birke', 'klein'], [50, 63, 'eiche', 'mittel'], [66, 47, 'fichte', 'mittel'], [67, 26, 'eiche', 'mittel'], [65, 6, 'birke', 'mittel'],
+    [67, -15, 'eiche', 'mittel'], [66, -40, 'fichte', 'mittel'], [64, -62, 'fichte', 'klein'], [-63, -64, 'eiche', 'klein'],
+    [-52, -79, 'fichte', 'mittel'], [-34, -79, 'fichte', 'gross'], [-14, -79, 'eiche', 'mittel'], [8, -79, 'fichte', 'mittel'], [27, -79, 'eiche', 'mittel'],
+    [46, -79, 'fichte', 'gross'], [60, -76, 'birke', 'klein'],
+  ];
+  trees.forEach(([x, z, species, size], i) => {
+    b.step();
+    tree(b, { x, y: groundAt(x, z) + 1, z, species, size, seed: 160 + i });
+  });
+  b.step();
+  for (const [x, z, size] of [[-62, -20, 'mittel'], [-61, 36, 'klein'], [-48, 61, 'mittel'], [-8, 62, 'klein'], [26, 61, 'mittel'], [61, 56, 'klein'], [62, 16, 'mittel'], [61, -28, 'klein'], [-24, -76, 'mittel'], [37, -77, 'klein']]) {
+    bush(b, { x, y: groundAt(x, z) + 1, z, size, leaves: (x + z) % 3 === 0 ? 'azalee' : 'eiche', seed: x * 7 + z });
+  }
+  for (const [x, z, size, material] of [[-47, -44, 'gross', 'andesit'], [46, -52, 'mittel', 'stein'], [-44, -66, 'mittel', 'tuff'], [44, -30, 'klein', 'stein'], [-68, -70, 'mittel', 'stein'], [69, -78, 'klein', 'andesit'], [-6, -77, 'klein', 'stein']]) {
+    rock(b, { x, y: groundAt(x, z) + 1, z, size, material, seed: x + z * 3 });
+  }
+  b.phase('Wiesen und Gärten');
+  for (const [x, z, species, i] of [[-40, 37, 'eiche', 0], [-30, 38, 'birke', 1], [-12, 37, 'eiche', 2], [11, 38, 'kirsche', 3], [33, 37, 'eiche', 4], [41, 30, 'birke', 5], [-42, 30, 'eiche', 6]]) {
+    tree(b, { x, y: groundAt(x, z) + 1, z, species, size: 'klein', seed: 190 + i });
+  }
+  for (const [x, z] of [[-34, 39], [-6, 39], [18, 39], [27, 36]]) bush(b, { x, y: groundAt(x, z) + 1, z, size: 'klein', leaves: 'azalee', seed: x + z });
+  vegetation(b, { x: X0, y: 40, z: Z0, width: GW, depth: GD, mix: 'wiese', density: 0.3, shape: 'eckig', scan: 50, seed: 'burgstadt' });
+  vegetation(b, { x: -46, y: 10, z: 34, width: 92, depth: 7, mix: 'blumen', density: 0.25, shape: 'eckig', scan: 10, seed: 'gaerten' });
+}
+
+// ------------------------------------------------------------------ Rathaus
+
+// Lokal wie ein Stadthaus (Front bei z 11, Breite 13): steinerne Laube mit Spitzbögen, Ratssaal und Archiv in
+// zwei Fachwerkgeschossen über der Auskragung, Zwerchhaus, zwei Eckerker mit Spitzhelm, Dachreiter mit Glocke.
+const RATHAUS = { x: -33, z: -9, w: 13, d: 12, facing: 'east' };
+
+function rathaus(b) {
+  b.phase('Rathaus');
+  b.transform(plotTransform({ ...RATHAUS, y: OBER }), () => drawRathaus(b));
+}
+
+function drawRathaus(b) {
+  const w = 13;
+  const front = 12;
+  const G = 6; // Oberkante der Laube (Schwelle des Ratssaals)
+  const h = {
+    w, frame: FRAMES.dunkel, fill: 'calcite', mas: MASONRY.bruch, salt: 4242, ox: RATHAUS.x, oz: RATHAUS.z, bars: false, shop: false,
+    floor: 'dark_oak_planks', deco: 'flowers', H0: G, stone: false, cross: 2, roofSet: ROOF_SETS.schiefer,
+  };
+  const sides = 'PFFPWWPWWPFFP';
+  const s1 = G;
+  const s2 = G + 6;
+  const top = s2 + 5;
+  const stories = [
+    { base: s1, rows: 5, front, mat: 'timber', win: [2, 4], bays: { front: 'PWWPWWPWWPWWP', back: 'PFFPFFPFFPFFP', left: sides, right: sides } },
+    { base: s2, rows: 4, front, mat: 'timber', bays: { front: 'PWWPFFPFFPWWP', back: 'PFFPFFPFFPFFP', left: sides, right: sides } },
+  ];
+  for (const st of stories) drawStory(b, h, st);
+
+  // Laube und Erdgeschoss aus Bruchstein.
+  const stone = (x, y, z) => masonryAt(h, x, y, z);
+  for (let x = 0; x < w; x++) for (let z = 0; z <= 11; z++) b.set(x, 0, z, z >= 8 ? ((x + z) % 2 === 0 ? 'polished_andesite' : 'stone_bricks') : 'spruce_planks');
+  for (let y = 1; y < G; y++) {
+    for (let x = 0; x < w; x++) {
+      b.set(x, y, 0, stone(x, y, 0));
+      b.set(x, y, 7, stone(x, y, 7));
+      if (x > 0 && x < w - 1) for (let z = 1; z <= 11; z++) if (z !== 7) b.set(x, y, z, 'air');
+    }
+    for (const x of [0, w - 1]) for (let z = 0; z <= 11; z++) b.set(x, y, z, z === 0 || z === 7 || z === 11 ? h.mas.quoin[y % 2] : stone(x, y, z));
+  }
+  for (let x = 1; x < w - 1; x++) for (let z = 8; z <= 10; z++) b.set(x, G, z, x % 4 === 0 ? 'stripped_dark_oak_log[axis=z]' : 'dark_oak_planks');
+  for (const cx of [3, 9]) arch(b, { x: cx, y: 1, z: 11, facing: 'south', width: 5, height: G - 1, style: 'pointed', depth: 1, block: 'stone_bricks', stairs: 'stone_brick_stairs' });
+  arch(b, { x: 0, y: 1, z: 9, facing: 'west', width: 3, height: G - 1, style: 'pointed', depth: 1, block: 'stone_bricks', stairs: 'stone_brick_stairs' });
+  arch(b, { x: w - 1, y: 1, z: 9, facing: 'east', width: 3, height: G - 1, style: 'pointed', depth: 1, block: 'stone_bricks', stairs: 'stone_brick_stairs' });
+  for (const u of [0, 6, 12]) b.set(u, G - 1, front, `${h.frame.stairs}[facing=north,half=top]`);
+  for (let u = 0; u < w; u++) if (u % 3 !== 0) b.set(u, G, front, `${h.frame.log}[axis=x]`);
+  // Portal zum Saal, Fenster.
+  b.door(6, 1, 7, 'dark_oak_door', { facing: 'north', hinge: 'left' });
+  b.set(5, 3, 7, 'stone_brick_stairs[facing=west,half=top]');
+  b.set(7, 3, 7, 'stone_brick_stairs[facing=east,half=top]');
+  b.set(6, 3, 7, 'chiseled_stone_bricks');
+  b.set(6, 4, 8, `${COLOR.rot.wallBanner}[facing=south]`);
+  for (const x of [2, 3, 9, 10]) for (let y = 2; y <= 3; y++) b.set(x, y, 7, 'iron_bars');
+  for (const x of [3, 9]) for (let y = 2; y <= 3; y++) b.set(x, y, 0, 'iron_bars');
+  for (const x of [2, 10]) hangingLantern(b, { x, y: G - 1, z: 9, chain: 0 });
+  // Bänke und Fässer unter der Laube.
+  for (const x of [1, 11]) b.set(x, 1, 8, 'barrel[facing=up]');
+  for (const x of [3, 4, 8, 9]) b.set(x, 1, 8, `${h.frame.stairs}[facing=north,half=bottom]`);
+
+  // Rähm, Dachboden, Dach mit Zwerchhaus.
+  for (const side of houseSides(w, front)) for (let u = 0; u < side.len; u++) {
+    const [x, z] = side.at(u);
+    b.set(x, top, z, `${h.frame.log}[axis=${side.axis}]`);
+  }
+  for (let x = 1; x < w - 1; x++) for (let z = 1; z < front; z++) b.set(x, top, z, h.floor);
+  const main = { type: 'gable', axis: 'x', x1: -1, x2: w, z1: -1, z2: front + 1, eave: top, slope: 2 };
+  for (const side of houseSides(w, front)) {
+    const gableSide = side.name === 'left' || side.name === 'right';
+    for (let u = 0; u < side.len; u++) {
+      const [x, z] = side.at(u);
+      fillUnderRoof(b, [main], x, z, top + 1, gableSide ? (hh) => gableTimber(h, u, hh, side.len, 'z') : () => h.fill);
+    }
+  }
+  drawRoofs(b, [main], h.roofSet, h.salt + 9, h.ox, h.oz);
+  crossGable(b, h, main, top, front);
+  b.set(6, top + 5, front + 1, `${COLOR.gelb.wallBanner}[facing=south]`);
+  for (const cx of [2, 10]) {
+    const c = topCell([main], cx, 3);
+    chimney(b, { x: cx, y: top + 1, z: 3, height: c.top - top + 2, block: 'bricks' });
+  }
+
+  // Eckerker an den vorderen Ecken: vom Laubendach bis über die Traufe, Spitzhelm.
+  for (const [ex, side] of [[0, -1], [w - 1, 1]]) {
+    const cells = [[ex + side, front - 1], [ex + side, front], [ex + side, front + 1], [ex, front + 1], [ex - side, front + 1]];
+    const inner = [[ex, front], [ex, front - 1], [ex - side, front]];
+    for (const [x, z] of cells) b.set(x, G, z, `${h.frame.stairs}[facing=${towardCenter(x - ex, z - front)},half=top]`);
+    b.set(ex + side, G - 1, front + 1, `${h.frame.stairs}[facing=${towardCenter(side, 1)},half=top]`);
+    for (let y = G + 1; y <= top + 3; y++) {
+      cells.forEach(([x, z], i) => {
+        const post = i === 0 || i === 2 || i === 4;
+        const win = !post && ((y >= s1 + 2 && y <= s1 + 4) || (y >= s2 + 2 && y <= s2 + 3) || y === top + 2);
+        b.set(x, y, z, post ? `${h.frame.log}[axis=y]` : win ? 'glass_pane' : y === s2 || y === top ? `${h.frame.log}[axis=${i === 1 ? 'z' : 'x'}]` : h.fill);
+      });
+      const open = (y > s1 && y < s2) || (y > s2 && y < top);
+      for (const [x, z] of inner) b.set(x, y, z, open ? 'air' : y > top ? h.fill : b.get(x, y, z));
+    }
+    for (const yy of [s1, s2]) for (const [x, z] of [...inner, [ex + side, front]]) b.set(x, yy, z, h.floor);
+    b.set(ex + side, s1, front, `${h.frame.stairs}[facing=${towardCenter(side, 0)},half=top]`);
+    for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== 2) continue;
+      b.set(ex + dx, top + 4, front + dz, `${ROOFS.schiefer[0]}[facing=${towardCenter(dx, dz)},half=top]`);
+    }
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) b.set(ex + dx, top + 4, front + dz, `${h.frame.log}[axis=y]`);
+    coneRoof(b, { x: ex, z: front, y: top + 5, r: 2, slope: 3.6, tip: side < 0 ? 'rot' : 'gelb', set: ROOF_SETS.schiefer, salt: 131 });
+  }
+
+  // Dachreiter mit Glocke auf dem First.
+  const ridge = roofCell(main, 6, 6);
+  const ry = ridge.level + 2;
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    b.set(6 + dx, ry, 6 + dz, 'dark_oak_planks');
+    for (let y = ry + 1; y <= ry + 3; y++) b.set(6 + dx, y, 6 + dz, dx !== 0 && dz !== 0 ? 'dark_oak_fence' : 'air');
+    b.set(6 + dx, ry + 4, 6 + dz, 'dark_oak_planks');
+  }
+  b.set(6, ry + 3, 6, 'bell[attachment=ceiling,facing=south]');
+  coneRoof(b, { x: 6, z: 6, y: ry + 5, r: 1, slope: 3, stairs: 'waxed_oxidized_cut_copper_stairs', full: 'waxed_oxidized_cut_copper', tip: 'rod' });
+
+  // Einrichtung: Ratskeller, Ratssaal, Archiv, Dachboden; Leiter hinten rechts.
+  for (let y = 1; y <= top; y++) b.set(w - 2, y, 1, 'ladder[facing=south]');
+  storage(b, { x: 1, y: 1, z: 1, facing: 'south', width: 8, height: 2, barrel: true });
+  diningTable(b, { x: 3, y: 1, z: 4, facing: 'south', length: 5, width: 1, wood: 'fichte', headChairs: false });
+  diningTable(b, { x: 3, y: s1 + 1, z: 5, facing: 'south', length: 7, width: 2, wood: 'schwarzeiche', top: 'carpet', cloth: 'rot' });
+  b.set(1, s1 + 1, 5, 'dark_oak_stairs[facing=west,half=bottom]');
+  b.set(1, s1 + 1, 6, 'dark_oak_stairs[facing=west,half=bottom]');
+  bookWall(b, { x: 1, y: s1 + 1, z: 1, facing: 'south', width: 8, height: 3 });
+  for (const x of [3, 6, 9]) hangingLantern(b, { x, y: s2 - 1, z: 6, chain: 0 });
+  for (const x of [2, 5, 8]) b.set(x, s1 + 3, 11, `${(x % 2 === 0 ? COLOR.rot : COLOR.gelb).wallBanner}[facing=north]`);
+  bookWall(b, { x: 1, y: s2 + 1, z: 1, facing: 'south', width: 9, height: 3 });
+  for (const x of [3, 7]) b.set(x, s2 + 1, 6, 'lectern[facing=south]');
+  storage(b, { x: 1, y: s2 + 1, z: 10, facing: 'north', width: 4, height: 1 });
+  storage(b, { x: 1, y: top + 1, z: 1, facing: 'south', width: 4, height: 1, barrel: true });
+  lightRoom(b, { x1: 1, y1: 1, z1: 1, x2: w - 2, y2: G - 1, z2: 6 });
+  lightRoom(b, { x1: 1, y1: 1, z1: 8, x2: w - 2, y2: G - 1, z2: 11 });
+  lightRoom(b, { x1: 1, y1: s1 + 1, z1: 1, x2: w - 2, y2: s2 - 1, z2: front - 1 });
+  lightRoom(b, { x1: 1, y1: s2 + 1, z1: 1, x2: w - 2, y2: top - 1, z2: front - 1 });
+  lightRoom(b, { x1: 1, y1: top + 1, z1: 1, x2: w - 2, y2: top + 3, z2: front - 1 });
+}
+
+// ------------------------------------------------------------------ Kirche (Backsteingotik)
+
+// Westturm tx1 … tx2 × tz1 … tz2, Langhaus nx1 … nx2 × nz1 … nz2 (Wandlinien), Chor bis cx2 (Polygon), alles auf OBER.
+const CH = { tx1: 21, tx2: 27, tz1: -16, tz2: -10, tTop: 38, nx1: 28, nx2: 41, nz1: -18, nz2: -8, eave: 18, cx2: 45, cz1: -16, cz2: -10, cTop: 16, cz: -13 };
+const CH_BAYS = [28, 31, 34, 37, 40]; // Strebepfeiler und Arkadenpfeiler
+const brickAt = (x, y, z) => patch([['bricks', 16], ['granite', 1], ['terracotta', 1], ['mud_bricks', 1]], x, y, z, 101, 2.5);
+
+function stainedAt(x, y, z) {
+  const row = ((y % 4) + 4) % 4;
+  if (row === 0) return 'red_stained_glass_pane';
+  if (row === 2 && (x + z) % 2 === 0) return 'yellow_stained_glass_pane';
+  return (x + z + y) % 3 === 0 ? 'light_blue_stained_glass_pane' : 'blue_stained_glass_pane';
+}
+
+// Spitzbogenfenster in einer Wand: cells = Zellen [x, z] nebeneinander (Reihenfolge von „links“ nach „rechts“),
+// Glas von y1 bis y2, darüber der Bogen aus Treppen; dirs = Richtung zur linken und zur rechten Laibung.
+function lancet(b, cells, y1, y2, dirs, stairs = 'brick_stairs') {
+  cells.forEach(([x, z], i) => {
+    for (let y = y1; y <= y2; y++) b.set(x, y, z, stainedAt(x, y, z));
+    if (cells.length === 1) b.set(x, y2 + 1, z, 'brick_slab[type=top]');
+    else if (i === 0) b.set(x, y2 + 1, z, `${stairs}[facing=${dirs[0]},half=top]`);
+    else if (i === cells.length - 1) b.set(x, y2 + 1, z, `${stairs}[facing=${dirs[1]},half=top]`);
+  });
+}
+
+function church(b) {
+  const C = CH;
+  const y0 = OBER;
+  const roofN = { type: 'gable', axis: 'x', x1: C.nx1 - 1, x2: C.nx2 + 1, z1: C.nz1 - 1, z2: C.nz2 + 1, eave: C.eave, slope: 2 };
+  const roofC = { type: 'hip', x1: C.nx2 - 4, x2: C.cx2 + 1, z1: C.cz1 - 1, z2: C.cz2 + 1, eave: C.cTop, slope: 2 };
+
+  b.phase('Kirche: Langhaus');
+  forBox(C.nx1, y0, C.nz1 - 1, C.cx2, y0, C.nz2 + 1, (x, y, z) => b.set(x, y, z, 'stone_bricks'));
+  forBox(C.nx1, y0 + 1, C.nz1, C.nx2, C.eave, C.nz2, (x, y, z) => {
+    const wall = x === C.nx1 || x === C.nx2 || z === C.nz1 || z === C.nz2;
+    if (!wall) b.set(x, y, z, 'air');
+    else if (y === y0 + 1) b.set(x, y, z, 'stone_bricks');
+    else if (y === C.eave - 1 && (z === C.nz1 || z === C.nz2) && !CH_BAYS.includes(x)) b.set(x, y, z, (x % 2 === 0) ? 'calcite' : brickAt(x, y, z));
+    else b.set(x, y, z, brickAt(x, y, z));
+  });
+  // Sockel mit Schräge, Strebepfeiler, Fenster.
+  for (let x = C.nx1; x <= C.nx2; x++) {
+    for (const [z, out] of [[C.nz1 - 1, 'north'], [C.nz2 + 1, 'south']]) {
+      const toWall = OPP[out];
+      if (CH_BAYS.includes(x)) {
+        for (let y = y0 + 1; y <= 14; y++) b.set(x, y, z, y === y0 + 1 ? 'stone_bricks' : brickAt(x, y, z));
+        b.set(x, 15, z, `brick_stairs[facing=${toWall},half=bottom]`);
+        b.set(x, 11, z, 'stone_bricks');
+      } else {
+        b.set(x, y0 + 1, z, `stone_brick_stairs[facing=${toWall},half=bottom]`);
+      }
+    }
+  }
+  for (let i = 0; i < CH_BAYS.length - 1; i++) {
+    const xa = CH_BAYS[i] + 1;
+    const xb = CH_BAYS[i] + 2;
+    for (const z of [C.nz1, C.nz2]) {
+      const portal = z === C.nz2 && i === 2;
+      if (portal) {
+        // Südportal: Doppeltür unter Spitzbogen, darüber kleines Fenster.
+        for (const x of [xa, xb]) for (let y = y0 + 1; y <= y0 + 4; y++) b.set(x, y, z, 'air');
+        for (const x of [xa, xb]) b.set(x, y0 + 1, z + 1, 'air');
+        b.door(xa, y0 + 1, z, 'dark_oak_door', { facing: 'north', hinge: 'left' });
+        b.door(xb, y0 + 1, z, 'dark_oak_door', { facing: 'north', hinge: 'right' });
+        b.set(xa, y0 + 3, z, 'stone_brick_stairs[facing=west,half=top]');
+        b.set(xb, y0 + 3, z, 'stone_brick_stairs[facing=east,half=top]');
+        b.set(xa, y0 + 4, z, 'chiseled_stone_bricks');
+        b.set(xb, y0 + 4, z, 'chiseled_stone_bricks');
+        for (const x of [xa, xb]) b.set(x, y0 + 5, z + 1, 'stone_brick_stairs[facing=north,half=bottom]');
+        lancet(b, [[xa, z], [xb, z]], 13, 15, ['west', 'east']);
+        wallLantern(b, { x: xa - 1, y: y0 + 3, z, facing: 'south', style: 'bracket', arm: 'dark_oak_fence' });
+        continue;
+      }
+      lancet(b, [[xa, z], [xb, z]], 9, 15, ['west', 'east']);
+      b.set(xa, 8, z + (z === C.nz1 ? -1 : 1), `brick_stairs[facing=${z === C.nz1 ? 'south' : 'north'},half=bottom]`);
+      b.set(xb, 8, z + (z === C.nz1 ? -1 : 1), `brick_stairs[facing=${z === C.nz1 ? 'south' : 'north'},half=bottom]`);
+      // Maßwerk: Mittelpfosten oben.
+      b.set(xa, 12, z, 'brick_wall');
+    }
+  }
+
+  b.phase('Kirche: Chor');
+  const inChoir = (x, z) => x > C.nx2 && x <= C.cx2 && z >= C.cz1 && z <= C.cz2 && !(x === C.cx2 && (z === C.cz1 || z === C.cz2));
+  for (let x = C.nx2 + 1; x <= C.cx2; x++) {
+    for (let z = C.cz1; z <= C.cz2; z++) {
+      if (!inChoir(x, z)) continue;
+      const wall = !inChoir(x + 1, z) || !inChoir(x, z - 1) || !inChoir(x, z + 1);
+      for (let y = y0 + 1; y <= C.cTop; y++) b.set(x, y, z, !wall ? 'air' : y === y0 + 1 ? 'stone_bricks' : brickAt(x, y, z));
+      b.set(x, y0 + 1, z, wall ? 'stone_bricks' : 'polished_andesite');
+    }
+  }
+  for (const [cells, dirs] of [
+    [[[43, C.cz1]], null], [[[43, C.cz2]], null], [[[C.cx2, C.cz - 1], [C.cx2, C.cz], [C.cx2, C.cz + 1]], ['north', 'south']],
+    [[[C.cx2 - 1, C.cz1 + 1]], null], [[[C.cx2 - 1, C.cz2 - 1]], null],
+  ]) lancet(b, cells, 9, 14, dirs ?? ['west', 'east']);
+  b.set(C.cx2, 12, C.cz, 'brick_wall');
+  for (const [x, z, f] of [[C.cx2 + 1, C.cz1 + 1, 'west'], [C.cx2 + 1, C.cz2 - 1, 'west'], [42, C.cz1 - 1, 'south'], [42, C.cz2 + 1, 'north']]) {
+    for (let y = y0 + 1; y <= 12; y++) b.set(x, y, z, y === y0 + 1 ? 'stone_bricks' : brickAt(x, y, z));
+    b.set(x, 13, z, `brick_stairs[facing=${f},half=bottom]`);
+  }
+
+  b.phase('Kirche: Dächer');
+  const roofs = [roofN, roofC];
+  for (let z = C.nz1; z <= C.nz2; z++) {
+    for (const x of [C.nx1, C.nx2]) fillUnderRoof(b, [roofN], x, z, C.eave + 1, (h, c) => (x === C.nx2 && (z - C.cz) % 2 === 0 && h >= 7 && c.bottom - (C.eave + h) >= 2 ? 'calcite' : brickAt(x, C.eave + h, z)));
+  }
+  for (let x = C.nx1; x <= C.nx2; x++) for (const z of [C.nz1, C.nz2]) fillUnderRoof(b, [roofN], x, z, C.eave + 1, (h) => brickAt(x, C.eave + h, z));
+  for (let x = C.nx2 + 1; x <= C.cx2; x++) {
+    for (let z = C.cz1; z <= C.cz2; z++) if (inChoir(x, z) && (!inChoir(x + 1, z) || !inChoir(x, z - 1) || !inChoir(x, z + 1))) fillUnderRoof(b, [roofC], x, z, C.cTop + 1, (h) => brickAt(x, C.cTop + h, z));
+  }
+  drawRoofs(b, roofs, ROOF_SETS.kupfer, 121);
+  // Dachreiter auf dem First über dem Chorbogen.
+  const ridge = roofCell(roofN, 39, C.cz).level + 2;
+  for (let y = ridge; y <= ridge + 2; y++) for (const [dx, dz] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) b.set(39 + dx, y, C.cz + dz, y === ridge ? 'waxed_oxidized_cut_copper' : 'dark_oak_fence');
+  b.set(39, ridge + 1, C.cz, 'bell[attachment=ceiling,facing=north]');
+  b.set(39, ridge + 2, C.cz, 'dark_oak_planks');
+  coneRoof(b, { x: 39, z: C.cz, y: ridge + 3, r: 1, slope: 3, stairs: 'waxed_oxidized_cut_copper_stairs', full: 'waxed_oxidized_cut_copper', tip: 'rod' });
+
+  b.phase('Kirche: Innenraum');
+  // Boden, Arkaden, Zuganker, Bänke, Chor mit Altar.
+  for (let x = C.nx1 + 1; x < C.nx2; x++) for (let z = C.nz1 + 1; z < C.nz2; z++) b.set(x, y0, z, (x + z) % 2 === 0 ? 'polished_andesite' : 'stone_bricks');
+  for (const z of [C.cz - 2, C.cz + 2]) {
+    for (let x = C.nx1 + 1; x < C.nx2; x++) {
+      if (CH_BAYS.includes(x)) {
+        for (let y = y0 + 1; y <= C.eave; y++) b.set(x, y, z, y === y0 + 1 ? 'chiseled_stone_bricks' : y === 15 ? 'chiseled_stone_bricks' : 'stone_bricks');
+        continue;
+      }
+      const left = CH_BAYS.includes(x - 1);
+      b.set(x, 16, z, `stone_brick_stairs[facing=${left ? 'west' : 'east'},half=top]`);
+      b.set(x, 17, z, 'stone_bricks');
+      b.set(x, 18, z, 'stone_bricks');
+    }
+  }
+  for (const x of CH_BAYS.slice(1, -1)) {
+    for (let z = C.nz1 + 1; z < C.nz2; z++) b.set(x, C.eave + 1, z, 'stripped_spruce_log[axis=z]');
+    hangingLantern(b, { x, y: C.eave - 2, z: C.cz, chain: 2 });
+  }
+  for (let x = C.nx1 + 2; x <= C.nx2 - 3; x++) {
+    if (CH_BAYS.includes(x)) continue;
+    for (const z of [C.nz1 + 1, C.cz - 2, C.cz - 1, C.cz + 1, C.cz + 2, C.nz2 - 1]) {
+      if (z === C.cz - 2 || z === C.cz + 2) continue;
+      b.set(x, y0 + 1, z, 'spruce_stairs[facing=west,half=bottom]');
+    }
+  }
+  for (let x = C.nx1 + 1; x <= C.cx2 - 1; x++) b.set(x, y0 + (x > C.nx2 ? 2 : 1), C.cz, 'red_carpet');
+  // Chorbogen in der Ostwand.
+  for (let z = C.cz - 2; z <= C.cz + 2; z++) for (let y = y0 + 1; y <= 14; y++) b.set(C.nx2, y, z, 'air');
+  b.set(C.nx2, 14, C.cz - 2, 'stone_brick_stairs[facing=north,half=top]');
+  b.set(C.nx2, 14, C.cz + 2, 'stone_brick_stairs[facing=south,half=top]');
+  for (let z = C.cz - 2; z <= C.cz + 2; z++) b.set(C.nx2, y0 + 1, z, z === C.cz ? 'red_carpet' : 'polished_andesite_slab[type=bottom]');
+  b.set(C.nx2, y0 + 1, C.cz, 'polished_andesite');
+  b.set(C.nx2, y0 + 2, C.cz, 'red_carpet');
+  // Altar, Leuchter, Kanzel, Taufbecken.
+  b.set(C.cx2 - 1, y0 + 2, C.cz - 1, 'quartz_stairs[facing=north,half=bottom]');
+  b.set(C.cx2 - 1, y0 + 2, C.cz, 'chiseled_quartz_block');
+  b.set(C.cx2 - 1, y0 + 2, C.cz + 1, 'quartz_stairs[facing=south,half=bottom]');
+  b.set(C.cx2 - 1, y0 + 3, C.cz, 'candle[candles=3,lit=true]');
+  b.set(C.cx2 - 1, y0 + 3, C.cz - 1, 'candle[candles=1,lit=true]');
+  b.set(C.cx2 - 1, y0 + 3, C.cz + 1, 'candle[candles=1,lit=true]');
+  b.set(C.cx2, y0 + 5, C.cz, `${COLOR.gelb.wallBanner}[facing=west]`);
+  b.set(C.nx2 - 1, y0 + 1, C.cz - 3, 'lectern[facing=west]');
+  b.set(C.nx1 + 1, y0 + 1, C.nz2 - 1, 'water_cauldron[level=3]');
+  for (const [x, z] of [[C.nx2 + 1, C.cz - 2], [C.nx2 + 1, C.cz + 2]]) b.set(x, y0 + 2, z, 'candle[candles=4,lit=true]');
+  lightRoom(b, { x1: C.nx1 + 1, y1: y0 + 1, z1: C.nz1 + 1, x2: C.nx2 - 1, y2: C.eave, z2: C.nz2 - 1 });
+  lightRoom(b, { x1: C.nx2 + 1, y1: y0 + 2, z1: C.cz1 + 1, x2: C.cx2 - 1, y2: C.cTop, z2: C.cz2 - 1 });
+
+  churchTower(b);
+}
+
+// Westturm: Ecklisenen, Portal mit Mittelpfosten, Rosette, Blendnischen, Glockenstube, Giebelkranz und Kupferhelm.
+function churchTower(b) {
+  const C = CH;
+  const y0 = OBER;
+  const cx = 24;
+  const cz = C.cz;
+  const { tx1, tx2, tz1, tz2, tTop } = C;
+  b.phase('Kirche: Westturm');
+  forBox(tx1 - 1, y0, tz1 - 1, tx2, y0, tz2 + 1, (x, y, z) => b.set(x, y, z, 'stone_bricks'));
+  const floors = [21, 30, tTop];
+  forBox(tx1, y0 + 1, tz1, tx2, tTop, tz2, (x, y, z) => {
+    const shell = x === tx1 || x === tx2 || z === tz1 || z === tz2;
+    if (shell) b.set(x, y, z, y <= y0 + 1 ? 'stone_bricks' : brickAt(x, y, z));
+    else b.set(x, y, z, floors.includes(y) ? 'spruce_planks' : 'air');
+  });
+  for (let x = tx1 + 1; x < tx2; x++) for (let z = tz1 + 1; z < tz2; z++) b.set(x, y0, z, 'polished_andesite');
+  // Lisenen: Ecken (L-förmig) und Mitte jeder Seite.
+  const faces = [
+    { name: 'W', plane: (u) => [tx1 - 1, tz1 + u], wall: (u) => [tx1, tz1 + u], toWall: 'east', lo: 'north', hi: 'south' },
+    { name: 'O', plane: (u) => [tx2 + 1, tz1 + u], wall: (u) => [tx2, tz1 + u], toWall: 'west', lo: 'north', hi: 'south' },
+    { name: 'N', plane: (u) => [tx1 + u, tz1 - 1], wall: (u) => [tx1 + u, tz1], toWall: 'south', lo: 'west', hi: 'east' },
+    { name: 'S', plane: (u) => [tx1 + u, tz2 + 1], wall: (u) => [tx1 + u, tz2], toWall: 'north', lo: 'west', hi: 'east' },
+  ];
+  const n = tx2 - tx1 + 1;
+  for (const f of faces) {
+    const lowY = f.name === 'O' ? 33 : y0 + 1;
+    for (const u of [0, n - 1]) {
+      const [x, z] = f.plane(u);
+      for (let y = lowY; y < tTop; y++) b.set(x, y, z, y <= y0 + 1 ? 'stone_bricks' : brickAt(x, y, z));
+      b.set(x, tTop, z, `brick_stairs[facing=${f.toWall},half=bottom]`);
+    }
+    const [mx, mz] = f.plane(3);
+    for (let y = f.name === 'W' ? 22 : Math.max(lowY, y0 + 1); y < tTop; y++) b.set(mx, y, mz, brickAt(mx, y, mz));
+    b.set(mx, tTop, mz, `brick_stairs[facing=${f.toWall},half=bottom]`);
+    // Gesimse zwischen den Lisenen.
+    for (const y of [21, 30]) {
+      if (f.name === 'O' && y < 33) continue;
+      for (let u = 1; u < n - 1; u++) {
+        if (u === 3) continue;
+        const [x, z] = f.plane(u);
+        b.set(x, y, z, `brick_stairs[facing=${f.toWall},half=top]`);
+      }
+    }
+    // Blendnischen und Glockenstube.
+    for (const [u0, u1] of [[1, 2], [4, 5]]) {
+      for (let y = 23; y <= 28; y++) for (let u = u0; u <= u1; u++) {
+        if (f.name === 'O') continue;
+        const [x, z] = f.wall(u);
+        b.set(x, y, z, y === 23 ? 'smooth_stone_slab[type=top]' : 'calcite');
+      }
+      if (f.name !== 'O') {
+        const [ax, az] = f.wall(u0);
+        const [bx, bz] = f.wall(u1);
+        b.set(ax, 29, az, `brick_stairs[facing=${f.lo},half=top]`);
+        b.set(bx, 29, bz, `brick_stairs[facing=${f.hi},half=top]`);
+      }
+      for (let y = 32; y <= 35; y++) for (let u = u0; u <= u1; u++) {
+        const [x, z] = f.wall(u);
+        b.set(x, y, z, y === 32 ? 'dark_oak_trapdoor[facing=' + OPP[f.toWall] + ',half=top,open=false]' : 'air');
+      }
+      const [ax, az] = f.wall(u0);
+      const [bx, bz] = f.wall(u1);
+      b.set(ax, 36, az, `brick_stairs[facing=${f.lo},half=top]`);
+      b.set(bx, 36, bz, `brick_stairs[facing=${f.hi},half=top]`);
+    }
+  }
+  // Portal: gestufter Spitzbogen mit Mittelpfosten.
+  arch(b, { x: tx1 - 1, y: y0 + 1, z: cz, facing: 'west', width: 5, height: 7, style: 'pointed', depth: 1, block: 'stone_bricks', stairs: 'stone_brick_stairs' });
+  arch(b, { x: tx1, y: y0 + 1, z: cz, facing: 'west', width: 3, height: 5, style: 'pointed', depth: 1, block: 'stone_bricks', stairs: 'stone_brick_stairs' });
+  b.door(tx1, y0 + 1, cz - 1, 'dark_oak_door', { facing: 'east', hinge: 'right' });
+  b.door(tx1, y0 + 1, cz + 1, 'dark_oak_door', { facing: 'east', hinge: 'left' });
+  for (let y = y0 + 1; y <= y0 + 3; y++) b.set(tx1, y, cz, y === y0 + 3 ? 'chiseled_stone_bricks' : 'stone_brick_wall');
+  b.set(tx1, y0 + 4, cz, 'chiseled_stone_bricks');
+  for (const z of [cz - 2, cz + 2]) wallLantern(b, { x: tx1 - 1, y: y0 + 4, z: z + (z < cz ? -1 : 1), facing: 'west', style: 'bracket', arm: 'dark_oak_fence' });
+  // Rosette.
+  window(b, { x: tx1, y: 15, z: cz, facing: 'west', style: 'round', width: 5, glass: 'blue_stained_glass_pane', stairs: 'stone_brick_stairs' });
+  b.set(tx1, 17, cz, 'yellow_stained_glass_pane');
+  for (const [dy, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) b.set(tx1, 17 + dy, cz + dz, 'red_stained_glass_pane');
+  for (const z of [cz - 2, cz - 1, cz, cz + 1, cz + 2]) b.set(tx1 - 1, 14, z, 'stone_brick_slab[type=bottom]');
+  // Durchgang ins Langhaus, Leiter, Glocke.
+  for (let z = cz - 1; z <= cz + 1; z++) for (let y = y0 + 1; y <= y0 + 5; y++) b.set(tx2, y, z, 'air');
+  b.set(tx2, y0 + 5, cz - 1, 'brick_stairs[facing=north,half=top]');
+  b.set(tx2, y0 + 5, cz + 1, 'brick_stairs[facing=south,half=top]');
+  for (let y = y0 + 1; y < tTop; y++) b.set(cx, y, tz1 + 1, 'ladder[facing=south]');
+  b.set(cx, tTop, tz1 + 1, 'spruce_trapdoor[facing=south,half=top,open=false]');
+  for (let x = tx1 + 1; x < tx2; x++) b.set(x, 36, cz, 'stripped_dark_oak_log[axis=x]');
+  b.set(cx, 35, cz, 'bell[attachment=ceiling,facing=west]');
+  lightRoom(b, { x1: tx1 + 1, y1: y0 + 1, z1: tz1 + 1, x2: tx2 - 1, y2: 20, z2: tz2 - 1 });
+  lightRoom(b, { x1: tx1 + 1, y1: 22, z1: tz1 + 1, x2: tx2 - 1, y2: 29, z2: tz2 - 1 });
+  // Fialen auf den Ecklisenen und achteckiger Kupferhelm.
+  for (const [x, z] of [[tx1 - 1, tz1 - 1], [tx2 + 1, tz1 - 1], [tx1 - 1, tz2 + 1], [tx2 + 1, tz2 + 1]]) {
+    b.set(x, tTop, z, brickAt(x, tTop, z));
+    b.set(x, tTop + 1, z, brickAt(x, tTop + 1, z));
+    b.set(x, tTop + 2, z, 'brick_wall');
+    b.set(x, tTop + 3, z, 'waxed_oxidized_cut_copper');
+    b.set(x, tTop + 4, z, 'waxed_oxidized_lightning_rod[facing=up]');
+  }
+  const peak = octSpire(b, { x: cx, z: cz, y: tTop + 1, r: 3, h: 20, set: ROOF_SETS.kupfer, salt: 122 });
+  // Giebel über jeder Seite (Wimperg) mit Nische, vor dem Helm.
+  for (const f of faces) {
+    for (let u = 0; u < n; u++) {
+      const h = 4 - Math.abs(u - 3);
+      const [x, z] = f.wall(u);
+      for (let y = tTop + 1; y <= tTop + h; y++) b.set(x, y, z, u === 3 && y >= tTop + 2 && y <= tTop + 3 ? 'calcite' : brickAt(x, y, z));
+      b.set(x, tTop + h + 1, z, u === 3 ? 'brick_wall' : `brick_stairs[facing=${u < 3 ? f.hi : f.lo},half=bottom]`);
+    }
+  }
+  b.set(cx, peak + 1, cz, 'gold_block');
+  b.set(cx, peak + 2, cz, 'iron_bars');
+  b.set(cx, peak + 3, cz, 'iron_bars');
+  b.set(cx - 1, peak + 3, cz, 'iron_bars');
+  b.set(cx + 1, peak + 3, cz, 'iron_bars');
+  b.set(cx, peak + 4, cz, 'iron_bars');
+}
+
+// ------------------------------------------------------------------ Marktplatz: Brunnen, Stände, Linden
+
+const octDist = (dx, dz) => Math.max(Math.abs(dx), Math.abs(dz), (Math.abs(dx) + Math.abs(dz)) * 0.72);
+
+// Marktbrunnen: achteckiges Becken mit Sitzstufe, Mittelstock mit Wasserspeiern, Kapitell, Fialen und Laterne.
+function marketFountain(b) {
+  const { cx, cz } = MARKET;
+  const y0 = OBER;
+  for (let dz = -6; dz <= 6; dz++) {
+    for (let dx = -6; dx <= 6; dx++) {
+      const o = octDist(dx, dz);
+      const x = cx + dx;
+      const z = cz + dz;
+      if (o < 3.5) {
+        b.set(x, y0 - 1, z, 'stone_bricks');
+        b.set(x, y0, z, 'water[level=0]');
+        b.set(x, y0 + 1, z, 'water[level=0]');
+      } else if (o < 4.5) {
+        const corner = Math.abs(Math.abs(dx) - Math.abs(dz)) <= 1 && Math.abs(dx) >= 2;
+        b.set(x, y0 - 1, z, 'stone_bricks');
+        b.set(x, y0, z, 'stone_bricks');
+        b.set(x, y0 + 1, z, corner ? 'chiseled_stone_bricks' : patch([['stone_bricks', 5], ['mossy_stone_bricks', 1], ['cracked_stone_bricks', 1]], x, y0 + 1, z, 91, 2));
+        b.set(x, y0 + 2, z, 'polished_andesite_slab[type=bottom]');
+      } else if (o < 5.3) {
+        b.set(x, y0 + 1, z, 'stone_brick_slab[type=bottom]');
+      }
+    }
+  }
+  // Mittelstock im Wasser.
+  for (let dz = -1; dz <= 1; dz++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const corner = dx !== 0 && dz !== 0;
+      for (let y = y0; y <= y0 + 2; y++) b.set(cx + dx, y, cz + dz, corner ? 'polished_andesite' : 'stone_bricks');
+      b.set(cx + dx, y0 + 3, cz + dz, corner ? 'stone_brick_wall' : dx === 0 && dz === 0 ? 'chiseled_stone_bricks' : `stone_brick_stairs[facing=${towardCenter(dx, dz)},half=bottom]`);
+    }
+  }
+  for (const [dx, dz, f] of [[2, 0, 'east'], [-2, 0, 'west'], [0, 2, 'south'], [0, -2, 'north']]) b.set(cx + dx, y0 + 2, cz + dz, `weathered_lightning_rod[facing=${f}]`);
+  b.set(cx, y0 + 4, cz, 'polished_andesite');
+  b.set(cx, y0 + 5, cz, 'stone_brick_wall');
+  b.set(cx, y0 + 6, cz, 'chiseled_stone_bricks');
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    b.set(cx + dx, y0 + 6, cz + dz, `stone_brick_stairs[facing=${towardCenter(dx, dz)},half=top]`);
+    b.set(cx + dx, y0 + 7, cz + dz, 'stone_brick_wall');
+    b.set(cx + dx, y0 + 8, cz + dz, 'stone_button[face=floor,facing=north]');
+  }
+  for (const [dx, dz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) b.set(cx + dx, y0 + 6, cz + dz, 'stone_brick_slab[type=top]');
+  b.set(cx, y0 + 7, cz, 'chiseled_stone_bricks');
+  b.set(cx, y0 + 8, cz, 'stone_brick_wall');
+  b.set(cx, y0 + 9, cz, 'stone_brick_wall');
+  b.set(cx, y0 + 10, cz, 'lantern[hanging=false]');
+  b.set(cx, y0 + 1, cz + 4, 'lily_pad');
+  for (const [dx, dz] of [[2, -2], [-2, 1], [1, 2]]) b.set(cx + dx, y0, cz + dz, 'sea_pickle[pickles=1,waterlogged=true]');
+}
+
+const STALL_GOODS = {
+  gemuese: ['pumpkin', 'melon', 'carved_pumpkin[facing=south]', 'hay_block[axis=x]'],
+  baecker: ['hay_block[axis=z]', 'cake', 'barrel[facing=up]', 'hay_block[axis=x]'],
+  tuch: ['white_wool', 'red_wool', 'blue_wool', 'yellow_wool'],
+  kraeuter: ['potted_fern', 'flower_pot', 'potted_red_tulip', 'potted_azalea_bush'],
+  toepfer: ['decorated_pot[facing=south]', 'flower_pot', 'decorated_pot[facing=east]', 'terracotta'],
+  wein: ['barrel[facing=south]', 'barrel[facing=up]', 'brewing_stand', 'barrel[facing=east]'],
+  fisch: ['barrel[facing=up]', 'dried_kelp_block', 'barrel[facing=south]', 'packed_ice'],
+};
+
+// Marktstand (lokal, Front bei z 2): vier Pfosten, gestreifte Markise, Theke mit Waren, Kisten dahinter.
+function marketStall(b, { x, z, facing, color, goods, wood = 'spruce' }) {
+  b.transform(plotTransform({ x, y: OBER, z, w: 4, d: 3, facing }), () => {
+    const stripe = [COLOR[color].wool, 'white_wool'];
+    for (const [px, pz, h] of [[0, 0, 3], [3, 0, 3], [0, 2, 2], [3, 2, 2]]) for (let y = 1; y <= h; y++) b.set(px, y, pz, `${wood}_fence`);
+    for (let lx = 0; lx <= 3; lx++) {
+      const wool = stripe[lx % 2];
+      b.set(lx, 4, 0, wool);
+      b.set(lx, 4, 1, wool);
+      b.set(lx, 3, 2, wool);
+      b.set(lx, 3, 3, `${COLOR[color].carpet}`);
+      b.set(lx, 2, 3, `${wood}_trapdoor[facing=south,half=top,open=true]`);
+    }
+    const list = STALL_GOODS[goods];
+    const at = (i) => list[((i % list.length) + list.length) % list.length];
+    for (const lx of [1, 2]) {
+      b.set(lx, 1, 2, lx === 1 ? 'barrel[facing=south]' : `${wood}_slab[type=top]`);
+      b.set(lx, 2, 2, at(lx + x + z));
+      b.set(lx, 1, 0, at(lx * 3 + z).startsWith('potted') || at(lx * 3 + z) === 'flower_pot' ? 'barrel[facing=up]' : at(lx * 3 + z));
+    }
+    b.set(0, 1, 1, 'chest[facing=east,type=single]');
+    b.set(3, 1, 1, `${wood}_stairs[facing=west,half=bottom]`);
+  });
+}
+
+// Baumscheibe mit Sitzbank und Linde.
+function marketTree(b, x, z, seed) {
+  for (let dz = -2; dz <= 2; dz++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      const ring = Math.max(Math.abs(dx), Math.abs(dz));
+      if (ring <= 1) b.set(x + dx, OBER, z + dz, ring === 0 ? 'rooted_dirt' : patch([['moss_block', 2], ['grass_block', 3], ['coarse_dirt', 1]], x + dx, OBER, z + dz, 92));
+      else if (Math.abs(dx) === 2 && Math.abs(dz) === 2) b.set(x + dx, OBER + 1, z + dz, 'stone_bricks');
+      else b.set(x + dx, OBER + 1, z + dz, `spruce_stairs[facing=${towardCenter(-dx, -dz)},half=bottom]`);
+    }
+  }
+  for (const [dx, dz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) b.set(x + dx, OBER + 1, z + dz, choose(['fern', 'short_grass', 'lily_of_the_valley', 'oxeye_daisy'], 93, x + dx, z + dz));
+  tree(b, { x, y: OBER + 1, z, species: 'eiche', size: 'klein', seed, roots: false, ground: false });
+}
+
+function market(b) {
+  b.phase('Marktbrunnen');
+  marketFountain(b);
+  b.phase('Marktstände und Linden');
+  for (const s of [
+    { x: 7, z: -10, facing: 'south', color: 'rot', goods: 'gemuese' },
+    { x: 12, z: -10, facing: 'south', color: 'gelb', goods: 'baecker' },
+    { x: 7, z: 2, facing: 'north', color: 'blau', goods: 'tuch' },
+    { x: 12, z: 2, facing: 'north', color: 'gruen', goods: 'kraeuter' },
+    { x: 11, z: -5, facing: 'west', color: 'orange', goods: 'toepfer' },
+    { x: 15, z: -5, facing: 'east', color: 'violett', goods: 'wein' },
+  ]) {
+    b.step();
+    marketStall(b, s);
+  }
+  b.step();
+  marketTree(b, -12, -8, 1);
+  marketTree(b, -12, 3, 2);
+  for (const [x, z] of [[-9, -10], [5, -10], [-9, 5], [5, 5]]) lampPost(b, { x, y: OBER + 1, z, height: 4, post: 'dark_oak_fence', base: 'stone_bricks', style: 'top' });
+}
+
 export default function build(b) {
   terrain(b);
   townWalls(b);
@@ -1810,4 +2526,9 @@ export default function build(b) {
   terraceWall(b);
   lowerTown(b);
   upperTown(b);
+  market(b);
+  church(b);
+  rathaus(b);
+  castleYard(b);
+  countryside(b);
 }
