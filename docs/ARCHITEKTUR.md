@@ -17,6 +17,8 @@ und nennt sie im Abschlussbericht.
   Node und auch auf dem Handy laufen. Weiterhin gilt: keine Mojang-Dateien im Repo oder auf der Seite. Der Katalog
   (`data/catalog.json`, nur Projekttexte, Größen, Zahlen, IDs) liegt im Repo; die Spieldaten lädt der Browser selbst aus
   öffentlichen Quellen (misode/mcmeta, „Weg A“, §13). Lokal (127.0.0.1/localhost) bleibt `game-data/` nutzbar.
+  Änderung (2026-10-31, Entscheidung des Users): Ausnahme sind die fertig gerenderten Vorschaubilder `data/thumbs/<id>.webp`
+  (wie Screenshots aus dem Spiel): Sie liegen im Repo und werden online wie lokal auf den Karten gezeigt (§8, §10).
 - **Technik:** statisches HTML/CSS/JS mit ES-Modulen. Kein Build-Tool, **keine npm-Pakete, keine
   CDNs**. Node-Skripte nur mit Bordmitteln (`node:fs`, `node:zlib`, `node:http`, `node:test`,
   `node:child_process` …). Installiert: Node 24, Python 3.13, git, Chrome.
@@ -82,7 +84,9 @@ minecraft-block-kompass/
   tests/browser.mjs  Chrome-Steuerung über DevTools-Protokoll (aus dem Dyna-Kompass übernommen)
   game-data/         ERZEUGT, gitignored
   data/catalog.json  ERZEUGT von build-catalog.mjs, aber im Repo (Etappe 1; ohne Spieldaten, mit der Seite veröffentlicht)
-  thumbs/            ERZEUGT, gitignored (Vorschaubilder, nur lokal)
+  data/thumbs/       ERZEUGT von make-thumbs.mjs, aber im Repo (2026-10-31; Vorschaubilder <id>.webp und index.json;
+                     views.json = von Hand gepflegte Kamera-Einstellungen je Bau, siehe make-thumbs in §10)
+  thumbs/            alter lokaler Ordner der Vorschaubilder (bis 2026-10-30), gitignored als /thumbs/, nicht mehr genutzt
   tmp/               gitignored (Screenshots, Testreste)
   .nojekyll          GitHub Pages liefert alle Dateien unverändert aus (kein Jekyll)
   docs/              ARCHITEKTUR.md, recherche/*.md
@@ -795,6 +799,11 @@ viewer.setView('iso' | 'top' | 'front' | 'side')
 viewer.screenshot()                 // → Promise<Blob>
 viewer.dispose()
 ```
+- Änderung (2026-10-31, Vorschaubilder): `viewer.load(source, params, { crop })` – optionaler Schnitt
+  `{ minX, maxX, minY, maxY, minZ, maxZ }` (Block-Koordinaten, inklusiv, `null` = ganzer Bau). Der Worker prüft ihn
+  (`checkCrop`, `CROP_KEYS`, EngineError code `source`) und entfernt nach dem Bauen alle Blöcke außerhalb (`cropVolume`), bevor
+  er meshet; Ergebnis, Box und Kamera beziehen sich dann auf den geschnittenen Bau. Genutzt nur von `tests/visual/thumb.js`
+  (`cut` in `data/thumbs/views.json`, §10); die Bau-Seite lädt ohne Schnitt.
 - Änderung (2026-10-28): Die Quellenart `structure` (Original-Strukturen aus game-data/mcmeta) gibt es nicht mehr; der Worker
   lehnt sie wie jede unbekannte Quelle ab („Unbekannte Quelle“). Quellen: `module`, `shape`, `upload` (Datei-Import §12.2/§12.3,
   auch „Meine Bauten“, §8) sowie die Testquellen `gallery` und `synthetic`.
@@ -982,6 +991,29 @@ lange Namen, ab 720 px 3, ab 1100 px 4 Spalten, unter 340 px eine; ein ungerader
 `css/browse.css` nicht mehr ein. Styles der Kategorie-Seite in `css/browse.css` (nach `style.css` eingebunden). `data.js` übernimmt zusätzlich die Katalogfelder von Runde 2 (`description`,
 `sources`, `credits`, `defaultScale`, `variants`, `phases`, `sizeClass`; nur wenn vorhanden), `shared.js` exportiert `SIZE_CLASS_KEYS`.
 Alte Felder wie `difficulty` und `facts` übernimmt `data.js` nicht. Karten zeigen Größe und Blockzahl, keine Schwierigkeit.
+Änderung (2026-10-31, Vorschaubilder online): `loadCatalog` und `loadBuildEntry` laden `data/thumbs/index.json` online wie lokal
+(`loadThumbIds`) und tragen `thumb = 'data/thumbs/<id>.webp'` ein. Karten der Kategorie-Seite und von „Selber erstellen“ (große
+Karte und weitere Treffer; die Startseite hat keine Bau-Karten) zeigen das Bild als `<img loading="lazy" decoding="async"
+width="640" height="400" alt="">` (Pfad über `sitePath`, also auch unter `/minecraft-block-kompass/`) im festen 16:10-Rahmen
+`.build-card__media` (kein Springen beim Laden); scheitert das Bild, ersetzt es das Kategorie-Icon (`build-card__fallback`).
+Die Bau-Seite zeigt es, bis der Bau in der 3D-Ansicht geladen ist. „Meine Bauten“ bleibt bei Icons. Die CSP bleibt (`img-src 'self'`).
+Gemessen im Pages-Nachbau (2026-10-31, Häuser, 70 Karten, erste 24 gerendert, gzip wie Pages): Der erste Aufruf lädt nur die
+Bilder im und nahe am Fenster (lazy) – Handy 390×844 7 Bilder/238 kB (Seite gesamt 445 kB; bei Slow 4G Karten nach 2,1 s, Bild
+im Fenster nach 3,3 s), Desktop 1280×900 12 Bilder/407 kB (614 kB), bei 3G lädt Chrome weiter voraus (13 Bilder/431 kB). Alle
+70 Bilder beim Durchscrollen ≈ 2,0 MB (Mittel ≈ 29 kB je Bild).
+Änderung (2026-10-31, Nacharbeit Vorschaubilder): `loadCatalog({ thumbs: false })` lädt nur den Katalog, ohne Anfrage nach
+`data/thumbs/index.json`; so laden Startseite (`home.js`) und Kategorie-Übersicht (`loadOverview`, auch bei unbekannter
+Kategorie), die nur Kacheln mit Anzahl zeigen. Das Format der Liste ist `THUMBS_INDEX_VERSION` in `js/ui/data.js`; make-thumbs
+schreibt genau diese Version (`INDEX_VERSION = THUMBS_INDEX_VERSION`), `start.mjs` ebenso für die leere Liste. Große Karte auf
+„Selber erstellen“ ab 860 px: Das Bild bleibt im 16:10-Rahmen oben in der linken Spalte (`align-self: start`, ganzer Bau
+sichtbar, nicht angeschnitten); ist der Text höher, bleibt darunter Platz.
+Kategorie-Seite ohne Springen beim Aufbau (Desktop vorher CLS 0,36–0,49, Übersicht 0,15; jetzt ≤ 0,004): Das statische Gerüst
+von `kategorie.html` hält schon Platz frei (`css/browse.css`): Titelzeile mindestens so hoch wie das Kategorie-Icon (72 px),
+eine Zeile für die Anzahl (`#category-count`, bei unbekannter Kategorie `hidden`), `main` mindestens eine Bildschirmhöhe
+(die Fußzeile steht nicht im leeren Gerüst), kein Abstand unter `#category-status`, solange dort nur der unsichtbare
+Lade-Hinweis steht. Beim Laden der Liste behalten Suche, Filter und Trefferzahl ihren Platz (`opacity: 0` statt
+`display: none`, nicht `visibility`, das bei „Weniger Bewegung“ nach dem Laden noch einen Moment verborgen bliebe);
+`setBrowseLoading` setzt dazu `inert` auf `#category-browse` (kein Fokus und kein Klick auf die durchsichtigen Elemente).
 
 Änderung (ui:build, Bau-Seite): Die Bau-Ansicht ist eine Komponente in `js/ui/build-view.js`, die `bau.html` (Container
 `#build-view` in `#build-layout`) und „Selber erstellen“ einbetten:
@@ -1127,6 +1159,12 @@ importierten Dateien (CRLF zählt als LF); `data` = Spieldaten-Version (`version
 `tests/unit/catalog-fresh.test.mjs`). `thumb` ist im Katalog immer `null`: Vorschaubilder enthalten Spieltexturen und gibt es
 nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur auf 127.0.0.1/localhost (`loadLocalThumbIds`,
 `applyThumbs` in `js/ui/data.js`), online gibt es keine Anfrage danach und die Karten zeigen das Kategorie-Icon.
+Änderung (2026-10-31, Vorschaubilder im Repo – Entscheidung des Users): Die Vorschaubilder liegen fertig gerendert in
+`data/thumbs/<id>.webp` (im Repo, mit der Seite veröffentlicht), die Liste in `data/thumbs/index.json`. `thumb` bleibt im Katalog
+`null`; die Seite lädt die Liste online wie lokal (`loadThumbIds`, `THUMBS_INDEX_PATH = 'data/thumbs/index.json'`) und
+`applyThumbs` setzt `thumb = 'data/thumbs/<id>.webp'` (`thumbPath`). `isLocalSite` und `loadLocalThumbIds` entfallen. Fehlt die
+Liste (404), gibt es still keine Bilder; ist sie kaputt oder das Netz weg, ein Hinweis in der Konsole. Gültige Bildpfade
+(Katalog, `viewEntry`): `THUMB_PATH_PATTERN` = `data/thumbs/<id>.(webp|png|avif|jpg)`.
 Ändert sich außer `generatedAt` nichts, bleibt die Datei unberührt (`writeCatalogIfChanged`).
 Änderung (catalog, verbindlich ab Runde 2 – ersetzt das kürzere Format):
 ```json
@@ -1143,7 +1181,7 @@ nur lokal (`thumbs/`, Liste in `thumbs/index.json`); die Seite ergänzt sie nur 
     "variants": { "1": { "size", "blocks", "steps" }, "0.5": { … } } | null,   (nur bei scales)
     "topMaterials": [["stone_bricks", 1234], …],      (höchstens 8, Item-IDs, absteigend)
     "sizeClass": "klein" | "mittel" | "gross" | "riesig",   (Blöcke: klein < 1 000 ≤ mittel < 10 000 ≤ gross < 100 000 ≤ riesig)
-    "thumb": "thumbs/<id>.webp" | null } ] }
+    "thumb": "data/thumbs/<id>.webp" | null } ] }   (im veröffentlichten Katalog immer null, siehe oben)
 ```
 - `defaultScale` = 1, wenn erlaubt, sonst der erste Maßstab (wie check-build). Das Feld `structure` (Original-Strukturen) entfällt
   seit 2026-10-28; das Label `original` bleibt in der Liste der Herkunft, auch wenn es gerade kein Bau nutzt.
@@ -1612,6 +1650,35 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   versucht es einmal. Als Bibliothek: `makeThumbs({ catalog, outDir, dataDir, force, only, gpu, prune, log })` →
   `{ rendered, skipped, retried, errors, orphans, durationMs }`. Render-Seite: `window.__thumb.render({ source, scale })` →
   `{ ok, data (Base64-WebP), bytes, blocks, ms }`; die Kamera-Helfer `thumbAngles`/`thumbOrbit` in `tests/visual/thumb.js` sind rein.
+  Änderung (2026-10-31, Vorschaubilder im Repo): Standard für `--out` ist `data/thumbs` (`DEFAULT_OUT_DIR`; auch
+  `build-catalog.mjs --thumbs-dir` und `start.mjs`). `index.json` = `{ version: 1, style, size, data, entries }` mit `data` =
+  Spieldaten-Stand der Hashes, Einträge nach ID sortiert (`indexText(index, stamp)`); sie wird nach jedem fertigen Bild gesichert,
+  ein abgebrochener Lauf rendert beim nächsten Aufruf nur den Rest. `--prune` löscht auch Listeneinträge ohne Katalog-Eintrag.
+  Am Ende: Gesamtgröße aller Bilder (`totalThumbBytes`); mehr als `MAX_TOTAL_BYTES` (15 MB) ist ein Fehler (dann
+  `THUMB_QUALITY` in `tests/visual/thumb.js` senken und `THUMB_STYLE` erhöhen). Unit-Test `tests/unit/thumbs-fresh.test.mjs`:
+  jeder Katalog-Eintrag hat ein Bild (WebP 640×400, Byte-Zahl wie in der Liste), dessen Hash mit `thumbHash` (Spieldaten-Stand aus
+  `game-data/meta.json`, ohne `game-data/` aus `index.data`) zum aktuellen Stand passt; keine Bilder oder Listeneinträge ohne
+  Katalog-Eintrag (erlaubt sind nur `index.json` und `views.json`); Gesamtgröße ≤ 15 MB.
+  Änderung (2026-10-31, Kamera je Bau): Für Bauten, die die Automatik schlecht trifft (geschlossener Kasten, sehr hoch und
+  schmal, sehr lang, Eingang auf der Rückseite), gibt es `data/thumbs/views.json` = `{ "<id>": { yaw, pitch, zoom, target, cut } }`
+  (von Hand gepflegt, Einträge nach ID sortiert; Option `--views <datei>`, Standard `DEFAULT_VIEWS_FILE`). Alle Felder optional,
+  mindestens eins: `yaw`/`pitch` in Grad wie oben (ersetzen Automatik und Seitenwahl; pitch −89 … 89), `zoom` 0,25 … 8 (Abstand
+  der eingepassten Ansicht geteilt durch zoom), `target` = Blickpunkt `[x, y, z]` in Block-Koordinaten (`null` = Achse
+  automatisch), `cut` = Schnitt `{ minX, maxX, minY, maxY, minZ, maxZ }` (inklusiv; Blöcke außerhalb fehlen ganz, z. B. eine
+  Decke, damit man in Räume sieht). `validateView` (in `tests/visual/thumb.js`) prüft und bringt die Felder in feste
+  Reihenfolge, `loadViews(file)` liest die Datei (fehlt sie: `{}`; Fehler nennen Datei und ID). Die Einstellung eines Eintrags
+  geht in `thumbHash(entry, { stamp, root, views })` ein (Bauten ohne Einstellung behalten ihren Hash) und als `view` in den
+  Auftrag (`jobFor(entry, view)`); die Render-Seite übergibt `cut` an `viewer.load(source, params, { crop })` (§7.4) und
+  rechnet die Kamera mit `thumbOrbit(bounds, aspect, { scores, view })` – bei einem Schnitt mit der Box des geschnittenen
+  Baus. Die Render-Seite meldet zusätzlich `bounds` und `camera` (Grad), die Ausgabe je Bild die Blockzahl. Der Frische-Test
+  rechnet die Hashes mit denselben Einstellungen und prüft, dass `views.json` nur Bauten aus dem Katalog nennt.
+  Änderung (2026-10-31, Nacharbeit): `thumbHash` zählt Quelltext mit vereinheitlichten Zeilenenden (`normalizeNewlines` aus
+  `scripts/lib/module-sources.mjs`, dieselbe Regel wie der Katalog-Fingerabdruck: CRLF und LF geben denselben Hash; die Datei
+  eines Community-Baus zählt weiter mit ihren Bytes). Jeder Lauf löscht zuerst Zwischendateien eines abgebrochenen Laufs
+  (`TEMP_FILE_PATTERN` = `<id>.webp.<pid>-<zeit>.tmp` und `index.json.<pid>-<zeit>-<zufall>.tmp`, `removeTempFiles`; Ergebnis
+  `removedTemp`), andere Dateien bleiben; `.gitignore` enthält `/data/thumbs/*.tmp`. `INDEX_VERSION` kommt aus
+  `js/ui/data.js` (`THUMBS_INDEX_VERSION`). Der Frische-Test meldet Zwischendateien, Bilder ohne Eintrag und fremde Dateien
+  getrennt, jeweils mit passendem Hinweis, und prüft `INDEX_VERSION === THUMBS_INDEX_VERSION`.
 - `node --test "tests/unit/**/*.test.mjs"` – Unit-Tests (Ordnername allein geht nicht).
   `node tests/e2e.mjs` – Klick-Test.
   Änderung (Integration Runde 2): `node tests/e2e.mjs [--only start,bau,erstellen,meine,handy] [--gpu hardware|swiftshader] [--out <ordner>]`
@@ -1963,5 +2030,8 @@ Tests: `tests/unit/data-*.test.mjs` (u. a. Gleichheit mit `game-data/` über den
 `node scripts/mirror-mcmeta.mjs` (Spiegel der festen Dateien nach `tmp/mcmeta-mirror/`), `tests/lib/mcmeta-mirror.mjs`
 (`mirrorOverrides` für `startServer({ overrides })`, nur programmatisch), `node tests/e2e-remote.mjs [--live]`
 (Pages-Nachbau auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`, mit Spiegel oder echtem GitHub;
+seit 2026-10-31 mit `data/thumbs/`: Kategorie (Desktop und Handy) und „Selber erstellen“ zeigen die Vorschaubilder
+`/minecraft-block-kompass/data/thumbs/<id>.webp` in 640×400 mit `loading="lazy"`, `decoding="async"`, festen Maßen und leerem
+`alt`, im 16:10-Rahmen, ohne Verschiebung der Karten (Lage vorher/nachher und Layout Instability API in `#category-list`);
 Abläufe `start,bau,erstellen,meine,handy,fehler`, seit 2026-10-28 nur mit Bau-Modulen, dazu Startseite ohne Scrollen, Kopf ohne
 Suche und „Meine Bauten“ ohne Anfragen an mcmeta für Liste und Bearbeiten).

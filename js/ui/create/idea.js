@@ -76,7 +76,7 @@ function featureCard({ entry, scale }) {
   const fallback = () => el('div', { class: 'build-card__fallback' }, icon(category?.icon ?? 'cube', { size: 64 }));
   let media = fallback();
   if (entry.thumb) {
-    media = el('img', { class: 'create-feature__img', src: sitePath(entry.thumb), alt: '', width: 640, height: 400, decoding: 'async' });
+    media = el('img', { class: 'create-feature__img', src: sitePath(entry.thumb), alt: '', loading: 'lazy', decoding: 'async', width: 640, height: 400 });
     media.addEventListener('error', () => {
       console.warn(`[Block-Kompass] Vorschaubild fehlt: ${entry.thumb}`);
       media.replaceWith(fallback());

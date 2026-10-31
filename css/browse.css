@@ -275,15 +275,23 @@
   }
 }
 
-/* Während des Ladens nur die Platzhalter-Karten zeigen */
+/* Während des Ladens nur die Platzhalter-Karten zeigen. Suche, Filter und Anzahl behalten ihren Platz (durchsichtig),
+   damit die Karten danach nicht verrutschen; bedienen lässt sich solange nichts (category.js setzt inert). Bewusst
+   opacity statt visibility: Bei „Weniger Bewegung“ (Übergänge 0,01 ms für alles) bliebe visibility nach dem Laden
+   noch einen Moment verborgen und nicht klickbar. */
 .browse.is-loading .browse__bar,
 .browse.is-loading .browse__filters,
 .browse.is-loading .browse__summary {
-  display: none;
+  opacity: 0;
 }
 
-.browse.is-loading .browse__layout {
-  grid-template-columns: minmax(0, 1fr);
+/* Zeile für die Trefferzahl, die nach dem Laden erscheint */
+.browse.is-loading .browse__count:empty {
+  display: block;
+}
+
+.browse.is-loading .browse__count:empty::before {
+  content: '\200b';
 }
 
 /* ---------------------------------------------------------------- Kategorie: Ergebnisse */
@@ -475,4 +483,31 @@
 /* Kategorie-Übersicht unter einer Kategorie mit Abstand */
 .browse:not([hidden]) ~ .category-overview:not([hidden]) {
   margin-top: var(--space-7);
+}
+
+/* ---------------------------------------------------------------- Kategorie: Aufbau ohne Springen
+   Welche Kategorie gezeigt wird, steht erst in der Adresse; JavaScript füllt Kopf und Liste. Bis dahin zeigt der
+   Browser das leere Gerüst. Damit danach nichts springt, hält schon das Gerüst Platz für Icon, Anzahl und Liste frei. */
+#category-head .page-head__title-row {
+  min-height: 72px; /* Höhe des Kategorie-Icons (.page-head__icon) */
+}
+
+/* Zeile für die Anzahl („42 Bauten“), bevor der Katalog da ist (bei einer unbekannten Kategorie ausgeblendet) */
+#category-count:empty:not([hidden]) {
+  display: block;
+}
+
+#category-count:empty::before {
+  content: '\200b';
+}
+
+/* Der Lade-Hinweis für Screenreader (unsichtbar) gibt dem Statusbereich keinen Abstand: Sonst rückte die Liste nach dem
+   Laden nach oben */
+#category-status:has(> .visually-hidden:only-child) {
+  margin-bottom: 0;
+}
+
+/* Fußzeile erst unter dem ersten Bildschirm: Sonst stünde sie im leeren Gerüst oben und rutschte beim Laden weg */
+main {
+  min-height: 100vh;
 }

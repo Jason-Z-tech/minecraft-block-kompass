@@ -12,11 +12,18 @@ export const CATALOG_PATH = 'data/catalog.json';
 // Logische Namen der Spieldaten (lokal liegen sie genau dort; online kommen sie über js/data/game-data.js)
 export const NAMES_PATH = 'game-data/names.json';
 export const BLOCKS_PATH = 'game-data/blocks.json';
-// Lokale Vorschaubilder (scripts/make-thumbs.mjs): nur auf dem eigenen Rechner vorhanden, nie online.
-export const THUMBS_INDEX_PATH = 'thumbs/index.json';
+// Vorschaubilder (scripts/make-thumbs.mjs): liegen im Repo unter data/thumbs/<id>.webp und werden mit der Seite
+// veröffentlicht; welche es gibt, steht in data/thumbs/index.json. Online und lokal gleich.
+export const THUMBS_DIR = 'data/thumbs/';
+export const THUMBS_INDEX_PATH = `${THUMBS_DIR}index.json`;
+// Format von data/thumbs/index.json; scripts/make-thumbs.mjs schreibt genau diese Version (INDEX_VERSION = THUMBS_INDEX_VERSION).
+// Eine andere Version kennt die Seite nicht: Dann zeigen alle Karten Icons.
+export const THUMBS_INDEX_VERSION = 1;
+// Pfad eines Vorschaubilds im Katalog-Eintrag (build.thumb)
+export const THUMB_PATH_PATTERN = /^data\/thumbs\/[a-z0-9-]{2,80}\.(?:webp|png|avif|jpg)$/;
 const DEFAULT_TIMEOUT_MS = 15000;
+const THUMBS_TIMEOUT_MS = 5000;
 const MAX_SIZE = 4064;
-const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
 const STEP_RELOAD = { text: 'Lade die Seite neu. Hilft das nicht, versuche es später noch einmal.' };
 const STEP_WAIT = { text: 'Warte ein paar Minuten und lade die Seite dann neu.' };
@@ -50,11 +57,6 @@ function damagedTitle(path) {
 function missingTitle(path) {
   if (path === CATALOG_PATH) return 'Katalog fehlt';
   return isGameData(path) ? 'Spieldaten fehlen' : 'Datei nicht gefunden';
-}
-
-/** Läuft die Seite auf dem eigenen Rechner (127.0.0.1/localhost)? Nur dort gibt es lokale Vorschaubilder. */
-export function isLocalSite(location = globalThis.location) {
-  return typeof location?.hostname === 'string' && LOCAL_HOSTS.has(location.hostname);
 }
 
 export function isSafeDataPath(path) {
@@ -225,7 +227,7 @@ export function normalizeBuild(entry) {
       module: cleanPath(entry.module, /^js\/builds\/[a-z]+\/[a-z0-9-]{2,80}\.js$/),
       scales: Array.isArray(entry.scales) ? entry.scales.filter((s) => typeof s === 'number' && s > 0 && s <= 4) : [],
       tested: entry.tested === true || entry.tested === false ? entry.tested : null,
-      thumb: cleanPath(entry.thumb, /^thumbs\/[a-z0-9-]{2,80}\.(?:webp|png|avif|jpg)$/),
+      thumb: cleanPath(entry.thumb, THUMB_PATH_PATTERN),
       ...extendedFields(entry),
     },
   };
@@ -256,15 +258,14 @@ export function normalizeCatalog(json, path = CATALOG_PATH) {
 }
 
 /**
- * IDs mit lokalem Vorschaubild aus thumbs/index.json (Format von scripts/make-thumbs.mjs: { version: 1, entries: { id: … } }).
- * Nur auf dem eigenen Rechner: online gibt es keine Vorschaubilder (sie enthalten Spieltexturen) und keine Anfrage danach.
- * Fehlt oder stört die Datei, gibt es eben keine Bilder (leere Menge, Hinweis in der Konsole).
+ * IDs mit Vorschaubild aus data/thumbs/index.json (Format von scripts/make-thumbs.mjs: { version: THUMBS_INDEX_VERSION,
+ * entries: { id: … } }), online wie lokal. Fehlt oder stört die Datei, gibt es eben keine Bilder (leere Menge; außer bei 404 ein Hinweis in der
+ * Konsole) – die Karten zeigen dann das Kategorie-Icon.
  */
-export async function loadLocalThumbIds({ location = globalThis.location, ...options } = {}) {
-  if (!isLocalSite(location)) return new Set();
+export async function loadThumbIds(options = {}) {
   try {
-    const index = await loadJson(THUMBS_INDEX_PATH, { timeoutMs: 5000, ...options });
-    if (!isPlainObject(index) || index.version !== 1 || !isPlainObject(index.entries)) throw new Error('unbekanntes Format');
+    const index = await loadJson(THUMBS_INDEX_PATH, { timeoutMs: THUMBS_TIMEOUT_MS, ...options });
+    if (!isPlainObject(index) || index.version !== THUMBS_INDEX_VERSION || !isPlainObject(index.entries)) throw new Error('unbekanntes Format');
     return new Set(Object.keys(index.entries).filter((id) => BUILD_ID_PATTERN.test(id)));
   } catch (error) {
     if (error?.kind !== 'missing') console.warn(`[Block-Kompass] ${THUMBS_INDEX_PATH} nicht nutzbar, Karten zeigen Icons:`, error);
@@ -272,19 +273,27 @@ export async function loadLocalThumbIds({ location = globalThis.location, ...opt
   }
 }
 
-/** Trägt lokale Vorschaubilder (thumbs/<id>.webp) in Einträge ohne Bild ein. ids: Ergebnis von loadLocalThumbIds. */
+/** Pfad des Vorschaubilds eines Baus (relativ zur Website-Wurzel). */
+export function thumbPath(id) {
+  return `${THUMBS_DIR}${id}.webp`;
+}
+
+/** Trägt Vorschaubilder (data/thumbs/<id>.webp) in Einträge ohne Bild ein. ids: Ergebnis von loadThumbIds. */
 export function applyThumbs(builds, ids) {
   for (const build of builds) {
-    if (!build.thumb && ids.has(build.id)) build.thumb = `thumbs/${build.id}.webp`;
+    if (!build.thumb && ids.has(build.id)) build.thumb = thumbPath(build.id);
   }
   return builds;
 }
 
-/** Lädt und prüft data/catalog.json; auf dem eigenen Rechner kommen vorhandene Vorschaubilder dazu. */
-export async function loadCatalog(options = {}) {
-  const [json, thumbIds] = await Promise.all([loadJson(CATALOG_PATH, options), loadLocalThumbIds(options)]);
+/**
+ * Lädt und prüft data/catalog.json; die Vorschaubilder aus data/thumbs/index.json kommen dazu (online wie lokal).
+ * thumbs: false = ohne Bilderliste (keine Anfrage danach) für Seiten ohne Bau-Karten, z. B. die Kategorie-Kacheln.
+ */
+export async function loadCatalog({ thumbs = true, ...options } = {}) {
+  const [json, thumbIds] = await Promise.all([loadJson(CATALOG_PATH, options), thumbs ? loadThumbIds(options) : null]);
   const catalog = normalizeCatalog(json);
-  applyThumbs(catalog.builds, thumbIds);
+  if (thumbIds) applyThumbs(catalog.builds, thumbIds);
   return catalog;
 }
 

@@ -23,7 +23,7 @@ test('data/catalog.json passt zu den Spieldaten', { skip: HAS_GAME_DATA ? false 
   assert.equal(catalog.inputs?.data, await dataFingerprint(DATA_DIR), STALE);
 });
 
-test('data/catalog.json ist vollständig gültig, ohne Vorschaubilder (online gibt es keine)', () => {
+test('data/catalog.json ist vollständig gültig, ohne Bildpfade (die Vorschaubilder stehen in data/thumbs/index.json)', () => {
   assert.equal(catalog.version, '26.2');
   assert.deepEqual(catalog.counts, countBuilds(catalog.builds));
   assert.ok(catalog.builds.length > 0);

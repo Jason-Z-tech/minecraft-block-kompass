@@ -4,6 +4,7 @@
 
 import { Viewer, ORBIT_FOV, fitOrbitDistance } from '../../js/render/renderer.js';
 import { isCommunityFile } from '../../js/data/community.js';
+import { checkCrop } from '../../js/render/engine-worker.js';
 
 export const THUMB_WIDTH = 640;
 export const THUMB_HEIGHT = 400;
@@ -11,11 +12,60 @@ export const THUMB_QUALITY = 0.86;
 const DEG = Math.PI / 180;
 const ISO = Object.freeze({ yaw: 35, pitch: 28 });
 
+// Kamera-Einstellung je Bau aus data/thumbs/views.json (für Bauten, die die Automatik schlecht trifft)
+export const VIEW_KEYS = Object.freeze(['yaw', 'pitch', 'zoom', 'target', 'cut']);
+export const VIEW_PITCH_LIMIT = 89;
+export const VIEW_ZOOM_RANGE = Object.freeze([0.25, 8]);
+
+/**
+ * Prüft eine Kamera-Einstellung { yaw, pitch, zoom, target, cut } (alle Felder optional, mindestens eins):
+ * yaw/pitch in Grad wie thumbAngles (ersetzen die Automatik), zoom = wie viel näher als „Bau füllt das Bild“,
+ * target = Blickpunkt [x, y, z] in Block-Koordinaten (null = Achse automatisch), cut = Schnitt
+ * { minX, maxX, minY, maxY, minZ, maxZ } (Blöcke außerhalb fehlen, z. B. eine Decke). → bereinigte Kopie in fester
+ * Feldreihenfolge (geht so in den Hash von make-thumbs ein); wirft bei unbekannten Feldern oder Werten.
+ */
+export function validateView(view) {
+  if (!view || typeof view !== 'object' || Array.isArray(view)) throw new Error('Kamera-Einstellung muss ein Objekt sein.');
+  const unknown = Object.keys(view).filter((key) => !VIEW_KEYS.includes(key));
+  if (unknown.length) throw new Error(`Unbekanntes Feld ${unknown.slice(0, 3).join(', ').slice(0, 80)} (erlaubt: ${VIEW_KEYS.join(', ')}).`);
+  const clean = {};
+  const finite = (value) => typeof value === 'number' && Number.isFinite(value);
+  if (view.yaw !== undefined) {
+    if (!finite(view.yaw)) throw new Error('yaw muss eine Zahl (Grad) sein.');
+    clean.yaw = ((view.yaw % 360) + 360) % 360;
+  }
+  if (view.pitch !== undefined) {
+    if (!finite(view.pitch) || Math.abs(view.pitch) > VIEW_PITCH_LIMIT) throw new Error(`pitch muss eine Zahl von −${VIEW_PITCH_LIMIT} bis ${VIEW_PITCH_LIMIT} (Grad) sein.`);
+    clean.pitch = view.pitch;
+  }
+  if (view.zoom !== undefined) {
+    if (!finite(view.zoom) || view.zoom < VIEW_ZOOM_RANGE[0] || view.zoom > VIEW_ZOOM_RANGE[1]) throw new Error(`zoom muss eine Zahl von ${VIEW_ZOOM_RANGE[0]} bis ${VIEW_ZOOM_RANGE[1]} sein.`);
+    clean.zoom = view.zoom;
+  }
+  if (view.target !== undefined) {
+    const t = view.target;
+    if (!Array.isArray(t) || t.length !== 3 || !t.every((v) => v === null || finite(v)) || t.every((v) => v === null)) {
+      throw new Error('target muss [x, y, z] sein (Zahlen, null = automatisch, mindestens eine Zahl).');
+    }
+    clean.target = [...t];
+  }
+  if (view.cut !== undefined) {
+    try {
+      clean.cut = checkCrop(view.cut);
+    } catch (error) {
+      throw new Error(`cut: ${error.message.replace(/^Schnitt:\s*/, '')}`);
+    }
+  }
+  if (!Object.keys(clean).length) throw new Error('Kamera-Einstellung ohne Feld.');
+  return clean;
+}
+
 /**
  * Blickwinkel für das Vorschaubild (Grad, yaw 0 = Kamera im Süden): Iso wie die 3D-Ansicht; lange Bauten von ihrer
  * Längsseite (sehr lange fast genau von der Seite und flacher), hohe Bauten flacher, flache Bauten steiler von oben.
+ * view (geprüft, siehe validateView): yaw bzw. pitch ersetzen die Automatik.
  */
-export function thumbAngles(bounds, scores = null) {
+export function thumbAngles(bounds, scores = null, view = null) {
   const [w, h, l] = [0, 1, 2].map((a) => bounds.max[a] - bounds.min[a]);
   const horizontal = Math.max(w, l, 1);
   const ratio = Math.max(w, l) / Math.max(1, Math.min(w, l));
@@ -25,6 +75,8 @@ export function thumbAngles(bounds, scores = null) {
   if (h >= 1.5 * horizontal) pitch = 12;
   else if (ratio >= 4) pitch = 22;
   else if (h <= 0.2 * horizontal) pitch = 42;
+  if (view?.pitch !== undefined) pitch = view.pitch;
+  if (view?.yaw !== undefined) return { yaw: view.yaw, pitch };
   return { yaw: scores ? pickYaw(yaw, scores) : yaw, pitch };
 }
 
@@ -106,10 +158,11 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 /**
  * Orbit-Einstellung, bei der die Box das Bild füllt (margin = Rand je Seite als Anteil) und mittig sitzt.
- * bounds = { min, max, center } wie Viewer.bounds. → { target, distance, yaw, pitch } (Bogenmaß)
+ * bounds = { min, max, center } wie Viewer.bounds. view (geprüft): eigene Winkel, danach Blickpunkt (target) und
+ * zoom (Abstand geteilt durch zoom). → { target, distance, yaw, pitch } (Bogenmaß)
  */
-export function thumbOrbit(bounds, aspect, { fovY = ORBIT_FOV, margin = 0.07, scores = null } = {}) {
-  const angles = thumbAngles(bounds, scores);
+export function thumbOrbit(bounds, aspect, { fovY = ORBIT_FOV, margin = 0.07, scores = null, view = null } = {}) {
+  const angles = thumbAngles(bounds, scores, view);
   const yaw = angles.yaw * DEG, pitch = angles.pitch * DEG;
   const { right, up, forward } = cameraBasis(yaw, pitch);
   const tanY = Math.tan(fovY / 2), tanX = tanY * aspect;
@@ -128,23 +181,26 @@ export function thumbOrbit(bounds, aspect, { fovY = ORBIT_FOV, margin = 0.07, sc
     for (let a = 0; a < 3; a++) target[a] += right[a] * shiftX + up[a] * shiftY;
     distance = fitOrbitDistance(bounds, yaw, pitch, fovY, aspect, margin, target);
   }
+  if (view?.target) view.target.forEach((value, a) => { if (value !== null) target[a] = value; });
+  if (view?.zoom !== undefined) distance /= view.zoom;
   return { target, distance, yaw, pitch };
 }
 
-/** Prüft einen Auftrag aus Node (nur bekannte Quellen und Felder). */
+/** Prüft einen Auftrag aus Node (nur bekannte Quellen und Felder; view = Kamera-Einstellung oder null). */
 export function validateJob(job) {
   if (!job || typeof job !== 'object') throw new Error('Auftrag fehlt.');
   const { source, scale = null } = job;
   if (scale !== null && !(typeof scale === 'number' && Number.isFinite(scale) && scale > 0)) throw new Error('Ungültiger Maßstab.');
+  const view = job.view === undefined || job.view === null ? null : validateView(job.view);
   if (source?.kind === 'module') {
     if (typeof source.path !== 'string' || !/^(js\/builds|tests\/fixtures)\/[a-z0-9/-]+\.js$/.test(source.path)) throw new Error(`Ungültiger Modulpfad „${String(source.path).slice(0, 80)}“.`);
-    return { source: { kind: 'module', path: source.path }, scale };
+    return { source: { kind: 'module', path: source.path }, scale, view };
   }
   // Community-Bau (data/community/<datei>): nur ein Dateiname, ohne Maßstab
   if (source?.kind === 'community') {
     if (!isCommunityFile(source.file)) throw new Error(`Ungültiger Community-Bau „${String(source.file).slice(0, 80)}“.`);
     if (scale !== null) throw new Error('Community-Bauten haben keinen Maßstab.');
-    return { source: { kind: 'community', file: source.file }, scale };
+    return { source: { kind: 'community', file: source.file }, scale, view };
   }
   throw new Error('Quelle muss { kind: "module", path } oder { kind: "community", file } sein.');
 }
@@ -208,14 +264,15 @@ function startPage() {
 async function renderJob(viewer, canvas, job) {
   const started = performance.now();
   try {
-    const { source, scale } = validateJob(job);
-    await viewer.load(source, scale === null ? {} : { scale });
+    const { source, scale, view } = validateJob(job);
+    await viewer.load(source, scale === null ? {} : { scale }, { crop: view?.cut ?? null });
     viewer.setProgress(viewer.stepCount);
     viewer.setClip(null);
     viewer.setGhost(false);
     viewer.setHighlightStep(null);
     const scores = sideScores(viewer.result.volume);
-    viewer.controls.orbit.setView(thumbOrbit(viewer.bounds, canvas.width / canvas.height, { scores }), { animate: false });
+    const orbit = thumbOrbit(viewer.bounds, canvas.width / canvas.height, { scores, view });
+    viewer.controls.orbit.setView(orbit, { animate: false });
     await viewer.idle();
     await nextFrame();
     await nextFrame();
@@ -229,6 +286,9 @@ async function renderJob(viewer, canvas, job) {
       blocks: stats.blocks,
       missingTextures: stats.missingTextures,
       warnings: stats.warnings,
+      // Zum Einstellen der Kamera (views.json): Box des gezeigten Baus und die benutzte Kamera (Grad)
+      bounds: viewer.result.volume.bounds,
+      camera: { yaw: orbit.yaw / DEG, pitch: orbit.pitch / DEG, target: orbit.target, distance: orbit.distance },
       ms: Math.round(performance.now() - started),
     };
   } catch (error) {

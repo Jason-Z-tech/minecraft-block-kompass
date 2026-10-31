@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ensureGameData, findMinecraftJar, checkGameData, checkCatalog, ensureThumbs, parseStartArgs } from '../../scripts/start.mjs';
+import { THUMBS_INDEX_VERSION } from '../../js/ui/data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const JAR = 'C:/x/.minecraft/versions/26.2/26.2.jar';
@@ -142,7 +143,7 @@ test('checkCatalog: Fingerabdruck statt Dateizeiten, fehlende Module werden geme
   }
 });
 
-test('ensureThumbs: mit Bildern make-thumbs, ohne eine leere thumbs/index.json (kein 404 auf der lokalen Seite)', () => {
+test('ensureThumbs: mit Bildern make-thumbs, ohne eine leere data/thumbs/index.json, falls sie fehlt (kein 404 auf der Seite)', () => {
   const dir = path.join(ROOT, 'tmp', `start-test-thumbs-${process.pid}`);
   fs.rmSync(dir, { recursive: true, force: true });
   try {
@@ -154,8 +155,8 @@ test('ensureThumbs: mit Bildern make-thumbs, ohne eine leere thumbs/index.json (
     assert.match(logs.join(' '), /Kategorie-Icon/);
     assert.equal(fs.existsSync(dir), false, 'mit Bildern legt ensureThumbs selbst nichts an');
     assert.equal(ensureThumbs({ thumbs: false, thumbsDir: dir }), 'placeholder');
-    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')), { version: 1, entries: {} });
-    fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify({ version: 1, entries: { haus: {} } }));
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')), { version: THUMBS_INDEX_VERSION, entries: {} }, 'Format der Seite');
+    fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify({ version: THUMBS_INDEX_VERSION, entries: { haus: {} } }));
     assert.equal(ensureThumbs({ thumbs: false, thumbsDir: dir }), 'present');
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')).entries, { haus: {} }, 'vorhandene Liste bleibt');
   } finally {

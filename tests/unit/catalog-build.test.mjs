@@ -90,7 +90,7 @@ function assertEntrySchema(entry) {
   for (let i = 1; i < entry.topMaterials.length; i++) assert.ok(entry.topMaterials[i - 1][1] >= entry.topMaterials[i][1], 'absteigend');
   assert.ok(entry.topMaterials.every(([item, n]) => /^[a-z0-9_]+$/.test(item) && Number.isInteger(n) && n > 0));
   assert.equal(entry.sizeClass, sizeClass(entry.blocks));
-  assert.equal(entry.thumb, null, 'der Katalog kennt keine Vorschaubilder (die gibt es nur lokal)');
+  assert.equal(entry.thumb, null, 'der Katalog kennt keine Bildpfade (die Seite liest data/thumbs/index.json)');
 }
 
 function assertCatalogSchema(catalog) {
@@ -243,7 +243,7 @@ describe('Katalog mit Spieldaten', { skip: NO_DATA }, () => {
     assert.ok(catalog.warnings.some((w) => /example-house: doppelte ID – alle 2 Einträge wurden übersprungen/.test(w)), catalog.warnings.join('\n'));
   });
 
-  test('thumb bleibt im Katalog immer null, auch wenn lokal ein Bild existiert (der Katalog wird veröffentlicht)', async () => {
+  test('thumb bleibt im Katalog immer null, auch wenn es ein Bild gibt (die Liste steht in data/thumbs/index.json)', async () => {
     const thumbs = path.join(workDir, 'thumbs-attach');
     await mkdir(thumbs, { recursive: true });
     await writeFile(path.join(thumbs, 'example-house.webp'), 'x');

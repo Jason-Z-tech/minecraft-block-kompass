@@ -7,7 +7,7 @@
 import { setBlockData, allBlockIds, defaultProps } from '../core/block-data.js';
 import { formatState } from '../core/blockstate.js';
 import { Builder } from '../core/builder.js';
-import { BlockVolume } from '../core/volume.js';
+import { BlockVolume, COORD_MIN, COORD_MAX } from '../core/volume.js';
 import { hashPosition } from '../core/random.js';
 import { isFence, isWall, isFenceGate } from '../core/connections.js';
 import { BlockModels } from './block-models.js';
@@ -148,6 +148,48 @@ export function checkSource(source) {
       return { kind: 'synthetic', count };
     }
   }
+}
+
+// ------------------------------------------------------------------ Schnitt
+
+export const CROP_KEYS = Object.freeze(['minX', 'maxX', 'minY', 'maxY', 'minZ', 'maxZ']);
+
+/**
+ * Schnitt { minX, maxX, minY, maxY, minZ, maxZ } (Block-Koordinaten, inklusiv, jedes Feld optional, mindestens eins)
+ * prüfen → bereinigte Kopie in fester Feldreihenfolge; wirft EngineError.
+ */
+export function checkCrop(crop) {
+  if (!isPlainObject(crop)) throw new EngineError('Schnitt muss ein Objekt { minX, maxX, minY, maxY, minZ, maxZ } sein.', { code: 'source' });
+  const unknown = Object.keys(crop).filter((key) => !CROP_KEYS.includes(key));
+  if (unknown.length) throw new EngineError(`Unbekanntes Feld im Schnitt: ${unknown.slice(0, 3).join(', ').slice(0, 80)} (erlaubt: ${CROP_KEYS.join(', ')}).`, { code: 'source' });
+  const clean = {};
+  for (const key of CROP_KEYS) {
+    if (crop[key] === undefined) continue;
+    const value = crop[key];
+    if (!Number.isInteger(value) || value < COORD_MIN || value > COORD_MAX) {
+      throw new EngineError(`Schnitt: ${key} muss eine ganze Zahl von ${COORD_MIN} bis ${COORD_MAX} sein.`, { code: 'source' });
+    }
+    clean[key] = value;
+  }
+  if (!Object.keys(clean).length) throw new EngineError('Schnitt ohne Grenze – mindestens ein Feld setzen.', { code: 'source' });
+  for (const axis of ['X', 'Y', 'Z']) {
+    if (clean[`min${axis}`] !== undefined && clean[`max${axis}`] !== undefined && clean[`min${axis}`] > clean[`max${axis}`]) {
+      throw new EngineError(`Schnitt: min${axis} darf nicht größer als max${axis} sein.`, { code: 'source' });
+    }
+  }
+  return clean;
+}
+
+/** Entfernt alle Blöcke außerhalb des (geprüften) Schnitts aus dem Volumen. → Anzahl entfernter Blöcke */
+export function cropVolume(volume, crop) {
+  const lo = [crop.minX ?? COORD_MIN, crop.minY ?? COORD_MIN, crop.minZ ?? COORD_MIN];
+  const hi = [crop.maxX ?? COORD_MAX, crop.maxY ?? COORD_MAX, crop.maxZ ?? COORD_MAX];
+  const outside = [];
+  volume.forEach((x, y, z) => {
+    if (x < lo[0] || x > hi[0] || y < lo[1] || y > hi[1] || z < lo[2] || z > hi[2]) outside.push(x, y, z);
+  });
+  for (let i = 0; i < outside.length; i += 3) volume.delete(outside[i], outside[i + 1], outside[i + 2]);
+  return outside.length / 3;
 }
 
 // ------------------------------------------------------------------ Bauen
@@ -1046,10 +1088,12 @@ function startWorker(scope) {
     return { promise, resolve };
   }
 
-  async function onLoad({ job, source, params }) {
+  async function onLoad({ job, source, params, crop = null }) {
     currentJob = job;
     meshRun++;
     boundGate = { job, ...deferred() };
+    // Schnitt (z. B. Vorschaubild ohne Decke): nur Blöcke innerhalb zeigen
+    const cleanCrop = crop === null ? null : checkCrop(crop);
     dataJob = job;
     status(job, 'data', 'Lade Spieldaten …');
     let loaded;
@@ -1068,6 +1112,7 @@ function startWorker(scope) {
     const jobLoaders = { ...loaders, progress };
     const result = await loaded.build(source, params, jobLoaders);
     if (job !== currentJob) return;
+    if (cleanCrop) cropVolume(result.volume, cleanCrop);
     engine = loaded;
     engine.use(result);
     const buildMs = performance.now() - started;

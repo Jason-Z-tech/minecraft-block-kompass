@@ -7,7 +7,7 @@ import * as engineWorker from '../../js/render/engine-worker.js';
 import {
   Engine, EngineError, checkSource, checkModulePath, checkParams, buildModule, buildGallery,
   buildSynthetic, buildShapeResult, galleryBlockIds, galleryPageCount, GALLERY_GROUP_NAMES, GALLERY_PAGE_SIZE, collisionBoxes, paletteInfo,
-  serializeResult, meshTransferList, SYNTHETIC_MAX, SOURCE_KINDS,
+  serializeResult, meshTransferList, SYNTHETIC_MAX, SOURCE_KINDS, checkCrop, cropVolume, CROP_KEYS,
 } from '../../js/render/engine-worker.js';
 import { setBlockData } from '../../js/core/block-data.js';
 import { BlockVolume } from '../../js/core/volume.js';
@@ -44,6 +44,33 @@ test('Quellen: nur erlaubte Modulpfade und Parameter; Original-Strukturen gibt e
   rejects(() => checkParams({ 'bad-key': 1 }), /ungültiger Name/);
   rejects(() => checkParams([1, 2]), /einfaches Objekt/);
   rejects(() => checkParams({ deep: [[[[1]]]] }), /ungültiger Wert/);
+});
+
+test('Schnitt (Vorschaubilder): checkCrop prüft Felder und Grenzen, cropVolume entfernt alles außerhalb', () => {
+  assert.deepEqual(CROP_KEYS, ['minX', 'maxX', 'minY', 'maxY', 'minZ', 'maxZ']);
+  // Feste Feldreihenfolge, unabhängig von der Eingabe
+  assert.equal(JSON.stringify(checkCrop({ maxZ: 4, minY: -2, maxY: 12 })), '{"minY":-2,"maxY":12,"maxZ":4}');
+  assert.deepEqual(checkCrop({ minX: 3, maxX: 3 }), { minX: 3, maxX: 3 });
+  for (const bad of [null, [], 'maxY=3', 5]) rejects(() => checkCrop(bad), /Schnitt muss ein Objekt/);
+  rejects(() => checkCrop({}), /mindestens ein Feld/);
+  rejects(() => checkCrop({ top: 3 }), /Unbekanntes Feld im Schnitt: top/);
+  rejects(() => checkCrop({ maxY: 1.5 }), /maxY muss eine ganze Zahl/);
+  rejects(() => checkCrop({ maxY: '3' }), /maxY muss eine ganze Zahl/);
+  rejects(() => checkCrop({ minX: 20000 }), /minX muss eine ganze Zahl von -16384 bis 16383/);
+  rejects(() => checkCrop({ minZ: 5, maxZ: 4 }), /minZ darf nicht größer als maxZ/);
+
+  const volume = new BlockVolume();
+  for (let x = 0; x < 4; x++) for (let y = 0; y < 5; y++) for (let z = 0; z < 3; z++) volume.set(x, y, z, y === 4 ? 'oak_planks' : 'stone', y);
+  assert.equal(cropVolume(volume, checkCrop({ maxY: 3 })), 12, 'Decke (4 × 3 Blöcke) entfernt');
+  assert.deepEqual(volume.bounds, { min: [0, 0, 0], max: [3, 3, 2] });
+  assert.equal(volume.get(1, 4, 1), 'air');
+  assert.equal(volume.get(1, 3, 1), 'stone');
+  assert.equal(volume.getStep(1, 3, 1), 3, 'Schritte der übrigen Blöcke bleiben');
+  assert.equal(cropVolume(volume, checkCrop({ minX: 1, maxZ: 1 })), 12 + 16 - 4, 'Spalte x = 0 und Reihe z = 2 entfernt');
+  assert.deepEqual(volume.bounds, { min: [1, 0, 0], max: [3, 3, 1] });
+  assert.equal(volume.count, 3 * 4 * 2);
+  assert.equal(cropVolume(volume, checkCrop({ minY: 10 })), 24, 'alles außerhalb: leeres Volumen');
+  assert.equal(volume.bounds, null);
 });
 
 test('Formen: ohne Generator verständliche Ablehnung, mit Generator ein BuildResult', () => {

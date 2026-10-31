@@ -60,6 +60,8 @@ function showUnknown(rawSlug) {
   document.title = 'Kategorie nicht gefunden – Block-Kompass';
   requireElement('category-title').textContent = 'Kategorie nicht gefunden';
   requireElement('category-lead').textContent = 'Wähle eine der Kategorien unten aus.';
+  // Keine Anzahl: auch die freigehaltene Zeile weg (browse.css)
+  requireElement('category-count').hidden = true;
   renderState(requireElement('category-status'), {
     kind: 'error',
     title: 'Diese Kategorie gibt es nicht',
@@ -76,7 +78,8 @@ async function loadOverview({ keepStatus = false, showTotal = false } = {}) {
   const tiles = renderCategoryGrid(requireElement('category-overview-list'));
   setCategoryCounts(tiles, undefined);
   try {
-    const catalog = await loadCatalog();
+    // Kacheln ohne Bau-Karten: ohne Bilderliste
+    const catalog = await loadCatalog({ thumbs: false });
     setCategoryCounts(tiles, countByCategory(catalog));
     if (!keepStatus) clear(requireElement('category-status'));
     if (showTotal) requireElement('category-count').textContent = `${formatCount(catalog.builds.length, 'Bau', 'Bauten')} in ${formatCount(CATEGORIES.length, 'Kategorie', 'Kategorien')}`;
@@ -109,7 +112,7 @@ async function loadList(category) {
   const count = clear(requireElement('category-count'));
   status.replaceChildren(el('p', { class: 'visually-hidden' }, 'Bauten werden geladen …'));
   browse.hidden = false;
-  browse.classList.add('is-loading');
+  setBrowseLoading(browse, true);
   list.setAttribute('aria-busy', 'true');
   list.replaceChildren(...createSkeletonCards(6));
   let catalog;
@@ -117,13 +120,13 @@ async function loadList(category) {
     catalog = await loadCatalog();
   } catch (error) {
     browse.hidden = true;
-    browse.classList.remove('is-loading');
+    setBrowseLoading(browse, false);
     list.removeAttribute('aria-busy');
     clear(list);
     renderError(status, error, { onRetry: () => loadList(category) });
     return;
   }
-  browse.classList.remove('is-loading');
+  setBrowseLoading(browse, false);
   list.removeAttribute('aria-busy');
   const builds = catalog.builds.filter((build) => build.category === category.slug);
   count.textContent = builds.length ? formatCount(builds.length, 'Bau', 'Bauten') : '';
@@ -139,6 +142,15 @@ async function loadList(category) {
   }
   clear(status);
   startBrowse(category, builds);
+}
+
+/**
+ * Ladezustand der Liste: nur Platzhalter-Karten; Suche, Filter und Anzahl behalten durchsichtig ihren Platz (kein
+ * Springen danach, browse.css) und sind bis dahin nicht bedienbar (inert: kein Fokus, kein Klick, nicht vorgelesen).
+ */
+function setBrowseLoading(browse, loading) {
+  browse.classList.toggle('is-loading', loading);
+  browse.inert = loading;
 }
 
 /* ------------------------------------------------------------------ Suchen, Filtern, Sortieren */

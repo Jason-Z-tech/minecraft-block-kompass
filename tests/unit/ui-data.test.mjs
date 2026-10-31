@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   loadJson, loadCatalog, loadNames, loadBlockList, normalizeCatalog, normalizeBuild, recoverySteps, isSafeDataPath, findBuild,
-  countByCategory, DataError, CATALOG_PATH, NAMES_PATH, BLOCKS_PATH, THUMBS_INDEX_PATH, isLocalSite, loadLocalThumbIds, applyThumbs,
+  countByCategory, DataError, CATALOG_PATH, NAMES_PATH, BLOCKS_PATH, THUMBS_INDEX_PATH, THUMBS_DIR, THUMBS_INDEX_VERSION, loadThumbIds, applyThumbs, thumbPath,
   gameDataToDataError,
 } from '../../js/ui/data.js';
 import { createGameData, GameDataError } from '../../js/data/game-data.js';
@@ -34,7 +34,7 @@ const VALID_BUILD = {
   id: 'tokyo-skytree', title: 'Tokyo Skytree', category: 'wahrzeichen', subtitle: 'Fernseh- und Aussichtsturm in Tokio',
   tags: ['Japan', 'Turm'], aliases: ['skytree'], accuracy: 'massstab', size: [68, 634, 68], blocks: 123456,
   steps: 420, topMaterials: [['white_concrete', 5000]], module: 'js/builds/wahrzeichen/tokyo-skytree.js',
-  scales: [1, 0.5, 0.25], tested: null, thumb: 'thumbs/tokyo-skytree.webp',
+  scales: [1, 0.5, 0.25], tested: null, thumb: 'data/thumbs/tokyo-skytree.webp',
 };
 
 test('loadJson liefert geparstes JSON und fragt ab der Website-Wurzel', async () => {
@@ -141,7 +141,9 @@ test('normalizeBuild: ohne ID, Titel oder Kategorie wird verworfen, andere Felde
   assert.deepEqual(build.scales, [1]);
   assert.deepEqual(build.tags, ['ok', 'x'.repeat(40)]);
   assert.deepEqual(build.topMaterials, [['stone', 3]]);
-  for (const thumb of ['thumbs/x.svg', 'https://evil.example/x.webp', 'thumbs/../x.webp', 'thumbs/X Y.webp']) {
+  assert.equal(normalizeBuild(VALID_BUILD).build.thumb, 'data/thumbs/tokyo-skytree.webp');
+  // Der alte lokale Ordner thumbs/ gilt nicht mehr (die Bilder liegen in data/thumbs/)
+  for (const thumb of ['data/thumbs/x.svg', 'https://evil.example/x.webp', 'data/thumbs/../x.webp', 'data/thumbs/X Y.webp', 'thumbs/x.webp', 'data/thumbs/a/x.webp']) {
     assert.equal(normalizeBuild({ ...VALID_BUILD, thumb }).build.thumb, null, thumb);
   }
 });
@@ -164,57 +166,69 @@ test('normalizeCatalog: überspringt ungültige und doppelte Einträge und melde
   assert.throws(() => normalizeCatalog({ builds: {} }), { kind: 'format', title: 'Katalog unvollständig' });
 });
 
-test('loadCatalog: fehlt der Katalog, kommt „Katalog fehlt“ – ohne Nachfragen nach Spieldaten oder Bildern (online)', async () => {
+test('loadCatalog: fehlt der Katalog, kommt „Katalog fehlt“ – ohne Nachfragen nach Spieldaten (nur Katalog und Bilderliste)', async () => {
   const nothing = fakeFetch(() => new Response('', { status: 404 }));
-  await assert.rejects(loadCatalog({ fetch: nothing.fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } }), (error) => {
+  await assert.rejects(loadCatalog({ fetch: nothing.fetch, root: ROOT }), (error) => {
     assert.equal(error.kind, 'missing');
     assert.equal(error.title, 'Katalog fehlt');
     assert.deepEqual(error.steps.map((step) => step.command).filter(Boolean), []);
     return true;
   });
-  assert.deepEqual(nothing.calls.map((call) => call.url), ['http://127.0.0.1:8080/data/catalog.json'], 'genau eine Anfrage');
+  assert.deepEqual(nothing.calls.map((call) => call.url).sort(), ['http://127.0.0.1:8080/data/catalog.json', 'http://127.0.0.1:8080/data/thumbs/index.json'],
+    'genau zwei Anfragen: Katalog und Liste der Vorschaubilder');
   const offline = fakeFetch(async () => { throw new TypeError('Failed to fetch'); });
   await assert.rejects(loadCatalog({ fetch: offline.fetch, root: ROOT }), { kind: 'network', title: 'Keine Verbindung' });
 });
 
-test('isLocalSite: nur 127.0.0.1, localhost und [::1] gelten als eigener Rechner', () => {
-  for (const hostname of ['127.0.0.1', 'localhost', '[::1]']) assert.equal(isLocalSite({ hostname }), true, hostname);
-  for (const hostname of ['jason-z-tech.github.io', 'example.org', '127.0.0.1.evil.example', '']) assert.equal(isLocalSite({ hostname }), false, hostname);
-  assert.equal(isLocalSite(undefined), false);
-  assert.equal(isLocalSite(null), false);
+test('Vorschaubilder liegen in data/thumbs/ (im Repo, mit der Seite veröffentlicht)', () => {
+  assert.equal(THUMBS_DIR, 'data/thumbs/');
+  assert.equal(THUMBS_INDEX_PATH, 'data/thumbs/index.json');
+  assert.equal(thumbPath('tokyo-skytree'), 'data/thumbs/tokyo-skytree.webp');
 });
 
-test('Lokale Vorschaubilder: nur auf dem eigenen Rechner aus thumbs/index.json, online keine Anfrage', async () => {
-  const index = { version: 1, entries: { 'tokyo-skytree': { hash: 'a', bytes: 1 }, 'kein gueltiger name': { hash: 'b' } }, style: 3 };
-  const local = fakeFetch((url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json(index) : new Response('', { status: 404 })));
-  const ids = await loadLocalThumbIds({ fetch: local.fetch, root: ROOT, location: { hostname: '127.0.0.1' } });
-  assert.deepEqual([...ids], ['tokyo-skytree'], 'nur gültige IDs');
-  assert.deepEqual(local.calls.map((call) => call.url), ['http://127.0.0.1:8080/thumbs/index.json']);
-
-  const online = fakeFetch(() => json(index));
-  assert.equal((await loadLocalThumbIds({ fetch: online.fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } })).size, 0);
-  assert.equal(online.calls.length, 0, 'online wird thumbs/index.json nie angefragt');
+test('Vorschaubilder: online wie lokal aus data/thumbs/index.json, auch unter dem Unterpfad von GitHub Pages', async () => {
+  const index = { version: THUMBS_INDEX_VERSION, entries: { 'tokyo-skytree': { hash: 'a', bytes: 1 }, 'kein gueltiger name': { hash: 'b' } }, style: 3 };
+  for (const root of [ROOT, new URL('https://jason-z-tech.github.io/minecraft-block-kompass/'), new URL('http://localhost:8081/')]) {
+    const site = fakeFetch((url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json(index) : new Response('', { status: 404 })));
+    const ids = await loadThumbIds({ fetch: site.fetch, root });
+    assert.deepEqual([...ids], ['tokyo-skytree'], `${root}: nur gültige IDs`);
+    assert.deepEqual(site.calls.map((call) => call.url), [new URL('data/thumbs/index.json', root).href], `${root}: eine Anfrage ab der Website-Wurzel`);
+  }
 
   const missing = fakeFetch(() => new Response('', { status: 404 }));
-  assert.equal((await loadLocalThumbIds({ fetch: missing.fetch, root: ROOT, location: { hostname: 'localhost' } })).size, 0, 'fehlt die Datei: keine Bilder');
   await quietly(async (warnings) => {
-    const broken = fakeFetch(() => json({ version: 2, entries: {} }));
-    assert.equal((await loadLocalThumbIds({ fetch: broken.fetch, root: ROOT, location: { hostname: 'localhost' } })).size, 0);
-    assert.equal(warnings.length, 1, 'unbekanntes Format wird gemeldet');
+    assert.equal((await loadThumbIds({ fetch: missing.fetch, root: ROOT })).size, 0, 'fehlt die Datei: keine Bilder');
+    assert.equal(warnings.length, 0, 'eine fehlende Liste ist kein Fehler (Karten zeigen Icons)');
+  });
+  await quietly(async (warnings) => {
+    // Eine andere Version (z. B. von einem neueren make-thumbs) kennt die Seite nicht: lieber Icons als falsche Bilder
+    const broken = fakeFetch(() => json({ version: THUMBS_INDEX_VERSION + 1, entries: { 'tokyo-skytree': {} } }));
+    assert.equal((await loadThumbIds({ fetch: broken.fetch, root: ROOT })).size, 0);
+    const offline = fakeFetch(async () => { throw new TypeError('Failed to fetch'); });
+    assert.equal((await loadThumbIds({ fetch: offline.fetch, root: ROOT })).size, 0);
+    assert.equal(warnings.length, 2, 'unbekanntes Format und Netzfehler werden gemeldet');
   });
 
-  const builds = [{ id: 'tokyo-skytree', thumb: null }, { id: 'kolben-tuer', thumb: null }, { id: 'eigenes-bild', thumb: 'thumbs/x.webp' }];
+  const builds = [{ id: 'tokyo-skytree', thumb: null }, { id: 'kolben-tuer', thumb: null }, { id: 'eigenes-bild', thumb: 'data/thumbs/x.webp' }];
   applyThumbs(builds, new Set(['tokyo-skytree', 'eigenes-bild']));
-  assert.deepEqual(builds.map((build) => build.thumb), ['thumbs/tokyo-skytree.webp', null, 'thumbs/x.webp'], 'vorhandene Pfade bleiben');
+  assert.deepEqual(builds.map((build) => build.thumb), ['data/thumbs/tokyo-skytree.webp', null, 'data/thumbs/x.webp'], 'vorhandene Pfade bleiben');
 });
 
-test('loadCatalog ergänzt lokale Vorschaubilder nur auf dem eigenen Rechner', async () => {
+test('loadCatalog ergänzt die Vorschaubilder online wie lokal; ohne Liste bleiben die Karten bei Icons', async () => {
   const body = { version: '26.2', builds: [{ ...VALID_BUILD, thumb: null }, { ...VALID_BUILD, id: 'dorfbrunnen', category: 'klein', thumb: null }] };
-  const respond = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json({ version: 1, entries: { dorfbrunnen: {} } }) : json(body));
-  const local = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: '127.0.0.1' } });
-  assert.deepEqual(local.builds.map((build) => build.thumb), [null, 'thumbs/dorfbrunnen.webp']);
-  const online = await loadCatalog({ fetch: fakeFetch(respond).fetch, root: ROOT, location: { hostname: 'jason-z-tech.github.io' } });
-  assert.deepEqual(online.builds.map((build) => build.thumb), [null, null]);
+  const respond = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? json({ version: THUMBS_INDEX_VERSION, entries: { dorfbrunnen: {} } }) : json(body));
+  for (const root of [ROOT, new URL('https://jason-z-tech.github.io/minecraft-block-kompass/')]) {
+    const catalog = await loadCatalog({ fetch: fakeFetch(respond).fetch, root });
+    assert.deepEqual(catalog.builds.map((build) => build.thumb), [null, 'data/thumbs/dorfbrunnen.webp'], String(root));
+  }
+  // Ohne Bau-Karten (Startseite, Kategorie-Übersicht): nur der Katalog, keine Anfrage nach der Bilderliste
+  const tilesOnly = fakeFetch(respond);
+  const counts = await loadCatalog({ fetch: tilesOnly.fetch, root: ROOT, thumbs: false });
+  assert.deepEqual(tilesOnly.calls.map((call) => call.url), ['http://127.0.0.1:8080/data/catalog.json']);
+  assert.deepEqual(counts.builds.map((build) => build.thumb), [null, null]);
+  const withoutIndex = (url) => (String(url).endsWith(THUMBS_INDEX_PATH) ? new Response('', { status: 404 }) : json(body));
+  const plain = await loadCatalog({ fetch: fakeFetch(withoutIndex).fetch, root: ROOT });
+  assert.deepEqual(plain.builds.map((build) => build.thumb), [null, null]);
 });
 
 test('loadCatalog, findBuild und countByCategory', async () => {

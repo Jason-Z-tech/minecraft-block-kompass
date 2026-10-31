@@ -4,7 +4,7 @@ Webseite mit Minecraft-Bauten (Java Edition 26.2). Jeder Bau hat eine 3D-Schritt
 
 Für den Eigengebrauch. **Online als Webseite, auch auf dem Handy, ohne etwas zu installieren:** https://jason-z-tech.github.io/minecraft-block-kompass/ (GitHub Pages, Branch `main`, iOS ab 16.4, aktuelles Chrome/Android).
 
-Texturen, Modelle und Namen stammen original aus Minecraft 26.2. Mojang-Dateien liegen nie im Repo oder auf der Seite (`game-data/`, `thumbs/` sind gitignored): Der Browser lädt sie beim ersten Besuch selbst aus [misode/mcmeta](https://github.com/misode/mcmeta) auf GitHub (feste Commits, ≈ 2 MB, gut 1 s), wandelt sie um und speichert sie im Browser (IndexedDB); danach geht es ohne Download. Im Repo liegen nur der Katalog der Bauten (`data/catalog.json`: Projekttexte, Größen, Zahlen und Block-IDs) und die Community-Bauten (`data/community/`, siehe unten). Online zeigen die Karten Kategorie-Icons statt Vorschaubildern.
+Texturen, Modelle und Namen stammen original aus Minecraft 26.2. Mojang-Dateien liegen nie im Repo oder auf der Seite (`game-data/` ist gitignored): Der Browser lädt sie beim ersten Besuch selbst aus [misode/mcmeta](https://github.com/misode/mcmeta) auf GitHub (feste Commits, ≈ 2 MB, gut 1 s), wandelt sie um und speichert sie im Browser (IndexedDB); danach geht es ohne Download. Im Repo liegen der Katalog der Bauten (`data/catalog.json`: Projekttexte, Größen, Zahlen und Block-IDs), die Community-Bauten (`data/community/`, siehe unten) und fertige Vorschaubilder je Bau (`data/thumbs/`, siehe „Vorschaubilder im Repo“): Die Karten zeigen sie online wie lokal, ohne dass der Bau erst geladen werden muss.
 
 ## Voraussetzungen (nur zum Entwickeln)
 - **Node.js 24** (nur Bordmittel, keine npm-Pakete)
@@ -16,9 +16,9 @@ Die Webseite braucht kein Node. Lokal ist es nur zum Entwickeln und Testen nöti
 ```powershell
 node scripts/start.mjs
 ```
-Das Skript prüft die Spieldaten (fehlen sie, liest es sie aus der Minecraft-Installation, ohne Installation lädt es sie aus dem Internet), prüft, ob der Katalog zu den Bau-Modulen passt (sonst baut es ihn samt Vorschaubildern neu), und startet den Server. Danach die angezeigte Adresse öffnen, normalerweise http://127.0.0.1:8080 (ist der Port belegt, nimmt es den nächsten freien).
+Das Skript prüft die Spieldaten (fehlen sie, liest es sie aus der Minecraft-Installation, ohne Installation lädt es sie aus dem Internet), prüft, ob der Katalog zu den Bau-Modulen passt (sonst baut es ihn neu), rendert fehlende oder veraltete Vorschaubilder in `data/thumbs/` und startet den Server. Danach die angezeigte Adresse öffnen, normalerweise http://127.0.0.1:8080 (ist der Port belegt, nimmt es den nächsten freien).
 
-Optionen: `--port <zahl>`, `--remote` (Spieldaten immer aus dem Internet, auch wenn Minecraft installiert ist), `--no-thumbs` (Katalog ohne Vorschaubilder, braucht kein Chrome).
+Optionen: `--port <zahl>`, `--remote` (Spieldaten immer aus dem Internet, auch wenn Minecraft installiert ist), `--no-thumbs` (keine Vorschaubilder rendern, braucht kein Chrome; die Seite zeigt die Bilder aus `data/thumbs/`).
 
 ## Ohne Minecraft
 Einfach `node scripts/start.mjs` ausführen. Findet es keine Installation von Minecraft Java 26.2 (oder klappt das Lesen daraus nicht), lädt es die Spieldaten einmalig aus öffentlichen Quellen: Archive von [misode/mcmeta](https://github.com/misode/mcmeta) (unveränderte Dateien der 26.2-Jar) und die deutsche Sprachdatei von Mojang, zusammen ≈ 7 MB. Das Ergebnis ist Byte für Byte gleich wie mit dem Jar. Danach läuft alles ohne Internet, die Daten liegen in `game-data/`.
@@ -28,7 +28,7 @@ Auch `node scripts/extract-game-data.mjs` ohne Optionen wechselt automatisch auf
 Einzelschritte, falls nötig:
 ```powershell
 node scripts/extract-game-data.mjs      # Spieldaten nach game-data/ (≈ 2 s; ohne Minecraft automatisch aus dem Internet)
-node scripts/build-catalog.mjs --thumbs # Katalog data/catalog.json (im Repo) + Vorschaubilder in thumbs/ (nur lokal)
+node scripts/build-catalog.mjs --thumbs # Katalog data/catalog.json + Vorschaubilder in data/thumbs/ (beides im Repo)
 node scripts/serve.mjs                  # nur der Server
 ```
 
@@ -37,11 +37,17 @@ node scripts/serve.mjs                  # nur der Server
 ```bash
 node scripts/build-catalog.mjs
 ```
-Vorschaubilder (`node scripts/build-catalog.mjs --thumbs`) gibt es nur lokal: Die Seite zeigt sie auf 127.0.0.1/localhost (Liste in `thumbs/index.json`), online zeigen die Karten das Kategorie-Icon.
+## Vorschaubilder im Repo
+`data/thumbs/<id>.webp` (640 × 400, schräger Blick mit der echten 3D-Ansicht in Chrome) liegt für jeden Katalog-Eintrag im Repo, die Liste mit einem Hash je Bild in `data/thumbs/index.json`. Die Karten auf Kategorie-Seite und „Selber erstellen“ zeigen sie online wie lokal; fehlt ein Bild, erscheint das Kategorie-Icon. Der Unit-Test `tests/unit/thumbs-fresh.test.mjs` schlägt fehl, wenn ein Bau geändert wurde, sein Bild aber nicht (oder ein Bild fehlt, übrig ist oder alle zusammen mehr als 15 MB haben). Dann neu erzeugen (braucht `game-data/` und Chrome; gerendert wird nur, was sich geändert hat) und mit committen:
+```bash
+node scripts/make-thumbs.mjs --prune     # --gpu swiftshader ohne Grafikkarte, --only <id> für einzelne Bauten
+```
+Bricht ein Lauf ab, einfach erneut aufrufen: Fertige Bilder bleiben, liegengebliebene Zwischendateien (`*.tmp`) räumt der nächste Lauf weg.
+Trifft der automatische Blick einen Bau schlecht (geschlossener Kasten, sehr hoher Turm, Eingang auf der Rückseite), bekommt er in `data/thumbs/views.json` eine eigene Kamera, z. B. `"tokyo-skytree": { "pitch": 8, "zoom": 2, "target": [null, 400, null] }`: `yaw`/`pitch` in Grad (yaw 0 = Kamera im Süden), `zoom` (2 = doppelt so nah), `target` = Blickpunkt in Block-Koordinaten (`null` = automatisch) und `cut` = Schnitt wie `{ "maxY": 12 }` (Blöcke außerhalb fehlen im Bild, etwa eine Decke). Die Einstellung zählt zum Hash: Nach einer Änderung rendert `make-thumbs` das Bild neu, und der Frische-Test merkt es, wenn das vergessen wurde.
 
 ## Seiten
 - `index.html`: Start, bewusst klein: Titel, Suche (führt zu „Selber erstellen“), die 6 Kategorien als Kacheln mit Anzahl und Links zu „Selber erstellen“ und „Meine Bauten“
-- `kategorie.html?k=<kategorie>`: Liste mit Filtern (Größe, Herkunft, im Spiel getestet) und Sortierung
+- `kategorie.html?k=<kategorie>`: Karten mit Vorschaubild (`data/thumbs/`), Filter (Größe, Herkunft, im Spiel getestet) und Sortierung
 - `bau.html?id=<bau>[&scale=<maßstab>]`: 3D-Ansicht, Schritt-Player, Anleitung (Kapitel mit Titel, Schritte mit Blockzahl und Ebene, ohne Anleitungstexte), Material, Ebenen-Plan, Infos und Quellen; der Fortschritt bleibt im Browser gespeichert
 - `erstellen.html`: Freitext („Tokyo Skytree 1:1“, „hohle Kugel Radius 12 aus Glas“), Formen-Generator und Datei-Import; nach einem Upload „Zu Meine Bauten“
 - `meine.html`: Meine Bauten – eigene Dateien hinzufügen (Auswahl oder Ziehen, auch `.zip`), suchen, nach Kategorie filtern, öffnen, umbenennen, Kategorie ändern, löschen
@@ -79,8 +85,8 @@ Die Kopfzeile aller Seiten: Start · Kategorien · Selber erstellen · Meine Bau
 - `scripts/`: Start, Server, Spieldaten-Extraktion, Katalog, Vorschaubilder, Prüf- und Screenshot-Werkzeuge
 - `tests/`: Unit-Tests (`unit/`), Klick-Test (`e2e.mjs`), Testseiten und Sichtprüfungen (`visual/`), Testdaten (`fixtures/`), Chrome-Steuerung (`browser.mjs`)
 - `docs/ARCHITEKTUR.md`: verbindliche Spezifikation mit allen Schnittstellen; `docs/recherche/`: Maße und Quellen der echten Bauwerke
-- `data/catalog.json`: Katalog der Bauten (erzeugt, aber im Repo); `data/community/`: Community-Bauten mit Angaben und Lizenztexten; `.nojekyll`: GitHub Pages liefert alles unverändert aus
-- Erzeugt und nicht im Repo: `game-data/` (Spieldaten), `thumbs/` (Vorschaubilder), `tmp/` (Screenshots, Testreste)
+- `data/catalog.json`: Katalog der Bauten (erzeugt, aber im Repo); `data/thumbs/`: Vorschaubilder (erzeugt, aber im Repo); `data/community/`: Community-Bauten mit Angaben und Lizenztexten; `.nojekyll`: GitHub Pages liefert alles unverändert aus
+- Erzeugt und nicht im Repo: `game-data/` (Spieldaten), `thumbs/` (alter lokaler Ordner der Vorschaubilder, wird nicht mehr genutzt), `tmp/` (Screenshots, Testreste)
 
 ## Testen
 ```powershell
@@ -90,7 +96,7 @@ node scripts/check-imports.mjs           # alle lokalen Verweise mit exakter Gro
 node scripts/check-build.mjs <modulpfad> [--scale <zahl>] [--json]   # einen Bau prüfen
 node scripts/shot.mjs --module <modulpfad>                           # Screenshots der 3D-Ansicht
 ```
-- `node tests/e2e-remote.mjs [--live]`: Klick-Test wie auf GitHub Pages (eigener statischer Server auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/` und `thumbs/`). Ohne `--live` aus dem Spiegel `tmp/mcmeta-mirror/` (erzeugen mit `node scripts/mirror-mcmeta.mjs`), mit `--live` gegen das echte raw.githubusercontent.com.
+- `node tests/e2e-remote.mjs [--live]`: Klick-Test wie auf GitHub Pages (eigener statischer Server auf 127.0.0.2 unter `/minecraft-block-kompass/`, ohne `game-data/`, mit den Vorschaubildern aus `data/thumbs/`; prüft, dass die Karten sie zeigen, ohne kaputte Bilder und ohne Springen). Ohne `--live` aus dem Spiegel `tmp/mcmeta-mirror/` (erzeugen mit `node scripts/mirror-mcmeta.mjs`), mit `--live` gegen das echte raw.githubusercontent.com.
 - Der Klick-Test geht Start (sechs Kategorien, ohne Scrollen bei 1280 × 800 und 390 × 844, Kopf ohne Suche) → Kategorie (Filter samt „Original vom Ersteller“, Sortierung, Zurück) → Bau-Seiten (Tokyo Skytree 1:1, Infinity Castle, ein Haus mit Bett und Truhe, Community-Bauten mit Ersteller und Lizenz, Lauf-Modus ohne hängende Tasten, alte Adressen `spiel-…`, Redstone und Farmen) → „Selber erstellen“ (Freitext, Upload je Dateiformat) → Meine Bauten (ZIP mit Manifest, „Zu Meine Bauten“, Liste, Öffnen, Neuladen, Löschen) → Handy-Ansicht durch, misst Ladezeiten und Bildrate und legt Screenshots nach `tmp/integration/e2e/`. Optionen: `--only start,bau,erstellen,meine,handy`, `--gpu swiftshader`, `--out <ordner>`. Der Online-Test lädt Community-Bauten wie auf Pages aus `/minecraft-block-kompass/data/community/`.
 - Ausführlichere Sichtprüfungen einzelner Seiten: `node tests/visual/build-page-check.mjs`, `node tests/visual/create-page-check.mjs`.
 
@@ -100,7 +106,7 @@ Für Claude Code im Web (Linux-Container mit Klon des Repos, ohne Minecraft). `g
 node scripts/extract-game-data.mjs --remote   # ≈ 7 MB Download, Cache in game-data/.cache/
 node scripts/check-imports.mjs                # unter Linux zählt die Groß-/Kleinschreibung
 node --test "tests/unit/**/*.test.mjs"
-node scripts/build-catalog.mjs                # Katalog (mit --thumbs auch Vorschaubilder, braucht Chrome)
+node scripts/build-catalog.mjs                # Katalog (mit --thumbs auch Vorschaubilder in data/thumbs/, braucht Chrome)
 node scripts/serve.mjs                        # http://127.0.0.1:8080
 ```
 Alles in einem Schritt: `node scripts/start.mjs --remote` (ohne Chrome zusätzlich `--no-thumbs`).

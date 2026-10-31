@@ -352,9 +352,10 @@
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   }
 
+  /* Bild bleibt 16:10 wie die Vorschaubilder (ganzer Bau sichtbar, nicht angeschnitten oder vergrößert); ist der Text
+     höher, bleibt unter dem Bild Platz */
   .create-feature__media {
-    aspect-ratio: auto;
-    min-height: 320px;
+    align-self: start;
   }
 }
 

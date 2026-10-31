@@ -1,5 +1,5 @@
-// Quelltext eines Moduls samt aller relativ importierten Dateien (rekursiv). Gemeinsam genutzt von
-// scripts/make-thumbs.mjs (Hash je Vorschaubild) und scripts/build-catalog.mjs (Fingerabdruck des Katalogs).
+// Quelltext eines Moduls samt aller relativ importierten Dateien (rekursiv) und die gemeinsame Vorbereitung für Hashes.
+// Gemeinsam genutzt von scripts/make-thumbs.mjs (Hash je Vorschaubild) und scripts/build-catalog.mjs (Fingerabdruck des Katalogs).
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +7,15 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const IMPORT_PATTERN = /(?:^|[\s;])(?:import|export)\s[^'"`]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|(?:^|[\s;])import\s*['"](\.{1,2}\/[^'"]+)['"]|import\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g;
+
+/**
+ * Quelltext für Hashes: Zeilenenden vereinheitlicht (CRLF → LF). Eine Windows-Arbeitskopie kann CRLF haben (z. B. eine neue
+ * Datei aus dem Editor vor dem ersten Commit; Git speichert LF). Katalog-Fingerabdruck (build-catalog) und Hash der
+ * Vorschaubilder (make-thumbs) sollen unter Windows und Linux gleich sein. Nur für Text, nie für Binärdateien.
+ */
+export function normalizeNewlines(text) {
+  return text.replace(/\r\n/g, '\n');
+}
 
 /** Quelltext eines Moduls und aller relativ importierten Dateien (rekursiv) → [{ file, text }], fest sortiert. */
 export async function moduleSources(entryFile, { root = ROOT } = {}) {

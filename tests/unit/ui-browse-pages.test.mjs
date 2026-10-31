@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { startServer } from '../../scripts/serve.mjs';
 import { launchBrowser } from '../browser.mjs';
 import { encodePng } from '../../scripts/lib/png.mjs';
+import { THUMBS_INDEX_VERSION } from '../../js/ui/data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FIXTURE = path.join(ROOT, 'tests/fixtures/ui/browse-catalog.json');
@@ -31,7 +32,7 @@ let server;
 test.before(async () => { server = await startServer({ port: 0 }); });
 test.after(async () => { await server?.close(); });
 
-async function open(t, { catalogBody = null, width = 1280, height = 900, thumbs = true } = {}) {
+async function open(t, { catalogBody = null, width = 1280, height = 900, thumbs = true, thumbIndex = { version: THUMBS_INDEX_VERSION, entries: {} } } = {}) {
   let page;
   try {
     page = await launchBrowser({ width, height, mobile: width < 600 });
@@ -44,13 +45,18 @@ async function open(t, { catalogBody = null, width = 1280, height = 900, thumbs 
   }
   t.after(() => page.close());
   await page.route('data/catalog.json', catalogBody === null ? { file: FIXTURE } : { body: catalogBody, contentType: 'application/json' });
-  if (thumbs) await page.route('/thumbs/', { body: THUMB, contentType: 'image/png' });
+  // Feste Bilderliste (Standard leer: welche Karte ein Bild hat, bestimmen dann die thumb-Felder des Test-Katalogs)
+  await page.route('data/thumbs/index.json', { body: JSON.stringify(thumbIndex), contentType: 'application/json' });
+  if (thumbs) await page.route('/data/thumbs/', { body: THUMB, contentType: 'image/png' });
   return page;
 }
 
 const search = (page) => page.eval('location.search');
 const count = (page, selector = CARDS) => page.eval(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
 const text = (page, selector) => page.eval(`document.querySelector(${JSON.stringify(selector)})?.textContent.trim() ?? null`);
+
+// Pfade aller Anfragen der Seite seit dem Laden (Resource Timing; untergeschobene Antworten zählen mit)
+const requestedPaths = (page) => page.eval('performance.getEntriesByType("resource").map((entry) => new URL(entry.name).pathname)');
 
 async function goBack(page) {
   await page.eval('history.back()');
@@ -109,6 +115,10 @@ test('Startseite: Titel, Suche, sechs kompakte Kategorien mit Anzahl, zwei Links
   assert.equal(desktop.scrollWidth, 1280, 'kein waagrechtes Scrollen');
   assert.ok(desktop.tilesInside, 'Kachel-Texte bleiben in der Kachel');
   assert.deepEqual(desktop.rows, [3, 3], 'Desktop: zwei volle Reihen mit je drei Kacheln');
+  // Die Kacheln brauchen nur den Katalog, nicht die Liste der Vorschaubilder
+  const paths = await requestedPaths(page);
+  assert.ok(paths.includes('/data/catalog.json'), `Katalog angefragt: ${paths.join(', ')}`);
+  assert.ok(!paths.includes('/data/thumbs/index.json'), 'Startseite fragt data/thumbs/index.json nicht an');
   assert.equal(desktop.widths.length, 1, `gleich breite Kacheln: ${desktop.widths}`);
   assert.equal(desktop.heights.length, 1, `gleich hohe Kacheln: ${desktop.heights}`);
   // Leere Suche bleibt auf der Seite, eine Suche leitet auf erstellen.html?q=…
@@ -332,6 +342,9 @@ test('Kategorie: Fehler beim Laden, leere und unbekannte Kategorie, Übersicht',
   // Übersicht: sechs Kacheln in zwei vollen Reihen zu je drei
   const overviewRows = await page.eval('Object.values([...document.querySelectorAll("#category-overview-list .category-tile")].reduce((rows, tile) => { const top = Math.round(tile.getBoundingClientRect().top); (rows[top] ??= []).push(tile.dataset.category); return rows; }, {})).map((row) => row.length)');
   assert.deepEqual(overviewRows, [3, 3]);
+  // Übersicht ohne Bau-Karten: ohne Liste der Vorschaubilder
+  const overviewPaths = await requestedPaths(page);
+  assert.ok(overviewPaths.includes('/data/catalog.json') && !overviewPaths.includes('/data/thumbs/index.json'), overviewPaths.join(', '));
   await page.unroute('data/catalog.json');
   await page.route('data/catalog.json', { body: 'kaputt', status: 500, contentType: 'text/plain' });
   await page.goto(`${server.url}/kategorie.html?k=haeuser`);
@@ -350,7 +363,7 @@ test('Kategorie: Fehler beim Laden, leere und unbekannte Kategorie, Übersicht',
 test('Fehlendes Vorschaubild: Ersatz aus Kategorie-Farbe und Icon statt kaputtem Bild', async (t) => {
   const page = await open(t, { thumbs: false });
   if (!page) return;
-  await page.route('/thumbs/', { body: 'fehlt', status: 404, contentType: 'text/plain' });
+  await page.route('/data/thumbs/', { body: 'fehlt', status: 404, contentType: 'text/plain' });
   // Die 7 Häuser mit Herkunft „original“ im Test-Katalog sind neutrale Beispiele (nur für dieses Label)
   await page.goto(`${server.url}/kategorie.html?k=haeuser&herkunft=original`);
   await page.waitFor(`document.querySelectorAll(${JSON.stringify(CARDS)}).length === 7`);
@@ -358,7 +371,60 @@ test('Fehlendes Vorschaubild: Ersatz aus Kategorie-Farbe und Icon statt kaputtem
   assert.equal(await page.eval('document.querySelectorAll("#category-list img").length'), 0);
   const ratio = await page.eval('(() => { const r = document.querySelector("#category-list .build-card__media").getBoundingClientRect(); return r.width / r.height; })()');
   assert.ok(Math.abs(ratio - 1.6) < 0.02, `16:10-Rahmen: ${ratio}`);
-  assert.ok(page.errors.every((line) => /404|thumbs\//.test(line)), page.errors.join('\n'));
+  assert.ok(page.errors.every((line) => /404|data\/thumbs\//.test(line)), page.errors.join('\n'));
+});
+
+test('Vorschaubilder aus data/thumbs/index.json: Karten zeigen data/thumbs/<id>.webp in fester Größe, ohne Springen', async (t) => {
+  // Katalog ohne thumb-Felder (wie data/catalog.json): welche Karte ein Bild hat, bestimmt allein die Liste
+  const builds = fixture.builds.map((build) => ({ ...build, thumb: null }));
+  const originals = builds.filter((build) => build.category === 'haeuser' && build.accuracy === 'original').map((build) => build.id);
+  const listed = originals.slice(0, 5);
+  const thumbIndex = { version: THUMBS_INDEX_VERSION, style: 3, size: [640, 400], entries: Object.fromEntries(listed.map((id) => [id, { hash: 'x', bytes: 1 }])) };
+  const page = await open(t, { catalogBody: JSON.stringify({ ...fixture, builds }), thumbIndex });
+  if (!page) return;
+  await page.goto(`${server.url}/kategorie.html?k=haeuser&herkunft=original`);
+  await page.waitFor(`document.querySelectorAll(${JSON.stringify(CARDS)}).length === ${originals.length}`);
+  await page.waitFor('[...document.querySelectorAll("#category-list img")].every((img) => img.complete)', 5000);
+  const cards = await page.eval(`[...document.querySelectorAll(${JSON.stringify(CARDS)})].map((card) => {
+    const img = card.querySelector('img.build-card__img');
+    const media = card.querySelector('.build-card__media').getBoundingClientRect();
+    const box = img?.getBoundingClientRect();
+    return {
+      id: new URL(card.querySelector('.build-card__link').href).searchParams.get('id'),
+      src: img?.getAttribute('src') ?? null, loaded: Boolean(img && img.naturalWidth > 0), fallback: Boolean(card.querySelector('.build-card__fallback')),
+      attrs: img ? ['loading', 'decoding', 'width', 'height', 'alt'].map((name) => img.getAttribute(name)).join(',') : null,
+      ratio: media.width / media.height, fills: !box || (Math.abs(box.width - media.width) < 1 && Math.abs(box.height - media.height) < 1),
+      height: Math.round(card.getBoundingClientRect().height),
+    };
+  })`);
+  for (const card of cards) {
+    if (listed.includes(card.id)) {
+      assert.equal(card.src, `/data/thumbs/${card.id}.webp`, card.id);
+      assert.ok(card.loaded && !card.fallback, `${card.id}: Bild geladen`);
+      assert.equal(card.attrs, 'lazy,async,640,400,', `${card.id}: lazy, async, feste Größe, leerer alt-Text`);
+    } else {
+      assert.equal(card.src, null, `${card.id}: nicht in der Liste, also kein Bild`);
+      assert.ok(card.fallback, `${card.id}: Kategorie-Icon`);
+    }
+    assert.ok(Math.abs(card.ratio - 1.6) < 0.02 && card.fills, `${card.id}: 16:10-Rahmen, Bild füllt ihn (${card.ratio})`);
+  }
+  assert.equal(new Set(cards.map((card) => card.height)).size, 1, `Karten mit und ohne Bild gleich hoch: ${cards.map((card) => card.height).join(', ')}`);
+  assert.ok((await requestedPaths(page)).includes('/data/thumbs/index.json'), 'Kategorie mit Karten fragt die Bilderliste an');
+  // Keine Verschiebungen in der Kartenliste beim Laden der Bilder (Layout Instability API; Kopf und Fußzeile der Seite
+  // verschieben sich beim Laden des Katalogs unabhängig von den Bildern und zählen hier nicht)
+  const shifts = await page.eval(`new Promise((resolve) => {
+    const list = document.getElementById('category-list');
+    const found = [];
+    const observer = new PerformanceObserver((entries) => {
+      for (const entry of entries.getEntries()) {
+        if (!entry.hadRecentInput && entry.sources.some((source) => source.node && list.contains(source.node))) found.push(entry.value);
+      }
+    });
+    observer.observe({ type: 'layout-shift', buffered: true });
+    setTimeout(() => { observer.disconnect(); resolve(found); }, 200);
+  })`);
+  assert.deepEqual(shifts, [], 'keine Verschiebung in der Kartenliste');
+  assert.deepEqual(page.errors, []);
 });
 
 test('Handy: Filter klappen auf und zu, Karten kompakt im 16:10-Rahmen', async (t) => {

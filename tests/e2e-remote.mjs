@@ -3,7 +3,8 @@
 //                             [--out tmp/integration/e2e-remote] [--live]
 // Ein eigener kleiner statischer Server spielt GitHub Pages nach: ohne Sicherheits-Header, die Seite liegt unter
 // /minecraft-block-kompass/ (Unterpfad), ausgeliefert wird nur, was auch auf Pages läge (git ls-files plus neue, nicht
-// ignorierte Dateien; nie game-data/, thumbs/, tmp/). Er lauscht auf 127.0.0.2: Diese Adresse gilt für die Seite nicht
+// ignorierte Dateien; nie game-data/, der alte lokale Ordner thumbs/ oder tmp/; die Vorschaubilder in data/thumbs/ sind
+// dabei, die Karten zeigen sie also wie online). Er lauscht auf 127.0.0.2: Diese Adresse gilt für die Seite nicht
 // als lokal, sie arbeitet also im Online-Modus und fragt nie nach game-data/.
 // Ohne --live kommen die mcmeta-Dateien aus dem Spiegel tmp/mcmeta-mirror/ (node scripts/mirror-mcmeta.mjs) unter
 // /__mcmeta/ (gleicher Ursprung, js/data/sources.js mit Basis '/__mcmeta/'); mit --live lädt Chrome sie wirklich von
@@ -35,8 +36,11 @@ const FLOW_NAMES = ['start', 'bau', 'erstellen', 'meine', 'handy', 'fehler'];
 const PAGES_HOST = '127.0.0.2';
 const SITE_PREFIX = '/minecraft-block-kompass/';
 const LIVE_BASE = 'https://raw.githubusercontent.com/misode/mcmeta/';
-// Liegen nie auf Pages (Mojang-Dateien bzw. daraus erzeugte Bilder, Testreste)
+// Liegen nie auf Pages (Mojang-Dateien, der alte lokale Bilder-Ordner, Testreste); data/thumbs/ liegt dort
 const NOT_ON_PAGES = ['game-data/', 'thumbs/', 'tmp/'];
+// Vorschaubilder der Karten (im Repo, Liste in data/thumbs/index.json)
+const THUMBS_INDEX = JSON.parse(readFileSync(path.join(ROOT, 'data', 'thumbs', 'index.json'), 'utf8'));
+const THUMB_IDS = new Set(Object.keys(THUMBS_INDEX.entries ?? {}));
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function readOptions(argv) {
@@ -129,7 +133,8 @@ async function checkNoCommands(page, label) {
 
 // ---------------------------------------------------------------- Pages-Nachbau
 
-// Dateien, die mit `git push` auf Pages lägen: versioniert plus neu und nicht ignoriert (ohne game-data/, thumbs/, tmp/)
+// Dateien, die mit `git push` auf Pages lägen: versioniert plus neu und nicht ignoriert (ohne game-data/, thumbs/, tmp/;
+// mit data/thumbs/)
 function pagesFiles() {
   const list = (extra) => execFileSync('git', ['-C', ROOT, 'ls-files', '-z', ...extra], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
     .split('\0').filter(Boolean);
@@ -512,6 +517,9 @@ let SERVER = null;
 const isMcmeta = (url) => (OPTIONS.live ? url.startsWith(LIVE_BASE) : url.startsWith(`${SERVER.origin}${MIRROR_PREFIX}`));
 const mark = (page) => ({ cdp: page.monitor.requests.length, server: SERVER.state.log.length, at: Date.now() });
 
+// game-data/ und der alte Bilder-Ordner thumbs/ direkt unter der Website-Wurzel (nicht data/thumbs/)
+const FORBIDDEN_URL = /^[a-z]+:\/\/[^/]+\/(?:minecraft-block-kompass\/)?(?:game-data|thumbs)\//;
+
 function since(page, from) {
   return { cdp: page.monitor.requests.slice(from.cdp), server: SERVER.state.log.slice(from.server) };
 }
@@ -528,7 +536,8 @@ function countMcmeta(page, from) {
   };
 }
 
-// Alle Anfragen seit from: nur Pages-Unterpfad und mcmeta; nie game-data/ oder thumbs/; keine 4xx/5xx, keine Abbrüche
+// Alle Anfragen seit from: nur Pages-Unterpfad und mcmeta; nie game-data/ oder den alten Ordner thumbs/ (data/thumbs/ ist
+// erlaubt); keine 4xx/5xx, keine Abbrüche
 function requestProblems(page, from, { allowFailedMcmeta = false } = {}) {
   const { cdp, server } = since(page, from);
   const problems = [];
@@ -536,7 +545,7 @@ function requestProblems(page, from, { allowFailedMcmeta = false } = {}) {
     const { url } = entry;
     const sameSite = url.startsWith(`${SERVER.origin}${SITE_PREFIX}`);
     const allowed = sameSite || isMcmeta(url);
-    if (/\/(?:game-data|thumbs)\//.test(url)) problems.push(`verbotene Anfrage ${url}`);
+    if (FORBIDDEN_URL.test(url)) problems.push(`verbotene Anfrage ${url}`);
     else if (!allowed) problems.push(`Anfrage außerhalb von Pages/mcmeta: ${url}`);
     const expectedFailure = allowFailedMcmeta && isMcmeta(url);
     if (entry.blocked) problems.push(`blockiert (${entry.blocked}): ${url}`);
@@ -554,7 +563,7 @@ function requestProblems(page, from, { allowFailedMcmeta = false } = {}) {
 function checkRequests(page, label, from, options) {
   const problems = requestProblems(page, from, options);
   const { cdp } = since(page, from);
-  check(`${label}: Anfragen nur an Pages und mcmeta, nie game-data/ oder thumbs/`, problems.length === 0,
+  check(`${label}: Anfragen nur an Pages und mcmeta, nie game-data/ oder thumbs/ (nur data/thumbs/)`, problems.length === 0,
     problems.length ? problems.slice(0, 4).join(' | ') : `${cdp.length} Anfragen geprüft`);
 }
 
@@ -618,6 +627,78 @@ async function loadLazyImages(page) {
   }
   await page.waitFor('[...document.images].every((img) => img.complete)', 10000).catch(() => {});
   return page.eval('({ total: document.images.length, broken: [...document.images].filter((img) => img.complete && img.naturalWidth === 0).map((img) => img.getAttribute("src")).slice(0, 5) })');
+}
+
+// Karten-Rahmen (Lage und Größe) der Bau-Karten in scope, in Seitenkoordinaten – zum Vergleich vor und nach den Bildern.
+// Erst nach dem Laden der Schriften (sonst verschiebt deren Wechsel die Karten, unabhängig von den Bildern).
+async function cardBoxes(page, scope) {
+  await page.eval('document.fonts.ready.then(() => true)');
+  return page.eval(`[...document.querySelectorAll(${JSON.stringify(`${scope} .build-card`)})].map((card) => {
+    const r = card.getBoundingClientRect(), m = card.querySelector('.build-card__media').getBoundingClientRect();
+    return [Math.round(r.left), Math.round(r.top + scrollY), Math.round(r.width), Math.round(r.height), Math.round(m.width), Math.round(m.height)].join(',');
+  })`);
+}
+
+/**
+ * Vorschaubilder der Karten in scope (nach dem Nachladen aller Bilder): jede Karte eines Baus mit Bild zeigt
+ * data/thumbs/<id>.webp in 640 × 400 (lazy, async, feste Größe, alt=""), Karten ohne Bild das Kategorie-Icon.
+ */
+async function cardThumbs(page, scope) {
+  // Die Kategorie-Seite lädt beim Scrollen weitere Karten nach: so lange durchscrollen, bis keine mehr dazukommen,
+  // dann warten, bis alle Bilder der Liste fertig sind
+  const cardCount = () => page.eval(`document.querySelectorAll(${JSON.stringify(`${scope} .build-card`)}).length`);
+  for (let pass = 0; pass < 20; pass++) {
+    const before = await cardCount();
+    const height = await page.eval('document.documentElement.scrollHeight');
+    const step = await page.eval('window.innerHeight');
+    for (let y = 0; y < height + step; y += step) {
+      await page.eval(`window.scrollTo(0, ${y})`);
+      await sleep(60);
+    }
+    await sleep(300);
+    // Kam in diesem Durchgang nichts dazu, lag jedes Bild einmal im Bild (oder nah genug) und lädt
+    if (await cardCount() === before) break;
+  }
+  await page.waitFor(`[...document.querySelectorAll(${JSON.stringify(`${scope} img`)})].every((img) => img.complete)`, 20000).catch(() => {});
+  const cards = await page.eval(`[...document.querySelectorAll(${JSON.stringify(`${scope} .build-card`)})].map((card) => {
+    const img = card.querySelector('img.build-card__img');
+    const id = new URL(card.querySelector('.build-card__link').href).searchParams.get('id');
+    const media = card.querySelector('.build-card__media').getBoundingClientRect();
+    return {
+      id, fallback: Boolean(card.querySelector('.build-card__fallback')), src: img?.getAttribute('src') ?? null,
+      loaded: Boolean(img && img.complete && img.naturalWidth === 640 && img.naturalHeight === 400),
+      attrs: img ? [img.getAttribute('loading'), img.getAttribute('decoding'), img.getAttribute('width'), img.getAttribute('height'), img.getAttribute('alt')].join(',') : null,
+      ratio: media.width / media.height,
+    };
+  })`);
+  const problems = [];
+  for (const card of cards) {
+    const expected = THUMB_IDS.has(card.id) ? `${SITE_PREFIX}data/thumbs/${card.id}.webp` : null;
+    if (expected && card.src !== expected) problems.push(`${card.id}: Bild ${card.src ?? 'fehlt'} statt ${expected}`);
+    else if (expected && !card.loaded) problems.push(`${card.id}: Bild nicht geladen`);
+    else if (expected && card.attrs !== 'lazy,async,640,400,') problems.push(`${card.id}: Attribute ${card.attrs}`);
+    else if (!expected && !card.fallback) problems.push(`${card.id}: ohne Bild, aber kein Kategorie-Icon`);
+    if (Math.abs(card.ratio - 1.6) > 0.02) problems.push(`${card.id}: Rahmen ${card.ratio.toFixed(3)} statt 16:10`);
+  }
+  return { cards: cards.length, images: cards.filter((card) => card.loaded).length, fallbacks: cards.filter((card) => card.fallback).length, problems };
+}
+
+/**
+ * Summe der Layout-Verschiebungen seit dem Laden der Seite, an denen Elemente in scope beteiligt sind (Layout Instability
+ * API, ohne Verschiebungen nach Eingaben). Kopf und Fußzeile, die sich beim Laden des Katalogs bewegen, zählen nicht.
+ */
+function layoutShift(page, scope) {
+  return page.eval(`new Promise((resolve) => {
+    const root = document.querySelector(${JSON.stringify(scope)});
+    let sum = 0;
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (!entry.hadRecentInput && entry.sources.some((source) => source.node && root?.contains(source.node))) sum += entry.value;
+      }
+    });
+    observer.observe({ type: 'layout-shift', buffered: true });
+    setTimeout(() => { observer.disconnect(); resolve(Math.round(sum * 1000) / 1000); }, 200);
+  })`);
 }
 
 // Wie page.waitFor, übersteht aber einen Seitenwechsel (das Auswerten scheitert kurz, während die neue Seite lädt)
@@ -838,8 +919,19 @@ async function startFlow() {
   check('Kategorie Häuser: Karten da, keine Fehlerbox', category.cards > 0 && !category.error && category.count.replace(/\D/g, '').startsWith(String(houses)) && category.path.startsWith(SITE_PREFIX),
     `${category.cards} Karten, „${category.count}“, ${category.path}`);
   await checkHeader(page, check, 'Kategorie', 'category');
+  // Vorschaubilder online: jede Karte zeigt ihr Bild aus data/thumbs/, die Karten springen dabei nicht
+  const boxesBefore = await cardBoxes(page, '#category-list');
+  const thumbs = await cardThumbs(page, '#category-list');
+  const expectedThumbs = catalog.builds.filter((build) => build.category === 'haeuser' && THUMB_IDS.has(build.id)).length;
+  check('Kategorie: Karten zeigen die Vorschaubilder aus data/thumbs/', thumbs.problems.length === 0 && thumbs.images === thumbs.cards && thumbs.fallbacks === 0 && expectedThumbs === houses,
+    thumbs.problems.length ? thumbs.problems.slice(0, 4).join(' | ') : `${thumbs.images} von ${thumbs.cards} Karten mit Bild (${expectedThumbs} von ${houses} Häusern haben eins)`);
   const catImages = await loadLazyImages(page);
   check('Kategorie: keine kaputten Bilder', catImages.broken.length === 0, `${catImages.total} Bilder`);
+  const boxesAfter = await cardBoxes(page, '#category-list');
+  const moved = boxesBefore.map((box, i) => [box, boxesAfter[i]]).filter(([box, after]) => box !== after);
+  const shift = await layoutShift(page, '#category-list');
+  check('Kategorie: kein Layout-Springen durch die Bilder', moved.length === 0 && boxesBefore.length > 0 && shift < 0.05,
+    `${boxesBefore.length} Karten${moved.length ? `, ${moved.length} verschoben (z. B. ${moved[0].join(' → ')}; links,oben,breit,hoch,Bild)` : ' unverändert'}, Layout-Verschiebung ${shift}`);
   await page.eval('window.scrollTo(0, 0)');
   await shot(page, 'desktop-02-kategorie');
   await checkNoCommands(page, 'Kategorie');
@@ -1012,6 +1104,13 @@ async function createFlow() {
   const house = await ask(page, byId.get(MODULE_ID)?.title ?? 'Fachwerkhaus');
   check(`Freitext „${byId.get(MODULE_ID)?.title}“ → Treffer`, house.kind === 'build' && house.matches?.length > 0 && (await page.eval("document.querySelectorAll('#create-results-body a[href*=\"bau.html?id=\"]').length")) > 0,
     `${house.kind}, ${house.matches?.[0]?.entry.id}`);
+  // Treffer mit Vorschaubild (große Karte und weitere Karten) – online aus data/thumbs/
+  await loadLazyImages(page);
+  const resultImages = await page.eval(`[...document.querySelectorAll('#create-results-body img')].map((img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth === 640 && img.naturalHeight === 400 }))`);
+  const firstId = house.matches?.[0]?.entry.id;
+  check('Erstellen: Treffer zeigen ihr Vorschaubild', resultImages.length > 0 && resultImages.every((img) => img.ok && img.src.startsWith(`${SITE_PREFIX}data/thumbs/`))
+    && (!THUMB_IDS.has(firstId) || resultImages.some((img) => img.src === `${SITE_PREFIX}data/thumbs/${firstId}.webp`)),
+  `${resultImages.filter((img) => img.ok).length} von ${resultImages.length} Bildern geladen${resultImages.length ? `, z. B. ${resultImages[0].src}` : ''}`);
   const sphere = await ask(page, 'hohle Kugel Radius 12 aus Glas');
   check('Freitext „hohle Kugel Radius 12 aus Glas“ → Form', sphere.kind === 'shape' && sphere.shape === 'sphere' && sphere.params.block === 'glass', JSON.stringify(sphere.params));
   await fullShot(page, 'desktop-11-erstellen-kugel');
@@ -1091,6 +1190,14 @@ async function mobileFlow() {
   await page.goto(`${SERVER.base}kategorie.html?k=haeuser`);
   await page.waitFor("document.querySelectorAll('#category-list .build-card').length > 0", 20000);
   check('Handy Kategorie: Karten da, kein waagrechtes Scrollen', (await page.eval("!document.querySelector('.state--error')")) && await noHorizontalScroll(page));
+  const mobileBoxes = await cardBoxes(page, '#category-list');
+  const mobileThumbs = await cardThumbs(page, '#category-list');
+  const mobileAfter = await cardBoxes(page, '#category-list');
+  const mobileMoved = mobileBoxes.map((box, i) => [box, mobileAfter[i]]).filter(([box, after]) => box !== after);
+  check('Handy Kategorie: Vorschaubilder im 16:10-Rahmen, kein Springen', mobileThumbs.problems.length === 0 && mobileThumbs.images === mobileThumbs.cards && mobileMoved.length === 0,
+    mobileThumbs.problems.length ? mobileThumbs.problems.slice(0, 4).join(' | ')
+      : `${mobileThumbs.images} von ${mobileThumbs.cards} Karten mit Bild, ${mobileBoxes.length} Karten${mobileMoved.length ? `, ${mobileMoved.length} verschoben (z. B. ${mobileMoved[0].join(' → ')}; links,oben,breit,hoch,Bild)` : ' unverändert'}, Layout-Verschiebung ${await layoutShift(page, '#category-list')}`);
+  await page.eval('window.scrollTo(0, 0)');
   await shot(page, 'handy-02-kategorie');
 
   await buildVisit(page, { id: MOBILE_ID, label: `Handy ${MOBILE_ID} (erster Besuch)`, visit: 'erst', shotName: `handy-bau-${MOBILE_ID}`, expectEntity: true, mobile: true });

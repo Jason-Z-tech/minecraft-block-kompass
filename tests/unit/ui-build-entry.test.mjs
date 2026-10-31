@@ -10,7 +10,7 @@ import {
   scaleToken, isHttpsUrl, MODULE_PATH_PATTERN,
 } from '../../js/ui/build/entry.js';
 import { ProgressStore, parseStoredProgress, serializeProgress, formProgressKey, hashText } from '../../js/ui/build/progress.js';
-import { normalizeCatalog } from '../../js/ui/data.js';
+import { normalizeCatalog, THUMBS_INDEX_VERSION } from '../../js/ui/data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CATALOG = JSON.parse(readFileSync(path.join(ROOT, 'tests/fixtures/ui/catalog.json'), 'utf8'));
@@ -88,18 +88,22 @@ test('Katalog fehlt: DataError „Katalog fehlt“ ohne Befehle', async () => {
   const fetch = async (url) => { calls.push(String(url)); return new Response('', { status: 404 }); };
   await assert.rejects(loadBuildEntry('example-house', { fetch, root: SITE }), (error) => error.name === 'DataError' && error.kind === 'missing'
     && error.title === 'Katalog fehlt' && error.steps.length > 0 && error.steps.every((step) => !step.command));
-  assert.deepEqual(calls, ['http://127.0.0.1:8080/data/catalog.json'], 'nur der Katalog, online keine Nachfrage nach Vorschaubildern');
+  assert.deepEqual(calls.sort(), ['http://127.0.0.1:8080/data/catalog.json', 'http://127.0.0.1:8080/data/thumbs/index.json'],
+    'nur der Katalog und die Liste der Vorschaubilder, keine Spieldaten');
 });
 
-test('loadBuildEntry: auf dem eigenen Rechner kommt das lokale Vorschaubild dazu', async () => {
+test('loadBuildEntry: das Vorschaubild aus data/thumbs/ kommt dazu, online wie lokal', async () => {
   const fetch = async (url) => {
-    if (String(url).endsWith('/thumbs/index.json')) return new Response(JSON.stringify({ version: 1, entries: { 'example-house': {} } }), { status: 200 });
+    if (String(url).endsWith('/data/thumbs/index.json')) return new Response(JSON.stringify({ version: THUMBS_INDEX_VERSION, entries: { 'example-house': {} } }), { status: 200 });
     return catalogFetch()(url);
   };
-  const local = await loadBuildEntry('example-house', { fetch, root: SITE, location: { hostname: '127.0.0.1' } });
-  assert.equal(local.thumb, 'thumbs/example-house.webp');
-  const online = await loadBuildEntry('example-house', { fetch, root: SITE, location: { hostname: 'jason-z-tech.github.io' } });
-  assert.equal(online.thumb, CATALOG.builds.find((b) => b.id === 'example-house').thumb ?? null, 'online nur, was im Katalog steht');
+  for (const root of [SITE, new URL('https://jason-z-tech.github.io/minecraft-block-kompass/')]) {
+    const entry = await loadBuildEntry('example-house', { fetch, root });
+    assert.equal(entry.thumb, 'data/thumbs/example-house.webp', String(root));
+  }
+  const withoutIndex = async (url) => (String(url).endsWith('/data/thumbs/index.json') ? new Response('', { status: 404 }) : catalogFetch()(url));
+  const plain = await loadBuildEntry('example-house', { fetch: withoutIndex, root: SITE });
+  assert.equal(plain.thumb, CATALOG.builds.find((b) => b.id === 'example-house').thumb ?? null, 'ohne Liste nur, was im Katalog steht');
 });
 
 test('normalizeBuildDetails prüft jedes Feld', () => {
@@ -140,7 +144,8 @@ test('viewEntry: Teil-Objekte für Formen und Uploads', () => {
   const old = viewEntry({ title: 'Alt', description: 'Bleibt', difficulty: 2, facts: ['weg'] });
   assert.equal(old.description, 'Bleibt');
   assert.ok(!Object.hasOwn(old, 'difficulty') && !Object.hasOwn(old, 'facts'));
-  assert.equal(viewEntry({ thumb: 'thumbs/kugel.webp' }).thumb, 'thumbs/kugel.webp');
+  assert.equal(viewEntry({ thumb: 'data/thumbs/kugel.webp' }).thumb, 'data/thumbs/kugel.webp');
+  assert.equal(viewEntry({ thumb: 'thumbs/kugel.webp' }).thumb, null, 'der alte lokale Ordner thumbs/ gilt nicht mehr');
 });
 
 test('Maßstab aus der Adresse auflösen', () => {

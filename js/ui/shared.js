@@ -338,7 +338,8 @@ export function createBuildCard(build, { headingLevel = 3, imageSrc = null } = {
   const fallback = () => el('div', { class: 'build-card__fallback' }, icon(category.icon, { size: 64 }));
   let preview = fallback();
   if (src) {
-    preview = el('img', { class: 'build-card__img', src, alt: '', loading: 'lazy', decoding: 'async', width: 320, height: 200 });
+    // Feste Größe (wie die Bilder aus data/thumbs/, 16:10 wie der Rahmen): kein Springen beim Laden
+    preview = el('img', { class: 'build-card__img', src, alt: '', loading: 'lazy', decoding: 'async', width: 640, height: 400 });
     // Fehlt das Vorschaubild, erscheint das Kategorie-Icon statt eines kaputten Bildes
     preview.addEventListener('error', () => {
       console.warn(`[Block-Kompass] Vorschaubild fehlt: ${src}`);

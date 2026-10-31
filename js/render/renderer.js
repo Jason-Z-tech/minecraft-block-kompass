@@ -400,8 +400,10 @@ export class Viewer {
    * Lädt einen Bau. source: { kind:'module', path } | { kind:'shape', shape, params } | { kind:'upload', format, name, data, params }
    * (Testquellen: { kind:'gallery', group, page } | { kind:'synthetic', count }). params gehen an das Bau-Modul.
    * Ergebnis: BuildResult (volume = Kopie im Hauptthread). Ein neuer load bricht den laufenden ab (code 'cancelled').
+   * crop: Schnitt { minX, maxX, minY, maxY, minZ, maxZ } (Block-Koordinaten, inklusiv) – Blöcke außerhalb fehlen dann
+   * ganz (Vorschaubilder, scripts/make-thumbs.mjs); null = ganzer Bau.
    */
-  load(source, params = {}) {
+  load(source, params = {}, { crop = null } = {}) {
     if (this.#disposed) return Promise.reject(new ViewerError('disposed', 'Die 3D-Ansicht wurde schon geschlossen.'));
     this.#cancelPending();
     if (this.#mode === 'walk') this.setMode('orbit');
@@ -424,7 +426,7 @@ export class Viewer {
       return promise;
     }
     try {
-      worker.postMessage({ type: 'load', job, source, params });
+      worker.postMessage({ type: 'load', job, source, params, crop });
     } catch (error) {
       this.#failPending(new ViewerError('source', 'Die Quelle des Baus ist ungültig (nicht übertragbar).', { detail: error.message }));
     }

@@ -21,7 +21,8 @@ async function loadHome() {
   grid.setAttribute('aria-busy', 'true');
   let catalog;
   try {
-    catalog = await loadCatalog();
+    // Nur die Kachel-Zahlen: ohne Bilderliste
+    catalog = await loadCatalog({ thumbs: false });
   } catch (error) {
     setCategoryCounts(tiles, null);
     renderError(status, error, { onRetry: loadHome, compact: true });

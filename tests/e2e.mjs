@@ -51,8 +51,8 @@ if (!existsSync(CATALOG_FILE)) {
   console.error('data/catalog.json fehlt. Katalog erzeugen (braucht game-data/):\n  node scripts/extract-game-data.mjs\n  node scripts/build-catalog.mjs --thumbs');
   process.exit(2);
 }
-// Der Klick-Test prüft die lokale Seite mit Spieldaten und Vorschaubildern (der Katalog allein liegt im Repo)
-const NEEDED = [['game-data/meta.json', 'node scripts/extract-game-data.mjs'], ['thumbs/index.json', 'node scripts/make-thumbs.mjs']];
+// Der Klick-Test prüft die lokale Seite mit Spieldaten und Vorschaubildern (Katalog und data/thumbs/ liegen im Repo)
+const NEEDED = [['game-data/meta.json', 'node scripts/extract-game-data.mjs'], ['data/thumbs/index.json', 'node scripts/make-thumbs.mjs']];
 const absent = NEEDED.filter(([file]) => !existsSync(path.join(ROOT, file)));
 if (absent.length) {
   console.error(`Für den Klick-Test fehlt: ${absent.map(([file]) => file).join(', ')}. Erzeugen:\n${absent.map(([, command]) => `  ${command}`).join('\n')}\n(oder alles auf einmal: node scripts/start.mjs)`);

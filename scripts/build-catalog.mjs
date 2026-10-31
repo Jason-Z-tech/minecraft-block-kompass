@@ -1,7 +1,7 @@
 // Katalog der Bauten (ARCHITEKTUR §9): prüft alle Bau-Module js/builds/<kategorie>/<id>.js mit checkBuild (für jeden
 // Maßstab), dazu die Community-Bauten aus data/community/ (§9.2, gebaut wie ein Upload), und schreibt data/catalog.json atomar.
 // Der Katalog liegt im Repo und wird mit der Webseite veröffentlicht: Er enthält nur Projekttexte, Größen, Zahlen und
-// Block-IDs, keine Spieldaten und keine Vorschaubilder (die liegen nur lokal in thumbs/, siehe thumbs/index.json).
+// Block-IDs, keine Spieldaten und keine Bildpfade (die Vorschaubilder liegen in data/thumbs/, Liste in data/thumbs/index.json).
 // „inputs“ hält einen Fingerabdruck der Eingaben (Quelltext, Community-Dateien und Spieldaten); passt er nicht mehr, ist
 // der Katalog veraltet.
 // Aufruf: node scripts/build-catalog.mjs [--thumbs [--force]] [--modules-dir <ordner>] [--community-dir <ordner> | --no-community]
@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { checkBuild, loadGameData, CATEGORIES } from './check-build.mjs';
-import { moduleSources } from './lib/module-sources.mjs';
+import { moduleSources, normalizeNewlines } from './lib/module-sources.mjs';
 import {
   DEFAULT_COMMUNITY_DIR, readCommunity, buildCommunityEntry, communityCredits, communityFingerprintParts,
 } from './lib/community.mjs';
@@ -22,7 +22,7 @@ import { CATEGORIES as CATEGORY_INFO } from '../js/ui/shared.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_MODULES_DIR = path.join(ROOT, 'js', 'builds');
 export const DEFAULT_DATA_DIR = path.join(ROOT, 'game-data');
-export const DEFAULT_THUMBS_DIR = path.join(ROOT, 'thumbs');
+export const DEFAULT_THUMBS_DIR = path.join(ROOT, 'data', 'thumbs');
 export const DEFAULT_OUT = path.join(ROOT, 'data', 'catalog.json');
 export { DEFAULT_COMMUNITY_DIR };
 const SELF_FILE = fileURLToPath(import.meta.url);
@@ -39,7 +39,7 @@ const MAX_WARNINGS_PER_ENTRY = 20;
 const HELPER_FOLDERS = new Set(['lib']);
 
 const USAGE = `Aufruf: node scripts/build-catalog.mjs [Optionen]
-  --thumbs                 danach Vorschaubilder erzeugen (scripts/make-thumbs.mjs) und eintragen
+  --thumbs                 danach fehlende oder veraltete Vorschaubilder erzeugen (scripts/make-thumbs.mjs)
   --force                  mit --thumbs: alle Vorschaubilder neu rendern
   --modules-dir <ordner>   Bau-Module (<ordner>/<kategorie>/<id>.js), Standard js/builds
   --community-dir <ordner> Community-Bauten (builds.json und Dateien), Standard data/community
@@ -47,7 +47,7 @@ const USAGE = `Aufruf: node scripts/build-catalog.mjs [Optionen]
   --no-community           ohne Community-Bauten
   --data <ordner>          Spieldaten, Standard game-data
   --out <datei>            Ziel, Standard data/catalog.json
-  --thumbs-dir <ordner>    Ordner der Vorschaubilder, Standard thumbs`;
+  --thumbs-dir <ordner>    Ordner der Vorschaubilder, Standard data/thumbs`;
 
 export class UsageError extends Error {
   constructor(message) {
@@ -124,8 +124,9 @@ async function readJson(file) {
 }
 
 const sha256 = (data) => createHash('sha256').update(data).digest('hex');
-// Zeilenenden vereinheitlichen: Eine Windows-Arbeitskopie kann CRLF haben, der Fingerabdruck soll trotzdem gleich bleiben.
-const textHash = (text) => sha256(text.replace(/\r\n/g, '\n'));
+// Zeilenenden vereinheitlichen: Eine Windows-Arbeitskopie kann CRLF haben, der Fingerabdruck soll trotzdem gleich bleiben
+// (dieselbe Regel wie der Hash der Vorschaubilder in make-thumbs).
+const textHash = (text) => sha256(normalizeNewlines(text));
 const byName = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
@@ -410,7 +411,7 @@ function warnDuplicateTitles(builds, warnings) {
   for (const [, ids] of byTitle) if (ids.length > 1) warnings.push(`Titel doppelt: ${ids.join(', ')} – bitte unterscheidbar benennen.`);
 }
 
-/** Anzahl der Einträge mit lokalem Vorschaubild <thumbsDir>/<id>.webp (nur für die Ausgabe; der Katalog kennt keine Bilder). */
+/** Anzahl der Einträge mit Vorschaubild <thumbsDir>/<id>.webp (nur für die Ausgabe; der Katalog kennt keine Bildpfade). */
 async function countThumbs(builds, thumbsDir) {
   let count = 0;
   for (const build of builds) if (await exists(path.join(thumbsDir, `${build.id}.webp`))) count++;
@@ -613,7 +614,7 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(summaryTable(catalog));
   if (options.communityDir) console.log(`davon Community-Bauten (data/community/): ${stats.community}`);
   const withThumbs = await countThumbs(catalog.builds, options.thumbsDir);
-  console.log(`Vorschaubilder (nur lokal, thumbs/): ${withThumbs} von ${catalog.builds.length}${withThumbs < catalog.builds.length && !options.thumbs ? ' (fehlende erzeugen: node scripts/build-catalog.mjs --thumbs)' : ''}`);
+  console.log(`Vorschaubilder (data/thumbs/): ${withThumbs} von ${catalog.builds.length}${withThumbs < catalog.builds.length && !options.thumbs ? ' (fehlende erzeugen: node scripts/build-catalog.mjs --thumbs)' : ''}`);
   if (!written) console.log('Katalog inhaltlich unverändert – Datei nicht neu geschrieben.');
   for (const note of notes) console.log(`Hinweis: ${note}`);
   if (communityNotes.length) {

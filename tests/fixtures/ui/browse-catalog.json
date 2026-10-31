@@ -1368,7 +1368,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/plains-small-house-1.webp"
+   "thumb": "data/thumbs/plains-small-house-1.webp"
   },
   {
    "id": "plains-library-1",
@@ -1433,7 +1433,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/plains-library-1.webp"
+   "thumb": "data/thumbs/plains-library-1.webp"
   },
   {
    "id": "plains-medium-house-1",
@@ -1497,7 +1497,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/plains-medium-house-1.webp"
+   "thumb": "data/thumbs/plains-medium-house-1.webp"
   },
   {
    "id": "taiga-medium-house-1",
@@ -1561,7 +1561,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/taiga-medium-house-1.webp"
+   "thumb": "data/thumbs/taiga-medium-house-1.webp"
   },
   {
    "id": "snowy-medium-house-1",
@@ -1625,7 +1625,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/snowy-medium-house-1.webp"
+   "thumb": "data/thumbs/snowy-medium-house-1.webp"
   },
   {
    "id": "desert-medium-house-1",
@@ -1689,7 +1689,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/desert-medium-house-1.webp"
+   "thumb": "data/thumbs/desert-medium-house-1.webp"
   },
   {
    "id": "igloo-top",
@@ -1753,7 +1753,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/igloo-top.webp"
+   "thumb": "data/thumbs/igloo-top.webp"
   },
   {
    "id": "tokyo-skytree",
@@ -3913,7 +3913,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/end-city-ship.webp"
+   "thumb": "data/thumbs/end-city-ship.webp"
   },
   {
    "id": "ruined-portal-1",
@@ -3977,7 +3977,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/ruined-portal-1.webp"
+   "thumb": "data/thumbs/ruined-portal-1.webp"
   },
   {
    "id": "kamado-haus",
@@ -5610,7 +5610,7 @@
     ]
    ],
    "sizeClass": "mittel",
-   "thumb": "thumbs/pillager-outpost-watchtower.webp"
+   "thumb": "data/thumbs/pillager-outpost-watchtower.webp"
   },
   {
    "id": "trail-ruins-tower-1",
@@ -5674,7 +5674,7 @@
     ]
    ],
    "sizeClass": "klein",
-   "thumb": "thumbs/trail-ruins-tower-1.webp"
+   "thumb": "data/thumbs/trail-ruins-tower-1.webp"
   },
   {
    "id": "woodland-mansion-entrance",
@@ -5738,7 +5738,7 @@
     ]
    ],
    "sizeClass": "mittel",
-   "thumb": "thumbs/woodland-mansion-entrance.webp"
+   "thumb": "data/thumbs/woodland-mansion-entrance.webp"
   },
   {
    "id": "laternenpfahl",

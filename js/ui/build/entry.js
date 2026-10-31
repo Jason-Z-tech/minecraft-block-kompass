@@ -2,7 +2,7 @@
 // Quellen, Credits, Maßstäbe, Varianten …), Maßstab aus der Adresse auflösen, Quelle für den Viewer.
 // Alte Felder (z. B. difficulty, facts) werden nicht übernommen.
 // Ohne DOM-Zugriff beim Laden, daher in Node testbar.
-import { loadJson, loadLocalThumbIds, applyThumbs, normalizeCatalog, findBuild, cleanCommunity, CATALOG_PATH } from '../data.js';
+import { loadJson, loadThumbIds, applyThumbs, normalizeCatalog, findBuild, cleanCommunity, CATALOG_PATH, THUMB_PATH_PATTERN } from '../data.js';
 import { isSafeUrl, isSafeSitePath } from '../dom.js';
 import { formatNumber, parseBuildParams, CATEGORY_SLUGS, ACCURACY_KEYS, BUILD_ID_PATTERN } from '../shared.js';
 import { isMyBuildId } from '../../data/my-builds.js';
@@ -116,10 +116,10 @@ export async function loadCatalogJson(options = {}) {
 
 /**
  * Eintrag mit allen geprüften Feldern oder null, wenn es die ID nicht gibt. Wirft DataError bei Ladefehlern.
- * Auf dem eigenen Rechner kommt ein vorhandenes lokales Vorschaubild dazu (wie in loadCatalog).
+ * Ein vorhandenes Vorschaubild (data/thumbs/index.json) kommt dazu, online wie lokal (wie in loadCatalog).
  */
 export async function loadBuildEntry(id, options = {}) {
-  const [json, thumbIds] = await Promise.all([loadCatalogJson(options), loadLocalThumbIds(options)]);
+  const [json, thumbIds] = await Promise.all([loadCatalogJson(options), loadThumbIds(options)]);
   const catalog = normalizeCatalog(json);
   const base = findBuild(catalog, id);
   if (!base) return null;
@@ -179,8 +179,6 @@ export function sourceForEntry(entry) {
   return null;
 }
 
-const THUMB_PATTERN = /^thumbs\/[a-z0-9-]{2,80}\.(?:webp|png|avif|jpg)$/;
-
 /**
  * Eintrag für die Bau-Ansicht: Katalog-Eintrag oder ein gleich aufgebautes Objekt (Formen, Uploads).
  * Jedes Feld wird geprüft; fehlende oder ungültige Felder werden leer (null, '' oder []).
@@ -206,7 +204,7 @@ export function viewEntry(raw) {
     blocks: cleanInteger(source.blocks, 0, 3_000_000),
     steps: cleanInteger(source.steps, 0, 65534),
     phases: cleanInteger(source.phases, 0, 65534),
-    thumb: typeof source.thumb === 'string' && THUMB_PATTERN.test(source.thumb) && isSafeSitePath(source.thumb) ? source.thumb : null,
+    thumb: typeof source.thumb === 'string' && THUMB_PATH_PATTERN.test(source.thumb) && isSafeSitePath(source.thumb) ? source.thumb : null,
   };
 }
 

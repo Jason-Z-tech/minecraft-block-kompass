@@ -1,7 +1,10 @@
 # Lokal aus deiner Minecraft-Installation erzeugt (Texturen, Modelle, Namen) – nicht weitergeben
 game-data/
-# Erzeugte Vorschaubilder (enthalten Minecraft-Texturen)
-thumbs/
+# Alter lokaler Ordner der Vorschaubilder (nur der oberste thumbs/). Die Vorschaubilder der Seite liegen in
+# data/thumbs/ und werden committet (Entscheidung des Users 2026-10-31: fertige Bilder ins Repo).
+/thumbs/
+# Zwischendateien eines abgebrochenen make-thumbs-Laufs (der nächste Lauf räumt sie weg)
+/data/thumbs/*.tmp
 # Temporäre Dateien von Tests und Screenshots
 tmp/
 # Geheimnisse gehören nie ins Repo

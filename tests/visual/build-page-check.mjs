@@ -43,8 +43,8 @@ async function openBrowser({ mobile = false } = {}) {
     page = await launchBrowser({ ...size, gpu: 'swiftshader', reducedMotion: false });
   }
   await page.route('data/catalog.json', { file: CATALOG });
-  // Unabhängig von lokal erzeugten Vorschaubildern (thumbs/ fehlt z. B. nach frischem Klon): leere Liste
-  await page.route('thumbs/index.json', { body: JSON.stringify({ version: 1, entries: {} }), contentType: 'application/json' });
+  // Unabhängig vom Stand der Vorschaubilder (data/thumbs/): leere Liste, die Karten zeigen Icons
+  await page.route('data/thumbs/index.json', { body: JSON.stringify({ version: 1, entries: {} }), contentType: 'application/json' });
   return page;
 }
 

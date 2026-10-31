@@ -4,7 +4,8 @@
 // Spieldaten: aus der Minecraft-Installation (nur lesend); ohne Installation oder wenn das scheitert automatisch aus
 // öffentlichen Quellen (siehe README „Ohne Minecraft“).
 // --remote: immer aus öffentlichen Quellen laden, auch wenn Minecraft installiert ist.
-// --no-thumbs: keine Vorschaubilder rendern (braucht dann kein Chrome); die lokale Seite zeigt dann Kategorie-Icons.
+// --no-thumbs: keine Vorschaubilder rendern (braucht dann kein Chrome); die Seite zeigt die Bilder aus data/thumbs/ (im Repo),
+//              auch wenn ein geänderter Bau dort noch ein altes Bild hat.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -13,11 +14,12 @@ import { startServer } from './serve.mjs';
 import { defaultSourcePaths } from './extract-game-data.mjs';
 import { catalogInputs, DEFAULT_OUT as CATALOG } from './build-catalog.mjs';
 import { CATEGORIES } from './check-build.mjs';
+import { THUMBS_INDEX_VERSION } from '../js/ui/data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GAME_DATA = path.join(ROOT, 'game-data');
 const BUILDS_DIR = path.join(ROOT, 'js', 'builds');
-const THUMBS_DIR = path.join(ROOT, 'thumbs');
+const THUMBS_DIR = path.join(ROOT, 'data', 'thumbs');
 const DEFAULT_PORT = 8080;
 const PORT_TRIES = 10;
 const REQUIRED_DATA = ['meta.json', 'blocks.json', 'names.json', 'models.json', 'textures.json', 'textures.bin'];
@@ -128,8 +130,8 @@ export function ensureGameData({ remote = false, run = runNode, check = checkGam
 }
 
 /**
- * Vorschaubilder für die lokale Seite. Mit thumbs: make-thumbs (rendert nur Fehlendes/Veraltetes). Ohne: eine leere
- * thumbs/index.json anlegen, falls keine da ist – die lokale Seite fragt sie ab und soll dabei keinen 404 bekommen.
+ * Vorschaubilder (data/thumbs/, im Repo). Mit thumbs: make-thumbs (rendert nur Fehlendes/Veraltetes). Ohne: eine leere
+ * data/thumbs/index.json anlegen, falls keine da ist – die Seite fragt sie ab und soll dabei keinen 404 bekommen.
  * → 'rendered' | 'failed' | 'placeholder' | 'present'
  */
 export function ensureThumbs({ thumbs = true, run = runNode, thumbsDir = THUMBS_DIR, log = console.log } = {}) {
@@ -141,7 +143,8 @@ export function ensureThumbs({ thumbs = true, run = runNode, thumbsDir = THUMBS_
   const index = path.join(thumbsDir, 'index.json');
   if (existsSync(index)) return 'present';
   mkdirSync(thumbsDir, { recursive: true });
-  writeFileSync(index, `${JSON.stringify({ version: 1, entries: {} }, null, 2)}\n`);
+  // Leere Liste im Format, das die Seite und make-thumbs erwarten
+  writeFileSync(index, `${JSON.stringify({ version: THUMBS_INDEX_VERSION, entries: {} }, null, 2)}\n`);
   return 'placeholder';
 }
 
@@ -192,7 +195,7 @@ async function main() {
     if (state.missing.length) console.log(`  Nicht im Katalog (beim letzten Lauf fehlerhaft): ${state.missing.join(', ')}`);
   }
 
-  // 3. Vorschaubilder (nur lokal): fehlende oder veraltete rendern; ohne --no-thumbs geht das schnell, wenn alle aktuell sind
+  // 3. Vorschaubilder (data/thumbs/): fehlende oder veraltete rendern; das geht schnell, wenn alle aktuell sind
   ensureThumbs({ thumbs: options.thumbs });
 
   // 4. Server

@@ -1,0 +1,21 @@
+{
+  "berliner-fernsehturm": { "pitch": 9, "zoom": 3, "target": [null, 238, null] },
+  "complementary-geheime-waffenkammer": { "pitch": 62, "zoom": 1, "cut": { "maxY": 12 } },
+  "complementary-illager-gefaengnis": { "yaw": 215, "pitch": 55, "zoom": 1.05, "cut": { "maxY": 8 } },
+  "complementary-kleines-wuestenhaus": { "yaw": 125 },
+  "complementary-schwarzstein-turm": { "yaw": 25, "pitch": 32, "zoom": 0.9 },
+  "golden-gate-bridge": { "yaw": 20, "pitch": 13, "zoom": 4, "target": [36, 130, 1992] },
+  "greenery-gewaechshaus": { "yaw": 125, "pitch": 25, "zoom": 1.2 },
+  "infinity-castle": { "yaw": 335, "pitch": 22, "zoom": 1, "cut": { "maxZ": 73 } },
+  "kapellbruecke-luzern": { "yaw": 40, "pitch": 20, "zoom": 2, "target": [34, 16, 148] },
+  "kogtyv-griechisches-haus": { "yaw": 215, "pitch": 38, "zoom": 1.25, "target": [null, 10, null] },
+  "mcs-tempel-sonnenblumen": { "yaw": 115, "pitch": 35 },
+  "mcs-yaodong-grosse-hoehlenwohnung": { "yaw": 200, "pitch": 55, "zoom": 1.4, "target": [11.5, 2, 21] },
+  "mcs-yaodong-hoehlenwohnung": { "yaw": 45, "pitch": 48, "zoom": 1.15, "cut": { "maxY": 4 } },
+  "nightbeam-lebkuchenhaus": { "yaw": 70, "zoom": 1.7, "target": [21, 6, 19] },
+  "qrafty-stelzenhaus": { "pitch": 20, "zoom": 1.75, "target": [null, 23, null] },
+  "sbmulti-hoellen-kolosseum": { "pitch": 52, "zoom": 1.2 },
+  "tokyo-skytree": { "pitch": 8, "zoom": 2, "target": [null, 400, null] },
+  "toms-pilzhaus": { "yaw": 280, "pitch": 6, "zoom": 1.15 },
+  "unterwasser-kuppel": { "yaw": 215, "pitch": 50, "zoom": 1.4, "target": [20.5, 5, 20.5] }
+}
