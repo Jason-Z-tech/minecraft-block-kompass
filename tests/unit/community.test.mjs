@@ -554,8 +554,10 @@ describe('Echte Daten: data/community/', () => {
     assert.deepEqual(warnings, []);
     assert.equal(entries.length, list.length);
     // 106 Bauten aus 11 Quellen (2026-10-28), dazu 55 aus 31 Quellen (2026-10-29) und 41 aus 20 Quellen (2026-10-30);
-    // nach der Prüfung am 2026-10-30 wieder 15 entfernt (Herkunft unklar, Redstone, schwache Kasten-Bauten) → 187 aus 57 Quellen
-    assert.ok(list.length >= 187, `${list.length} Community-Bauten`);
+    // nach der Prüfung am 2026-10-30 wieder 15 entfernt (Herkunft unklar, Redstone, schwache Kasten-Bauten) → 187 aus 57 Quellen;
+    // dazu 33 aus 6 Quellen (2026-11-01, davon 5 neu) → 220 aus 62 Quellen; nach der Prüfung am 2026-11-01 wieder 4 entfernt
+    // (Entwurf nicht belegt, Tiergehege aus dem Ebenen-Dorf, schwebende Reste und Markierungen) → 216 aus 61 Quellen
+    assert.ok(list.length >= 216, `${list.length} Community-Bauten`);
     let total = 0;
     for (const file of readdirSync(dir, { recursive: true })) {
       const info = statSync(path.join(dir, file));

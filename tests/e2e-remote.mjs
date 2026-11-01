@@ -99,9 +99,10 @@ const SECOND_ID = pickBuild(['dorfbrunnen'], (b) => b.category !== 'haeuser' && 
 // Häuser mit Bett und Banner bzw. Bett und Truhe: Blöcke mit Texturen aus dem Entity-Atlas
 const ENTITY_ID = pickBuild(['japanisches-wohnhaus'], (b) => b.category === 'haeuser' && isModule(b) && b.id !== MODULE_ID);
 const MOBILE_ID = pickBuild(['starterhaus-eiche'], (b) => b.category === 'haeuser' && isModule(b) && b.id !== ENTITY_ID && b.id !== MODULE_ID);
-// Ein kleiner Community-Bau (.nbt) und einer im Litematica-Format
+// Ein kleiner Community-Bau (.nbt), einer im Litematica-Format und einer als Sponge-Schematic (.schem, seit 2026-11-01)
 const COMMUNITY_ID = pickBuild(['qrafty-teehaus'], (b) => isCommunity(b) && b.community.format === 'nbt' && b.blocks < 5000);
 const COMMUNITY_LITEMATIC_ID = pickBuild(['gidden-belvedere'], (b) => isCommunity(b) && b.community.format === 'litematic' && b.blocks < 5000);
+const COMMUNITY_SCHEM_ID = pickBuild(['itsuka-fachwerkhaus-01'], (b) => isCommunity(b) && b.community.format === 'schem' && b.blocks < 5000);
 const ENTITY_ITEM = /(?:^|_)bed$|^(?:trapped_)?chest$|_sign$|_banner$/;
 
 // ---------------------------------------------------------------- Ergebnisse
@@ -174,7 +175,7 @@ function startPagesServer({ files, live }) {
     try {
       pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://pages.invalid').pathname);
     } catch { /* bleibt null */ }
-    const entry = { method: req.method, path: pathname ?? String(req.url), status: 0 };
+    const entry = { method: req.method, path: pathname ?? String(req.url), status: 0, at: Date.now() };
     state.log.push(entry);
     const send = (status, body, headers = {}) => {
       entry.status = status;
@@ -373,7 +374,7 @@ async function attachMonitor(profileParent) {
         if (/^(?:data|blob|about):/.test(p.request.url)) break;
         const known = byRequest.get(p.requestId);
         if (known && known.url === p.request.url) break; // dieselbe Anfrage aus Seite und Worker gemeldet
-        const entry = { url: p.request.url, type: p.type ?? null, where, status: null, fromCache: false, failed: null, blocked: null, bytes: 0 };
+        const entry = { url: p.request.url, type: p.type ?? null, where, status: null, fromCache: false, failed: null, blocked: null, bytes: 0, at: Date.now() };
         byRequest.set(p.requestId, entry);
         monitor.requests.push(entry);
         break;
@@ -520,20 +521,59 @@ const mark = (page) => ({ cdp: page.monitor.requests.length, server: SERVER.stat
 // game-data/ und der alte Bilder-Ordner thumbs/ direkt unter der Website-Wurzel (nicht data/thumbs/)
 const FORBIDDEN_URL = /^[a-z]+:\/\/[^/]+\/(?:minecraft-block-kompass\/)?(?:game-data|thumbs)\//;
 
-function since(page, from) {
-  return { cdp: page.monitor.requests.slice(from.cdp), server: SERVER.state.log.slice(from.server) };
+function since(page, from, upTo = null) {
+  return { cdp: page.monitor.requests.slice(from.cdp, upTo?.cdp), server: SERVER.state.log.slice(from.server, upTo?.server) };
 }
 
 function countMcmeta(page, from) {
-  const { cdp, server } = since(page, from);
+  const upTo = mark(page);
+  const { cdp, server } = since(page, from, upTo);
   const mcmeta = cdp.filter((entry) => isMcmeta(entry.url));
-  return {
+  const counted = {
     cdp: mcmeta.length,
     server: server.filter((entry) => entry.path.startsWith(MIRROR_PREFIX)).length,
     bytes: mcmeta.reduce((sum, entry) => sum + entry.bytes, 0),
     fromWorker: mcmeta.filter((entry) => entry.where !== 'page').length,
     fromCache: mcmeta.filter((entry) => entry.fromCache).length,
   };
+  // Zählfenster für explainMcmeta (nicht im Bericht)
+  Object.defineProperties(counted, { from: { value: from }, upTo: { value: upTo } });
+  return counted;
+}
+
+// Zählen Server und DevTools die mcmeta-Anfragen eines Fensters verschieden: welche Pfade sah nur eine Seite (Zeit in ms
+// relativ zur Zählung), und meldete DevTools sie danach noch (verspätetes Ereignis)? Nur zur Ursachensuche (bekannter,
+// seltener Fehler unter CPU-Last: Server 113, DevTools 112); die Prüfungen selbst bleiben unverändert streng.
+async function explainMcmeta(page, counted) {
+  const { from, upTo } = counted;
+  if (!from || !upTo) return '';
+  await sleep(1500);
+  const pathOf = (url) => {
+    try {
+      return decodeURIComponent(new URL(url).pathname);
+    } catch {
+      return url;
+    }
+  };
+  const { cdp, server } = since(page, from, upTo);
+  const open = new Map();
+  for (const entry of cdp.filter((item) => isMcmeta(item.url))) {
+    const key = pathOf(entry.url);
+    open.set(key, [...(open.get(key) ?? []), entry]);
+  }
+  const onlyServer = [];
+  for (const entry of server.filter((item) => item.path.startsWith(MIRROR_PREFIX))) {
+    const list = open.get(entry.path);
+    if (list?.length) list.shift(); else onlyServer.push(entry);
+  }
+  const onlyCdp = [...open.values()].flat();
+  const later = page.monitor.requests.slice(upTo.cdp).filter((item) => isMcmeta(item.url));
+  const parts = onlyServer.slice(0, 4).map((entry) => {
+    const seen = later.find((item) => pathOf(item.url) === entry.path);
+    return `nur Server: ${entry.method} ${entry.path} (HTTP ${entry.status}, ${entry.at - upTo.at} ms; DevTools ${seen ? `meldete sie ${seen.at - upTo.at} ms nach der Zählung` : 'nie'})`;
+  });
+  parts.push(...onlyCdp.slice(0, 4).map((entry) => `nur DevTools: ${pathOf(entry.url)} (${entry.where}, HTTP ${entry.status ?? '–'}${entry.failed ? `, ${entry.failed}` : ''}${entry.fromCache ? ', Cache' : ''}, ${entry.at - upTo.at} ms)`));
+  return parts.length ? parts.join(' | ') : 'gleiche Pfade auf beiden Seiten';
 }
 
 // Alle Anfragen seit from: nur Pages-Unterpfad und mcmeta; nie game-data/ oder den alten Ordner thumbs/ (data/thumbs/ ist
@@ -962,8 +1002,9 @@ async function buildPagesFlow() {
   const from = mark(page);
   const first = await buildVisit(page, { id: MODULE_ID, label: `Modul ${MODULE_ID} (erster Besuch)`, visit: 'erst', shotName: `bau-${MODULE_ID}` });
   if (first) {
+    const why = !OPTIONS.live && first.mcmeta.server !== first.mcmeta.cdp ? ` · ${await explainMcmeta(page, first.mcmeta)}` : '';
     check(`Modul ${MODULE_ID}: Spieldaten wirklich aus mcmeta geladen`, first.mcmeta.cdp > 0 && (OPTIONS.live || first.mcmeta.server === first.mcmeta.cdp),
-      `${first.mcmeta.cdp} Anfragen (Server ${OPTIONS.live ? '–' : first.mcmeta.server}, davon Worker ${first.mcmeta.fromWorker}), ${(first.mcmeta.bytes / 1048576).toFixed(1)} MB`);
+      `${first.mcmeta.cdp} Anfragen (Server ${OPTIONS.live ? '–' : first.mcmeta.server}, davon Worker ${first.mcmeta.fromWorker}), ${(first.mcmeta.bytes / 1048576).toFixed(1)} MB${why}`);
     const keys = await storedKeys(page);
     const needed = ['names', 'blocks', 'models', 'textures', 'atlas:blocks'];
     const missing = keys ? needed.filter((name) => !keys.some((key) => key.endsWith(`|${name}`))) : needed;
@@ -974,8 +1015,9 @@ async function buildPagesFlow() {
   // Neuladen: alles aus IndexedDB, keine einzige Anfrage an mcmeta (auch nicht aus dem HTTP-Cache)
   const again = await buildVisit(page, { id: MODULE_ID, label: `Modul ${MODULE_ID} (neu geladen)`, visit: 'neu', shotName: `bau-${MODULE_ID}-neu`, materials: true, plan: false, steps: false });
   if (again) {
+    const why = again.mcmeta.cdp !== 0 || again.mcmeta.server !== 0 ? ` · ${await explainMcmeta(page, again.mcmeta)}` : '';
     check(`Modul ${MODULE_ID}: Neuladen ohne Anfragen an ${OPTIONS.live ? 'GitHub' : '/__mcmeta/'}`, again.mcmeta.cdp === 0 && again.mcmeta.server === 0,
-      `Browser ${again.mcmeta.cdp}, Server ${again.mcmeta.server} · ${first ? `${first.seconds.toFixed(1)} s → ${again.seconds.toFixed(1)} s` : ''}`);
+      `Browser ${again.mcmeta.cdp}, Server ${again.mcmeta.server} · ${first ? `${first.seconds.toFixed(1)} s → ${again.seconds.toFixed(1)} s` : ''}${why}`);
   }
   checkConsole(page, `Modul ${MODULE_ID} (neu geladen)`);
 
@@ -998,7 +1040,7 @@ async function buildPagesFlow() {
 
   // Community-Bauten: Datei unverändert aus data/community/ unter dem Unterpfad (wie Pages: application/octet-stream),
   // gebaut wie ein Upload; Schritte, Material, Ebenen-Plan, Infos mit Ersteller und Lizenz
-  for (const [id, steps] of [[COMMUNITY_ID, true], [COMMUNITY_LITEMATIC_ID, false]]) {
+  for (const [id, steps] of [[COMMUNITY_ID, true], [COMMUNITY_LITEMATIC_ID, false], [COMMUNITY_SCHEM_ID, false]]) {
     if (!id) continue;
     const build = byId.get(id);
     const label = `Community ${id} (.${build.community.format})`;
@@ -1378,13 +1420,13 @@ try {
 }
 await mkdir(OUT, { recursive: true });
 console.log(`Pages-Nachbau: ${SERVER.base} · ${FILES.size} Dateien · Spieldaten: ${OPTIONS.live ? LIVE_BASE : `Spiegel unter ${MIRROR_PREFIX}`}`);
-console.log(`Bauten: Modul ${MODULE_ID}, zweites Modul ${SECOND_ID}, Entity-Texturen ${ENTITY_ID}, Handy ${MOBILE_ID}, Community ${COMMUNITY_ID} und ${COMMUNITY_LITEMATIC_ID}`);
+console.log(`Bauten: Modul ${MODULE_ID}, zweites Modul ${SECOND_ID}, Entity-Texturen ${ENTITY_ID}, Handy ${MOBILE_ID}, Community ${COMMUNITY_ID}, ${COMMUNITY_LITEMATIC_ID} und ${COMMUNITY_SCHEM_ID}`);
 // Jeder Eintrag: Modul oder Community-Bau (b.community.file, Datei unter data/community/ auf Pages), nie beides
 const badSource = catalog.builds.filter((b) => isModule(b) === Boolean(b.community?.file) || (isCommunity(b) && !FILES.has(`data/community/${b.community.file}`)));
 check('Katalog: Modul oder Community-Bau (Datei unter data/community/), keine Spiel-Strukturen, keine Farmen',
   catalog.builds.length > 0 && badSource.length === 0 && catalog.builds.every((b) => !('structure' in b) && !b.id.startsWith('spiel-') && b.category !== 'farmen'),
   `${catalog.builds.length} Bauten: ${catalog.builds.filter(isModule).length} Module, ${catalog.builds.filter(isCommunity).length} Community-Bauten${badSource.length ? `, ohne Quelle: ${badSource.slice(0, 3).map((b) => b.id).join(', ')}` : ''}`);
-for (const [name, id] of Object.entries({ MODULE_ID, SECOND_ID, ENTITY_ID, MOBILE_ID, COMMUNITY_ID, COMMUNITY_LITEMATIC_ID })) {
+for (const [name, id] of Object.entries({ MODULE_ID, SECOND_ID, ENTITY_ID, MOBILE_ID, COMMUNITY_ID, COMMUNITY_LITEMATIC_ID, COMMUNITY_SCHEM_ID })) {
   if (!id) check(`Katalog: Bau für ${name}`, false, 'kein passender Bau gefunden');
 }
 const flows = { start: startFlow, bau: buildPagesFlow, erstellen: createFlow, meine: mineFlow, handy: mobileFlow, fehler: failureFlow };
@@ -1422,7 +1464,7 @@ const failed = results.filter((result) => !result.ok);
 const seconds = (Date.now() - startedAt) / 1000;
 await writeFile(path.join(OUT, 'e2e-remote-report.json'), `${JSON.stringify({
   when: new Date().toISOString(), mode: MODE, base: SERVER.base, gpu: usedGpu, seconds, files: FILES.size,
-  builds: { module: MODULE_ID, second: SECOND_ID, entity: ENTITY_ID, mobile: MOBILE_ID, community: COMMUNITY_ID, communityLitematic: COMMUNITY_LITEMATIC_ID },
+  builds: { module: MODULE_ID, second: SECOND_ID, entity: ENTITY_ID, mobile: MOBILE_ID, community: COMMUNITY_ID, communityLitematic: COMMUNITY_LITEMATIC_ID, communitySchem: COMMUNITY_SCHEM_ID },
   results, perf, notes,
 }, null, 2)}\n`);
 console.log(`\n${results.length - failed.length} von ${results.length} Prüfungen OK, ${failed.length} FEHLER · ${seconds.toFixed(0)} s · Screenshots und Bericht: ${path.relative(ROOT, OUT)}`);

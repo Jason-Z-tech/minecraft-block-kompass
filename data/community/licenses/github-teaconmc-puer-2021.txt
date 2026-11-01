@@ -1,0 +1,31 @@
+Lizenz der Community-Bauten aus https://github.com/teaconmc/Puer (TeaCon 2021, Bauten von Roito.Leo)
+Beleg: teaconmc/Puer @587d175e887c423076c301ac91eb829fa17f59cd (Branch dev). Die Dateien 2021/config/worldedit/schematics/magic_tower_north.schem, tawan_hotel_south.schem und windmill_westsouth.schem kamen mit Commit 41319622d1e04fb4574f7d2f5877b38ce75e9f0b („Add buildings“, Roito.Leo, 2021-07-31) über PR #10 (von RoitoLeonine/master) ins Repository und sind bis 587d175 unverändert. LICENSE (Unlicense) liegt seit dem ersten Commit im Repository; README.md seit Commit 56d706d (2021-07-29): „注意：为确保我们日后可以自由分发这些数据，你同意在你的 PR 合并成功后，PR 中的内容视作进入公有领域（Public Domain）。“ (Mit dem Merge eines PR gehen dessen Inhalte in die Public Domain über.) Roito.Leo (GitHub RoitoLeonine) gehört zum Team der Mods 茶风 und 往来; die Bauten stehen in deren Ausstellungsstadt „安卡城“ (2021/data/teastory/signup_guides/points/anka.json).
+Lizenz: Unlicense (https://unlicense.org/)
+Betrifft: puer-gasthaus
+
+--- LICENSE im Repository (Commit 587d175e887c423076c301ac91eb829fa17f59cd, Text unverändert) ---
+
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <https://unlicense.org>

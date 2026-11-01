@@ -1248,8 +1248,17 @@ Angaben in `data/community/builds.json` (Liste, ein Eintrag je Zeile):
   Commit, Pfad und Zitat belegt; keine Spielstrukturen, Redstone-Bauten, Farmen, Testmuster oder Gelände ohne Bau, auch keine
   Neugestaltungen oder umgefärbten Kopien von Spielstrukturen (Wüsten- und Dschungelpyramide, Iglu, Dorfhäuser,
   Plünderer-Außenposten, Schiffswrack, Hexenhütte, Ozeanmonument, Waldanwesen, Bastion, Antike Stadt, Prüfungskammern,
-  Ruinenportal; erkennbar an Name, Quelle oder Grundriss). Stand 2026-10-30: 187 Bauten aus 57 Quellen (12 GitHub-Repos,
-  45 Modrinth-Projekte, zusammen rund 11 MB; 181 `.nbt`, 6 `.litematic`). Abgelehnt u. a. Cinchs Villager Statues (die
+  Ruinenportal; erkennbar an Name, Quelle oder Grundriss). Stand 2026-11-01: 216 Bauten aus 61 Quellen (15 GitHub-Repos,
+  46 Modrinth-Projekte, zusammen rund 13 MB; 195 `.nbt`, 15 `.schem`, 6 `.litematic`); mit den 59 Modulen 275 Bauten
+  (Häuser 71, Fantasy 62, Mittelalter 57, Klein 42, Wahrzeichen 23, Infrastruktur 20). Neu am 2026-11-01: 29 Bauten, u. a.
+  Nachbauten realer Bauwerke aus ItsukaYui/Itsuka-Minecraft-Public-Documents (CC BY-NC-SA 4.0, `.schem`), ein Gasthaus aus
+  teaconmc/Puer 2021 (Unlicense), nhwhite3118/Shulkers_Structures (MIT), Snowy's Christmas Mod (MIT) und weitere aus
+  Bloxy's Structures. Nach der Prüfung am 2026-11-01 wieder entfernt: Japanische Burg aus teaconmc/Puer 2024 (Entwurf nicht
+  belegt; die Burg desselben Einreichers von 2022 nennt auf einem Schild einen anderen Entwerfer), Schwebendes Dorf aus
+  Bloxy's Structures (enthält das Tiergehege `plains_animal_pen_2` aus dem Ebenen-Dorf 1:1), Turmwindmühle und Magierturm aus
+  Puer 2021 (Markierungen aus Weißer Wolle an den Ecken der Begrenzung und abgeschnittene Gelände- bzw. Baumreste schweben
+  neben dem Bau). Beim Gasthaus (Puer 2021) sitzt ebenfalls eine einzelne Weiße Wolle an einer Ecke der Begrenzung; sie
+  steht als „Weiße Wolle 1“ in der Materialliste. Abgelehnt u. a. Cinchs Villager Statues (die
   .nbt-Dateien sind laut LICENSE „All Rights Reserved“); nach der Prüfung entfernt: Thun-bit (Spiel-Schiffswrack als eigene
   Arbeit, Herkunft der übrigen nicht belegbar), big-mod (Plünderer-Turm), Muffin's Structures (umgefärbtes Dorfhaus,
   Sumpfhütte), Panda Temple (Entwurf eines Dritten ohne Erlaubnis), Snowy Ruins (Ersteller will nur Modrinth als Quelle),
@@ -1697,7 +1706,9 @@ groundLevel(b, x, z, { from, depth = 24 })    // → y des obersten Nicht-Pflanz
   nicht“) und `bau.html?id=kaktusfarm` („Bau nicht gefunden“); Lauf-Modus ohne hängende Tasten (`walkStuckSteps`: W halten,
   dann Ende der Zeigersperre, Esc, Lauf-Modus per Knopf aus/an bzw. Kontextmenü → die Figur steht, auch nach dem
   Wiedereintritt). `e2e-remote.mjs` prüft dasselbe im Pages-Nachbau; Community-Dateien kommen dort unter
-  `/minecraft-block-kompass/data/community/` als `application/octet-stream`.
+  `/minecraft-block-kompass/data/community/` als `application/octet-stream`. Änderung (2026-11-01): Seit `.schem`-Dateien im
+  Katalog stehen, laden beide Klick-Tests zusätzlich einen Community-Bau im Sponge-Format (`itsuka-fachwerkhaus-01`, sonst der
+  kleinste `.schem`-Bau) samt Infos mit Ersteller und Lizenz.
   Ausgabe je Prüfung `OK`/`FEHLER`, Leistungswerte, Screenshots und `e2e-report.json` (Standard
   `tmp/integration/e2e/`); Exit-Code 1 bei Fehlern. Konsolenfehler zählen als Fehler (einzige Ausnahme: die absichtlich kaputte
   Upload-Datei, deren Ablehnung `renderer.js` mit `console.error` meldet).
@@ -2035,3 +2046,8 @@ seit 2026-10-31 mit `data/thumbs/`: Kategorie (Desktop und Handy) und „Selber 
 `alt`, im 16:10-Rahmen, ohne Verschiebung der Karten (Lage vorher/nachher und Layout Instability API in `#category-list`);
 Abläufe `start,bau,erstellen,meine,handy,fehler`, seit 2026-10-28 nur mit Bau-Modulen, dazu Startseite ohne Scrollen, Kopf ohne
 Suche und „Meine Bauten“ ohne Anfragen an mcmeta für Liste und Bearbeiten).
+Bekannter, seltener Fehler (2026-11-01, 1 von 2 Läufen unter fremder CPU-Last): „Spieldaten wirklich aus mcmeta geladen“
+meldete Server 113 statt 112 bei 112 Anfragen in DevTools; die Wiederholung ohne Last war grün. Ursache noch offen (Verdacht:
+verspätetes DevTools-Ereignis einer späten Anfrage oder stilles Wiederholen einer Anfrage im Netzwerk-Stack). Die Prüfung
+bleibt streng; seitdem nennt sie bei ungleicher Zählung die Pfade, die nur eine Seite sah, samt Zeit zur Zählung und ob
+DevTools sie danach noch meldete (`explainMcmeta`).

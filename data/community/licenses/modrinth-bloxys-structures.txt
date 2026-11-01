@@ -1,7 +1,7 @@
 Lizenz der Community-Bauten aus https://modrinth.com/project/bloxys-structures
 Beleg: Modrinth bloxys-structures Version 1.18 (ZcA9ntAA), Datei bloxysstructures-1.18-neoforge-26.2.jar (sha1 d19102abca2badf2ceb9a798bef0a5fb9fe6c971); META-INF/neoforge.mods.toml: „license="MIT License"“, „authors="BloxyMath"“; Modrinth-Lizenzfeld: MIT
 Lizenz: MIT (https://opensource.org/license/mit)
-Betrifft: bloxys-uralter-monolith
+Betrifft: bloxys-uralter-monolith, bloxys-kolosseum-ruine, bloxys-zerborstener-monolith, bloxys-tiefenschiefer-feste, bloxys-illager-burg-tiefenschiefer, bloxys-illager-burg-ecktuerme, bloxys-illager-palisadenfort, bloxys-illager-kuppelfort, bloxys-illager-steinburg, bloxys-turmruine, bloxys-illager-turmhalle, bloxys-illager-ringburg
 
 --- MIT License (Standardtext; Rechteinhaber laut Mod-Angaben) ---
 

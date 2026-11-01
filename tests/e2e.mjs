@@ -368,12 +368,15 @@ const HAUS_ID = byId.get('starterhaus-eiche')?.module ? 'starterhaus-eiche'
   : [...catalog.builds].filter((build) => build.category === 'haeuser' && build.module).sort((a, b) => a.blocks - b.blocks)[0]?.id;
 // Ein Bau mit tested: false (seit Farmen weg sind nur noch bahnhof-loren); der Chip „Nicht im Spiel getestet“ erscheint dort
 const UNTESTED_ID = byId.get('bahnhof-loren')?.tested === false ? 'bahnhof-loren' : catalog.builds.find((build) => build.tested === false)?.id ?? null;
-// Community-Bauten (data/community/): ein kleiner .nbt-Bau für den ganzen Ablauf, ein .litematic-Bau zum Laden
+// Community-Bauten (data/community/): ein kleiner .nbt-Bau für den ganzen Ablauf, je ein .litematic- und ein .schem-Bau
+// (Sponge-Schematic, seit 2026-11-01 im Katalog) zum Laden
 const isCommunity = (build) => Boolean(build?.community?.file) && !build.module;
 const COMMUNITY_ID = isCommunity(byId.get('qrafty-teehaus')) ? 'qrafty-teehaus'
   : [...catalog.builds].filter((build) => isCommunity(build) && build.community.format === 'nbt').sort((a, b) => a.blocks - b.blocks)[0]?.id;
 const COMMUNITY_LITEMATIC_ID = isCommunity(byId.get('gidden-belvedere')) ? 'gidden-belvedere'
   : [...catalog.builds].filter((build) => isCommunity(build) && build.community.format === 'litematic').sort((a, b) => a.blocks - b.blocks)[0]?.id;
+const COMMUNITY_SCHEM_ID = isCommunity(byId.get('itsuka-fachwerkhaus-01')) ? 'itsuka-fachwerkhaus-01'
+  : [...catalog.builds].filter((build) => isCommunity(build) && build.community.format === 'schem').sort((a, b) => a.blocks - b.blocks)[0]?.id;
 
 // Anleitung und Player nach dem Aufräumen: Kapitel mit Nummer und Titel, Schritte nur mit Nummer, Blockzahl und Ebene –
 // keine Schritt-Namen, Schritt-Texte, Tipps, Notizen oder Schwierigkeit.
@@ -557,17 +560,21 @@ async function buildPagesFlow(server) {
       await shot(page, `bau-${COMMUNITY_ID}-10-ersteller`);
       checkConsole(page, `Community ${COMMUNITY_ID} (Infos)`);
     } else check('Katalog: Community-Bau (.nbt)', false, 'keiner gefunden');
-    if (COMMUNITY_LITEMATIC_ID) {
-      const lite = byId.get(COMMUNITY_LITEMATIC_ID);
-      await page.goto(`${server.url}/bau.html?id=${COMMUNITY_LITEMATIC_ID}`);
+    for (const [format, id] of [['litematic', COMMUNITY_LITEMATIC_ID], ['schem', COMMUNITY_SCHEM_ID]]) {
+      if (!id) {
+        check(`Katalog: Community-Bau (.${format})`, false, 'keiner gefunden');
+        continue;
+      }
+      const build = byId.get(id);
+      await page.goto(`${server.url}/bau.html?id=${id}`);
       await page.waitFor(BUILD_READY, 120000, 200);
       await waitIdle(page);
-      check(`Community ${COMMUNITY_LITEMATIC_ID} (.litematic): geladen`, await page.eval(`window.__buildView.result.blockCount === ${lite.blocks} && window.__buildView.result.steps.length === ${lite.steps}`),
-        `${lite.blocks} Blöcke, ${lite.steps} Schritte erwartet`);
-      await communityInfoSteps(page, lite, { check, label: `Community ${COMMUNITY_LITEMATIC_ID}` });
-      await shot(page, `bau-${COMMUNITY_LITEMATIC_ID}-ersteller`);
-      checkConsole(page, `Community ${COMMUNITY_LITEMATIC_ID}`);
-    } else check('Katalog: Community-Bau (.litematic)', false, 'keiner gefunden');
+      check(`Community ${id} (.${format}): geladen`, await page.eval(`window.__buildView.result.blockCount === ${build.blocks} && window.__buildView.result.steps.length === ${build.steps}`),
+        `${build.blocks} Blöcke, ${build.steps} Schritte erwartet`);
+      await communityInfoSteps(page, build, { check, label: `Community ${id}` });
+      await shot(page, `bau-${id}-ersteller`);
+      checkConsole(page, `Community ${id}`);
+    }
 
     // Der einzige Bau mit tested: false zeigt den Chip „Nicht im Spiel getestet“
     if (UNTESTED_ID) {

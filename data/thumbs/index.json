@@ -67,10 +67,65 @@
       "bytes": 33340,
       "renderedAt": "2026-10-31T09:22:00.285Z"
     },
+    "bloxys-illager-burg-ecktuerme": {
+      "hash": "6e3016dad4ffa2745ab79179080068c43553e9b2",
+      "bytes": 35662,
+      "renderedAt": "2026-11-01T04:05:31.889Z"
+    },
+    "bloxys-illager-burg-tiefenschiefer": {
+      "hash": "00c18f4ca98c5190909796d4ae274182a2d1b1f0",
+      "bytes": 38690,
+      "renderedAt": "2026-11-01T04:05:30.147Z"
+    },
+    "bloxys-illager-kuppelfort": {
+      "hash": "43966bcb46b5bce639506e67ba162de6438f8860",
+      "bytes": 39818,
+      "renderedAt": "2026-11-01T04:05:17.605Z"
+    },
+    "bloxys-illager-palisadenfort": {
+      "hash": "916c72c5617412c433b3648168cb81c00460baac",
+      "bytes": 46382,
+      "renderedAt": "2026-11-01T04:05:51.947Z"
+    },
+    "bloxys-illager-ringburg": {
+      "hash": "69d41517dbc2216be4988dddc58aa029f3854444",
+      "bytes": 41530,
+      "renderedAt": "2026-11-01T04:05:33.622Z"
+    },
+    "bloxys-illager-steinburg": {
+      "hash": "19a0ca6812829594226497d67157957fab6c0f98",
+      "bytes": 42174,
+      "renderedAt": "2026-11-01T04:05:54.558Z"
+    },
+    "bloxys-illager-turmhalle": {
+      "hash": "24dd710b7c4e9b2840eed140fa5185f34dc69e56",
+      "bytes": 25092,
+      "renderedAt": "2026-11-01T04:16:42.574Z"
+    },
+    "bloxys-kolosseum-ruine": {
+      "hash": "e4279389c3aeb074b196e11736054ba343e82691",
+      "bytes": 43064,
+      "renderedAt": "2026-11-01T04:04:41.517Z"
+    },
+    "bloxys-tiefenschiefer-feste": {
+      "hash": "27bfce547a21c88d9677e15789684e10e4fb5c26",
+      "bytes": 13948,
+      "renderedAt": "2026-11-01T04:05:03.877Z"
+    },
+    "bloxys-turmruine": {
+      "hash": "9e672a2f6dde5483c1de08b10d08aae3afa04776",
+      "bytes": 17008,
+      "renderedAt": "2026-11-01T04:05:55.314Z"
+    },
     "bloxys-uralter-monolith": {
       "hash": "2841fefb6d872dbb5fa459a561549b300974e509",
       "bytes": 9248,
       "renderedAt": "2026-10-31T09:20:31.812Z"
+    },
+    "bloxys-zerborstener-monolith": {
+      "hash": "a4f99179d5f9c4c73657546dc9364b4807d047e2",
+      "bytes": 7658,
+      "renderedAt": "2026-11-01T05:10:21.917Z"
     },
     "bootssteg": {
       "hash": "2fcb519d4696c69c23edbc34629a041da2d5f406",
@@ -462,6 +517,76 @@
       "bytes": 34332,
       "renderedAt": "2026-10-31T10:02:18.250Z"
     },
+    "itsuka-apostelkirche-konstantinopel": {
+      "hash": "2cc3ca29a4e80f3f9136968254cddd7992fa2062",
+      "bytes": 32662,
+      "renderedAt": "2026-11-01T05:09:46.350Z"
+    },
+    "itsuka-fachwerkhaus-01": {
+      "hash": "b6d3a62245e94b51343544ceedbc69a9cb3bd584",
+      "bytes": 30932,
+      "renderedAt": "2026-11-01T05:10:23.083Z"
+    },
+    "itsuka-fachwerkhaus-03": {
+      "hash": "fa276150c334298bbb53ccd62fb2f214a2fc6a79",
+      "bytes": 37100,
+      "renderedAt": "2026-11-01T04:05:10.733Z"
+    },
+    "itsuka-fachwerkhaus-04": {
+      "hash": "1e6ed3d80213747d7cfe3e4fc5713f3c8b567333",
+      "bytes": 24552,
+      "renderedAt": "2026-11-01T04:05:12.834Z"
+    },
+    "itsuka-fachwerkhaus-09": {
+      "hash": "e0870a7166ba18f04a5093170587b81f32b4de4e",
+      "bytes": 25976,
+      "renderedAt": "2026-11-01T04:05:27.042Z"
+    },
+    "itsuka-fachwerkhaus-hang": {
+      "hash": "280fe7fcae017aaa0e4c4071d40fd78ef707d34c",
+      "bytes": 32964,
+      "renderedAt": "2026-11-01T04:05:11.966Z"
+    },
+    "itsuka-hagia-sophia": {
+      "hash": "1bb6047a58d01db274ccaacbafdf784a25736144",
+      "bytes": 30414,
+      "renderedAt": "2026-11-01T05:09:56.868Z"
+    },
+    "itsuka-lanterna-genua": {
+      "hash": "cd4bf9de1903e1f74c600d11a57c2ad852a7c139",
+      "bytes": 7022,
+      "renderedAt": "2026-11-01T05:10:24.083Z"
+    },
+    "itsuka-provinciaal-hof-bruegge": {
+      "hash": "3b0f6eb4151b026d84e6d72f50c9c6000cbfe4c2",
+      "bytes": 30708,
+      "renderedAt": "2026-11-01T05:10:08.862Z"
+    },
+    "itsuka-rathaus-limoges": {
+      "hash": "3a672163689923ebd932bdfd6987a6564877aa76",
+      "bytes": 26704,
+      "renderedAt": "2026-11-01T05:10:17.294Z"
+    },
+    "itsuka-rathaus-marburg": {
+      "hash": "2fb2aff303d912ddf68a41622eda9114f5a6cc27",
+      "bytes": 23020,
+      "renderedAt": "2026-11-01T05:10:10.561Z"
+    },
+    "itsuka-st-andrews-kirche": {
+      "hash": "b395b21d8747e62223f715e2789156eda44107cb",
+      "bytes": 13568,
+      "renderedAt": "2026-11-01T04:04:39.474Z"
+    },
+    "itsuka-triumphbogen-paris": {
+      "hash": "19b1b869608240b4b9fbb20601191c6f69d68df7",
+      "bytes": 22778,
+      "renderedAt": "2026-11-01T05:10:20.824Z"
+    },
+    "itsuka-weisser-turm-thessaloniki": {
+      "hash": "b8e3f41a72f0569e70538621d47a5416ea1c7642",
+      "bytes": 10086,
+      "renderedAt": "2026-11-01T04:05:00.299Z"
+    },
     "japanisches-wohnhaus": {
       "hash": "60ba7fde090c1a5c07b0115fa9e17fc3a66351db",
       "bytes": 37896,
@@ -792,6 +917,11 @@
       "bytes": 38198,
       "renderedAt": "2026-10-31T09:21:54.275Z"
     },
+    "puer-gasthaus": {
+      "hash": "06ae621fc6dc3ba9fce477554fe0f2359e1e8605",
+      "bytes": 45650,
+      "renderedAt": "2026-11-01T04:21:20.529Z"
+    },
     "qrafty-akropolis": {
       "hash": "385a43599a06b78358a441da6ddf3758e2b62a9d",
       "bytes": 42466,
@@ -997,6 +1127,16 @@
       "bytes": 36060,
       "renderedAt": "2026-10-31T09:18:51.254Z"
     },
+    "shulker-persisches-eishaus": {
+      "hash": "a089648af61c2d83c9890cef6d4843023640fb02",
+      "bytes": 17580,
+      "renderedAt": "2026-11-01T05:10:23.642Z"
+    },
+    "shulker-scheune": {
+      "hash": "3af8aa5a4f7fce66fb9d3a9f009d0dae86d3c464",
+      "bytes": 32690,
+      "renderedAt": "2026-11-01T04:21:15.153Z"
+    },
     "skelrem-uhrkirche": {
       "hash": "9b9e768fdd36e6b8bee9877f7aec287c381d7b68",
       "bytes": 27518,
@@ -1006,6 +1146,11 @@
       "hash": "a325cd5ca20bd2009bb16e1307f22ad27780e7d9",
       "bytes": 10944,
       "renderedAt": "2026-10-31T09:23:59.574Z"
+    },
+    "snowy-weihnachtsbaum": {
+      "hash": "ebfffafdcc45935f1756331d87f75f7e00e58911",
+      "bytes": 22696,
+      "renderedAt": "2026-11-01T04:05:57.682Z"
     },
     "splus-stall-mit-turm": {
       "hash": "070641ed3dddf5185254ca8175fe691cc72ab4bb",
